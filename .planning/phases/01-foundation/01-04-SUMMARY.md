@@ -54,14 +54,14 @@ completed: "2026-04-27"
 
 # Phase 1 Plan 04: Showcase Skeleton Summary
 
-**Five-file Compose Desktop showcase skeleton: 1200x800 window with AeroTheme state hoisting, three-button theme switcher, glassPanel-backed glass modifier demos (120x80dp), and five Phase-2 placeholder rows — compiles green, awaiting human visual verification**
+**Five-file Compose Desktop showcase skeleton: 1200x800 window with AeroTheme state hoisting, three-button theme switcher, glassPanel-backed glass modifier demos (120x80dp), and five Phase-2 placeholder rows — compiles green, human-verified (SHW-01, SHW-02, SHW-03 approved)**
 
 ## Performance
 
 - **Duration:** 3 min
 - **Started:** 2026-04-27T14:11:35Z
 - **Completed:** 2026-04-27T14:14:30Z
-- **Tasks:** 2 auto-tasks complete; 1 checkpoint (human-verify) pending
+- **Tasks:** 3 of 3 complete (2 auto + 1 human-verify checkpoint — approved)
 - **Files modified:** 5 (all created)
 
 ## Accomplishments
@@ -78,6 +78,7 @@ completed: "2026-04-27"
 
 1. **Task 1: Main.kt + ShowcaseApp.kt + ThemeSwitcher.kt** - `9106a10` (feat)
 2. **Task 2: FoundationSection.kt + PlaceholderSection.kt** - `ff4aabb` (feat)
+3. **Task 3: checkpoint:human-verify** — approved by user (SHW-01, SHW-02, SHW-03 visually confirmed)
 
 ## Files Created/Modified
 
@@ -114,26 +115,24 @@ completed: "2026-04-27"
 
 None beyond the forward-reference compile gate (documented above as deviation).
 
-## Checkpoint Pending
+## Checkpoint Verified
 
-**Task 3 (checkpoint:human-verify)** is pending user action:
+**Task 3 (checkpoint:human-verify)** — APPROVED by user on 2026-04-27.
 
-Run: `JAVA_HOME="C:/Users/1/.gradle/jdks/eclipse_adoptium-17-amd64-windows.2" ./gradlew :showcase:run`
+Verified items:
+1. Window opened titled `aero-compose-ui Showcase` (1200x800) — no JVM crash
+2. Three theme buttons (AeroBlue / AeroDark / Classic) visible at top
+3. Clicking each button instantly updated background + active button highlight — SHW-02 satisfied
+4. "Foundation" heading with three glass demo boxes labeled `glassEffect`, `glassPanel`, `glassSurface` — SHW-01 satisfied
+5. Five placeholder rows rendered correctly: `Buttons — coming Phase 2...`, `Input — coming Phase 2...`, `Selection — coming Phase 2...`, `Dropdown — coming Phase 2...`, `Range & Progress — coming Phase 2...` — SHW-03 satisfied
 
-Verify:
-1. Window opens titled `aero-compose-ui Showcase` (1200x800)
-2. Three theme buttons visible at top (AeroBlue / AeroDark / Classic)
-3. Clicking each button instantly updates background + button highlight colors
-4. "Foundation" heading with three glass demo boxes labeled `glassEffect`, `glassPanel`, `glassSurface`
-5. Five placeholder rows: `Buttons — coming Phase 2...`, `Input — coming Phase 2...`, `Selection — coming Phase 2...`, `Dropdown — coming Phase 2...`, `Range & Progress — coming Phase 2...`
-
-Resume signal: type "approved" if all visual checks pass, or describe specific issues.
+All SHW-01, SHW-02, SHW-03 requirement checks passed. Phase 1 visual contract satisfied.
 
 ## Next Phase Readiness
 
 - Automated gates: `./gradlew :library:test` and `./gradlew :showcase:compileKotlin` both green
-- Visual gates: pending user checkpoint approval (Task 3)
-- Once approved: Phase 1 complete — all 13 requirement IDs satisfied (FOUND-01..10, SHW-01..03)
+- Visual gates: approved (Task 3 checkpoint passed 2026-04-27)
+- Phase 1 complete — all 13 requirement IDs satisfied (FOUND-01..10, SHW-01..03)
 - Phase 2 will extend the showcase by replacing each PlaceholderSection call with a real component section
 
 ---
