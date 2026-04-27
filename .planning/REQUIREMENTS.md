@@ -22,9 +22,9 @@
 
 ### Showcase (демо-витрина)
 
-- [ ] **SHW-01**: Отдельное Compose Desktop приложение `:showcase` запускается самостоятельно и отображает все реализованные компоненты сгруппированными по категориям
-- [ ] **SHW-02**: В showcase есть переключатель тем (AeroBlue / AeroDark / Classic), мгновенно переключающий оформление всех компонентов
-- [ ] **SHW-03**: Showcase обновляется параллельно каждой фазе — после фазы N новые компоненты появляются на витрине
+- [x] **SHW-01**: Отдельное Compose Desktop приложение `:showcase` запускается самостоятельно и отображает все реализованные компоненты сгруппированными по категориям
+- [x] **SHW-02**: В showcase есть переключатель тем (AeroBlue / AeroDark / Classic), мгновенно переключающий оформление всех компонентов
+- [x] **SHW-03**: Showcase обновляется параллельно каждой фазе — после фазы N новые компоненты появляются на витрине
 
 ### Buttons (кнопки)
 
@@ -143,9 +143,9 @@ Updated: 2026-04-27 (roadmap created — 3 phases)
 | FOUND-08 | Phase 1 | Complete |
 | FOUND-09 | Phase 1 | Complete |
 | FOUND-10 | Phase 1 | Complete |
-| SHW-01 | Phase 1 | Pending |
-| SHW-02 | Phase 1 | Pending |
-| SHW-03 | Phase 1 (ongoing through all phases) | Pending |
+| SHW-01 | Phase 1 | Complete |
+| SHW-02 | Phase 1 | Complete |
+| SHW-03 | Phase 1 (ongoing through all phases) | Complete |
 | BTN-01 | Phase 2 | Pending |
 | BTN-02 | Phase 2 | Pending |
 | BTN-03 | Phase 2 | Pending |

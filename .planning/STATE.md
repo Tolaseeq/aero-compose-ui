@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 01-foundation/01-03-PLAN.md
-last_updated: "2026-04-27T14:09:50.882Z"
+stopped_at: "Completed 01-foundation/01-04-PLAN.md — awaiting checkpoint:human-verify (Task 3)"
+last_updated: "2026-04-27T14:17:00.099Z"
 last_activity: 2026-04-27 — Roadmap created, phases derived from requirements
 progress:
   total_phases: 3
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -53,6 +53,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-foundation P01 | 6 | 3 tasks | 14 files |
 | Phase 01-foundation P02 | 11 | 3 tasks | 5 files |
 | Phase 01-foundation P03 | 7 | 2 tasks | 3 files |
+| Phase 01-foundation P04 | 3 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,8 @@ Recent decisions affecting current work:
 - [Phase 01-foundation]: @Immutable runtime reflection test replaced with isData check — Compose @Immutable uses BINARY retention (CLASS level), not visible at runtime; isData is correct runtime proxy
 - [Phase 01-foundation]: defaultFactory pivot: ProvidableCompositionLocal.defaultFactory not public in CMP 1.7.3/Kotlin 2.1.21 — AeroThemeTest uses smoke tests per plan fallback
 - [Phase 01-foundation]: JAVA_HOME must be JDK 17 (Gradle toolchain) for all Gradle invocations — Java 25 version string breaks Kotlin compiler JavaVersion.parse()
+- [Phase 01-foundation]: Showcase omits explicitApi() — showcase build.gradle.kts has no constraint, public modifiers omitted
+- [Phase 01-foundation]: No transparent/undecorated on Window — Win11 EXCEPTION_ACCESS_VIOLATION blocker remains in effect for Phase 1
 
 ### Pending Todos
 
@@ -86,6 +89,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-27T14:09:50.876Z
-Stopped at: Completed 01-foundation/01-03-PLAN.md
+Last session: 2026-04-27T14:17:00.094Z
+Stopped at: Completed 01-foundation/01-04-PLAN.md — awaiting checkpoint:human-verify (Task 3)
 Resume file: None
