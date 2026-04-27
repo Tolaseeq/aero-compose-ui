@@ -68,10 +68,13 @@ and FOUND-09 requirement. System font is used — no custom typeface loading in 
 | title      | 18.sp  | Bold (700)    | 1.2         | `AeroTypography.title`  |
 | bodyLarge  | 14.sp  | Normal (400)  | 1.5         | `AeroTypography.bodyLarge` |
 | bodyMedium | 13.sp  | Normal (400)  | 1.5         | `AeroTypography.bodyMedium` |
-| bodySmall  | 12.sp  | Normal (400)  | 1.5         | `AeroTypography.bodySmall` |
 | label      | 11.sp  | Bold (700)    | 1.2         | `AeroTypography.label`  |
 
 **Weights declared:** Normal (400) and Bold (700) only — exactly 2 weights per contract rule.
+
+**Note:** `bodySmall` (12.sp) was removed from the scale. It was 1.sp from `bodyMedium` (13.sp)
+and visually indistinguishable at desktop resolution. All former `bodySmall` usages are
+consolidated to `bodyMedium` (13.sp Normal).
 
 **Application in Phase 1 showcase:**
 - Section headings ("Foundation", "Buttons — coming Phase 2..."): `title` (18.sp Bold)
@@ -193,6 +196,11 @@ data submission, no destructive actions.
 
 Phase 1 delivers no interactive component states (hover, pressed, disabled) — those are
 Phase 2. The only interactions in Phase 1 are:
+
+**Primary visual anchor:** the three glass modifier demo boxes (FoundationSection),
+differentiated by their glass treatment — each box renders a visually distinct surface
+(`glassEffect` with shadow and border, `glassPanel` as full-width background, `glassSurface`
+with highlight and border), making them the focal point of the Phase 1 showcase.
 
 | Interaction           | Element              | Behaviour                                                   |
 |-----------------------|----------------------|-------------------------------------------------------------|
