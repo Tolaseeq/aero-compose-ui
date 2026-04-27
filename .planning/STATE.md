@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 01-foundation/01-02-PLAN.md
-last_updated: "2026-04-27T13:58:26.554Z"
+stopped_at: Completed 01-foundation/01-03-PLAN.md
+last_updated: "2026-04-27T14:09:50.882Z"
 last_activity: 2026-04-27 — Roadmap created, phases derived from requirements
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -52,6 +52,7 @@ Progress: [░░░░░░░░░░] 0%
 *Updated after each plan completion*
 | Phase 01-foundation P01 | 6 | 3 tasks | 14 files |
 | Phase 01-foundation P02 | 11 | 3 tasks | 5 files |
+| Phase 01-foundation P03 | 7 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,8 @@ Recent decisions affecting current work:
 - [Phase 01-foundation]: AeroColorScheme drops 6 mordred domain tokens: connectionActive, connectionInactive, executionHighlight, logBackground, timeStampBackground, cardContent — application-specific, no meaning in a general UI library
 - [Phase 01-foundation]: bodySmall retained on AeroTypography despite UI-SPEC removal — Plan 03 Material3 bridge maps MaterialTheme.typography.bodySmall to it; removing breaks the bridge
 - [Phase 01-foundation]: @Immutable runtime reflection test replaced with isData check — Compose @Immutable uses BINARY retention (CLASS level), not visible at runtime; isData is correct runtime proxy
+- [Phase 01-foundation]: defaultFactory pivot: ProvidableCompositionLocal.defaultFactory not public in CMP 1.7.3/Kotlin 2.1.21 — AeroThemeTest uses smoke tests per plan fallback
+- [Phase 01-foundation]: JAVA_HOME must be JDK 17 (Gradle toolchain) for all Gradle invocations — Java 25 version string breaks Kotlin compiler JavaVersion.parse()
 
 ### Pending Todos
 
@@ -83,6 +86,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-27T13:58:26.548Z
-Stopped at: Completed 01-foundation/01-02-PLAN.md
+Last session: 2026-04-27T14:09:50.876Z
+Stopped at: Completed 01-foundation/01-03-PLAN.md
 Resume file: None
