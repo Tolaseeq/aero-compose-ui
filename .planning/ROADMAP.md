@@ -44,7 +44,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Every selection control (AeroCheckbox, AeroRadioButton/Group, AeroSwitch, AeroChip, AeroSegmentedControl) toggles state correctly and renders the correct Aero visual for each state
   4. AeroSlider moves a single thumb and emits the correct float value; AeroProgressBar displays both determinate (with %) and indeterminate (animated shimmer) modes
   5. AeroDropdown and AeroComboBox open a themed dropdown, allow item selection, and close — AeroComboBox also accepts free-text input
-**Plans**: TBD
+**Plans**: 6 plans
+- [ ] 02-01-PLAN.md — Buttons (BTN-01..04): AeroButton, AeroOutlinedButton, AeroIconButton, AeroToolbar + ButtonsSection
+- [ ] 02-02-PLAN.md — Text inputs (INP-01..06): AeroTextField, AeroTextArea, AeroPasswordField, AeroNumberSpinner, AeroSearchField, AeroFilePicker + InputSection
+- [ ] 02-03-PLAN.md — Selection controls (SEL-01..05): AeroCheckbox, AeroRadioButton/Group, AeroSwitch, AeroChip, AeroSegmentedControl + SelectionSection
+- [ ] 02-04-PLAN.md — Range + Lists (RNG-01..02, LST-01..02): AeroSlider, AeroProgressBar, AeroListItem, AeroBadge + RangeSection + ListSection
+- [ ] 02-05-PLAN.md — Dropdowns (DRP-01..02): AeroDropdown + AeroComboBox + AeroPopupPositionProvider + DropdownSection
+- [ ] 02-06-PLAN.md — Wire all sections into ShowcaseApp + ThemeSwitcher swap to AeroSegmentedControl + visual checkpoint
 
 ### Phase 3: Composite + Navigation
 **Goal**: All container, overlay, and navigation components are implemented — a complete Compose Desktop window can be built using only aero-compose-ui with no custom chrome or raw Material3 surfaces visible
@@ -65,5 +71,5 @@ Decimal phases appear between their surrounding integers in numeric order.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete   | 2026-04-27 |
-| 2. Atomic Components | 0/TBD | Not started | - |
+| 2. Atomic Components | 0/6 | Not started | - |
 | 3. Composite + Navigation | 0/TBD | Not started | - |
