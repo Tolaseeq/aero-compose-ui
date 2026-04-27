@@ -198,6 +198,18 @@ None - no external service configuration required.
 - `explicitApi()` compliance verified — no missing visibility modifiers
 - Both data classes are pure values with no Compose runtime dependencies — zero-cost to test without a Compose frame
 
+## Self-Check: PASSED
+
+- FOUND: library/src/main/kotlin/com/mordred/aero/theme/AeroColorScheme.kt
+- FOUND: library/src/main/kotlin/com/mordred/aero/theme/AeroTypography.kt
+- FOUND: library/src/test/kotlin/com/mordred/aero/theme/AeroColorSchemeTest.kt
+- FOUND: library/src/test/kotlin/com/mordred/aero/theme/AeroTypographyTest.kt
+- FOUND: .planning/phases/01-foundation/01-02-SUMMARY.md
+- FOUND commit: 2790ab8 (test RED)
+- FOUND commit: 5d25e6a (feat GREEN AeroColorScheme)
+- FOUND commit: bdb5a96 (feat GREEN AeroTypography)
+- FOUND commit: b1fc139 (docs metadata)
+
 ---
 *Phase: 01-foundation*
 *Completed: 2026-04-27*
