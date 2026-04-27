@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 1 context gathered
-last_updated: "2026-04-27T12:45:13.291Z"
+stopped_at: Completed 01-foundation/01-01-PLAN.md
+last_updated: "2026-04-27T13:43:31.371Z"
 last_activity: 2026-04-27 — Roadmap created, phases derived from requirements
 progress:
   total_phases: 3
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 4
+  completed_plans: 1
   percent: 0
 ---
 
@@ -50,6 +50,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: -
 
 *Updated after each plan completion*
+| Phase 01-foundation P01 | 6 | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -62,6 +63,9 @@ Recent decisions affecting current work:
 - Phase 1: Glass effect implemented in single `drawBehind` block to avoid overdraw and iGPU performance collapse
 - Phase 1: Library module uses `compose.desktop.common` (not `currentOs`) to keep JAR platform-neutral
 - Phase 3: AeroTitleBar placed in Phase 3 because it requires `FrameWindowScope` — only available in real window context
+- [Phase 01-foundation]: Gradle 8.14.3 used (not 8.10.2) — cached locally, fully CMP 1.7.3 compatible
+- [Phase 01-foundation]: Kotlin 2.1.21 / CMP 1.7.3 confirmed as actual published versions (RESEARCH.md cited non-existent 2.3.21/1.10.3)
+- [Phase 01-foundation]: :library uses compose.desktop.common (platform-neutral JAR); :showcase uses compose.desktop.currentOs (native binary)
 
 ### Pending Todos
 
@@ -75,6 +79,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-27T12:45:13.288Z
-Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-foundation/01-CONTEXT.md
+Last session: 2026-04-27T13:43:31.366Z
+Stopped at: Completed 01-foundation/01-01-PLAN.md
+Resume file: None

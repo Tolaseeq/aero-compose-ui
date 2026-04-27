@@ -18,7 +18,7 @@
 - [ ] **FOUND-07**: Модификатор `Modifier.glassEffect()` применяет эффект стекла (градиент + рамка + тень) через единый `drawBehind`-блок без overdraw
 - [ ] **FOUND-08**: Модификаторы `Modifier.glassPanel()` и `Modifier.glassSurface()` доступны для секций и поверхностей
 - [ ] **FOUND-09**: `AeroTypography` — data class с набором `TextStyle` (title 18sp, body 14sp/13sp/12sp, label 11sp)
-- [ ] **FOUND-10**: `explicitApi()` объявлен в `:library` — все публичные API явно помечены `public`
+- [x] **FOUND-10**: `explicitApi()` объявлен в `:library` — все публичные API явно помечены `public`
 
 ### Showcase (демо-витрина)
 
@@ -142,7 +142,7 @@ Updated: 2026-04-27 (roadmap created — 3 phases)
 | FOUND-07 | Phase 1 | Pending |
 | FOUND-08 | Phase 1 | Pending |
 | FOUND-09 | Phase 1 | Pending |
-| FOUND-10 | Phase 1 | Pending |
+| FOUND-10 | Phase 1 | Complete |
 | SHW-01 | Phase 1 | Pending |
 | SHW-02 | Phase 1 | Pending |
 | SHW-03 | Phase 1 (ongoing through all phases) | Pending |
