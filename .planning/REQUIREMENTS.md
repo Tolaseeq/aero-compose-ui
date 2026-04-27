@@ -129,28 +129,71 @@
 
 ## Traceability
 
-Обновляется при создании роадмапа.
+Updated: 2026-04-27 (roadmap created — 3 phases)
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01..10 | Phase 1 | Pending |
-| SHW-01..02 | Phase 1 | Pending |
-| SHW-03 | Ongoing | Pending |
-| BTN-01..04 | Phase 2 | Pending |
-| INP-01..06 | Phase 2 | Pending |
-| SEL-01..05 | Phase 2 | Pending |
-| DRP-01..02 | Phase 2 | Pending |
-| RNG-01..02 | Phase 2 | Pending |
-| CNT-01..06 | Phase 3 | Pending |
-| OVL-01..08 | Phase 3 | Pending |
-| NAV-01..05 | Phase 3 | Pending |
-| LST-01..02 | Phase 2 | Pending |
+| FOUND-01 | Phase 1 | Pending |
+| FOUND-02 | Phase 1 | Pending |
+| FOUND-03 | Phase 1 | Pending |
+| FOUND-04 | Phase 1 | Pending |
+| FOUND-05 | Phase 1 | Pending |
+| FOUND-06 | Phase 1 | Pending |
+| FOUND-07 | Phase 1 | Pending |
+| FOUND-08 | Phase 1 | Pending |
+| FOUND-09 | Phase 1 | Pending |
+| FOUND-10 | Phase 1 | Pending |
+| SHW-01 | Phase 1 | Pending |
+| SHW-02 | Phase 1 | Pending |
+| SHW-03 | Phase 1 (ongoing through all phases) | Pending |
+| BTN-01 | Phase 2 | Pending |
+| BTN-02 | Phase 2 | Pending |
+| BTN-03 | Phase 2 | Pending |
+| BTN-04 | Phase 2 | Pending |
+| INP-01 | Phase 2 | Pending |
+| INP-02 | Phase 2 | Pending |
+| INP-03 | Phase 2 | Pending |
+| INP-04 | Phase 2 | Pending |
+| INP-05 | Phase 2 | Pending |
+| INP-06 | Phase 2 | Pending |
+| SEL-01 | Phase 2 | Pending |
+| SEL-02 | Phase 2 | Pending |
+| SEL-03 | Phase 2 | Pending |
+| SEL-04 | Phase 2 | Pending |
+| SEL-05 | Phase 2 | Pending |
+| DRP-01 | Phase 2 | Pending |
+| DRP-02 | Phase 2 | Pending |
+| RNG-01 | Phase 2 | Pending |
+| RNG-02 | Phase 2 | Pending |
+| LST-01 | Phase 2 | Pending |
+| LST-02 | Phase 2 | Pending |
+| CNT-01 | Phase 3 | Pending |
+| CNT-02 | Phase 3 | Pending |
+| CNT-03 | Phase 3 | Pending |
+| CNT-04 | Phase 3 | Pending |
+| CNT-05 | Phase 3 | Pending |
+| CNT-06 | Phase 3 | Pending |
+| OVL-01 | Phase 3 | Pending |
+| OVL-02 | Phase 3 | Pending |
+| OVL-03 | Phase 3 | Pending |
+| OVL-04 | Phase 3 | Pending |
+| OVL-05 | Phase 3 | Pending |
+| OVL-06 | Phase 3 | Pending |
+| OVL-07 | Phase 3 | Pending |
+| OVL-08 | Phase 3 | Pending |
+| NAV-01 | Phase 3 | Pending |
+| NAV-02 | Phase 3 | Pending |
+| NAV-03 | Phase 3 | Pending |
+| NAV-04 | Phase 3 | Pending |
+| NAV-05 | Phase 3 | Pending |
 
 **Coverage:**
-- v1 requirements: 44 total
-- Mapped to phases: 44
-- Unmapped: 0 ✓
+- v1 requirements: 53 total
+- Phase 1: 13 (FOUND-01..10, SHW-01..03)
+- Phase 2: 21 (BTN-01..04, INP-01..06, SEL-01..05, DRP-01..02, RNG-01..02, LST-01..02)
+- Phase 3: 19 (CNT-01..06, OVL-01..08, NAV-01..05)
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-27*
-*Last updated: 2026-04-27 after initial definition*
+*Last updated: 2026-04-27 — roadmap created, traceability expanded to individual requirement level*
