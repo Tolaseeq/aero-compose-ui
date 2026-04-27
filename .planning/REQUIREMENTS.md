@@ -10,14 +10,14 @@
 ### Foundation (система тем и токены)
 
 - [ ] **FOUND-01**: Разработчик может подключить `AeroTheme {}` как корневой провайдер и все вложенные компоненты автоматически получают цвета и типографику активной темы
-- [ ] **FOUND-02**: `AeroColorScheme` — `@Immutable` data class с полным набором цветовых токенов (primary, surface, glass, border, status, hover и др.)
-- [ ] **FOUND-03**: Тема **AeroBlue** включена по умолчанию (фон #0D1B2A, акцент #4FC3F7) — перенос из mordred
-- [ ] **FOUND-04**: Тема **AeroDark** включена по умолчанию (фон #0A0A1A, акцент #90CAF9) — перенос из mordred
-- [ ] **FOUND-05**: Тема **Classic** включена по умолчанию (фон #1E1E1E, акцент #5C8ABF) — перенос из mordred
-- [ ] **FOUND-06**: Разработчик может создать собственную тему, передав кастомный `AeroColorScheme` в `AeroTheme`
+- [x] **FOUND-02**: `AeroColorScheme` — `@Immutable` data class с полным набором цветовых токенов (primary, surface, glass, border, status, hover и др.)
+- [x] **FOUND-03**: Тема **AeroBlue** включена по умолчанию (фон #0D1B2A, акцент #4FC3F7) — перенос из mordred
+- [x] **FOUND-04**: Тема **AeroDark** включена по умолчанию (фон #0A0A1A, акцент #90CAF9) — перенос из mordred
+- [x] **FOUND-05**: Тема **Classic** включена по умолчанию (фон #1E1E1E, акцент #5C8ABF) — перенос из mordred
+- [x] **FOUND-06**: Разработчик может создать собственную тему, передав кастомный `AeroColorScheme` в `AeroTheme`
 - [ ] **FOUND-07**: Модификатор `Modifier.glassEffect()` применяет эффект стекла (градиент + рамка + тень) через единый `drawBehind`-блок без overdraw
 - [ ] **FOUND-08**: Модификаторы `Modifier.glassPanel()` и `Modifier.glassSurface()` доступны для секций и поверхностей
-- [ ] **FOUND-09**: `AeroTypography` — data class с набором `TextStyle` (title 18sp, body 14sp/13sp/12sp, label 11sp)
+- [x] **FOUND-09**: `AeroTypography` — data class с набором `TextStyle` (title 18sp, body 14sp/13sp/12sp, label 11sp)
 - [x] **FOUND-10**: `explicitApi()` объявлен в `:library` — все публичные API явно помечены `public`
 
 ### Showcase (демо-витрина)
@@ -134,14 +134,14 @@ Updated: 2026-04-27 (roadmap created — 3 phases)
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | FOUND-01 | Phase 1 | Pending |
-| FOUND-02 | Phase 1 | Pending |
-| FOUND-03 | Phase 1 | Pending |
-| FOUND-04 | Phase 1 | Pending |
-| FOUND-05 | Phase 1 | Pending |
-| FOUND-06 | Phase 1 | Pending |
+| FOUND-02 | Phase 1 | Complete |
+| FOUND-03 | Phase 1 | Complete |
+| FOUND-04 | Phase 1 | Complete |
+| FOUND-05 | Phase 1 | Complete |
+| FOUND-06 | Phase 1 | Complete |
 | FOUND-07 | Phase 1 | Pending |
 | FOUND-08 | Phase 1 | Pending |
-| FOUND-09 | Phase 1 | Pending |
+| FOUND-09 | Phase 1 | Complete |
 | FOUND-10 | Phase 1 | Complete |
 | SHW-01 | Phase 1 | Pending |
 | SHW-02 | Phase 1 | Pending |
