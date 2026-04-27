@@ -28,7 +28,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Attempting to use any non-public type from the `:library` JAR produces a compile error — `explicitApi()` is enforced
   4. The `:showcase` app launches, shows an empty component grid grouped by category, and a theme switcher toggles between AeroBlue / AeroDark / Classic instantly
   5. A developer can supply a custom `AeroColorScheme` to `AeroTheme` and all glass surfaces and text reflect the custom tokens
-**Plans**: TBD
+**Plans**: 4 plans
+- [ ] 01-01-PLAN.md — Gradle skeleton: root build, version catalog, :library + :showcase modules with explicitApi
+- [ ] 01-02-PLAN.md — AeroColorScheme (23 tokens, 3 presets) + AeroTypography data classes (TDD)
+- [ ] 01-03-PLAN.md — AeroTheme composable + LocalAero* CompositionLocals + glass modifiers (single-pass drawBehind)
+- [ ] 01-04-PLAN.md — :showcase skeleton: Main, ShowcaseApp, ThemeSwitcher, FoundationSection, PlaceholderSection (visual checkpoint)
 
 ### Phase 2: Atomic Components
 **Goal**: All self-contained interactive components are implemented and interactive in the showcase — hover, focus, disabled, and pressed states work correctly using theme tokens
@@ -60,6 +64,6 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/TBD | Not started | - |
+| 1. Foundation | 0/4 | Not started | - |
 | 2. Atomic Components | 0/TBD | Not started | - |
 | 3. Composite + Navigation | 0/TBD | Not started | - |
