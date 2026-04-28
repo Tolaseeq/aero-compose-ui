@@ -13,7 +13,7 @@ Three phases deliver a complete Compose Desktop UI component library styled afte
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Theme system, glass modifiers, module structure, showcase skeleton (completed 2026-04-27)
-- [ ] **Phase 2: Atomic Components** - Buttons, inputs, selection controls, sliders, list items, badges
+- [x] **Phase 2: Atomic Components** - Buttons, inputs, selection controls, sliders, list items, badges (completed 2026-04-28)
 - [ ] **Phase 3: Composite + Navigation** - Containers, overlays, dialogs, menus, tabs, window chrome
 
 ## Phase Details
@@ -71,5 +71,5 @@ Decimal phases appear between their surrounding integers in numeric order.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete   | 2026-04-27 |
-| 2. Atomic Components | 5/6 | In Progress|  |
+| 2. Atomic Components | 6/6 | In Progress|  |
 | 3. Composite + Navigation | 0/TBD | Not started | - |

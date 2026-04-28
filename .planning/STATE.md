@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Completed 02-atomic-components-03-PLAN.md
-last_updated: "2026-04-28T08:03:41.859Z"
-last_activity: 2026-04-28 — Phase 2 Plan 04 range/list executed (RNG-01..02, LST-01..02), 4 requirements satisfied
+status: in_progress
+stopped_at: Completed 02-atomic-components-06-PLAN.md
+last_updated: "2026-04-28T12:00:00.000Z"
+last_activity: 2026-04-28 — Phase 2 Plan 06 complete — ShowcaseApp wired, ThemeSwitcher on AeroSegmentedControl, visual checkpoint APPROVED (all 21 components verified)
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 10
-  completed_plans: 9
-  percent: 70
+  completed_plans: 10
+  percent: 80
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-27)
 
 ## Current Position
 
-Phase: 2 of 3 (Atomic Components) — IN PROGRESS
-Plan: 4 of 6 in phase complete (02-01 buttons, 02-02 inputs, 02-05 selection/dropdown, 02-04 range/list done)
-Status: Phase 2 underway — BTN-01..04, INP-01..06, SEL-01..05, DRP-01..02, RNG-01..02, LST-01..02 complete
-Last activity: 2026-04-28 — Phase 2 Plan 04 range/list executed (RNG-01..02, LST-01..02), 4 requirements satisfied
+Phase: 2 of 3 (Atomic Components) — COMPLETE (pending phase-level verification)
+Plan: 6 of 6 in phase complete (02-01 buttons, 02-02 inputs, 02-05 selection/dropdown, 02-04 range/list, 02-03 selection controls, 02-06 ShowcaseApp wiring done)
+Status: Phase 2 all plans executed — all 21 requirements satisfied (BTN-01..04, INP-01..06, SEL-01..05, DRP-01..02, RNG-01..02, LST-01..02), visual checkpoint APPROVED
+Last activity: 2026-04-28 — Phase 2 Plan 06 complete — ShowcaseApp wired, ThemeSwitcher on AeroSegmentedControl, visual checkpoint APPROVED (all 21 components verified)
 
 Progress: [███████░░░] 70%
 
@@ -59,6 +59,7 @@ Progress: [███████░░░] 70%
 | Phase 02-atomic-components P05 | 9 | 3 tasks | 5 files |
 | Phase 02-atomic-components P04 | 9 | 3 tasks | 6 files |
 | Phase 02-atomic-components P03 | 10 | 3 tasks | 6 files |
+| Phase 02-atomic-components P06 | ~45 | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,11 @@ Recent decisions affecting current work:
 - [Phase 02-atomic-components]: animateColorAsState is in androidx.compose.animation (not .core) in CMP 1.7.3
 - [Phase 02-atomic-components]: AeroChip uses primary.copy(0.25f) selected bg and cardBackground.copy(0.3f) unselected — direct MordredChip port
 - [Phase 02-atomic-components]: Color.Transparent allowed in AeroSegmentedControl — named constant not hex literal
+- [Phase 02-06-showcase]: M3 Button LocalMinimumInteractiveComponentSize defaults to 48dp — must set to Dp.Unspecified so hover overlay Box(matchParentSize) aligns with visual button bounds, not inflated touch target
+- [Phase 02-06-showcase]: Dropdown popups need two-layer .background() (opaque base + translucent tint) — single 0xCC alpha is insufficient for readability over glassy parent surfaces
+- [Phase 02-06-showcase]: All themes' buttonHover must be alpha-tinted whites (<=0x40 alpha) — fully opaque overlay paints over button text; Classic theme was incorrectly opaque
+- [Phase 02-06-showcase]: AeroFilePicker keeps path field fully editable; Browse button is convenience-only to populate the field via native dialog
+- [Phase 02-06-showcase]: AeroNumberSpinner scroll wheel via pointerInput PointerEventType.Scroll — works whether or not the field has keyboard focus (Mordred-style spinner pattern)
 
 ### Pending Todos
 
