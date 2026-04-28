@@ -82,7 +82,7 @@
 
 ### Navigation & Window Chrome (навигация и хромка окна)
 
-- [ ] **NAV-01**: `AeroTitleBar` — кастомная шапка окна: Aero-градиент, кнопки Minimize/Maximize/Close с hover-эффектами, draggable область
+- [x] **NAV-01**: `AeroTitleBar` — кастомная шапка окна: Aero-градиент, кнопки Minimize/Maximize/Close с hover-эффектами, draggable область
 - [ ] **NAV-02**: `AeroMenuBar` — верхнее горизонтальное меню с пунктами и выпадающими подменю
 - [ ] **NAV-03**: `AeroStatusBar` — нижняя строка состояния с текстовыми секциями и цветными индикаторами
 - [ ] **NAV-04**: `AeroBreadcrumb` — навигационная цепочка «Главная › Раздел › Страница» с кликабельными элементами
@@ -181,7 +181,7 @@ Updated: 2026-04-27 (roadmap created — 3 phases)
 | OVL-06 | Phase 3 | Complete |
 | OVL-07 | Phase 3 | Pending |
 | OVL-08 | Phase 3 | Complete |
-| NAV-01 | Phase 3 | Pending |
+| NAV-01 | Phase 3 | Complete |
 | NAV-02 | Phase 3 | Pending |
 | NAV-03 | Phase 3 | Pending |
 | NAV-04 | Phase 3 | Pending |

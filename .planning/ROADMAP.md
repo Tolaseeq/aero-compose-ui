@@ -65,7 +65,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 8 plans
 - [x] 03-01-PLAN.md — Popup infrastructure refactor + AeroScrollBar (CNT-06) + AeroScrollArea (CNT-05) + LocalScrollbarStyle wiring + Wave-0 stub tests (completed 2026-04-28)
 - [ ] 03-02-PLAN.md — Containers: AeroCard (CNT-01), AeroPanel (CNT-02), AeroDivider (CNT-03), AeroGroupBox (CNT-04)
-- [ ] 03-03-PLAN.md — AeroTitleBar (NAV-01) + showcase Main.kt undecorated window + resize handles
+- [x] 03-03-PLAN.md — AeroTitleBar (NAV-01) + showcase Main.kt undecorated window + resize handles (completed 2026-04-28)
 - [ ] 03-04-PLAN.md — Modal overlays: AeroDialog (OVL-01), AeroAlertDialog (OVL-02), AeroDrawer (OVL-08)
 - [ ] 03-05-PLAN.md — Anchored popups: AeroTooltip (OVL-03), AeroContextMenu (OVL-04), AeroPopover (OVL-07)
 - [ ] 03-06-PLAN.md — Notifications: AeroToast/AeroToastHost (OVL-05), AeroNotificationBanner (OVL-06)
@@ -80,4 +80,4 @@ Decimal phases appear between their surrounding integers in numeric order.
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete   | 2026-04-27 |
 | 2. Atomic Components | 6/6 | In Progress|  |
-| 3. Composite + Navigation | 2/8 | In Progress|  |
+| 3. Composite + Navigation | 5/8 | In Progress|  |

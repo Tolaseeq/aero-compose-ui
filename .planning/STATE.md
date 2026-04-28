@@ -2,17 +2,17 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 4 of 8 in phase complete (03-04 modal overlays — AeroDialog, AeroAlertDialog, AeroDrawer)
+current_plan: 5 of 8 in phase complete (03-03 NAV-01 AeroTitleBar + AeroResizeHandles + undecorated showcase window)
 status: completed
-stopped_at: Completed 03-04-PLAN.md (OVL-01 AeroDialog + OVL-02 AeroAlertDialog + OVL-08 AeroDrawer)
-last_updated: "2026-04-28T13:30:37Z"
-last_activity: 2026-04-28 — Phase 3 Plan 04 complete — modal overlays OVL-01/02/08 ship (OVL-01, OVL-02, OVL-08 satisfied)
+stopped_at: Completed 03-03-PLAN.md (NAV-01 AeroTitleBar + 8-zone AeroResizeHandles + showcase undecorated window)
+last_updated: "2026-04-28T16:35:00Z"
+last_activity: 2026-04-28 — Phase 3 Plan 03 complete — NAV-01 AeroTitleBar + AeroResizeHandles + showcase Window(undecorated=true, transparent=false) ship
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 18
-  completed_plans: 14
-  percent: 78
+  completed_plans: 15
+  percent: 83
 ---
 
 # Project State
@@ -27,11 +27,11 @@ See: .planning/PROJECT.md (updated 2026-04-27)
 ## Current Position
 
 Phase: 3 of 3 (Composite + Navigation) — IN PROGRESS
-Current Plan: 4 of 8 in phase complete (03-04 modal overlays — AeroDialog, AeroAlertDialog, AeroDrawer)
-Status: Phase 3 Plan 04 complete — modal overlays OVL-01/02/08 ship (AeroDialog with Win11 transparent=false rule, AeroAlertDialog with 4 kinds, AeroDrawer with closed-but-composed early-return)
-Last activity: 2026-04-28 — Phase 3 Plan 04 complete — modal overlays OVL-01/02/08 ship (OVL-01, OVL-02, OVL-08 satisfied)
+Current Plan: 5 of 8 in phase complete (03-03 NAV-01 AeroTitleBar + AeroResizeHandles + undecorated showcase window)
+Status: Phase 3 Plan 03 complete — NAV-01 AeroTitleBar (FrameWindowScope-extension chrome with WindowDraggableArea + 32dp gradient row + 3 control buttons) + AeroResizeHandles (8-zone resize overlay with native cursors) + showcase Main.kt switched to Window(undecorated=true, transparent=false). Manual smoke approved by user (drag/min/max/restore/close + all 8 resize zones with correct native cursor changes; no Win11 EXCEPTION_ACCESS_VIOLATION crash).
+Last activity: 2026-04-28 — Phase 3 Plan 03 complete — NAV-01 AeroTitleBar + AeroResizeHandles + showcase Window(undecorated=true, transparent=false) ship
 
-Progress: [████████░░] 78%
+Progress: [████████▌░] 83%
 
 ## Performance Metrics
 
@@ -65,6 +65,7 @@ Progress: [████████░░] 78%
 | Phase 03-composite-navigation P02 | 11min | 2 tasks | 8 files |
 | Phase 03-composite-navigation P06 | 25min | 2 tasks | 9 files |
 | Phase 03-composite-navigation P04 | 25min | 3 tasks | 8 files |
+| Phase 03-composite-navigation P03 | ~10min | 3 tasks (2 auto + 1 manual checkpoint) | 4 files |
 
 ## Accumulated Context
 
@@ -120,6 +121,13 @@ Recent decisions affecting current work:
 - [Phase 03-composite-navigation]: AeroDrawer uses in-window scrim (Color.Black.copy(alpha=animatedAlpha)) + animated x-offset Box, NOT a separate DialogWindow — slide animation must render inside the parent window
 - [Phase 03-composite-navigation]: AeroDrawer closed-but-composed early-return (`if (!open && offsetFraction == 1f) return`) is mandatory — prevents the transparent scrim from eating pointer input over the main UI when "closed"
 - [Phase 03-composite-navigation]: compose.materialIconsExtended dep added to :library — Outlined.Error and Outlined.HelpOutline are not in icons-core (transitive via material3); AeroAlertKind needs them
+- [Phase 03-composite-navigation]: AeroTitleBar declared as `FrameWindowScope.AeroTitleBar(...)` extension — required so it can call WindowDraggableArea; locks API to "must be invoked inside Window content lambda" which is fine because titlebar has no meaning outside a window
+- [Phase 03-composite-navigation]: AeroResizeHandles is `public` (not `internal`) — `:library` and `:showcase` are separate Gradle modules and Kotlin's per-module `internal` blocks cross-module access; revisit visibility tightening when an internal-only navigation seam appears
+- [Phase 03-composite-navigation]: 8-zone resize handlers — Top/Left edges + TL/TR/BL corners mutate BOTH windowState.size AND windowState.position (deltaApplied = oldSize - newSize, then position += deltaApplied) so the anchored opposite edge stays fixed; Bottom/Right + BR corner only mutate size
+- [Phase 03-composite-navigation]: windowState.position mutation guarded by `is WindowPosition.Absolute` cast — PlatformDefault positions are not mutable; first drag at top/left silently won't move position until OS assigns absolute, acceptable v1 behavior
+- [Phase 03-composite-navigation]: ResizeHandles.kt is a separate file from AeroTitleBar.kt — chrome (visual gradient + buttons + drag) and resize (8-zone overlay + pointerInput) are orthogonal concerns; keeps each file single-responsibility
+- [Phase 03-composite-navigation]: Theme propagation gap accepted for Plan 03-03 — AeroTitleBar always renders AeroBlue colors because theme state lives inside ShowcaseApp; Plan 03-08 will lift theme state to Main.kt to fix
+- [Phase 03-composite-navigation]: Win11 transparent=false rule now enforced at three source-of-truth points (showcase Main.kt top-level Window via Plan 03-03, AeroDialog DialogWindow via Plan 03-04, plus original Phase 1 doctrine) — future window-creating composables should follow the same grep-checkable literal pattern
 
 ### Pending Todos
 
@@ -133,6 +141,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-28T13:30:37Z
-Stopped at: Completed 03-04-PLAN.md (OVL-01 AeroDialog + OVL-02 AeroAlertDialog + OVL-08 AeroDrawer — modal overlays)
+Last session: 2026-04-28T16:35:00Z
+Stopped at: Completed 03-03-PLAN.md (NAV-01 AeroTitleBar + 8-zone AeroResizeHandles + showcase Window(undecorated=true, transparent=false))
 Resume file: None
