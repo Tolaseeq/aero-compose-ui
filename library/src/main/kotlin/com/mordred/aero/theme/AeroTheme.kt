@@ -71,7 +71,9 @@ public fun AeroTheme(
         thickness = 12.dp,
         shape = RoundedCornerShape(6.dp),
         hoverDurationMillis = 150,
-        unhoverColor = colorScheme.cardBackground,
+        // Use a tinted version of borderSelected for the resting state so the bar is
+        // clearly visible (cardBackground at low alpha looked like the Material3 default).
+        unhoverColor = colorScheme.borderSelected.copy(alpha = 0.55f),
         hoverColor = colorScheme.borderSelected
     )
 

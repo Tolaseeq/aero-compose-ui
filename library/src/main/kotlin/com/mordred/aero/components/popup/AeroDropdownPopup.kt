@@ -9,10 +9,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -109,12 +111,14 @@ public fun AeroDropdownPopup(
     // the opaque base layer eliminates that transparency while preserving the Aero tint.
     val popupBackground = colors.panelBackground
 
-    // Width modifier: if anchor width is specified, set popup to exactly that width;
-    // otherwise use widthIn(min = 120.dp) to wrap content with a sane minimum.
+    // Width modifier: if anchor width is specified, set popup to exactly that width
+    // (so dropdowns/comboboxes line up with their trigger field). Otherwise wrap to
+    // the widest item via IntrinsicSize.Max — clamped to a sane min/max so menu-bar
+    // popups don't stretch to the full window width or shrink below 120dp.
     val widthModifier = if (anchorWidth != Dp.Unspecified) {
         Modifier.widthIn(min = anchorWidth, max = anchorWidth)
     } else {
-        Modifier.widthIn(min = 120.dp)
+        Modifier.width(IntrinsicSize.Max).widthIn(min = 120.dp, max = 320.dp)
     }
 
     Popup(

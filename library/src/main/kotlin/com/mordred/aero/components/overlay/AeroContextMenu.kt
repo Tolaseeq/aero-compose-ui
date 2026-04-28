@@ -28,6 +28,8 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
@@ -57,13 +59,22 @@ import kotlin.math.roundToInt
 public fun Modifier.aeroContextMenu(items: List<AeroContextMenuItem>): Modifier = composed {
     var expanded by remember { mutableStateOf(false) }
     var cursor by remember { mutableStateOf(IntOffset.Zero) }
+    var coords by remember { mutableStateOf<LayoutCoordinates?>(null) }
+
+    val positionModifier = Modifier.onGloballyPositioned { coords = it }
 
     val pointerModifier = Modifier.onPointerEvent(PointerEventType.Press) { event ->
         if (event.buttons.isSecondaryPressed) {
             val change = event.changes.firstOrNull() ?: return@onPointerEvent
+            // Translate from local pointer coordinates to window-local coordinates so
+            // AeroCursorPositionProvider (which expects window-space) places the popup
+            // at the actual click point, not at the layout's origin.
+            val local = change.position
+            val windowOrigin = coords?.localToWindow(androidx.compose.ui.geometry.Offset.Zero)
+                ?: androidx.compose.ui.geometry.Offset.Zero
             cursor = IntOffset(
-                change.position.x.roundToInt(),
-                change.position.y.roundToInt()
+                (windowOrigin.x + local.x).roundToInt(),
+                (windowOrigin.y + local.y).roundToInt()
             )
             expanded = true
         }
@@ -83,7 +94,7 @@ public fun Modifier.aeroContextMenu(items: List<AeroContextMenuItem>): Modifier 
         }
     }
 
-    this.then(pointerModifier)
+    this.then(positionModifier).then(pointerModifier)
 }
 
 @Composable

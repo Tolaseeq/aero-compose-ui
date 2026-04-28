@@ -26,9 +26,25 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupPositionProvider
+import androidx.compose.ui.window.PopupProperties
 import com.mordred.aero.theme.glassSurface
 import kotlin.math.roundToInt
+
+/** Position provider that places a popup over the entire host window. */
+private object FullWindowPositionProvider : PopupPositionProvider {
+    override fun calculatePosition(
+        anchorBounds: IntRect,
+        windowSize: IntSize,
+        layoutDirection: LayoutDirection,
+        popupContentSize: IntSize
+    ): IntOffset = IntOffset(0, 0)
+}
 
 /** Side from which an [AeroDrawer] slides in. */
 public enum class AeroDrawerSide { Start, End }
@@ -78,42 +94,60 @@ public fun AeroDrawer(
 
     val scrimInteraction = remember { MutableInteractionSource() }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .onPreviewKeyEvent { e ->
-                if (e.type == KeyEventType.KeyDown && e.key == Key.Escape) {
-                    onDismissRequest()
-                    true
-                } else false
-            }
+    // Render in a Popup so the drawer covers the entire host window regardless of where
+    // the caller mounted it; focusable=true so the Esc-handler receives keyboard events.
+    Popup(
+        popupPositionProvider = FullWindowPositionProvider,
+        onDismissRequest = onDismissRequest,
+        properties = PopupProperties(
+            focusable = true,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = false
+        )
     ) {
-        // Scrim
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = scrimAlpha))
-                .clickable(
-                    interactionSource = scrimInteraction,
-                    indication = null,
-                    onClick = onDismissRequest
-                )
-        )
-        // Panel
-        Box(
-            modifier = Modifier
-                .align(align)
-                .offset {
-                    IntOffset(
-                        x = (signedOffset * drawerWidth.toPx()).roundToInt(),
-                        y = 0
-                    )
+                .onPreviewKeyEvent { e ->
+                    if (e.type == KeyEventType.KeyDown && e.key == Key.Escape) {
+                        onDismissRequest()
+                        true
+                    } else false
                 }
-                .width(drawerWidth)
-                .fillMaxHeight()
-                .glassSurface(cornerRadius = 0.dp)
         ) {
-            Column(content = content)
+            // Scrim — fills the popup, click dismisses.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = scrimAlpha))
+                    .clickable(
+                        interactionSource = scrimInteraction,
+                        indication = null,
+                        onClick = onDismissRequest
+                    )
+            )
+            // Panel — slides in from the chosen side; clicks pass through to its content
+            // (NOT the scrim, so callers can interact with drawer items).
+            Box(
+                modifier = Modifier
+                    .align(align)
+                    .offset {
+                        IntOffset(
+                            x = (signedOffset * drawerWidth.toPx()).roundToInt(),
+                            y = 0
+                        )
+                    }
+                    .width(drawerWidth)
+                    .fillMaxHeight()
+                    .glassSurface(cornerRadius = 0.dp)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {} // swallow scrim clicks behind the panel
+                    )
+            ) {
+                Column(content = content)
+            }
         }
     }
 }
