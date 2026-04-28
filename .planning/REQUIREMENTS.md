@@ -35,12 +35,12 @@
 
 ### Input (поля ввода)
 
-- [ ] **INP-01**: `AeroTextField` — однострочный ввод с Aero-рамкой, placeholder, анимацией фокуса; поддерживает trailing icon
-- [ ] **INP-02**: `AeroTextArea` — многострочный ввод с вертикальной прокруткой и `AeroScrollBar`
-- [ ] **INP-03**: `AeroPasswordField` — поле с маскировкой символов и кнопкой показать/скрыть
-- [ ] **INP-04**: `AeroNumberSpinner` — числовой ввод с кнопками ▲▼, параметрами min/max/step
-- [ ] **INP-05**: `AeroSearchField` — поле с иконкой лупы и кнопкой очистки ✕, которая появляется только при наличии текста
-- [ ] **INP-06**: `AeroFilePicker` — поле пути + кнопка «Обзор», открывающая нативный файловый диалог ОС
+- [x] **INP-01**: `AeroTextField` — однострочный ввод с Aero-рамкой, placeholder, анимацией фокуса; поддерживает trailing icon
+- [x] **INP-02**: `AeroTextArea` — многострочный ввод с вертикальной прокруткой и `AeroScrollBar`
+- [x] **INP-03**: `AeroPasswordField` — поле с маскировкой символов и кнопкой показать/скрыть
+- [x] **INP-04**: `AeroNumberSpinner` — числовой ввод с кнопками ▲▼, параметрами min/max/step
+- [x] **INP-05**: `AeroSearchField` — поле с иконкой лупы и кнопкой очистки ✕, которая появляется только при наличии текста
+- [x] **INP-06**: `AeroFilePicker` — поле пути + кнопка «Обзор», открывающая нативный файловый диалог ОС
 
 ### Selection (выбор значений)
 
@@ -150,12 +150,12 @@ Updated: 2026-04-27 (roadmap created — 3 phases)
 | BTN-02 | Phase 2 | Pending |
 | BTN-03 | Phase 2 | Pending |
 | BTN-04 | Phase 2 | Pending |
-| INP-01 | Phase 2 | Pending |
-| INP-02 | Phase 2 | Pending |
-| INP-03 | Phase 2 | Pending |
-| INP-04 | Phase 2 | Pending |
-| INP-05 | Phase 2 | Pending |
-| INP-06 | Phase 2 | Pending |
+| INP-01 | Phase 2 | Complete |
+| INP-02 | Phase 2 | Complete |
+| INP-03 | Phase 2 | Complete |
+| INP-04 | Phase 2 | Complete |
+| INP-05 | Phase 2 | Complete |
+| INP-06 | Phase 2 | Complete |
 | SEL-01 | Phase 2 | Pending |
 | SEL-02 | Phase 2 | Pending |
 | SEL-03 | Phase 2 | Pending |
