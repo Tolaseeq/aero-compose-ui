@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -26,6 +28,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -38,6 +45,9 @@ import com.mordred.aero.theme.AeroTheme
  * The border animates from [AeroTheme.colors.borderDefault] to [AeroTheme.colors.borderSelected]
  * over 150 ms with LinearEasing on focus. Clicking the trailing icon toggles between masked
  * and visible text.
+ *
+ * The toggle icon is a minimalist monochrome eye glyph drawn via Canvas, tinted with
+ * [AeroTheme.colors.labelText] so it adapts to any theme. No colored emoji are used.
  *
  * @param value Current password value.
  * @param onValueChange Callback invoked when text changes.
@@ -103,16 +113,93 @@ public fun AeroPasswordField(
                 Spacer(Modifier.width(4.dp))
                 Box(
                     modifier = Modifier
-                        .clickable(enabled = enabled) { visible = !visible }
-                        .padding(4.dp),
+                        .size(20.dp)
+                        .clickable(enabled = enabled) { visible = !visible },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = if (visible) "🙈" else "👁",
-                        style = AeroTheme.typography.bodyMedium
-                    )
+                    if (visible) {
+                        EyeOpenIcon(tint = colors.labelText)
+                    } else {
+                        EyeClosedIcon(tint = colors.labelText)
+                    }
                 }
             }
         }
     )
+}
+
+/**
+ * Minimalist open-eye icon: almond-shaped outline + small filled iris circle.
+ * Monochrome, tinted via [tint].
+ */
+@Composable
+private fun EyeOpenIcon(tint: androidx.compose.ui.graphics.Color) {
+    Canvas(modifier = Modifier.size(14.dp)) {
+        val w = size.width
+        val h = size.height
+        val strokeWidth = 1.4.dp.toPx()
+        val cx = w / 2f
+        val cy = h / 2f
+
+        // Almond / lens shape drawn as two arcs forming an eye outline
+        val path = Path().apply {
+            moveTo(1.dp.toPx(), cy)
+            cubicTo(
+                cx - 1.dp.toPx(), cy - 4.dp.toPx(),
+                cx + 1.dp.toPx(), cy - 4.dp.toPx(),
+                w - 1.dp.toPx(), cy
+            )
+            cubicTo(
+                cx + 1.dp.toPx(), cy + 4.dp.toPx(),
+                cx - 1.dp.toPx(), cy + 4.dp.toPx(),
+                1.dp.toPx(), cy
+            )
+            close()
+        }
+        drawPath(path, color = tint, style = Stroke(width = strokeWidth, cap = StrokeCap.Round))
+
+        // Iris dot
+        drawCircle(color = tint, radius = 1.8.dp.toPx(), center = Offset(cx, cy))
+    }
+}
+
+/**
+ * Minimalist closed-eye (masked) icon: almond outline with a diagonal slash across it.
+ * Monochrome, tinted via [tint].
+ */
+@Composable
+private fun EyeClosedIcon(tint: androidx.compose.ui.graphics.Color) {
+    Canvas(modifier = Modifier.size(14.dp)) {
+        val w = size.width
+        val h = size.height
+        val strokeWidth = 1.4.dp.toPx()
+        val cx = w / 2f
+        val cy = h / 2f
+
+        // Almond outline (same as open eye)
+        val path = Path().apply {
+            moveTo(1.dp.toPx(), cy)
+            cubicTo(
+                cx - 1.dp.toPx(), cy - 4.dp.toPx(),
+                cx + 1.dp.toPx(), cy - 4.dp.toPx(),
+                w - 1.dp.toPx(), cy
+            )
+            cubicTo(
+                cx + 1.dp.toPx(), cy + 4.dp.toPx(),
+                cx - 1.dp.toPx(), cy + 4.dp.toPx(),
+                1.dp.toPx(), cy
+            )
+            close()
+        }
+        drawPath(path, color = tint, style = Stroke(width = strokeWidth, cap = StrokeCap.Round))
+
+        // Diagonal slash to indicate hidden/masked
+        drawLine(
+            color = tint,
+            start = Offset(3.dp.toPx(), 3.dp.toPx()),
+            end = Offset(w - 3.dp.toPx(), h - 3.dp.toPx()),
+            strokeWidth = strokeWidth,
+            cap = StrokeCap.Round
+        )
+    }
 }
