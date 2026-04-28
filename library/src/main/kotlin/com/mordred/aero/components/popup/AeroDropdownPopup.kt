@@ -9,13 +9,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -66,7 +67,10 @@ public fun AeroDropdownItem(
             .height(28.dp)
             .background(bg)
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp),
+            // 8.dp horizontal padding matches the AeroDropdown trigger field's internal
+            // padding so popup-text and trigger-text align vertically (avoiding the
+            // 4.dp visual right-shift that was reported in UAT).
+            .padding(horizontal = 8.dp),
         contentAlignment = Alignment.CenterStart
     ) {
         Text(text, color = colors.onSurface, style = AeroTheme.typography.bodyLarge)
@@ -111,15 +115,13 @@ public fun AeroDropdownPopup(
     // the opaque base layer eliminates that transparency while preserving the Aero tint.
     val popupBackground = colors.panelBackground
 
-    // Width modifier: if anchor width is specified, set popup to exactly that width
-    // (so dropdowns/comboboxes line up with their trigger field). Otherwise wrap to
-    // the widest item via IntrinsicSize.Max — clamped to a sane min/max so menu-bar
-    // popups don't stretch to the full window width or shrink below 120dp.
-    val widthModifier = if (anchorWidth != Dp.Unspecified) {
-        Modifier.widthIn(min = anchorWidth, max = anchorWidth)
-    } else {
-        Modifier.width(IntrinsicSize.Max).widthIn(min = 120.dp, max = 320.dp)
-    }
+    val visualModifier = Modifier
+        .shadow(elevation = 8.dp, shape = shape)
+        .clip(shape)
+        .background(colors.background, shape)
+        .background(popupBackground, shape)
+        .border(1.dp, colors.glassBorder, shape)
+        .onPreviewKeyEvent(onKeyEvent)
 
     Popup(
         popupPositionProvider = remember(side) { AeroPopupPositionProvider(side = side) },
@@ -130,22 +132,46 @@ public fun AeroDropdownPopup(
             dismissOnClickOutside = true
         )
     ) {
-        Box(
-            widthModifier
-                .shadow(elevation = 8.dp, shape = shape)
-                .clip(shape)
-                .background(colors.background, shape)
-                .background(popupBackground, shape)
-                .border(1.dp, colors.glassBorder, shape)
-                .onPreviewKeyEvent(onKeyEvent)
-        ) {
-            // Retrofit (CONTEXT.md): wrap scrollable content in AeroScrollArea so menu visibly
-            // shows an Aero scrollbar when items overflow. Inner Column preserves the existing
-            // `padding(vertical = 4.dp)` so visual layout is unchanged.
-            AeroScrollArea(
-                modifier = Modifier.heightIn(max = 320.dp)
+        if (anchorWidth != Dp.Unspecified) {
+            // Anchor-aligned mode (AeroDropdown / AeroComboBox): popup width is locked
+            // to the trigger field's width so they line up visually.
+            Box(
+                Modifier.widthIn(min = anchorWidth, max = anchorWidth).then(visualModifier)
             ) {
-                Column(modifier = Modifier.padding(vertical = 4.dp), content = content)
+                AeroScrollArea(modifier = Modifier.heightIn(max = 320.dp)) {
+                    Column(modifier = Modifier.padding(vertical = 4.dp), content = content)
+                }
+            }
+        } else {
+            // Wrap-to-widest mode (AeroMenuBar etc.): SubcomposeLayout measures the
+            // content twice — first unconstrained to find the widest item, then with
+            // the resulting width fixed so all items render at that width and the
+            // popup background hugs the content (no trailing whitespace, no
+            // stretch-to-window-width).
+            val minPx = with(LocalDensity.current) { 120.dp.roundToPx() }
+            val maxPx = with(LocalDensity.current) { 320.dp.roundToPx() }
+            SubcomposeLayout(modifier = visualModifier) { constraints ->
+                val measureSlot = subcompose("measure") {
+                    AeroScrollArea(modifier = Modifier.heightIn(max = 320.dp)) {
+                        Column(modifier = Modifier.padding(vertical = 4.dp), content = content)
+                    }
+                }
+                val measureChild = measureSlot.first().measure(
+                    Constraints(maxHeight = constraints.maxHeight)
+                )
+                val targetWidth = measureChild.width.coerceIn(minPx, maxPx)
+
+                val realSlot = subcompose("real") {
+                    AeroScrollArea(modifier = Modifier.heightIn(max = 320.dp)) {
+                        Column(modifier = Modifier.padding(vertical = 4.dp), content = content)
+                    }
+                }
+                val realChild = realSlot.first().measure(
+                    constraints.copy(minWidth = targetWidth, maxWidth = targetWidth)
+                )
+                layout(targetWidth, realChild.height) {
+                    realChild.place(0, 0)
+                }
             }
         }
     }

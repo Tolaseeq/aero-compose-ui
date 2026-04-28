@@ -4,6 +4,7 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -38,15 +39,17 @@ public fun AeroScrollArea(
                 .verticalScroll(state),
             content = content
         )
-        // matchParentSize so the scrollbar tracks the Column's measured height
-        // without forcing the Box to claim heightIn's maximum. fillMaxHeight here
-        // would balloon the Box to the cap (e.g. 320.dp in dropdown popups) even
-        // when content fits in less.
-        AeroScrollBar(
-            scrollState = state,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .matchParentSize()
-        )
+        // Only render the scrollbar when the content actually overflows. With it always
+        // visible, the bar's fillMaxHeight forced the surrounding Box to claim the heightIn
+        // cap (e.g. 320.dp for dropdown popups), leaving empty space below short content.
+        // Reading state.maxValue makes this composition observe scroll-state changes.
+        if (state.maxValue > 0) {
+            AeroScrollBar(
+                scrollState = state,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .fillMaxHeight()
+            )
+        }
     }
 }

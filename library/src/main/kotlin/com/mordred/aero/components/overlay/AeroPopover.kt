@@ -1,16 +1,21 @@
 package com.mordred.aero.components.overlay
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.mordred.aero.components.popup.AeroPopupPositionProvider
 import com.mordred.aero.components.popup.AeroPopupSide
-import com.mordred.aero.theme.glassSurface
+import com.mordred.aero.theme.AeroTheme
 
 /**
  * OVL-07: Aero popover. Displays arbitrary content next to an anchor element using
@@ -50,9 +55,17 @@ public fun AeroPopover(
             dismissOnClickOutside = true
         )
     ) {
+        // Paint a fully opaque theme background under the panel tint so popover text
+        // never bleeds into content beneath it (panelBackground is 80% alpha).
+        val colors = AeroTheme.colors
+        val shape = RoundedCornerShape(6.dp)
         Box(
             modifier = modifier
-                .glassSurface(cornerRadius = 6.dp)
+                .shadow(elevation = 6.dp, shape = shape)
+                .clip(shape)
+                .background(colors.background, shape)
+                .background(colors.panelBackground, shape)
+                .border(1.dp, colors.glassBorder, shape)
                 .padding(12.dp)
         ) {
             content()

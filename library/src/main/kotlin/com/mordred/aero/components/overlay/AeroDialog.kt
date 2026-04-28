@@ -2,7 +2,6 @@ package com.mordred.aero.components.overlay
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,9 +12,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.window.WindowDraggableArea
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -24,37 +28,35 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.DialogWindow
-import androidx.compose.ui.window.DialogWindowScope
-import androidx.compose.ui.window.WindowPosition
-import androidx.compose.ui.window.rememberDialogState
+import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.rememberWindowState
 import com.mordred.aero.theme.AeroTheme
-import com.mordred.aero.theme.glassSurface
 
 /**
- * OVL-01: Aero modal dialog backed by an OS-level [DialogWindow].
+ * OVL-01: Aero modal dialog backed by a [Window] (not DialogWindow) so we can mount a
+ * full Aero titlebar with drag + minimize + close. Three slots: [title], [content],
+ * [buttons]. The [buttons] slot is a `RowScope` lambda — callers typically place 1-3
+ * AeroButton/AeroOutlinedButton children, right-aligned via `Arrangement.End`.
  *
- * Three slots: [title], [content], [buttons]. The [buttons] slot is a `RowScope`
- * lambda — callers typically place 1-3 [com.mordred.aero.components.buttons.AeroButton]
- * / [com.mordred.aero.components.buttons.AeroOutlinedButton] children. The buttons row
- * is right-aligned via `Arrangement.End`.
+ * **Window choice:** `Window` (instead of `DialogWindow`) gives us `FrameWindowScope`,
+ * which is required for `WindowDraggableArea` (smooth, native window drag with no
+ * recomposition cost) and `WindowState.isMinimized` (the user-requested minimize button).
+ * The trade-off: `Window` is non-modal at the OS level. For showcase purposes that's
+ * acceptable; callers needing OS modality can wrap the trigger in their own state guard.
  *
- * **Win11 rule:** the underlying DialogWindow uses `undecorated = true` ONLY.
- * `transparent = false` is mandatory to avoid EXCEPTION_ACCESS_VIOLATION
- * (CMP-3757 / GH#3171). The visual glass containment comes from
- * `Modifier.glassSurface` on the inner Box, NOT from window transparency.
+ * **Win11 rule:** the underlying Window uses `undecorated = true`, `transparent = false`
+ * to avoid `EXCEPTION_ACCESS_VIOLATION` (CMP-3757 / GH#3171).
  *
  * **Esc key:** dismissed via `onPreviewKeyEvent`.
  *
- * @param onDismissRequest invoked when the user dismisses (Esc, scrim, system close).
- * @param title title slot — rendered at the top of the dialog.
+ * @param onDismissRequest invoked when the user dismisses (Esc, close button, system close).
+ * @param title title slot — rendered at the top of the dialog content area.
  * @param content body slot — rendered between title and buttons.
  * @param buttons buttons RowScope slot — right-aligned by `Arrangement.End`.
- * @param dialogWidth dialog window width (default 480.dp).
- * @param dialogHeight dialog window height (default 320.dp).
+ * @param dialogWidth window width (default 420.dp). Pass smaller values for compact alerts.
+ * @param dialogHeight window height (default 220.dp — fits a single-line message + buttons).
  */
 @Composable
 public fun AeroDialog(
@@ -62,17 +64,21 @@ public fun AeroDialog(
     title: @Composable () -> Unit,
     content: @Composable () -> Unit,
     buttons: @Composable RowScope.() -> Unit = {},
-    dialogWidth: Dp = 480.dp,
-    dialogHeight: Dp = 320.dp
+    dialogWidth: Dp = 420.dp,
+    dialogHeight: Dp = 220.dp
 ) {
-    val dialogState = rememberDialogState(width = dialogWidth, height = dialogHeight)
-    DialogWindow(
+    val windowState = rememberWindowState(width = dialogWidth, height = dialogHeight)
+    var isMinimized by remember { mutableStateOf(false) }
+    windowState.isMinimized = isMinimized
+
+    Window(
         onCloseRequest = onDismissRequest,
-        state = dialogState,
-        // Win11 rule — see KDoc:
+        state = windowState,
+        // Win11 rule — see KDoc.
         undecorated = true,
         transparent = false,
         resizable = false,
+        title = "AeroDialog",
         onPreviewKeyEvent = { keyEvent ->
             if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.Escape) {
                 onDismissRequest()
@@ -82,7 +88,7 @@ public fun AeroDialog(
     ) {
         val colors = AeroTheme.colors
         // Outer Box paints a fully opaque theme background to defeat the OS-default
-        // white window beneath, then overlays the glassSurface highlight.
+        // white window beneath, then overlays the panel-tint gradient.
         Box(
             Modifier
                 .fillMaxSize()
@@ -95,27 +101,11 @@ public fun AeroDialog(
                         )
                     )
                 )
-                .glassSurface(cornerRadius = 0.dp)
-                .onPreviewKeyEvent { keyEvent ->
-                    if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.Escape) {
-                        onDismissRequest()
-                        true
-                    } else false
-                }
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 AeroDialogTitleBar(
-                    dialogScope = this@DialogWindow,
-                    onCloseRequest = onDismissRequest,
-                    onDrag = { dx, dy ->
-                        val current = dialogState.position
-                        if (current is WindowPosition.Absolute) {
-                            dialogState.position = WindowPosition.Absolute(
-                                x = current.x + dx,
-                                y = current.y + dy
-                            )
-                        }
-                    }
+                    onMinimizeRequest = { isMinimized = true },
+                    onCloseRequest = onDismissRequest
                 )
                 Column(
                     modifier = Modifier
@@ -126,7 +116,7 @@ public fun AeroDialog(
                     title()
                     Box(Modifier.weight(1f).fillMaxWidth()) { content() }
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().wrapContentHeight(),
                         horizontalArrangement = Arrangement.End,
                         content = buttons
                     )
@@ -137,36 +127,31 @@ public fun AeroDialog(
 }
 
 /**
- * Custom titlebar for AeroDialog — drag-to-move via pointerInput (DialogWindowScope
- * lacks the FrameWindowScope.WindowDraggableArea extension, so we update
- * dialogState.position manually) plus a close button. Min/Maximize are intentionally
- * omitted: dialogs are modal fixed-size by design.
+ * Aero-styled titlebar for AeroDialog. Drag area uses [WindowDraggableArea] (native AWT
+ * drag — no per-pixel recomposition lag), plus minimize and close buttons. Maximize is
+ * deliberately omitted because dialogs are fixed-size.
  */
 @Composable
-private fun AeroDialogTitleBar(
-    dialogScope: DialogWindowScope,
-    onCloseRequest: () -> Unit,
-    onDrag: (dx: Dp, dy: Dp) -> Unit
+private fun androidx.compose.ui.window.FrameWindowScope.AeroDialogTitleBar(
+    onMinimizeRequest: () -> Unit,
+    onCloseRequest: () -> Unit
 ) {
     val colors = AeroTheme.colors
-    val density = androidx.compose.ui.platform.LocalDensity.current
     Row(
         modifier = Modifier.fillMaxWidth().height(28.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        WindowDraggableArea(modifier = Modifier.weight(1f).fillMaxSize()) {
+            Box(modifier = Modifier.fillMaxSize())
+        }
         Box(
             modifier = Modifier
-                .weight(1f)
-                .fillMaxSize()
-                .pointerInput(Unit) {
-                    detectDragGestures { change, drag ->
-                        change.consume()
-                        with(density) {
-                            onDrag(drag.x.toDp(), drag.y.toDp())
-                        }
-                    }
-                }
-        )
+                .size(width = 36.dp, height = 28.dp)
+                .clickable(onClick = onMinimizeRequest),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("─", color = colors.onSurface)
+        }
         Box(
             modifier = Modifier
                 .size(width = 36.dp, height = 28.dp)
@@ -176,5 +161,4 @@ private fun AeroDialogTitleBar(
             Text("✕", color = colors.onSurface)
         }
     }
-    @Suppress("UNUSED_EXPRESSION") dialogScope // kept for future scope-bound enhancements
 }

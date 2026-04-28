@@ -69,10 +69,9 @@ public fun AeroTheme(
     val scrollbarStyle = ScrollbarStyle(
         minimalHeight = 16.dp,
         thickness = 12.dp,
-        shape = RoundedCornerShape(6.dp),
+        // Sharper corners (2.dp) match Aero buttons; the 6.dp rounded look read as Material3.
+        shape = RoundedCornerShape(2.dp),
         hoverDurationMillis = 150,
-        // Use a tinted version of borderSelected for the resting state so the bar is
-        // clearly visible (cardBackground at low alpha looked like the Material3 default).
         unhoverColor = colorScheme.borderSelected.copy(alpha = 0.55f),
         hoverColor = colorScheme.borderSelected
     )
