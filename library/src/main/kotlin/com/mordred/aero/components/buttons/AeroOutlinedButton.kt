@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -74,31 +76,33 @@ public fun AeroOutlinedButton(
             .height(height)
             .graphicsLayer { scaleX = scale; scaleY = scale }
     ) {
-        OutlinedButton(
-            onClick = onClick,
-            enabled = enabled,
-            modifier = Modifier
-                .height(height)
-                .drawWithContent {
-                    drawContent()
-                    if (hovered && enabled) {
-                        drawRect(buttonHoverColor)
-                    }
-                },
-            shape = RoundedCornerShape(4.dp),
-            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-            border = BorderStroke(width = borderWidth, color = borderColor),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = colors.onSurface,
-                disabledContentColor = colors.onSurface.copy(alpha = 0.4f)
-            ),
-            interactionSource = interactionSource
-        ) {
-            Text(
-                text = text,
-                style = AeroTheme.typography.bodyLarge,
-                fontSize = 14.sp
-            )
+        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides Dp.Unspecified) {
+            OutlinedButton(
+                onClick = onClick,
+                enabled = enabled,
+                modifier = Modifier
+                    .height(height)
+                    .drawWithContent {
+                        drawContent()
+                        if (hovered && enabled) {
+                            drawRect(buttonHoverColor)
+                        }
+                    },
+                shape = RoundedCornerShape(4.dp),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                border = BorderStroke(width = borderWidth, color = borderColor),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = colors.onSurface,
+                    disabledContentColor = colors.onSurface.copy(alpha = 0.4f)
+                ),
+                interactionSource = interactionSource
+            ) {
+                Text(
+                    text = text,
+                    style = AeroTheme.typography.bodyLarge,
+                    fontSize = 14.sp
+                )
+            }
         }
     }
 }

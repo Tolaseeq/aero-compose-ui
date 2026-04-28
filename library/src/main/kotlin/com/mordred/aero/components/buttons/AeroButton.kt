@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -74,32 +76,34 @@ public fun AeroButton(
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .then(focusModifier)
     ) {
-        Button(
-            onClick = onClick,
-            enabled = enabled,
-            modifier = Modifier
-                .height(height)
-                .drawWithContent {
-                    drawContent()
-                    if (hovered && enabled) {
-                        drawRect(buttonHoverColor)
-                    }
-                },
-            shape = RoundedCornerShape(4.dp),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = colors.primary.copy(alpha = 0.8f),
-                contentColor = colors.onPrimary,
-                disabledContainerColor = colors.primary.copy(alpha = 0.4f),
-                disabledContentColor = colors.onPrimary.copy(alpha = 0.4f)
-            ),
-            interactionSource = interactionSource
-        ) {
-            Text(
-                text = text,
-                style = AeroTheme.typography.bodyLarge,
-                fontSize = 14.sp
-            )
+        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides Dp.Unspecified) {
+            Button(
+                onClick = onClick,
+                enabled = enabled,
+                modifier = Modifier
+                    .height(height)
+                    .drawWithContent {
+                        drawContent()
+                        if (hovered && enabled) {
+                            drawRect(buttonHoverColor)
+                        }
+                    },
+                shape = RoundedCornerShape(4.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colors.primary.copy(alpha = 0.8f),
+                    contentColor = colors.onPrimary,
+                    disabledContainerColor = colors.primary.copy(alpha = 0.4f),
+                    disabledContentColor = colors.onPrimary.copy(alpha = 0.4f)
+                ),
+                interactionSource = interactionSource
+            ) {
+                Text(
+                    text = text,
+                    style = AeroTheme.typography.bodyLarge,
+                    fontSize = 14.sp
+                )
+            }
         }
     }
 }
