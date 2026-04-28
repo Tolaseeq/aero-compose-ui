@@ -2,17 +2,17 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 2 of 8 in phase complete (03-02 containers CNT-01..04 — AeroCard, AeroPanel, AeroDivider, AeroGroupBox)
+current_plan: 4 of 8 in phase complete (03-04 modal overlays — AeroDialog, AeroAlertDialog, AeroDrawer)
 status: completed
-stopped_at: Completed 03-06-PLAN.md (OVL-05 AeroToast + OVL-06 AeroNotificationBanner)
-last_updated: "2026-04-28T13:33:00.181Z"
-last_activity: 2026-04-28 — Phase 3 Plan 02 complete — containers CNT-01..04 ship (CNT-01, CNT-02, CNT-03, CNT-04 satisfied)
+stopped_at: Completed 03-04-PLAN.md (OVL-01 AeroDialog + OVL-02 AeroAlertDialog + OVL-08 AeroDrawer)
+last_updated: "2026-04-28T13:30:37Z"
+last_activity: 2026-04-28 — Phase 3 Plan 04 complete — modal overlays OVL-01/02/08 ship (OVL-01, OVL-02, OVL-08 satisfied)
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 18
   completed_plans: 14
-  percent: 67
+  percent: 78
 ---
 
 # Project State
@@ -27,11 +27,11 @@ See: .planning/PROJECT.md (updated 2026-04-27)
 ## Current Position
 
 Phase: 3 of 3 (Composite + Navigation) — IN PROGRESS
-Current Plan: 2 of 8 in phase complete (03-02 containers CNT-01..04 — AeroCard, AeroPanel, AeroDivider, AeroGroupBox)
-Status: Phase 3 Plan 02 complete — full containers package (CNT-01..06) ships; AeroCard/AeroPanel/AeroDivider/AeroGroupBox added as thin wrappers over glass modifiers
-Last activity: 2026-04-28 — Phase 3 Plan 02 complete — containers CNT-01..04 ship (CNT-01, CNT-02, CNT-03, CNT-04 satisfied)
+Current Plan: 4 of 8 in phase complete (03-04 modal overlays — AeroDialog, AeroAlertDialog, AeroDrawer)
+Status: Phase 3 Plan 04 complete — modal overlays OVL-01/02/08 ship (AeroDialog with Win11 transparent=false rule, AeroAlertDialog with 4 kinds, AeroDrawer with closed-but-composed early-return)
+Last activity: 2026-04-28 — Phase 3 Plan 04 complete — modal overlays OVL-01/02/08 ship (OVL-01, OVL-02, OVL-08 satisfied)
 
-Progress: [███████░░░] 67%
+Progress: [████████░░] 78%
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Progress: [███████░░░] 67%
 | Phase 03-composite-navigation P01 | 7m | 4 tasks | 16 files |
 | Phase 03-composite-navigation P02 | 11min | 2 tasks | 8 files |
 | Phase 03-composite-navigation P06 | 25min | 2 tasks | 9 files |
+| Phase 03-composite-navigation P04 | 25min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -113,6 +114,12 @@ Recent decisions affecting current work:
 - [Phase 03-composite-navigation]: AeroToastHostState uses suspendCancellableCoroutine + onDismissed callback — caller awaits AeroToastResult; stack overflow evicts oldest (FIFO) at MAX_STACK_SIZE=5
 - [Phase 03-composite-navigation]: Per-toast LaunchedEffect(data.id) inside key(data.id) — each toast carries its own dismiss timer that survives stack reorders without restarting
 - [Phase 03-composite-navigation]: AeroBannerKind icon mapping uses Icons.Outlined (CheckCircle for Success); banner uses 1dp accent border at 0.6 alpha over glassPanel
+- [Phase 03-composite-navigation]: AeroDialog enforces Win11 rule (undecorated=true, transparent=false) literally so source can be grep-checked; glass containment lives in inner Box via Modifier.glassSurface, NOT via window transparency
+- [Phase 03-composite-navigation]: AeroAlertDialog delegates to AeroDialog (single Win11 rule source-of-truth); kind-keyed buttons mean Question gets OK+Cancel, others get OK only
+- [Phase 03-composite-navigation]: AeroAlertKind enum cannot return theme tokens (Color companion sentinels need @Composable scope) — `accentFor` @Composable helper resolves primary/error/warning at composition time
+- [Phase 03-composite-navigation]: AeroDrawer uses in-window scrim (Color.Black.copy(alpha=animatedAlpha)) + animated x-offset Box, NOT a separate DialogWindow — slide animation must render inside the parent window
+- [Phase 03-composite-navigation]: AeroDrawer closed-but-composed early-return (`if (!open && offsetFraction == 1f) return`) is mandatory — prevents the transparent scrim from eating pointer input over the main UI when "closed"
+- [Phase 03-composite-navigation]: compose.materialIconsExtended dep added to :library — Outlined.Error and Outlined.HelpOutline are not in icons-core (transitive via material3); AeroAlertKind needs them
 
 ### Pending Todos
 
@@ -126,6 +133,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-28T13:32:53.374Z
-Stopped at: Completed 03-06-PLAN.md (OVL-05 AeroToast + OVL-06 AeroNotificationBanner)
+Last session: 2026-04-28T13:30:37Z
+Stopped at: Completed 03-04-PLAN.md (OVL-01 AeroDialog + OVL-02 AeroAlertDialog + OVL-08 AeroDrawer — modal overlays)
 Resume file: None
