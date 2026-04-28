@@ -70,7 +70,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] 03-05-PLAN.md — Anchored popups: AeroTooltip (OVL-03), AeroContextMenu (OVL-04), AeroPopover (OVL-07) (completed 2026-04-28)
 - [x] 03-06-PLAN.md — Notifications: AeroToast/AeroToastHost (OVL-05), AeroNotificationBanner (OVL-06) (completed 2026-04-28)
 - [x] 03-07-PLAN.md — Remaining navigation: AeroMenuBar (NAV-02), AeroStatusBar (NAV-03), AeroBreadcrumb (NAV-04), AeroTabBar (NAV-05) (completed 2026-04-28)
-- [ ] 03-08-PLAN.md — ShowcaseApp wiring: 3 new sections + AeroToastHost mount + theme hoisting + final visual checkpoint
+- [x] 03-08-PLAN.md — ShowcaseApp wiring: 3 new sections + AeroToastHost mount + theme hoisting + final visual checkpoint (completed 2026-04-28)
 
 ## Progress
 
@@ -80,4 +80,4 @@ Decimal phases appear between their surrounding integers in numeric order.
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete   | 2026-04-27 |
 | 2. Atomic Components | 6/6 | Complete   | 2026-04-28 |
-| 3. Composite + Navigation | 7/8 | In Progress|  |
+| 3. Composite + Navigation | 8/8 | In Progress|  |
