@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 02-atomic-components-04-PLAN.md
-last_updated: "2026-04-28T08:01:22Z"
+stopped_at: Completed 02-atomic-components-03-PLAN.md
+last_updated: "2026-04-28T08:03:41.859Z"
 last_activity: 2026-04-28 — Phase 2 Plan 04 range/list executed (RNG-01..02, LST-01..02), 4 requirements satisfied
 progress:
   total_phases: 3
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-27)
 ## Current Position
 
 Phase: 2 of 3 (Atomic Components) — IN PROGRESS
-Plan: 1 of 6 in phase complete (02-01 buttons done)
-Status: Phase 2 underway — BTN-01..04 complete, next: 02-02 input fields
-Last activity: 2026-04-28 — Phase 2 Plan 01 buttons executed (BTN-01..04), 4 requirements satisfied
+Plan: 4 of 6 in phase complete (02-01 buttons, 02-02 inputs, 02-05 selection/dropdown, 02-04 range/list done)
+Status: Phase 2 underway — BTN-01..04, INP-01..06, SEL-01..05, DRP-01..02, RNG-01..02, LST-01..02 complete
+Last activity: 2026-04-28 — Phase 2 Plan 04 range/list executed (RNG-01..02, LST-01..02), 4 requirements satisfied
 
-Progress: [██████░░░░] 60%
+Progress: [███████░░░] 70%
 
 ## Performance Metrics
 
@@ -57,6 +57,8 @@ Progress: [██████░░░░] 60%
 | Phase 02-atomic-components P01 | 8 | 3 tasks | 6 files |
 | Phase 02-atomic-components P02 | 7 | 3 tasks | 7 files |
 | Phase 02-atomic-components P05 | 9 | 3 tasks | 5 files |
+| Phase 02-atomic-components P04 | 9 | 3 tasks | 6 files |
+| Phase 02-atomic-components P03 | 10 | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -87,6 +89,11 @@ Recent decisions affecting current work:
 - [Phase 02-01-buttons]: hover overlay via drawWithContent inside Button content Box (not outer wrapper) — avoids M3 Button shape clipping issues
 - [Phase 02-atomic-components]: AeroComboBox popup uses PopupProperties(focusable=false) to preserve text field keyboard focus; keyboard nav inside popup not supported in v1
 - [Phase 02-atomic-components]: AeroPopupPositionProvider is internal (same module) — Phase 3 AeroPopover/AeroContextMenu/AeroMenuBar can reuse it directly without duplication
+- [Phase 02-04-range/list]: Color.Unspecified sentinel for AeroBadge defaults — AeroTheme.colors not accessible as Kotlin default arg outside Composable context
+- [Phase 02-04-range/list]: AeroSlider tooltip centred above slider (not tracking thumb x) — Phase 3 KDoc enhancement documented
+- [Phase 02-atomic-components]: animateColorAsState is in androidx.compose.animation (not .core) in CMP 1.7.3
+- [Phase 02-atomic-components]: AeroChip uses primary.copy(0.25f) selected bg and cardBackground.copy(0.3f) unselected — direct MordredChip port
+- [Phase 02-atomic-components]: Color.Transparent allowed in AeroSegmentedControl — named constant not hex literal
 
 ### Pending Todos
 
@@ -100,6 +107,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-28T08:02:25.096Z
-Stopped at: Completed 02-atomic-components-05-PLAN.md
+Last session: 2026-04-28T08:03:41.855Z
+Stopped at: Completed 02-atomic-components-03-PLAN.md
 Resume file: None

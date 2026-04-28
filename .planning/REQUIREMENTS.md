@@ -44,11 +44,11 @@
 
 ### Selection (выбор значений)
 
-- [ ] **SEL-01**: `AeroCheckbox` — чекбокс в Aero-стиле с поддержкой tri-state (checked / unchecked / indeterminate)
-- [ ] **SEL-02**: `AeroRadioButton` и `AeroRadioGroup` — группа взаимоисключающих радиокнопок
-- [ ] **SEL-03**: `AeroSwitch` — тумблер вкл/выкл с анимацией перемещения ручки
-- [ ] **SEL-04**: `AeroChip` — фильтр-чип с выбранным и невыбранным состоянием
-- [ ] **SEL-05**: `AeroSegmentedControl` — горизонтальная группа кнопок-переключателей, ровно одна активна в момент времени
+- [x] **SEL-01**: `AeroCheckbox` — чекбокс в Aero-стиле с поддержкой tri-state (checked / unchecked / indeterminate)
+- [x] **SEL-02**: `AeroRadioButton` и `AeroRadioGroup` — группа взаимоисключающих радиокнопок
+- [x] **SEL-03**: `AeroSwitch` — тумблер вкл/выкл с анимацией перемещения ручки
+- [x] **SEL-04**: `AeroChip` — фильтр-чип с выбранным и невыбранным состоянием
+- [x] **SEL-05**: `AeroSegmentedControl` — горизонтальная группа кнопок-переключателей, ровно одна активна в момент времени
 
 ### Dropdown (выпадающие списки)
 
@@ -57,8 +57,8 @@
 
 ### Range & Progress (диапазоны и прогресс)
 
-- [ ] **RNG-01**: `AeroSlider` — ползунок с одной ручкой, Aero-трек, tooltip со значением при перетаскивании
-- [ ] **RNG-02**: `AeroProgressBar` — детерминированный с процентом и индетерминированный (бегущий блик)
+- [x] **RNG-01**: `AeroSlider` — ползунок с одной ручкой, Aero-трек, tooltip со значением при перетаскивании
+- [x] **RNG-02**: `AeroProgressBar` — детерминированный с процентом и индетерминированный (бегущий блик)
 
 ### Containers (контейнеры)
 
@@ -90,8 +90,8 @@
 
 ### Lists & Data Display (списки и данные)
 
-- [ ] **LST-01**: `AeroListItem` — стилизованный элемент списка с hover-состоянием, поддержкой leading/trailing содержимого
-- [ ] **LST-02**: `AeroBadge` / `AeroTag` — компактный ярлык-метка для статусов и числовых счётчиков
+- [x] **LST-01**: `AeroListItem` — стилизованный элемент списка с hover-состоянием, поддержкой leading/trailing содержимого
+- [x] **LST-02**: `AeroBadge` / `AeroTag` — компактный ярлык-метка для статусов и числовых счётчиков
 
 ## v2 Requirements
 
@@ -156,17 +156,17 @@ Updated: 2026-04-27 (roadmap created — 3 phases)
 | INP-04 | Phase 2 | Complete |
 | INP-05 | Phase 2 | Complete |
 | INP-06 | Phase 2 | Complete |
-| SEL-01 | Phase 2 | Pending |
-| SEL-02 | Phase 2 | Pending |
-| SEL-03 | Phase 2 | Pending |
-| SEL-04 | Phase 2 | Pending |
-| SEL-05 | Phase 2 | Pending |
+| SEL-01 | Phase 2 | Complete |
+| SEL-02 | Phase 2 | Complete |
+| SEL-03 | Phase 2 | Complete |
+| SEL-04 | Phase 2 | Complete |
+| SEL-05 | Phase 2 | Complete |
 | DRP-01 | Phase 2 | Complete |
 | DRP-02 | Phase 2 | Complete |
-| RNG-01 | Phase 2 | Pending |
-| RNG-02 | Phase 2 | Pending |
-| LST-01 | Phase 2 | Pending |
-| LST-02 | Phase 2 | Pending |
+| RNG-01 | Phase 2 | Complete |
+| RNG-02 | Phase 2 | Complete |
+| LST-01 | Phase 2 | Complete |
+| LST-02 | Phase 2 | Complete |
 | CNT-01 | Phase 3 | Pending |
 | CNT-02 | Phase 3 | Pending |
 | CNT-03 | Phase 3 | Pending |
