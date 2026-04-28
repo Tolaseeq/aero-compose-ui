@@ -30,16 +30,22 @@ public class AeroPopupPositionProvider(
         layoutDirection: LayoutDirection,
         popupContentSize: IntSize
     ): IntOffset {
-        // First measurement quirk: Compose Popup invokes calculatePosition with
-        // popupContentSize equal to (or close to) windowSize before the content has
-        // actually measured. Letting the auto-flip branch run with a window-sized
-        // popup spuriously detects "overflow" and flips the popup to the opposite
-        // side and clamps it to the screen origin — visible as a one-frame flash of
-        // a huge menu at the top-left. Skip the flip while the size is suspect.
+        // First-measurement quirk: Compose Desktop calls calculatePosition once with
+        // popupContentSize ≈ windowSize before the popup content has actually measured.
+        // Both the auto-flip branch (treats placeholder as overflow → flips & clamps to
+        // screen origin) AND the final clamp (maxY = windowSize - popup.height becomes
+        // 0 → forces y=0) conspire to render a window-sized rectangle at (0, 0) for one
+        // frame — the "huge menu flickers at the top" the user has reported four times.
+        // Park the placeholder pass off-screen entirely so nothing is visible until the
+        // real measurement arrives.
         val unmeasured = popupContentSize.width >= windowSize.width ||
                          popupContentSize.height >= windowSize.height
+        if (unmeasured) {
+            return IntOffset(windowSize.width + popupContentSize.width,
+                             windowSize.height + popupContentSize.height)
+        }
         val proposed = primaryFor(side, anchorBounds, popupContentSize)
-        val flipped = if (!unmeasured && overflows(proposed, windowSize, popupContentSize)) {
+        val flipped = if (overflows(proposed, windowSize, popupContentSize)) {
             primaryFor(opposite(side), anchorBounds, popupContentSize)
         } else proposed
         return clamp(flipped, windowSize, popupContentSize)
