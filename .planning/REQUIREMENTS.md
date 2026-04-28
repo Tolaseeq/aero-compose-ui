@@ -66,8 +66,8 @@
 - [ ] **CNT-02**: `AeroPanel` — фоновая поверхность `glassPanel` для крупных секций
 - [ ] **CNT-03**: `AeroDivider` — горизонтальный и вертикальный разделитель с `borderDefault` токеном
 - [ ] **CNT-04**: `AeroGroupBox` — именованная рамка вокруг группы элементов (как Windows Forms GroupBox)
-- [ ] **CNT-05**: `AeroScrollArea` — прокручиваемая область с кастомным Aero-скроллбаром; поддерживает произвольный `content`
-- [ ] **CNT-06**: `AeroScrollBar` — отдельный скроллбар-компонент, совместимый со стандартным Compose `ScrollState`
+- [x] **CNT-05**: `AeroScrollArea` — прокручиваемая область с кастомным Aero-скроллбаром; поддерживает произвольный `content`
+- [x] **CNT-06**: `AeroScrollBar` — отдельный скроллбар-компонент, совместимый со стандартным Compose `ScrollState`
 
 ### Overlays & Notifications (оверлеи и уведомления)
 
@@ -171,8 +171,8 @@ Updated: 2026-04-27 (roadmap created — 3 phases)
 | CNT-02 | Phase 3 | Pending |
 | CNT-03 | Phase 3 | Pending |
 | CNT-04 | Phase 3 | Pending |
-| CNT-05 | Phase 3 | Pending |
-| CNT-06 | Phase 3 | Pending |
+| CNT-05 | Phase 3 | Complete |
+| CNT-06 | Phase 3 | Complete |
 | OVL-01 | Phase 3 | Pending |
 | OVL-02 | Phase 3 | Pending |
 | OVL-03 | Phase 3 | Pending |

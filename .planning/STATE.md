@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Phase 2 all plans executed — all 21 requirements satisfied (BTN-01..04, INP-01..06, SEL-01..05, DRP-01..02, RNG-01..02, LST-01..02), visual checkpoint APPROVED
-stopped_at: Phase 3 context gathered
-last_updated: "2026-04-28T10:53:35.649Z"
-last_activity: 2026-04-28 — Phase 2 Plan 06 complete — ShowcaseApp wired, ThemeSwitcher on AeroSegmentedControl, visual checkpoint APPROVED (all 21 components verified)
+status: Phase 3 Plan 01 complete — popup infrastructure promoted to public components/popup/, CNT-05 + CNT-06 ship, AeroTheme installs LocalScrollbarStyle, AeroTextArea + AeroDropdownPopup retrofitted, 9 Wave-0 stub tests in place
+stopped_at: Completed 03-01-PLAN.md (popup foundation + scrollbar primitives + AeroTheme wiring + retrofits)
+last_updated: "2026-04-28T13:02:06.327Z"
+last_activity: 2026-04-28 — Phase 3 Plan 01 complete — popup package public, CNT-05/CNT-06 ship, scrollbar style theme-wide, retrofits done (CNT-05, CNT-06 satisfied)
 progress:
   total_phases: 3
   completed_phases: 2
-  total_plans: 10
-  completed_plans: 10
+  total_plans: 18
+  completed_plans: 11
   percent: 70
 ---
 
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-27)
 
 ## Current Position
 
-Phase: 2 of 3 (Atomic Components) — COMPLETE (pending phase-level verification)
-Plan: 6 of 6 in phase complete (02-01 buttons, 02-02 inputs, 02-05 selection/dropdown, 02-04 range/list, 02-03 selection controls, 02-06 ShowcaseApp wiring done)
-Status: Phase 2 all plans executed — all 21 requirements satisfied (BTN-01..04, INP-01..06, SEL-01..05, DRP-01..02, RNG-01..02, LST-01..02), visual checkpoint APPROVED
-Last activity: 2026-04-28 — Phase 2 Plan 06 complete — ShowcaseApp wired, ThemeSwitcher on AeroSegmentedControl, visual checkpoint APPROVED (all 21 components verified)
+Phase: 3 of 3 (Composite + Navigation) — IN PROGRESS
+Current Plan: 1 of 8 in phase complete (03-01 popup foundation + scrollbar primitives + retrofits done)
+Status: Phase 3 Plan 01 complete — popup infrastructure promoted to public components/popup/, CNT-05 + CNT-06 ship, AeroTheme installs LocalScrollbarStyle, AeroTextArea + AeroDropdownPopup retrofitted, 9 Wave-0 stub tests in place
+Last activity: 2026-04-28 — Phase 3 Plan 01 complete — popup package public, CNT-05/CNT-06 ship, scrollbar style theme-wide, retrofits done (CNT-05, CNT-06 satisfied)
 
-Progress: [███████░░░] 70%
+Progress: [██████░░░░] 61%
 
 ## Performance Metrics
 
@@ -60,6 +60,7 @@ Progress: [███████░░░] 70%
 | Phase 02-atomic-components P04 | 9 | 3 tasks | 6 files |
 | Phase 02-atomic-components P03 | 10 | 3 tasks | 6 files |
 | Phase 02-atomic-components P06 | ~45 | 3 tasks | 2 files |
+| Phase 03-composite-navigation P01 | 7m | 4 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -100,6 +101,9 @@ Recent decisions affecting current work:
 - [Phase 02-06-showcase]: All themes' buttonHover must be alpha-tinted whites (<=0x40 alpha) — fully opaque overlay paints over button text; Classic theme was incorrectly opaque
 - [Phase 02-06-showcase]: AeroFilePicker keeps path field fully editable; Browse button is convenience-only to populate the field via native dialog
 - [Phase 02-06-showcase]: AeroNumberSpinner scroll wheel via pointerInput PointerEventType.Scroll — works whether or not the field has keyboard focus (Mordred-style spinner pattern)
+- [Phase 03-composite-navigation]: AeroPopupSide enum + auto-flip provider serves DRP, OVL-03/04/07 simultaneously — single source of truth for anchored popup placement
+- [Phase 03-composite-navigation]: AeroDropdownPopup uses AeroScrollArea wrapping inner Column (preserves vertical padding); AeroTextArea uses AeroScrollBar overlay (BasicTextField needs its own verticalScroll modifier order)
+- [Phase 03-composite-navigation]: Stub-test compile-reachability uses Class.forName(...Kt) instead of ::Composable — Kotlin Compose plugin disallows function references to @Composable functions
 
 ### Pending Todos
 
@@ -113,6 +117,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-28T10:53:35.631Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/phases/03-composite-navigation/03-CONTEXT.md
+Last session: 2026-04-28T13:02:02.167Z
+Stopped at: Completed 03-01-PLAN.md (popup foundation + scrollbar primitives + AeroTheme wiring + retrofits)
+Resume file: None

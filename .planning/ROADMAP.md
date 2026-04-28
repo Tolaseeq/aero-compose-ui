@@ -62,7 +62,15 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. AeroTitleBar renders the Aero gradient, draggable region, and Minimize/Maximize/Close buttons with hover effects — built inside `FrameWindowScope` using `undecorated=true` (without `transparent=true` to avoid the Win11 crash)
   4. AeroMenuBar shows top-level items with dropdown submenus; AeroTabBar switches between tabs; AeroStatusBar displays text sections and colored indicators at the bottom of the window
   5. The showcase is complete: every component from Phases 1-3 appears in the appropriate category section, is interactive (not a placeholder), and all three themes render correctly across every component
-**Plans**: TBD
+**Plans**: 8 plans
+- [x] 03-01-PLAN.md — Popup infrastructure refactor + AeroScrollBar (CNT-06) + AeroScrollArea (CNT-05) + LocalScrollbarStyle wiring + Wave-0 stub tests (completed 2026-04-28)
+- [ ] 03-02-PLAN.md — Containers: AeroCard (CNT-01), AeroPanel (CNT-02), AeroDivider (CNT-03), AeroGroupBox (CNT-04)
+- [ ] 03-03-PLAN.md — AeroTitleBar (NAV-01) + showcase Main.kt undecorated window + resize handles
+- [ ] 03-04-PLAN.md — Modal overlays: AeroDialog (OVL-01), AeroAlertDialog (OVL-02), AeroDrawer (OVL-08)
+- [ ] 03-05-PLAN.md — Anchored popups: AeroTooltip (OVL-03), AeroContextMenu (OVL-04), AeroPopover (OVL-07)
+- [ ] 03-06-PLAN.md — Notifications: AeroToast/AeroToastHost (OVL-05), AeroNotificationBanner (OVL-06)
+- [ ] 03-07-PLAN.md — Remaining navigation: AeroMenuBar (NAV-02), AeroStatusBar (NAV-03), AeroBreadcrumb (NAV-04), AeroTabBar (NAV-05)
+- [ ] 03-08-PLAN.md — ShowcaseApp wiring: 3 new sections + AeroToastHost mount + theme hoisting + final visual checkpoint
 
 ## Progress
 
@@ -72,4 +80,4 @@ Decimal phases appear between their surrounding integers in numeric order.
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete   | 2026-04-27 |
 | 2. Atomic Components | 6/6 | In Progress|  |
-| 3. Composite + Navigation | 0/TBD | Not started | - |
+| 3. Composite + Navigation | 1/8 | In Progress|  |
