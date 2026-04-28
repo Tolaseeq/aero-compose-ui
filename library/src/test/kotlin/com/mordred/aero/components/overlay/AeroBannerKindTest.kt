@@ -1,12 +1,38 @@
 package com.mordred.aero.components.overlay
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Error
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Warning
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
-/** Wave-0 stub. Real assertions land with Plan 03-06 (AeroNotificationBanner). */
 class AeroBannerKindTest {
 
     @Test
-    fun stub() {
-        // intentionally empty — Plan 03-06 fills assertions
+    fun definesExactlyFourKinds() {
+        val names = AeroBannerKind.values().map { it.name }.toSet()
+        assertEquals(setOf("Info", "Warning", "Error", "Success"), names)
+    }
+
+    @Test
+    fun infoMapsToInfoIcon() {
+        assertEquals(Icons.Outlined.Info, AeroBannerKind.Info.icon)
+    }
+
+    @Test
+    fun warningMapsToWarningIcon() {
+        assertEquals(Icons.Outlined.Warning, AeroBannerKind.Warning.icon)
+    }
+
+    @Test
+    fun errorMapsToErrorIcon() {
+        assertEquals(Icons.Outlined.Error, AeroBannerKind.Error.icon)
+    }
+
+    @Test
+    fun successMapsToCheckCircleIcon() {
+        assertEquals(Icons.Outlined.CheckCircle, AeroBannerKind.Success.icon)
     }
 }
