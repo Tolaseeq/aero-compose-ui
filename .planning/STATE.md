@@ -1,37 +1,41 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-current_plan: 8 of 8 in phase complete — Plan 03-08 ShowcaseApp integration approved by user.
-status: completed
-stopped_at: Completed 03-03-PLAN.md (NAV-01 AeroTitleBar + 8-zone AeroResizeHandles + showcase Window(undecorated=true, transparent=false))
-last_updated: "2026-04-28T16:10:37.693Z"
-last_activity: 2026-04-28 — Phase 3 Plan 08 user-approved; ready for gsd-verifier on phase goal.
+milestone: v1.1
+milestone_name: Icon System
+current_plan: —
+status: defining_requirements
+stopped_at: Milestone v1.1 started — defining requirements
+last_updated: "2026-04-28T19:30:00.000Z"
+last_activity: 2026-04-28 — Milestone v1.1 Icon System started; PROJECT.md updated, requirements pending
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 18
-  completed_plans: 18
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-27)
+See: .planning/PROJECT.md (updated 2026-04-28)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, and a showcase — no manual style work required
-**Current focus:** Phase 1 — Foundation
+**Current focus:** v1.1 Icon System — defining requirements
 
 ## Current Position
 
-Phase: 3 of 3 (Composite + Navigation) — ALL PLANS COMPLETE
-Current Plan: 8 of 8 in phase complete — Plan 03-08 ShowcaseApp integration approved by user.
-Status: Phase 3 complete. All 19 phase-3 components wired into the showcase across 3 themes; visual checkpoint approved after 4 UAT rounds (popup flicker, glass effect, dialog chrome, popover/drawer translucency, group-box label, scrollbar style, drawer dismiss, menubar width).
-Last activity: 2026-04-28 — Phase 3 Plan 08 user-approved; ready for gsd-verifier on phase goal.
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements for milestone v1.1 (Icon System)
+Last activity: 2026-04-28 — Milestone v1.1 started
 
-Progress: [██████████] 100%
+Progress: [░░░░░░░░░░] 0%
+
+## Previous Milestone
+
+**v1.0 (completed 2026-04-28):** 3 phases, 53 requirements, ~26 plans. Foundation + Atomic Components + Composite/Navigation. All shipped, all visual checkpoints approved.
 
 ## Known Follow-up
 

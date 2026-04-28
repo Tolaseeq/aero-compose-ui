@@ -8,102 +8,37 @@
 
 Разработчик подключает одну зависимость и получает полный набор Aero-styled компонентов с тремя темами, кастомной шапкой окна и демо-витриной — без необходимости реализовывать стиль самостоятельно.
 
+## Current Milestone: v1.1 Icon System
+
+**Goal:** Полностью убрать текстовые символы-иконки (✕, ▲▼, ›, ▶, ✓ и т.п.) из библиотеки и showcase, ввести единый набор минималистичных векторных иконок `AeroIcons` (порт Feather, ~120–150 шт.), и заменить им как существующие глифы, так и Material Icons в `AeroAlertKind`/`AeroBannerKind`.
+
+**Target features:**
+- `AeroIcons` — типизированные `ImageVector`-константы (`AeroIcons.Close`, `AeroIcons.ChevronDown` и т.д.), порт Feather (regular weight, 24x24 viewBox, stroke 2)
+- ~120–150 иконок: closed set покрывает все текущие места + общеупотребимые (edit/delete/save/copy/settings/user/home/file/calendar/clock/etc.) + домен-специфичные (bluetooth/wifi/battery/play/pause/print/mail/cloud/database/etc.)
+- Миграция всех компонентов с текстовых глифов на `AeroIcons` (AeroCheckbox, AeroDropdown, AeroNumberSpinner, AeroTitleBar, AeroBreadcrumb, AeroContextMenu, AeroToastHost, AeroNotificationBanner)
+- Замена `Icons.Outlined.*` на `AeroIcons.*` в `AeroAlertKind` и `AeroBannerKind`; удаление зависимости `compose.materialIconsExtended` из `:library`
+- `IconsSection` в showcase — сетка всех иконок + поиск через `AeroSearchField`
+- Иконки живут в том же модуле `:library` (тот же JAR `com.mordred:aero-compose-ui`)
+
 ## Requirements
 
 ### Validated
 
-(None yet — ship to validate)
+<!-- Shipped in v1.0 (53 requirements). See REQUIREMENTS.md for full list. -->
+
+- ✓ **Foundation** (10): AeroTheme, AeroColorScheme, 3 темы, glass modifiers, AeroTypography, explicitApi — Phase 1
+- ✓ **Buttons + Inputs + Selection + Dropdowns + Range + Lists** (21): BTN/INP/SEL/DRP/RNG/LST — Phase 2
+- ✓ **Containers + Overlays + Navigation** (19): CNT/OVL/NAV — Phase 3
+- ✓ **Showcase** (3): SHW-01..03 — Phases 1–3 (рос параллельно)
 
 ### Active
 
-#### Система тем и токены
-- [ ] Реализовать систему цветовых токенов `AeroColorScheme` (data class)
-- [ ] Тема **AeroBlue** (синяя, тёмный фон #0D1B2A, акцент #4FC3F7) — порт из mordred
-- [ ] Тема **AeroDark** (темнее, фон #0A0A1A, акцент #90CAF9) — порт из mordred
-- [ ] Тема **Classic** (серая, фон #1E1E1E, акцент #5C8ABF) — порт из mordred
-- [ ] CompositionLocal `LocalAeroColors` + `AeroTheme { }` провайдер
-- [ ] API для создания кастомных тем (расширение базовых)
-- [ ] Glass-эффект модификаторы: `glassEffect`, `glassPanel`, `glassSurface`
+<!-- v1.1 scope — see REQUIREMENTS.md for full list with REQ-IDs. -->
 
-#### Компоненты — Ввод текста
-- [ ] **AeroTextField** — однострочный ввод с Aero-рамкой, placeholder, focus-анимацией
-- [ ] **AeroTextArea** — многострочный ввод, вертикальный скроллинг
-- [ ] **AeroPasswordField** — маскировка символов + кнопка показать/скрыть
-- [ ] **AeroNumberSpinner** — числовой ввод со стрелками ▲▼, min/max/step
-- [ ] **AeroSearchField** — поле с иконкой лупы и кнопкой очистки ✕
-- [ ] **AeroFilePicker** — поле пути + кнопка «Обзор» с нативным диалогом
-
-#### Компоненты — Выбор значений
-- [ ] **AeroCheckbox** — чекбокс с Aero-стилем и tri-state поддержкой
-- [ ] **AeroRadioButton / AeroRadioGroup** — группа радиокнопок
-- [ ] **AeroSwitch** — тумблер вкл/выкл
-- [ ] **AeroChip** — фильтр-чип с выбранным/невыбранным состоянием
-- [ ] **AeroSegmentedControl** — группа кнопок-переключателей (одна активна)
-
-#### Компоненты — Кнопки
-- [ ] **AeroButton** — заполненная кнопка (primary action), glass-рамка
-- [ ] **AeroOutlinedButton** — контурная кнопка (secondary action)
-- [ ] **AeroIconButton** — квадратная кнопка с иконкой, hover-эффект
-- [ ] **AeroToolbar** — горизонтальная панель с группой IconButton
-
-#### Компоненты — Выпадающие списки
-- [ ] **AeroComboBox** — редактируемый комбобокс с выпадающим списком
-- [ ] **AeroDropdown** — нередактируемый select
-
-#### Компоненты — Диапазоны и прогресс
-- [ ] **AeroSlider** — ползунок с одной ручкой
-- [ ] **AeroRangeSlider** — ползунок с двумя ручками (от–до)
-- [ ] **AeroProgressBar** — детерминированный (с %) и индетерминированный
-
-#### Компоненты — Дата и время
-- [ ] **AeroDatePicker** — календарь с выбором числа/месяца/года
-- [ ] **AeroTimePicker** — выбор часов и минут
-- [ ] **AeroDateTimePicker** — комбинированный выбор даты + времени
-- [ ] **AeroDateRangePicker** — выбор диапазона: начало → конец
-
-#### Компоненты — Специальные
-- [ ] **AeroColorPicker** — палитра + RGB-ползунки + HEX-ввод
-- [ ] **AeroStepperWizard** — шаговый процесс: Шаг 1 → Шаг 2 → …
-
-#### Компоненты — Отображение данных
-- [ ] **AeroDataTable** — таблица с заголовками, сортировкой, выделением строк
-- [ ] **AeroTreeView** — дерево с раскрытием/свёрткой узлов
-- [ ] **AeroBadge / AeroTag** — ярлык-метка (статус, количество)
-- [ ] **AeroListItem** — стилизованный элемент списка с hover-состоянием
-
-#### Компоненты — Контейнеры
-- [ ] **AeroCard** — панель с glass-эффектом, тенью, скруглёнными углами
-- [ ] **AeroPanel** — фоновая поверхность (glassPanel)
-- [ ] **AeroDivider** — горизонтальный и вертикальный разделитель
-- [ ] **AeroAccordion** — сворачиваемый раздел с анимацией раскрытия
-- [ ] **AeroGroupBox** — именованная рамка вокруг группы элементов
-- [ ] **AeroSplitPane** — две панели с перетаскиваемым разделителем
-- [ ] **AeroScrollArea** — прокручиваемая область с кастомным Aero-скроллбаром
-- [ ] **AeroScrollBar** — кастомный скроллбар в стиле Aero
-
-#### Компоненты — Навигация и структура окна
-- [ ] **AeroTitleBar** — кастомная шапка окна: градиент, Minimize/Maximize/Close, draggable
-- [ ] **AeroMenuBar** — верхнее меню (File / Edit / View…)
-- [ ] **AeroContextMenu** — контекстное меню по правой кнопке мыши
-- [ ] **AeroStatusBar** — нижняя строка состояния с текстом и индикаторами
-- [ ] **AeroBreadcrumb** — навигационная цепочка: Главная › Раздел › Страница
-- [ ] **AeroSidebar** — боковая панель навигации с иконками и подписями
-- [ ] **AeroTabBar** — переключатель вкладок
-
-#### Оверлеи и уведомления
-- [ ] **AeroDialog** — модальное окно с заголовком, контентом, кнопками
-- [ ] **AeroAlertDialog** — диалог подтверждения/ошибки
-- [ ] **AeroToast / AeroSnackbar** — временное всплывающее уведомление в углу
-- [ ] **AeroNotificationBanner** — строка info/warning/error/success вверху
-- [ ] **AeroDrawer** — выезжающая боковая панель поверх контента
-- [ ] **AeroPopover** — всплывающая панель рядом с элементом
-- [ ] **AeroTooltip** — подсказка при наведении
-
-#### Демо-витрина
-- [ ] Отдельное Compose Desktop приложение `aero-compose-ui-showcase`
-- [ ] Все компоненты сгруппированы по категориям
-- [ ] Переключение тем прямо в витрине (AeroBlue / AeroDark / Classic)
-- [ ] Интерактивные компоненты (не заглушки)
+- [ ] **Icon system** — порт Feather в AeroIcons (~120–150 ImageVector-констант, regular weight)
+- [ ] **Migration** — замена всех текстовых глифов и Material Icons-вызовов на AeroIcons
+- [ ] **Dependency cleanup** — удалить `compose.materialIconsExtended` из `:library`
+- [ ] **Showcase IconsSection** — сетка + поиск
 
 ### Out of Scope
 
@@ -111,6 +46,10 @@
 - Web-версия — не планируется
 - Публикация в Maven Central — только локальный Maven для начала
 - Встроенная поддержка локализации (i18n) — на усмотрение разработчика-потребителя
+- Несколько весов иконок (Phosphor-style thin/light/bold/fill) — только regular в v1.1
+- Filled / duotone варианты — только outline (stroke-based) в v1.1
+- Кастомные пользовательские иконки через AeroIcons API — пользователь использует обычный `ImageVector` напрямую
+- Иконки в отдельном Gradle-модуле — всё в `:library` для v1.1 (отделение возможно позже)
 
 ## Context
 
@@ -136,6 +75,10 @@
 | Три темы из mordred как дефолтные | Уже отработаны визуально в реальном проекте | — Pending |
 | Отдельный showcase-модуль | Позволяет проверять компоненты между фазами без внешнего проекта | — Pending |
 | Каждая анимация утверждается отдельно | Контроль над визуальной сложностью и производительностью | — Pending |
+| AeroIcons как порт Feather (regular, stroke 2) | MIT, минималистичный outline, единый вес — простая порт-механика; ложится на Aero-эстетику | — Pending |
+| Типизированные константы AeroIcons.* (не name-based lookup) | Compile-time safety, IDE autocomplete, привычно после Material Icons | — Pending |
+| materialIconsExtended удаляется из :library | «Единый набор векторных иконок» — Material визуально не Aero; снижает вес JAR | — Pending |
+| Иконки в :library, не в отдельном :icons | Меньше Gradle-сложности для v1.1; разделение возможно в v2.0+ если появится консьюмер | — Pending |
 
 ---
-*Last updated: 2026-04-27 after initialization*
+*Last updated: 2026-04-28 after starting milestone v1.1 Icon System*
