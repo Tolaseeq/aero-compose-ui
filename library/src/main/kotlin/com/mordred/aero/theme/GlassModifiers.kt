@@ -56,15 +56,16 @@ public fun Modifier.glassPanel(
 ): Modifier {
     val colors = LocalAeroColors.current
     val panelBackground = colors.panelBackground
+    val glassHighlight = colors.glassHighlight
     return this.drawBehind {
         val cornerPx = cornerRadius.toPx()
         val cr = CornerRadius(cornerPx, cornerPx)
+        drawRoundRect(color = panelBackground, cornerRadius = cr)
         drawRoundRect(
             brush = Brush.verticalGradient(
-                colors = listOf(
-                    panelBackground,
-                    panelBackground.copy(alpha = panelBackground.alpha * 0.8f)
-                )
+                colors = listOf(glassHighlight, Color.Transparent),
+                startY = 0f,
+                endY = size.height * 0.55f
             ),
             cornerRadius = cr
         )
