@@ -2,16 +2,17 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Phase 3 Plan 01 complete — popup infrastructure promoted to public components/popup/, CNT-05 + CNT-06 ship, AeroTheme installs LocalScrollbarStyle, AeroTextArea + AeroDropdownPopup retrofitted, 9 Wave-0 stub tests in place
-stopped_at: Completed 03-01-PLAN.md (popup foundation + scrollbar primitives + AeroTheme wiring + retrofits)
-last_updated: "2026-04-28T13:02:06.327Z"
-last_activity: 2026-04-28 — Phase 3 Plan 01 complete — popup package public, CNT-05/CNT-06 ship, scrollbar style theme-wide, retrofits done (CNT-05, CNT-06 satisfied)
+current_plan: 2 of 8 in phase complete (03-02 containers CNT-01..04 — AeroCard, AeroPanel, AeroDivider, AeroGroupBox)
+status: Phase 3 Plan 02 complete — full containers package (CNT-01..06) ships; AeroCard/AeroPanel/AeroDivider/AeroGroupBox added as thin wrappers over glass modifiers
+stopped_at: Completed 03-02-PLAN.md (CNT-01..04 — AeroCard / AeroPanel / AeroDivider / AeroGroupBox)
+last_updated: "2026-04-28T13:18:39.207Z"
+last_activity: 2026-04-28 — Phase 3 Plan 02 complete — containers CNT-01..04 ship (CNT-01, CNT-02, CNT-03, CNT-04 satisfied)
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 18
-  completed_plans: 11
-  percent: 70
+  completed_plans: 12
+  percent: 67
 ---
 
 # Project State
@@ -26,11 +27,11 @@ See: .planning/PROJECT.md (updated 2026-04-27)
 ## Current Position
 
 Phase: 3 of 3 (Composite + Navigation) — IN PROGRESS
-Current Plan: 1 of 8 in phase complete (03-01 popup foundation + scrollbar primitives + retrofits done)
-Status: Phase 3 Plan 01 complete — popup infrastructure promoted to public components/popup/, CNT-05 + CNT-06 ship, AeroTheme installs LocalScrollbarStyle, AeroTextArea + AeroDropdownPopup retrofitted, 9 Wave-0 stub tests in place
-Last activity: 2026-04-28 — Phase 3 Plan 01 complete — popup package public, CNT-05/CNT-06 ship, scrollbar style theme-wide, retrofits done (CNT-05, CNT-06 satisfied)
+Current Plan: 2 of 8 in phase complete (03-02 containers CNT-01..04 — AeroCard, AeroPanel, AeroDivider, AeroGroupBox)
+Status: Phase 3 Plan 02 complete — full containers package (CNT-01..06) ships; AeroCard/AeroPanel/AeroDivider/AeroGroupBox added as thin wrappers over glass modifiers
+Last activity: 2026-04-28 — Phase 3 Plan 02 complete — containers CNT-01..04 ship (CNT-01, CNT-02, CNT-03, CNT-04 satisfied)
 
-Progress: [██████░░░░] 61%
+Progress: [███████░░░] 67%
 
 ## Performance Metrics
 
@@ -61,6 +62,7 @@ Progress: [██████░░░░] 61%
 | Phase 02-atomic-components P03 | 10 | 3 tasks | 6 files |
 | Phase 02-atomic-components P06 | ~45 | 3 tasks | 2 files |
 | Phase 03-composite-navigation P01 | 7m | 4 tasks | 16 files |
+| Phase 03-composite-navigation P02 | 11min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -104,6 +106,9 @@ Recent decisions affecting current work:
 - [Phase 03-composite-navigation]: AeroPopupSide enum + auto-flip provider serves DRP, OVL-03/04/07 simultaneously — single source of truth for anchored popup placement
 - [Phase 03-composite-navigation]: AeroDropdownPopup uses AeroScrollArea wrapping inner Column (preserves vertical padding); AeroTextArea uses AeroScrollBar overlay (BasicTextField needs its own verticalScroll modifier order)
 - [Phase 03-composite-navigation]: Stub-test compile-reachability uses Class.forName(...Kt) instead of ::Composable — Kotlin Compose plugin disallows function references to @Composable functions
+- [Phase 03-composite-navigation]: Container wrappers (CNT-01..04) are thin glassEffect/glassPanel wrappers — single Box, one padding param, content slot — no internal layout rules
+- [Phase 03-composite-navigation]: AeroGroupBox label uses opaque-background Text painted over the top border line — no custom Layout/measure pass; produces Windows-Forms inset-label visual cheaply
+- [Phase 03-composite-navigation]: AeroDivider exposes thickness param (default 1.dp) on top of vertical: Boolean — caller constrains length via passed Modifier
 
 ### Pending Todos
 
@@ -117,6 +122,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-28T13:02:02.167Z
-Stopped at: Completed 03-01-PLAN.md (popup foundation + scrollbar primitives + AeroTheme wiring + retrofits)
+Last session: 2026-04-28T13:18:39.200Z
+Stopped at: Completed 03-02-PLAN.md (CNT-01..04 — AeroCard / AeroPanel / AeroDivider / AeroGroupBox)
 Resume file: None
