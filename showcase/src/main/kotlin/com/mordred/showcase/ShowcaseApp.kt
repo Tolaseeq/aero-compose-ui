@@ -19,8 +19,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.mordred.aero.theme.AeroColorScheme
 import com.mordred.aero.theme.AeroTheme
+import com.mordred.showcase.sections.ButtonsSection
+import com.mordred.showcase.sections.DropdownSection
 import com.mordred.showcase.sections.FoundationSection
-import com.mordred.showcase.sections.PlaceholderSection
+import com.mordred.showcase.sections.InputSection
+import com.mordred.showcase.sections.ListSection
+import com.mordred.showcase.sections.RangeSection
+import com.mordred.showcase.sections.SelectionSection
 import com.mordred.showcase.sections.ThemeSwitcher
 
 @Composable
@@ -55,13 +60,12 @@ fun ShowcaseApp() {
                     FoundationSection()
                 }
 
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    PlaceholderSection(category = "Buttons")
-                    PlaceholderSection(category = "Input")
-                    PlaceholderSection(category = "Selection")
-                    PlaceholderSection(category = "Dropdown")
-                    PlaceholderSection(category = "Range & Progress")
-                }
+                ButtonsSection()
+                InputSection()
+                SelectionSection()
+                DropdownSection()
+                RangeSection()
+                ListSection()
 
                 Spacer(Modifier.height(24.dp))
             }
