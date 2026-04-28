@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 02-atomic-components-02-02-PLAN.md
-last_updated: "2026-04-28T08:00:49.510Z"
-last_activity: 2026-04-27 — Phase 1 all 4 plans executed, 13 requirements satisfied, visual checkpoint approved
+stopped_at: Completed 02-atomic-components-02-01-PLAN.md
+last_updated: "2026-04-28T08:02:14.327Z"
+last_activity: 2026-04-28 — Phase 2 Plan 01 buttons executed (BTN-01..04), 4 requirements satisfied
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 10
-  completed_plans: 5
-  percent: 100
+  completed_plans: 8
+  percent: 60
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-27)
 
 ## Current Position
 
-Phase: 1 of 3 (Foundation) — COMPLETE
-Plan: 4 of 4 in phase (all complete)
-Status: Phase 1 complete — ready for Phase 2
-Last activity: 2026-04-27 — Phase 1 all 4 plans executed, 13 requirements satisfied, visual checkpoint approved
+Phase: 2 of 3 (Atomic Components) — IN PROGRESS
+Plan: 1 of 6 in phase complete (02-01 buttons done)
+Status: Phase 2 underway — BTN-01..04 complete, next: 02-02 input fields
+Last activity: 2026-04-28 — Phase 2 Plan 01 buttons executed (BTN-01..04), 4 requirements satisfied
 
-Progress: [██████████] 100%
+Progress: [██████░░░░] 60%
 
 ## Performance Metrics
 
@@ -54,7 +54,9 @@ Progress: [██████████] 100%
 | Phase 01-foundation P02 | 11 | 3 tasks | 5 files |
 | Phase 01-foundation P03 | 7 | 2 tasks | 3 files |
 | Phase 01-foundation P04 | 3 | 2 tasks | 5 files |
+| Phase 02-atomic-components P01 | 8 | 3 tasks | 6 files |
 | Phase 02-atomic-components P02 | 7 | 3 tasks | 7 files |
+| Phase 02-atomic-components P05 | 9 | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -80,6 +82,9 @@ Recent decisions affecting current work:
 - [Phase 02-atomic-components]: compose.animation added to library/build.gradle.kts — animateColorAsState is in androidx.compose.animation not .core
 - [Phase 02-atomic-components]: AeroPasswordField uses inline BasicTextField (not AeroTextField wrapper) to support visualTransformation parameter
 - [Phase 02-atomic-components]: AeroFilePicker uses inline glassSurface Box for Обзор button — avoids Wave 1 compile-order dependency on AeroOutlinedButton
+- [Phase 02-01-buttons]: indication=null on AeroIconButton.clickable — hover/pressed drawn manually, suppresses M3 ripple double-effect
+- [Phase 02-01-buttons]: AeroToolbarDefaults is a top-level object (not companion) — idiomatic Kotlin for composable helpers
+- [Phase 02-01-buttons]: hover overlay via drawWithContent inside Button content Box (not outer wrapper) — avoids M3 Button shape clipping issues
 
 ### Pending Todos
 
@@ -93,6 +98,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-28T08:00:49.505Z
-Stopped at: Completed 02-atomic-components-02-02-PLAN.md
+Last session: 2026-04-28T07:59:23Z
+Stopped at: Completed 02-atomic-components-02-01-PLAN.md
 Resume file: None

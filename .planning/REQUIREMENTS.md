@@ -28,10 +28,10 @@
 
 ### Buttons (кнопки)
 
-- [ ] **BTN-01**: `AeroButton` — заполненная кнопка с glass-рамкой; поддерживает состояния enabled/disabled/hover/pressed
-- [ ] **BTN-02**: `AeroOutlinedButton` — контурная кнопка с прозрачным фоном; те же состояния
-- [ ] **BTN-03**: `AeroIconButton` — квадратная кнопка с иконкой; hover-подсветка через `buttonHover` токен
-- [ ] **BTN-04**: `AeroToolbar` — горизонтальная панель с группой `AeroIconButton`, разделителями и glass-фоном
+- [x] **BTN-01**: `AeroButton` — заполненная кнопка с glass-рамкой; поддерживает состояния enabled/disabled/hover/pressed
+- [x] **BTN-02**: `AeroOutlinedButton` — контурная кнопка с прозрачным фоном; те же состояния
+- [x] **BTN-03**: `AeroIconButton` — квадратная кнопка с иконкой; hover-подсветка через `buttonHover` токен
+- [x] **BTN-04**: `AeroToolbar` — горизонтальная панель с группой `AeroIconButton`, разделителями и glass-фоном
 
 ### Input (поля ввода)
 
@@ -146,10 +146,10 @@ Updated: 2026-04-27 (roadmap created — 3 phases)
 | SHW-01 | Phase 1 | Complete |
 | SHW-02 | Phase 1 | Complete |
 | SHW-03 | Phase 1 (ongoing through all phases) | Complete |
-| BTN-01 | Phase 2 | Pending |
-| BTN-02 | Phase 2 | Pending |
-| BTN-03 | Phase 2 | Pending |
-| BTN-04 | Phase 2 | Pending |
+| BTN-01 | Phase 2 | Complete |
+| BTN-02 | Phase 2 | Complete |
+| BTN-03 | Phase 2 | Complete |
+| BTN-04 | Phase 2 | Complete |
 | INP-01 | Phase 2 | Complete |
 | INP-02 | Phase 2 | Complete |
 | INP-03 | Phase 2 | Complete |
