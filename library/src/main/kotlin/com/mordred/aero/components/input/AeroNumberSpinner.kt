@@ -3,6 +3,7 @@ package com.mordred.aero.components.input
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mordred.aero.theme.AeroTheme
@@ -62,7 +65,24 @@ public fun AeroNumberSpinner(
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier.alpha(if (enabled) 1f else 0.4f)
+        modifier = modifier
+            .alpha(if (enabled) 1f else 0.4f)
+            .pointerInput(value, min, max, step, enabled) {
+                awaitEachGesture {
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        if (event.type == PointerEventType.Scroll && enabled) {
+                            val deltaY = event.changes.firstOrNull()?.scrollDelta?.y ?: 0f
+                            if (deltaY < 0f) {
+                                onValueChange((value + step).coerceIn(min, max))
+                            } else if (deltaY > 0f) {
+                                onValueChange((value - step).coerceIn(min, max))
+                            }
+                            event.changes.forEach { it.consume() }
+                        }
+                    }
+                }
+            }
     ) {
         // Number text field
         BasicTextField(
