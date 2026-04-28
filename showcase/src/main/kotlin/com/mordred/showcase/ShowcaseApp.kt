@@ -21,10 +21,13 @@ import com.mordred.aero.components.overlay.AeroToastHostState
 import com.mordred.aero.theme.AeroColorScheme
 import com.mordred.aero.theme.AeroTheme
 import com.mordred.showcase.sections.ButtonsSection
+import com.mordred.showcase.sections.ContainersSection
 import com.mordred.showcase.sections.DropdownSection
 import com.mordred.showcase.sections.FoundationSection
 import com.mordred.showcase.sections.InputSection
 import com.mordred.showcase.sections.ListSection
+import com.mordred.showcase.sections.NavigationSection
+import com.mordred.showcase.sections.OverlaysSection
 import com.mordred.showcase.sections.RangeSection
 import com.mordred.showcase.sections.SelectionSection
 import com.mordred.showcase.sections.ThemeSwitcher
@@ -82,10 +85,9 @@ fun ShowcaseApp(
                 RangeSection()
                 ListSection()
 
-                // Phase 3 sections wired in Task 4 of this plan once the files exist:
-                //   ContainersSection()
-                //   OverlaysSection(toastState = toastState)
-                //   NavigationSection()
+                ContainersSection()
+                OverlaysSection(toastState = toastState)
+                NavigationSection()
 
                 Spacer(Modifier.height(24.dp))
             }
