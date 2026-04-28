@@ -18,6 +18,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -33,7 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
-import com.mordred.aero.theme.glassSurface
+import com.mordred.aero.theme.AeroTheme
 import kotlin.math.roundToInt
 
 /** Position provider that places a popup over the entire host window. */
@@ -93,6 +95,11 @@ public fun AeroDrawer(
     val align = if (side == AeroDrawerSide.Start) Alignment.CenterStart else Alignment.CenterEnd
 
     val scrimInteraction = remember { MutableInteractionSource() }
+    val colors = AeroTheme.colors
+    val panelTint = colors.panelBackground.copy(
+        alpha = colors.panelBackground.alpha * 0.7f
+    )
+    val highlight = colors.glassHighlight
 
     Popup(
         popupPositionProvider = FullWindowPositionProvider,
@@ -134,7 +141,16 @@ public fun AeroDrawer(
                     }
                     .width(drawerWidth)
                     .fillMaxHeight()
-                    .glassSurface(cornerRadius = 0.dp)
+                    .drawBehind {
+                        drawRect(color = panelTint)
+                        drawRect(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(highlight, Color.Transparent),
+                                startY = 0f,
+                                endY = size.height * 0.4f
+                            )
+                        )
+                    }
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,

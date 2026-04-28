@@ -1,6 +1,5 @@
 package com.mordred.aero.components.overlay
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
@@ -9,8 +8,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
@@ -58,20 +59,25 @@ public fun AeroPopover(
     ) {
         val colors = AeroTheme.colors
         val shape = RoundedCornerShape(6.dp)
+        val panelTint = colors.panelBackground.copy(
+            alpha = colors.panelBackground.alpha * 0.7f
+        )
+        val highlight = colors.glassHighlight
         Box(
             modifier = modifier
-                .shadow(elevation = 6.dp, shape = shape)
                 .clip(shape)
-                .background(colors.background, shape)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            colors.panelBackground,
-                            colors.panelBackground.copy(alpha = colors.panelBackground.alpha * 0.7f)
-                        )
-                    ),
-                    shape
-                )
+                .drawBehind {
+                    val cr = CornerRadius(6.dp.toPx(), 6.dp.toPx())
+                    drawRoundRect(color = panelTint, cornerRadius = cr)
+                    drawRoundRect(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(highlight, Color.Transparent),
+                            startY = 0f,
+                            endY = size.height * 0.55f
+                        ),
+                        cornerRadius = cr
+                    )
+                }
                 .border(1.dp, colors.titleBarGradientStart, shape)
                 .padding(12.dp)
         ) {
