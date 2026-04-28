@@ -12,6 +12,7 @@ kotlin {
 dependencies {
     implementation(compose.desktop.common)
     implementation(compose.material3)
+    implementation(compose.animation)
     implementation(compose.foundation)
     implementation(compose.runtime)
     implementation(compose.ui)
