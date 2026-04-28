@@ -24,9 +24,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
@@ -107,16 +109,38 @@ internal fun AeroDropdownItem(
 /**
  * Internal generic popup wrapper used by both [AeroDropdown] and [AeroComboBox].
  * Handles Popup lifecycle, positioning, and glass styling.
+ *
+ * @param expanded Whether the popup is visible.
+ * @param onDismissRequest Called when the popup should be dismissed.
+ * @param anchorWidth Width of the trigger/anchor element. The popup will be at least this wide
+ *   so it visually aligns with the trigger. Pass [Dp.Unspecified] to let the popup wrap content.
+ * @param onKeyEvent Key event handler for keyboard navigation within the popup.
+ * @param content The popup's scrollable item list.
  */
 @Composable
 internal fun AeroDropdownPopup(
     expanded: Boolean,
     onDismissRequest: () -> Unit,
+    anchorWidth: Dp = Dp.Unspecified,
     onKeyEvent: (KeyEvent) -> Boolean = { false },
     content: @Composable ColumnScope.() -> Unit
 ) {
     if (!expanded) return
     val colors = AeroTheme.colors
+    val shape = RoundedCornerShape(4.dp)
+
+    // Popup background: use panelBackground which has sufficient opacity (0xCC = 80% alpha)
+    // to block content behind the popup. cardBackground is too transparent (0x40 = 25% alpha).
+    val popupBackground = colors.panelBackground
+
+    // Width modifier: if anchor width is specified, set popup to exactly that width;
+    // otherwise use widthIn(min = 120.dp) to wrap content with a sane minimum.
+    val widthModifier = if (anchorWidth != Dp.Unspecified) {
+        Modifier.widthIn(min = anchorWidth, max = anchorWidth)
+    } else {
+        Modifier.widthIn(min = 120.dp)
+    }
+
     Popup(
         popupPositionProvider = remember { AeroPopupPositionProvider() },
         onDismissRequest = onDismissRequest,
@@ -127,12 +151,12 @@ internal fun AeroDropdownPopup(
         )
     ) {
         Box(
-            Modifier
-                .widthIn(min = 120.dp)
+            widthModifier
                 .heightIn(max = 320.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(colors.cardBackground, RoundedCornerShape(4.dp))
-                .border(1.dp, colors.glassBorder, RoundedCornerShape(4.dp))
+                .shadow(elevation = 8.dp, shape = shape)
+                .clip(shape)
+                .background(popupBackground, shape)
+                .border(1.dp, colors.glassBorder, shape)
                 .onPreviewKeyEvent(onKeyEvent)
                 .padding(vertical = 4.dp)
         ) {

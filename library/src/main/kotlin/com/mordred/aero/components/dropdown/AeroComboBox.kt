@@ -121,8 +121,11 @@ public fun AeroComboBox(
             }
         )
 
-        // Non-focusable popup so text field retains focus; mouse-click selection works
+        // Non-focusable popup so text field retains focus; mouse-click selection works.
+        // Use panelBackground (0xCC alpha) instead of cardBackground (0x40 alpha) so the popup
+        // is opaque enough to block content behind it. Width is clamped to anchor width.
         if (expanded && filtered.isNotEmpty()) {
+            val popupShape = RoundedCornerShape(4.dp)
             Popup(
                 popupPositionProvider = remember { AeroPopupPositionProvider() },
                 onDismissRequest = { expanded = false },
@@ -130,11 +133,11 @@ public fun AeroComboBox(
             ) {
                 Box(
                     Modifier
-                        .widthIn(min = width)
+                        .widthIn(min = width, max = width)
                         .heightIn(max = 240.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(colors.cardBackground, RoundedCornerShape(4.dp))
-                        .border(1.dp, colors.glassBorder, RoundedCornerShape(4.dp))
+                        .clip(popupShape)
+                        .background(colors.panelBackground, popupShape)
+                        .border(1.dp, colors.glassBorder, popupShape)
                         .padding(vertical = 4.dp)
                 ) {
                     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {

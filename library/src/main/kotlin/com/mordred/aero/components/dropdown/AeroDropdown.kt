@@ -102,6 +102,7 @@ public fun <T> AeroDropdown(
 
         AeroDropdownPopup(
             expanded = expanded,
+            anchorWidth = width,
             onDismissRequest = { expanded = false },
             onKeyEvent = { event ->
                 if (event.type != KeyEventType.KeyDown) return@AeroDropdownPopup false
