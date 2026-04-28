@@ -32,7 +32,7 @@ public fun Modifier.glassEffect(
     val glassSurface = colors.glassSurface
     val glassBorder = colors.glassBorder
     return this
-        .shadow(elevation, shape)
+        .shadow(elevation = elevation, shape = shape, clip = false)
         .background(
             brush = Brush.verticalGradient(
                 colors = listOf(
