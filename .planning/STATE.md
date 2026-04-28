@@ -2,17 +2,17 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 5 of 8 in phase complete (03-03 NAV-01 AeroTitleBar + AeroResizeHandles + undecorated showcase window)
+current_plan: 7 of 8 in phase complete (Wave 2 done — 03-02 containers, 03-03 titlebar, 03-04 dialogs, 03-05 popovers, 03-06 toasts, 03-07 navigation)
 status: completed
-stopped_at: Completed 03-03-PLAN.md (NAV-01 AeroTitleBar + 8-zone AeroResizeHandles + showcase undecorated window)
-last_updated: "2026-04-28T16:35:00Z"
-last_activity: 2026-04-28 — Phase 3 Plan 03 complete — NAV-01 AeroTitleBar + AeroResizeHandles + showcase Window(undecorated=true, transparent=false) ship
+stopped_at: Wave 2 complete — 7/8 plans landed, only 03-08 (showcase wiring) remains
+last_updated: "2026-04-28T17:10:00Z"
+last_activity: 2026-04-28 — Phase 3 Wave 2 finalized — all atomic+composite components ship; only showcase integration (03-08) and verification remain
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 18
-  completed_plans: 15
-  percent: 83
+  completed_plans: 17
+  percent: 94
 ---
 
 # Project State
@@ -27,11 +27,21 @@ See: .planning/PROJECT.md (updated 2026-04-27)
 ## Current Position
 
 Phase: 3 of 3 (Composite + Navigation) — IN PROGRESS
-Current Plan: 5 of 8 in phase complete (03-03 NAV-01 AeroTitleBar + AeroResizeHandles + undecorated showcase window)
-Status: Phase 3 Plan 03 complete — NAV-01 AeroTitleBar (FrameWindowScope-extension chrome with WindowDraggableArea + 32dp gradient row + 3 control buttons) + AeroResizeHandles (8-zone resize overlay with native cursors) + showcase Main.kt switched to Window(undecorated=true, transparent=false). Manual smoke approved by user (drag/min/max/restore/close + all 8 resize zones with correct native cursor changes; no Win11 EXCEPTION_ACCESS_VIOLATION crash).
-Last activity: 2026-04-28 — Phase 3 Plan 03 complete — NAV-01 AeroTitleBar + AeroResizeHandles + showcase Window(undecorated=true, transparent=false) ship
+Current Plan: 7 of 8 in phase complete — Wave 2 (03-02..03-07) finalized. Only 03-08 (showcase wiring) remains.
+Status: Phase 3 Wave 2 complete. Plans 03-02 (CNT-01..04), 03-03 (NAV-01 + manual-checkpoint approved), 03-04 (OVL-01/02/08), 03-05 (OVL-03/04/07), 03-06 (OVL-05/06), 03-07 (NAV-02..05) all in HEAD. 03-05 and 03-07 retried after first-attempt watchdog stalls; their commits had already landed when the orchestrator stopped them at SUMMARY-write — orchestrator finalized SUMMARY/metadata directly.
+Last activity: 2026-04-28 — Phase 3 Wave 2 finalized; 17/18 plans complete; 03-08 showcase wiring next.
 
-Progress: [████████▌░] 83%
+Progress: [█████████▌] 94%
+
+## Known Follow-up
+
+- **AeroDropdown popup regression** — User reported during 03-03 manual checkpoint: dropdown popup is offset right of the trigger field and has trailing empty space below the last item. Root cause located in Plan 03-01's retrofit: `AeroScrollArea` line 31-35 uses `Column.fillMaxSize()` which forces 320dp height when `heightIn(max=320.dp)` is set, regardless of content; combined with always-visible scrollbar overlay the popup looks shifted. Fix is small (touches AeroScrollArea.kt only) — schedule as gap-closure or fold into 03-08 if a checkpoint surfaces.
+- **White-border flash on resize** — User accepted as minor visual polish (skip per user instruction).
+- **Commit-message interleaving** — Several Wave-2 commits absorbed sibling plans' files due to parallel staging:
+  - `7fe9eb0` (subject "feat(03-07): StatusBar+TabBar") includes 03-05's AeroContextMenu.kt + AeroContextMenuItem.kt
+  - `9cdf488` (subject "test(03-07): NAV-02") includes 03-03's finalization metadata
+  - `8f63ca4` (subject "feat(03-03): resize handles") includes 03-02's docs
+  Diff content is correct; only subject lines are partially misattributed. Documented in 03-05/03-07 SUMMARYs; no rebase performed.
 
 ## Performance Metrics
 

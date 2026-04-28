@@ -64,12 +64,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. The showcase is complete: every component from Phases 1-3 appears in the appropriate category section, is interactive (not a placeholder), and all three themes render correctly across every component
 **Plans**: 8 plans
 - [x] 03-01-PLAN.md — Popup infrastructure refactor + AeroScrollBar (CNT-06) + AeroScrollArea (CNT-05) + LocalScrollbarStyle wiring + Wave-0 stub tests (completed 2026-04-28)
-- [ ] 03-02-PLAN.md — Containers: AeroCard (CNT-01), AeroPanel (CNT-02), AeroDivider (CNT-03), AeroGroupBox (CNT-04)
+- [x] 03-02-PLAN.md — Containers: AeroCard (CNT-01), AeroPanel (CNT-02), AeroDivider (CNT-03), AeroGroupBox (CNT-04) (completed 2026-04-28)
 - [x] 03-03-PLAN.md — AeroTitleBar (NAV-01) + showcase Main.kt undecorated window + resize handles (completed 2026-04-28)
-- [ ] 03-04-PLAN.md — Modal overlays: AeroDialog (OVL-01), AeroAlertDialog (OVL-02), AeroDrawer (OVL-08)
-- [ ] 03-05-PLAN.md — Anchored popups: AeroTooltip (OVL-03), AeroContextMenu (OVL-04), AeroPopover (OVL-07)
-- [ ] 03-06-PLAN.md — Notifications: AeroToast/AeroToastHost (OVL-05), AeroNotificationBanner (OVL-06)
-- [ ] 03-07-PLAN.md — Remaining navigation: AeroMenuBar (NAV-02), AeroStatusBar (NAV-03), AeroBreadcrumb (NAV-04), AeroTabBar (NAV-05)
+- [x] 03-04-PLAN.md — Modal overlays: AeroDialog (OVL-01), AeroAlertDialog (OVL-02), AeroDrawer (OVL-08) (completed 2026-04-28)
+- [x] 03-05-PLAN.md — Anchored popups: AeroTooltip (OVL-03), AeroContextMenu (OVL-04), AeroPopover (OVL-07) (completed 2026-04-28)
+- [x] 03-06-PLAN.md — Notifications: AeroToast/AeroToastHost (OVL-05), AeroNotificationBanner (OVL-06) (completed 2026-04-28)
+- [x] 03-07-PLAN.md — Remaining navigation: AeroMenuBar (NAV-02), AeroStatusBar (NAV-03), AeroBreadcrumb (NAV-04), AeroTabBar (NAV-05) (completed 2026-04-28)
 - [ ] 03-08-PLAN.md — ShowcaseApp wiring: 3 new sections + AeroToastHost mount + theme hoisting + final visual checkpoint
 
 ## Progress
@@ -79,5 +79,5 @@ Decimal phases appear between their surrounding integers in numeric order.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete   | 2026-04-27 |
-| 2. Atomic Components | 6/6 | In Progress|  |
-| 3. Composite + Navigation | 5/8 | In Progress|  |
+| 2. Atomic Components | 6/6 | Complete   | 2026-04-28 |
+| 3. Composite + Navigation | 7/8 | In Progress|  |

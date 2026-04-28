@@ -73,20 +73,20 @@
 
 - [x] **OVL-01**: `AeroDialog` — модальное окно с заголовком, контентным слотом и кнопками действий
 - [x] **OVL-02**: `AeroAlertDialog` — диалог подтверждения/ошибки с иконкой и предустановленными кнопками OK/Cancel
-- [ ] **OVL-03**: `AeroTooltip` — подсказка при наведении с задержкой появления и glass-фоном
-- [ ] **OVL-04**: `AeroContextMenu` — контекстное меню по правой кнопке мыши с пунктами и разделителями
+- [x] **OVL-03**: `AeroTooltip` — подсказка при наведении с задержкой появления и glass-фоном
+- [x] **OVL-04**: `AeroContextMenu` — контекстное меню по правой кнопке мыши с пунктами и разделителями
 - [x] **OVL-05**: `AeroToast` / `AeroSnackbar` — временное уведомление в углу экрана с автоисчезновением (настраиваемый timeout)
 - [x] **OVL-06**: `AeroNotificationBanner` — горизонтальная строка info / warning / error / success с иконкой и кнопкой закрытия
-- [ ] **OVL-07**: `AeroPopover` — всплывающая панель рядом с элементом с произвольным содержимым
+- [x] **OVL-07**: `AeroPopover` — всплывающая панель рядом с элементом с произвольным содержимым
 - [x] **OVL-08**: `AeroDrawer` — боковая панель, выезжающая поверх основного контента с анимацией
 
 ### Navigation & Window Chrome (навигация и хромка окна)
 
 - [x] **NAV-01**: `AeroTitleBar` — кастомная шапка окна: Aero-градиент, кнопки Minimize/Maximize/Close с hover-эффектами, draggable область
-- [ ] **NAV-02**: `AeroMenuBar` — верхнее горизонтальное меню с пунктами и выпадающими подменю
-- [ ] **NAV-03**: `AeroStatusBar` — нижняя строка состояния с текстовыми секциями и цветными индикаторами
-- [ ] **NAV-04**: `AeroBreadcrumb` — навигационная цепочка «Главная › Раздел › Страница» с кликабельными элементами
-- [ ] **NAV-05**: `AeroTabBar` — переключатель вкладок с активным/неактивным состоянием и опциональными иконками
+- [x] **NAV-02**: `AeroMenuBar` — верхнее горизонтальное меню с пунктами и выпадающими подменю
+- [x] **NAV-03**: `AeroStatusBar` — нижняя строка состояния с текстовыми секциями и цветными индикаторами
+- [x] **NAV-04**: `AeroBreadcrumb` — навигационная цепочка «Главная › Раздел › Страница» с кликабельными элементами
+- [x] **NAV-05**: `AeroTabBar` — переключатель вкладок с активным/неактивным состоянием и опциональными иконками
 
 ### Lists & Data Display (списки и данные)
 
@@ -175,17 +175,17 @@ Updated: 2026-04-27 (roadmap created — 3 phases)
 | CNT-06 | Phase 3 | Complete |
 | OVL-01 | Phase 3 | Complete |
 | OVL-02 | Phase 3 | Complete |
-| OVL-03 | Phase 3 | Pending |
-| OVL-04 | Phase 3 | Pending |
+| OVL-03 | Phase 3 | Complete |
+| OVL-04 | Phase 3 | Complete |
 | OVL-05 | Phase 3 | Complete |
 | OVL-06 | Phase 3 | Complete |
-| OVL-07 | Phase 3 | Pending |
+| OVL-07 | Phase 3 | Complete |
 | OVL-08 | Phase 3 | Complete |
 | NAV-01 | Phase 3 | Complete |
-| NAV-02 | Phase 3 | Pending |
-| NAV-03 | Phase 3 | Pending |
-| NAV-04 | Phase 3 | Pending |
-| NAV-05 | Phase 3 | Pending |
+| NAV-02 | Phase 3 | Complete |
+| NAV-03 | Phase 3 | Complete |
+| NAV-04 | Phase 3 | Complete |
+| NAV-05 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 53 total
