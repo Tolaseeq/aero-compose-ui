@@ -52,8 +52,8 @@
 
 ### Dropdown (выпадающие списки)
 
-- [ ] **DRP-01**: `AeroComboBox` — редактируемый комбобокс: можно ввести текст или выбрать значение из выпадающего списка
-- [ ] **DRP-02**: `AeroDropdown` — нередактируемый select с выпадающим списком значений
+- [x] **DRP-01**: `AeroComboBox` — редактируемый комбобокс: можно ввести текст или выбрать значение из выпадающего списка
+- [x] **DRP-02**: `AeroDropdown` — нередактируемый select с выпадающим списком значений
 
 ### Range & Progress (диапазоны и прогресс)
 
@@ -161,8 +161,8 @@ Updated: 2026-04-27 (roadmap created — 3 phases)
 | SEL-03 | Phase 2 | Pending |
 | SEL-04 | Phase 2 | Pending |
 | SEL-05 | Phase 2 | Pending |
-| DRP-01 | Phase 2 | Pending |
-| DRP-02 | Phase 2 | Pending |
+| DRP-01 | Phase 2 | Complete |
+| DRP-02 | Phase 2 | Complete |
 | RNG-01 | Phase 2 | Pending |
 | RNG-02 | Phase 2 | Pending |
 | LST-01 | Phase 2 | Pending |

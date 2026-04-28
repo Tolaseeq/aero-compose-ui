@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 02-atomic-components-02-01-PLAN.md
-last_updated: "2026-04-28T08:02:14.327Z"
-last_activity: 2026-04-28 — Phase 2 Plan 01 buttons executed (BTN-01..04), 4 requirements satisfied
+stopped_at: Completed 02-atomic-components-04-PLAN.md
+last_updated: "2026-04-28T08:01:22Z"
+last_activity: 2026-04-28 — Phase 2 Plan 04 range/list executed (RNG-01..02, LST-01..02), 4 requirements satisfied
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 10
-  completed_plans: 8
-  percent: 60
+  completed_plans: 9
+  percent: 70
 ---
 
 # Project State
@@ -85,6 +85,8 @@ Recent decisions affecting current work:
 - [Phase 02-01-buttons]: indication=null on AeroIconButton.clickable — hover/pressed drawn manually, suppresses M3 ripple double-effect
 - [Phase 02-01-buttons]: AeroToolbarDefaults is a top-level object (not companion) — idiomatic Kotlin for composable helpers
 - [Phase 02-01-buttons]: hover overlay via drawWithContent inside Button content Box (not outer wrapper) — avoids M3 Button shape clipping issues
+- [Phase 02-atomic-components]: AeroComboBox popup uses PopupProperties(focusable=false) to preserve text field keyboard focus; keyboard nav inside popup not supported in v1
+- [Phase 02-atomic-components]: AeroPopupPositionProvider is internal (same module) — Phase 3 AeroPopover/AeroContextMenu/AeroMenuBar can reuse it directly without duplication
 
 ### Pending Todos
 
@@ -98,6 +100,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-28T07:59:23Z
-Stopped at: Completed 02-atomic-components-02-01-PLAN.md
+Last session: 2026-04-28T08:02:25.096Z
+Stopped at: Completed 02-atomic-components-05-PLAN.md
 Resume file: None
