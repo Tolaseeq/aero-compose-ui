@@ -20,7 +20,8 @@ import com.mordred.aero.theme.glassSurface
 /**
  * File path picker with an inline "Обзор" button that opens a native [java.awt.FileDialog].
  *
- * The text field is read-only; the selected path is written back via [onPathChange].
+ * The path text field is editable — the user may type, paste, or clear the path manually.
+ * The "Обзор" button opens a native OS file dialog and writes the selected path into the field.
  * The "Обзор" button is rendered using [glassSurface] to avoid a dependency on AeroOutlinedButton
  * (Plan 02-01), which is compiled in the same Wave 1 and may not be available at link time.
  *
@@ -52,7 +53,6 @@ public fun AeroFilePicker(
             value = path,
             onValueChange = onPathChange,
             modifier = Modifier.weight(1f),
-            readOnly = true,
             placeholder = placeholder,
             enabled = enabled
         )
