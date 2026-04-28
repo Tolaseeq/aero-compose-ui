@@ -109,7 +109,7 @@ public data class AeroColorScheme(
             titleBarGradientStart = Color(0xFF3A3A3A),
             titleBarGradientEnd = Color(0xFF2A2A2A),
             titleBarText = Color(0xFFE0E0E0),
-            buttonHover = Color(0xFF4A4A4A),
+            buttonHover = Color(0x30FFFFFF),
             closeButtonHover = Color(0xFFE81123),
             panelBackground = Color(0xFF2D2D2D)
         )
