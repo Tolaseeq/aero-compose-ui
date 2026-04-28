@@ -12,6 +12,7 @@ kotlin {
 dependencies {
     implementation(compose.desktop.common)
     implementation(compose.material3)
+    implementation(compose.materialIconsExtended)
     implementation(compose.animation)
     implementation(compose.foundation)
     implementation(compose.runtime)
@@ -20,6 +21,7 @@ dependencies {
 
     testImplementation(libs.kotlin.test)
     testImplementation(libs.junit.jupiter)
+    testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(kotlin("reflect"))
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
