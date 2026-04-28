@@ -1,7 +1,7 @@
 package com.mordred.aero.components.overlay
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,42 +9,34 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.window.WindowDraggableArea
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.rememberWindowState
+import com.mordred.aero.components.navigation.AeroTitleBar
 import com.mordred.aero.theme.AeroTheme
 
 /**
- * OVL-01: Aero modal dialog backed by a [Window] (not DialogWindow) so we can mount a
- * full Aero titlebar with drag + minimize + close. Three slots: [title], [content],
+ * OVL-01: Aero modal dialog backed by a [Window] (not DialogWindow) so the same
+ * [AeroTitleBar] used by the main showcase window can be mounted at the top — same
+ * gradient strip, the same Min/Max/Close buttons, the same `WindowDraggableArea` for
+ * smooth drag (no per-pixel recomposition lag). Three slots: [title], [content],
  * [buttons]. The [buttons] slot is a `RowScope` lambda — callers typically place 1-3
  * AeroButton/AeroOutlinedButton children, right-aligned via `Arrangement.End`.
  *
- * **Window choice:** `Window` (instead of `DialogWindow`) gives us `FrameWindowScope`,
- * which is required for `WindowDraggableArea` (smooth, native window drag with no
- * recomposition cost) and `WindowState.isMinimized` (the user-requested minimize button).
- * The trade-off: `Window` is non-modal at the OS level. For showcase purposes that's
- * acceptable; callers needing OS modality can wrap the trigger in their own state guard.
+ * **Window choice:** `Window` (instead of `DialogWindow`) gives `FrameWindowScope`,
+ * required for `AeroTitleBar` and `WindowDraggableArea`. Trade-off: `Window` is non-
+ * modal at the OS level — for showcase purposes that's acceptable; callers needing
+ * OS modality can guard the trigger themselves.
  *
  * **Win11 rule:** the underlying Window uses `undecorated = true`, `transparent = false`
  * to avoid `EXCEPTION_ACCESS_VIOLATION` (CMP-3757 / GH#3171).
@@ -68,9 +60,6 @@ public fun AeroDialog(
     dialogHeight: Dp = 220.dp
 ) {
     val windowState = rememberWindowState(width = dialogWidth, height = dialogHeight)
-    var isMinimized by remember { mutableStateOf(false) }
-    windowState.isMinimized = isMinimized
-
     Window(
         onCloseRequest = onDismissRequest,
         state = windowState,
@@ -87,8 +76,10 @@ public fun AeroDialog(
         }
     ) {
         val colors = AeroTheme.colors
-        // Outer Box paints a fully opaque theme background to defeat the OS-default
-        // white window beneath, then overlays the panel-tint gradient.
+        // Outer Box paints a fully opaque theme background under the panel-tint
+        // gradient (mimics the showcase main window) and draws a 1.dp border in the
+        // titlebar-gradient hue so the floating window has a visible edge against
+        // any backdrop.
         Box(
             Modifier
                 .fillMaxSize()
@@ -97,14 +88,16 @@ public fun AeroDialog(
                     Brush.verticalGradient(
                         colors = listOf(
                             colors.panelBackground,
-                            colors.panelBackground.copy(alpha = colors.panelBackground.alpha * 0.85f)
+                            colors.panelBackground.copy(alpha = colors.panelBackground.alpha * 0.7f)
                         )
                     )
                 )
+                .border(1.dp, colors.titleBarGradientStart)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                AeroDialogTitleBar(
-                    onMinimizeRequest = { isMinimized = true },
+                AeroTitleBar(
+                    title = "",
+                    windowState = windowState,
                     onCloseRequest = onDismissRequest
                 )
                 Column(
@@ -122,43 +115,6 @@ public fun AeroDialog(
                     )
                 }
             }
-        }
-    }
-}
-
-/**
- * Aero-styled titlebar for AeroDialog. Drag area uses [WindowDraggableArea] (native AWT
- * drag — no per-pixel recomposition lag), plus minimize and close buttons. Maximize is
- * deliberately omitted because dialogs are fixed-size.
- */
-@Composable
-private fun androidx.compose.ui.window.FrameWindowScope.AeroDialogTitleBar(
-    onMinimizeRequest: () -> Unit,
-    onCloseRequest: () -> Unit
-) {
-    val colors = AeroTheme.colors
-    Row(
-        modifier = Modifier.fillMaxWidth().height(28.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        WindowDraggableArea(modifier = Modifier.weight(1f).fillMaxSize()) {
-            Box(modifier = Modifier.fillMaxSize())
-        }
-        Box(
-            modifier = Modifier
-                .size(width = 36.dp, height = 28.dp)
-                .clickable(onClick = onMinimizeRequest),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("─", color = colors.onSurface)
-        }
-        Box(
-            modifier = Modifier
-                .size(width = 36.dp, height = 28.dp)
-                .clickable(onClick = onCloseRequest),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("✕", color = colors.onSurface)
         }
     }
 }

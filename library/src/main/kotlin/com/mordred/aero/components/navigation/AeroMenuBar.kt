@@ -21,6 +21,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mordred.aero.components.popup.AeroDropdownItem
 import com.mordred.aero.components.popup.AeroDropdownPopup
@@ -50,6 +53,9 @@ public fun AeroMenuBar(
     modifier: Modifier = Modifier
 ) {
     var openIndex by remember { mutableStateOf(-1) }
+    val typography = AeroTheme.typography
+    val textMeasurer = rememberTextMeasurer()
+    val density = LocalDensity.current
 
     Row(
         modifier = modifier
@@ -61,6 +67,24 @@ public fun AeroMenuBar(
         horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         menus.forEachIndexed { index, menu ->
+            // Compute the popup width once per menu by measuring every label and
+            // taking the widest, plus the item's horizontal padding. Passing this as
+            // anchorWidth makes the popup hug the longest item and avoids the
+            // SubcomposeLayout flicker that a runtime two-pass approach caused.
+            val popupAnchorWidth: Dp = remember(menu, density, typography) {
+                val labels = menu.items.mapNotNull { item ->
+                    when (item) {
+                        is AeroMenuItem.Action -> item.label
+                        AeroMenuItem.Divider -> null
+                        is AeroMenuItem.Submenu -> "${item.label}    ▶"
+                    }
+                }
+                val widestPx = labels.maxOfOrNull { label ->
+                    textMeasurer.measure(label, typography.bodyLarge).size.width
+                } ?: 0
+                with(density) { widestPx.toDp() } + 16.dp
+            }.coerceIn(120.dp, 320.dp)
+
             TopLevelLabel(
                 label = menu.label,
                 isOpen = openIndex == index,
@@ -68,7 +92,6 @@ public fun AeroMenuBar(
                     openIndex = if (openIndex == index) -1 else index
                 },
                 onHover = { hovered ->
-                    // Cross-item hover-switch: only when SOME menu is already open
                     if (hovered && openIndex >= 0 && openIndex != index) {
                         openIndex = index
                     }
@@ -77,6 +100,7 @@ public fun AeroMenuBar(
                     if (openIndex == index) {
                         AeroDropdownPopup(
                             expanded = true,
+                            anchorWidth = popupAnchorWidth,
                             onDismissRequest = { openIndex = -1 },
                             side = AeroPopupSide.Bottom
                         ) {

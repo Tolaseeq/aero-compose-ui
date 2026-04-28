@@ -30,8 +30,16 @@ public class AeroPopupPositionProvider(
         layoutDirection: LayoutDirection,
         popupContentSize: IntSize
     ): IntOffset {
+        // First measurement quirk: Compose Popup invokes calculatePosition with
+        // popupContentSize equal to (or close to) windowSize before the content has
+        // actually measured. Letting the auto-flip branch run with a window-sized
+        // popup spuriously detects "overflow" and flips the popup to the opposite
+        // side and clamps it to the screen origin — visible as a one-frame flash of
+        // a huge menu at the top-left. Skip the flip while the size is suspect.
+        val unmeasured = popupContentSize.width >= windowSize.width ||
+                         popupContentSize.height >= windowSize.height
         val proposed = primaryFor(side, anchorBounds, popupContentSize)
-        val flipped = if (overflows(proposed, windowSize, popupContentSize)) {
+        val flipped = if (!unmeasured && overflows(proposed, windowSize, popupContentSize)) {
             primaryFor(opposite(side), anchorBounds, popupContentSize)
         } else proposed
         return clamp(flipped, windowSize, popupContentSize)

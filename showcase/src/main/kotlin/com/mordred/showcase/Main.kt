@@ -1,5 +1,6 @@
 package com.mordred.showcase
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,7 +31,9 @@ fun main() = application {
     ) {
         var currentScheme by remember { mutableStateOf(AeroColorScheme.AeroBlue) }
         AeroTheme(colorScheme = currentScheme) {
-            Box(Modifier.fillMaxSize()) {
+            // 1.dp border in the titlebar-gradient hue makes the undecorated window
+            // visibly bounded against any backdrop.
+            Box(Modifier.fillMaxSize().border(1.dp, AeroTheme.colors.titleBarGradientStart)) {
                 Column(Modifier.fillMaxSize()) {
                     AeroTitleBar(
                         title = "aero-compose-ui Showcase",

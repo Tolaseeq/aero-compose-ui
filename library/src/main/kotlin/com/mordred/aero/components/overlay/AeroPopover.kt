@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
@@ -55,8 +56,10 @@ public fun AeroPopover(
             dismissOnClickOutside = true
         )
     ) {
-        // Paint a fully opaque theme background under the panel tint so popover text
-        // never bleeds into content beneath it (panelBackground is 80% alpha).
+        // Glass-style background: opaque theme base, then a vertical-gradient panel
+        // tint (top brighter → bottom faded) so text reads cleanly while preserving
+        // the Aero glass look. Border tinted with titlebar-gradient hue so the
+        // popover has a visible, brand-consistent edge.
         val colors = AeroTheme.colors
         val shape = RoundedCornerShape(6.dp)
         Box(
@@ -64,8 +67,16 @@ public fun AeroPopover(
                 .shadow(elevation = 6.dp, shape = shape)
                 .clip(shape)
                 .background(colors.background, shape)
-                .background(colors.panelBackground, shape)
-                .border(1.dp, colors.glassBorder, shape)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            colors.panelBackground,
+                            colors.panelBackground.copy(alpha = colors.panelBackground.alpha * 0.7f)
+                        )
+                    ),
+                    shape
+                )
+                .border(1.dp, colors.titleBarGradientStart, shape)
                 .padding(12.dp)
         ) {
             content()
