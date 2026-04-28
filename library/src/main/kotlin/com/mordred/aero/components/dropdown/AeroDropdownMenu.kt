@@ -129,8 +129,9 @@ internal fun AeroDropdownPopup(
     val colors = AeroTheme.colors
     val shape = RoundedCornerShape(4.dp)
 
-    // Popup background: use panelBackground which has sufficient opacity (0xCC = 80% alpha)
-    // to block content behind the popup. cardBackground is too transparent (0x40 = 25% alpha).
+    // Popup background: paint a fully-opaque base first, then the panelBackground tint on top.
+    // panelBackground has 0xCC (80%) alpha which lets underlying content bleed through;
+    // the opaque base layer eliminates that transparency while preserving the Aero tint.
     val popupBackground = colors.panelBackground
 
     // Width modifier: if anchor width is specified, set popup to exactly that width;
@@ -155,6 +156,7 @@ internal fun AeroDropdownPopup(
                 .heightIn(max = 320.dp)
                 .shadow(elevation = 8.dp, shape = shape)
                 .clip(shape)
+                .background(colors.background, shape)
                 .background(popupBackground, shape)
                 .border(1.dp, colors.glassBorder, shape)
                 .onPreviewKeyEvent(onKeyEvent)
