@@ -30,14 +30,6 @@ public class AeroPopupPositionProvider(
         layoutDirection: LayoutDirection,
         popupContentSize: IntSize
     ): IntOffset {
-        // First-measurement quirk: Compose Desktop calls calculatePosition once with
-        // popupContentSize ≈ windowSize before the popup content has actually measured.
-        // Both the auto-flip branch (treats placeholder as overflow → flips & clamps to
-        // screen origin) AND the final clamp (maxY = windowSize - popup.height becomes
-        // 0 → forces y=0) conspire to render a window-sized rectangle at (0, 0) for one
-        // frame — the "huge menu flickers at the top" the user has reported four times.
-        // Park the placeholder pass off-screen entirely so nothing is visible until the
-        // real measurement arrives.
         val unmeasured = popupContentSize.width >= windowSize.width ||
                          popupContentSize.height >= windowSize.height
         if (unmeasured) {

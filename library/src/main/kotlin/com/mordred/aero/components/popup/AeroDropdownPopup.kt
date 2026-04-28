@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,7 +32,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
-import com.mordred.aero.components.containers.AeroScrollArea
 import com.mordred.aero.theme.AeroTheme
 
 /**
@@ -64,9 +65,6 @@ public fun AeroDropdownItem(
             .height(28.dp)
             .background(bg)
             .clickable(onClick = onClick)
-            // 8.dp horizontal padding matches the AeroDropdown trigger field's internal
-            // padding so popup-text and trigger-text align vertically (avoiding the
-            // 4.dp visual right-shift that was reported in UAT).
             .padding(horizontal = 8.dp),
         contentAlignment = Alignment.CenterStart
     ) {
@@ -107,16 +105,6 @@ public fun AeroDropdownPopup(
     val colors = AeroTheme.colors
     val shape = RoundedCornerShape(4.dp)
 
-    // Popup background: paint a fully-opaque base first, then the panelBackground tint on top.
-    // panelBackground has 0xCC (80%) alpha which lets underlying content bleed through;
-    // the opaque base layer eliminates that transparency while preserving the Aero tint.
-    val popupBackground = colors.panelBackground
-
-    // Width: lock to anchorWidth when supplied (AeroDropdown/AeroComboBox), otherwise
-    // 120-320.dp range. Callers that want content-fit width (e.g. AeroMenuBar) should
-    // measure their items via TextMeasurer at composition time and pass the result as
-    // anchorWidth — that avoids the post-composition flicker that two-pass layouts
-    // (SubcomposeLayout) cause when the placeholder pass briefly renders.
     val widthModifier = if (anchorWidth != Dp.Unspecified) {
         Modifier.widthIn(min = anchorWidth, max = anchorWidth)
     } else {
@@ -134,16 +122,16 @@ public fun AeroDropdownPopup(
     ) {
         Box(
             widthModifier
+                .heightIn(max = 320.dp)
                 .shadow(elevation = 8.dp, shape = shape)
                 .clip(shape)
                 .background(colors.background, shape)
-                .background(popupBackground, shape)
+                .background(colors.panelBackground, shape)
                 .border(1.dp, colors.glassBorder, shape)
+                .padding(vertical = 4.dp)
                 .onPreviewKeyEvent(onKeyEvent)
         ) {
-            AeroScrollArea(modifier = Modifier.heightIn(max = 320.dp)) {
-                Column(modifier = Modifier.padding(vertical = 4.dp), content = content)
-            }
+            Column(modifier = Modifier.verticalScroll(rememberScrollState()), content = content)
         }
     }
 }

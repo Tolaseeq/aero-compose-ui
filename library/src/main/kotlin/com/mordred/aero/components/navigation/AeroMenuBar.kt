@@ -67,10 +67,6 @@ public fun AeroMenuBar(
         horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         menus.forEachIndexed { index, menu ->
-            // Compute the popup width once per menu by measuring every label and
-            // taking the widest, plus the item's horizontal padding. Passing this as
-            // anchorWidth makes the popup hug the longest item and avoids the
-            // SubcomposeLayout flicker that a runtime two-pass approach caused.
             val popupAnchorWidth: Dp = remember(menu, density, typography) {
                 val labels = menu.items.mapNotNull { item ->
                     when (item) {

@@ -31,8 +31,6 @@ fun main() = application {
     ) {
         var currentScheme by remember { mutableStateOf(AeroColorScheme.AeroBlue) }
         AeroTheme(colorScheme = currentScheme) {
-            // 1.dp border in the titlebar-gradient hue makes the undecorated window
-            // visibly bounded against any backdrop.
             Box(Modifier.fillMaxSize().border(1.dp, AeroTheme.colors.titleBarGradientStart)) {
                 Column(Modifier.fillMaxSize()) {
                     AeroTitleBar(

@@ -26,29 +26,19 @@ import com.mordred.aero.components.navigation.AeroTitleBar
 import com.mordred.aero.theme.AeroTheme
 
 /**
- * OVL-01: Aero modal dialog backed by a [Window] (not DialogWindow) so the same
- * [AeroTitleBar] used by the main showcase window can be mounted at the top — same
- * gradient strip, the same Min/Max/Close buttons, the same `WindowDraggableArea` for
- * smooth drag (no per-pixel recomposition lag). Three slots: [title], [content],
- * [buttons]. The [buttons] slot is a `RowScope` lambda — callers typically place 1-3
- * AeroButton/AeroOutlinedButton children, right-aligned via `Arrangement.End`.
+ * OVL-01: Aero modal dialog with [AeroTitleBar] chrome. Three slots: [title],
+ * [content], [buttons]. The [buttons] slot is a `RowScope` lambda — callers typically
+ * place 1-3 AeroButton/AeroOutlinedButton children, right-aligned by `Arrangement.End`.
  *
- * **Window choice:** `Window` (instead of `DialogWindow`) gives `FrameWindowScope`,
- * required for `AeroTitleBar` and `WindowDraggableArea`. Trade-off: `Window` is non-
- * modal at the OS level — for showcase purposes that's acceptable; callers needing
- * OS modality can guard the trigger themselves.
- *
- * **Win11 rule:** the underlying Window uses `undecorated = true`, `transparent = false`
- * to avoid `EXCEPTION_ACCESS_VIOLATION` (CMP-3757 / GH#3171).
- *
- * **Esc key:** dismissed via `onPreviewKeyEvent`.
+ * Win11 rule: the underlying Window must keep `transparent = false` to avoid
+ * `EXCEPTION_ACCESS_VIOLATION` (CMP-3757 / GH#3171). Esc dismisses.
  *
  * @param onDismissRequest invoked when the user dismisses (Esc, close button, system close).
- * @param title title slot — rendered at the top of the dialog content area.
- * @param content body slot — rendered between title and buttons.
- * @param buttons buttons RowScope slot — right-aligned by `Arrangement.End`.
- * @param dialogWidth window width (default 420.dp). Pass smaller values for compact alerts.
- * @param dialogHeight window height (default 220.dp — fits a single-line message + buttons).
+ * @param title title slot rendered at the top of the dialog content area.
+ * @param content body slot rendered between title and buttons.
+ * @param buttons buttons RowScope slot, right-aligned by `Arrangement.End`.
+ * @param dialogWidth window width.
+ * @param dialogHeight window height.
  */
 @Composable
 public fun AeroDialog(
@@ -76,10 +66,6 @@ public fun AeroDialog(
         }
     ) {
         val colors = AeroTheme.colors
-        // Outer Box paints a fully opaque theme background under the panel-tint
-        // gradient (mimics the showcase main window) and draws a 1.dp border in the
-        // titlebar-gradient hue so the floating window has a visible edge against
-        // any backdrop.
         Box(
             Modifier
                 .fillMaxSize()

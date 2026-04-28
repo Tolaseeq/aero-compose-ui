@@ -48,13 +48,9 @@ public fun AeroGroupBox(
     val typography = AeroTheme.typography
     val shape = RoundedCornerShape(4.dp)
 
-    // Pushing the bordered Box down by half the label glyph height lines the border
-    // up with the label's vertical center; the label sits at the outer Box's TopStart
-    // (y=0) and its center lands exactly where the border begins (y=labelHalfHeight).
     val labelHalfHeight = 7.dp
 
     Box(modifier = modifier) {
-        // Bordered content area — pushed down so its top edge sits at the label's center.
         Box(
             modifier = Modifier
                 .padding(top = labelHalfHeight)
@@ -70,8 +66,6 @@ public fun AeroGroupBox(
         ) {
             content()
         }
-        // Floating label centered on the top border — its background "carves out"
-        // the border behind the label glyph.
         Text(
             text = label,
             color = colors.labelText,

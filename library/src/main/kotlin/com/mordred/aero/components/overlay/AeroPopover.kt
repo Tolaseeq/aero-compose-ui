@@ -56,10 +56,6 @@ public fun AeroPopover(
             dismissOnClickOutside = true
         )
     ) {
-        // Glass-style background: opaque theme base, then a vertical-gradient panel
-        // tint (top brighter → bottom faded) so text reads cleanly while preserving
-        // the Aero glass look. Border tinted with titlebar-gradient hue so the
-        // popover has a visible, brand-consistent edge.
         val colors = AeroTheme.colors
         val shape = RoundedCornerShape(6.dp)
         Box(

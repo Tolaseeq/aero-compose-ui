@@ -13,14 +13,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
 /**
- * CNT-05: Scrollable area with an Aero-styled vertical scrollbar permanently visible.
- *
- * Vertical-only in v1 (horizontal is deferred per CONTEXT.md "Claude's Discretion").
- *
- * The container takes its parent's max width but only as much height as its content needs,
- * up to the height cap supplied by the caller. This means a popup wrapping AeroScrollArea
- * with `Modifier.heightIn(max = 320.dp)` shrinks to actual content height when items fit;
- * the cap only kicks in for overflow.
+ * CNT-05: Scrollable area with an Aero-styled vertical scrollbar that appears only
+ * when content overflows. Vertical-only in v1 (horizontal deferred to v2).
  *
  * @param modifier outer layout modifier.
  * @param state optional `ScrollState`; defaults to `rememberScrollState()`.
@@ -39,10 +33,6 @@ public fun AeroScrollArea(
                 .verticalScroll(state),
             content = content
         )
-        // Only render the scrollbar when the content actually overflows. With it always
-        // visible, the bar's fillMaxHeight forced the surrounding Box to claim the heightIn
-        // cap (e.g. 320.dp for dropdown popups), leaving empty space below short content.
-        // Reading state.maxValue makes this composition observe scroll-state changes.
         if (state.maxValue > 0) {
             AeroScrollBar(
                 scrollState = state,

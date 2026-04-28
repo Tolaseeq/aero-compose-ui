@@ -66,9 +66,6 @@ public fun Modifier.aeroContextMenu(items: List<AeroContextMenuItem>): Modifier 
     val pointerModifier = Modifier.onPointerEvent(PointerEventType.Press) { event ->
         if (event.buttons.isSecondaryPressed) {
             val change = event.changes.firstOrNull() ?: return@onPointerEvent
-            // Translate from local pointer coordinates to window-local coordinates so
-            // AeroCursorPositionProvider (which expects window-space) places the popup
-            // at the actual click point, not at the layout's origin.
             val local = change.position
             val windowOrigin = coords?.localToWindow(androidx.compose.ui.geometry.Offset.Zero)
                 ?: androidx.compose.ui.geometry.Offset.Zero

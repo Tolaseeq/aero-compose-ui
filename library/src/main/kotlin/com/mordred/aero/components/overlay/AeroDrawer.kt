@@ -94,8 +94,6 @@ public fun AeroDrawer(
 
     val scrimInteraction = remember { MutableInteractionSource() }
 
-    // Render in a Popup so the drawer covers the entire host window regardless of where
-    // the caller mounted it; focusable=true so the Esc-handler receives keyboard events.
     Popup(
         popupPositionProvider = FullWindowPositionProvider,
         onDismissRequest = onDismissRequest,
@@ -115,7 +113,6 @@ public fun AeroDrawer(
                     } else false
                 }
         ) {
-            // Scrim — fills the popup, click dismisses.
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -126,8 +123,6 @@ public fun AeroDrawer(
                         onClick = onDismissRequest
                     )
             )
-            // Panel — slides in from the chosen side; clicks pass through to its content
-            // (NOT the scrim, so callers can interact with drawer items).
             Box(
                 modifier = Modifier
                     .align(align)
@@ -143,7 +138,7 @@ public fun AeroDrawer(
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
-                        onClick = {} // swallow scrim clicks behind the panel
+                        onClick = {}
                     )
             ) {
                 Column(content = content)

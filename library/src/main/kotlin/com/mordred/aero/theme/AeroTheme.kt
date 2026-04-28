@@ -69,7 +69,6 @@ public fun AeroTheme(
     val scrollbarStyle = ScrollbarStyle(
         minimalHeight = 16.dp,
         thickness = 12.dp,
-        // Sharper corners (2.dp) match Aero buttons; the 6.dp rounded look read as Material3.
         shape = RoundedCornerShape(2.dp),
         hoverDurationMillis = 150,
         unhoverColor = colorScheme.borderSelected.copy(alpha = 0.55f),
