@@ -75,20 +75,16 @@ public fun AeroDropdownItem(
 /**
  * Public reusable popup wrapper for anchored dropdowns / menus.
  *
- * Used by `AeroDropdown`, `AeroComboBox`, and Phase 3 `AeroMenuBar` /
- * `AeroPopover` / `AeroContextMenu`. Handles popup lifecycle, smart
- * position-and-flip via [AeroPopupPositionProvider], and Aero glass styling.
- *
- * Internally wraps the scrollable content in [AeroScrollArea] so when the
- * menu's items overflow, the user sees an Aero-styled vertical scrollbar
- * (CONTEXT.md retrofit decision — replaces the previous bare `verticalScroll`).
+ * Used by `AeroDropdown`, `AeroComboBox`, and `AeroMenuBar`. Handles popup lifecycle,
+ * position-and-flip via [AeroPopupPositionProvider], and Aero glass styling. The
+ * scrollable content is hosted in a `Modifier.verticalScroll` Column inside a Box that
+ * carries both `widthIn` and `heightIn(max = 320.dp)` so the popup hugs its content.
  *
  * @param expanded Whether the popup is visible.
  * @param onDismissRequest Called when the popup should be dismissed.
  * @param anchorWidth Width of the trigger/anchor element. The popup will be at least this wide
- *   so it visually aligns with the trigger. Pass [Dp.Unspecified] to let the popup wrap content.
+ *   so it visually aligns with the trigger. Pass [Dp.Unspecified] for a 120-320.dp range.
  * @param side Side relative to the anchor on which to place the popup. Auto-flips on overflow.
- *   Defaults to [AeroPopupSide.Bottom] (the historical behavior).
  * @param onKeyEvent Key event handler for keyboard navigation within the popup.
  * @param content The popup's scrollable item list.
  */
