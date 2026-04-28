@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_plan: 2 of 8 in phase complete (03-02 containers CNT-01..04 — AeroCard, AeroPanel, AeroDivider, AeroGroupBox)
-status: Phase 3 Plan 02 complete — full containers package (CNT-01..06) ships; AeroCard/AeroPanel/AeroDivider/AeroGroupBox added as thin wrappers over glass modifiers
-stopped_at: Completed 03-02-PLAN.md (CNT-01..04 — AeroCard / AeroPanel / AeroDivider / AeroGroupBox)
-last_updated: "2026-04-28T13:18:39.207Z"
+status: completed
+stopped_at: Completed 03-06-PLAN.md (OVL-05 AeroToast + OVL-06 AeroNotificationBanner)
+last_updated: "2026-04-28T13:33:00.181Z"
 last_activity: 2026-04-28 — Phase 3 Plan 02 complete — containers CNT-01..04 ship (CNT-01, CNT-02, CNT-03, CNT-04 satisfied)
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 18
-  completed_plans: 12
+  completed_plans: 14
   percent: 67
 ---
 
@@ -63,6 +63,7 @@ Progress: [███████░░░] 67%
 | Phase 02-atomic-components P06 | ~45 | 3 tasks | 2 files |
 | Phase 03-composite-navigation P01 | 7m | 4 tasks | 16 files |
 | Phase 03-composite-navigation P02 | 11min | 2 tasks | 8 files |
+| Phase 03-composite-navigation P06 | 25min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -109,6 +110,9 @@ Recent decisions affecting current work:
 - [Phase 03-composite-navigation]: Container wrappers (CNT-01..04) are thin glassEffect/glassPanel wrappers — single Box, one padding param, content slot — no internal layout rules
 - [Phase 03-composite-navigation]: AeroGroupBox label uses opaque-background Text painted over the top border line — no custom Layout/measure pass; produces Windows-Forms inset-label visual cheaply
 - [Phase 03-composite-navigation]: AeroDivider exposes thickness param (default 1.dp) on top of vertical: Boolean — caller constrains length via passed Modifier
+- [Phase 03-composite-navigation]: AeroToastHostState uses suspendCancellableCoroutine + onDismissed callback — caller awaits AeroToastResult; stack overflow evicts oldest (FIFO) at MAX_STACK_SIZE=5
+- [Phase 03-composite-navigation]: Per-toast LaunchedEffect(data.id) inside key(data.id) — each toast carries its own dismiss timer that survives stack reorders without restarting
+- [Phase 03-composite-navigation]: AeroBannerKind icon mapping uses Icons.Outlined (CheckCircle for Success); banner uses 1dp accent border at 0.6 alpha over glassPanel
 
 ### Pending Todos
 
@@ -122,6 +126,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-28T13:18:39.200Z
-Stopped at: Completed 03-02-PLAN.md (CNT-01..04 — AeroCard / AeroPanel / AeroDivider / AeroGroupBox)
+Last session: 2026-04-28T13:32:53.374Z
+Stopped at: Completed 03-06-PLAN.md (OVL-05 AeroToast + OVL-06 AeroNotificationBanner)
 Resume file: None

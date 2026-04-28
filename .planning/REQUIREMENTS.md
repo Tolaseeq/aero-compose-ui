@@ -75,8 +75,8 @@
 - [ ] **OVL-02**: `AeroAlertDialog` — диалог подтверждения/ошибки с иконкой и предустановленными кнопками OK/Cancel
 - [ ] **OVL-03**: `AeroTooltip` — подсказка при наведении с задержкой появления и glass-фоном
 - [ ] **OVL-04**: `AeroContextMenu` — контекстное меню по правой кнопке мыши с пунктами и разделителями
-- [ ] **OVL-05**: `AeroToast` / `AeroSnackbar` — временное уведомление в углу экрана с автоисчезновением (настраиваемый timeout)
-- [ ] **OVL-06**: `AeroNotificationBanner` — горизонтальная строка info / warning / error / success с иконкой и кнопкой закрытия
+- [x] **OVL-05**: `AeroToast` / `AeroSnackbar` — временное уведомление в углу экрана с автоисчезновением (настраиваемый timeout)
+- [x] **OVL-06**: `AeroNotificationBanner` — горизонтальная строка info / warning / error / success с иконкой и кнопкой закрытия
 - [ ] **OVL-07**: `AeroPopover` — всплывающая панель рядом с элементом с произвольным содержимым
 - [ ] **OVL-08**: `AeroDrawer` — боковая панель, выезжающая поверх основного контента с анимацией
 
@@ -177,8 +177,8 @@ Updated: 2026-04-27 (roadmap created — 3 phases)
 | OVL-02 | Phase 3 | Pending |
 | OVL-03 | Phase 3 | Pending |
 | OVL-04 | Phase 3 | Pending |
-| OVL-05 | Phase 3 | Pending |
-| OVL-06 | Phase 3 | Pending |
+| OVL-05 | Phase 3 | Complete |
+| OVL-06 | Phase 3 | Complete |
 | OVL-07 | Phase 3 | Pending |
 | OVL-08 | Phase 3 | Pending |
 | NAV-01 | Phase 3 | Pending |
