@@ -1,5 +1,7 @@
 package com.mordred.aero.theme
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -14,12 +16,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Card / element-level glass surface. Renders shadow then gradient fill + border in a
- * single `drawBehind` block (no overdraw, FOUND-07). Reads colors from [LocalAeroColors] —
- * MUST be invoked inside `AeroTheme {}`.
+ * Card / element-level glass surface. Renders shadow + gradient fill + border.
+ * Reads colors from [LocalAeroColors] — MUST be invoked inside `AeroTheme {}`.
  *
- * @param cornerRadius corner radius of the rounded rect (default 8.dp).
- * @param elevation shadow depth (default 4.dp).
+ * @param cornerRadius corner radius of the rounded rect.
+ * @param elevation shadow depth.
  */
 @Composable
 public fun Modifier.glassEffect(
@@ -32,26 +33,16 @@ public fun Modifier.glassEffect(
     val glassBorder = colors.glassBorder
     return this
         .shadow(elevation, shape)
-        .drawBehind {
-            val cornerPx = cornerRadius.toPx()
-            val cr = CornerRadius(cornerPx, cornerPx)
-            // Single-pass: gradient fill + border stroke, both inside drawBehind.
-            drawRoundRect(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        glassSurface,
-                        glassSurface.copy(alpha = glassSurface.alpha * 0.5f)
-                    )
-                ),
-                cornerRadius = cr
-            )
-            drawRoundRect(
-                color = glassBorder,
-                cornerRadius = cr,
-                style = Stroke(width = 1.dp.toPx())
-            )
-        }
-        .clip(shape)
+        .background(
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    glassSurface,
+                    glassSurface.copy(alpha = glassSurface.alpha * 0.5f)
+                )
+            ),
+            shape = shape
+        )
+        .border(width = 1.dp, color = glassBorder, shape = shape)
 }
 
 /**
