@@ -4,7 +4,6 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -78,7 +77,14 @@ public fun AeroOutlinedButton(
         OutlinedButton(
             onClick = onClick,
             enabled = enabled,
-            modifier = Modifier.height(height),
+            modifier = Modifier
+                .height(height)
+                .drawWithContent {
+                    drawContent()
+                    if (hovered && enabled) {
+                        drawRect(buttonHoverColor)
+                    }
+                },
             shape = RoundedCornerShape(4.dp),
             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
             border = BorderStroke(width = borderWidth, color = borderColor),
@@ -88,20 +94,11 @@ public fun AeroOutlinedButton(
             ),
             interactionSource = interactionSource
         ) {
-            Box(
-                modifier = Modifier.drawWithContent {
-                    drawContent()
-                    if (hovered && enabled) {
-                        drawRect(buttonHoverColor)
-                    }
-                }
-            ) {
-                Text(
-                    text = text,
-                    style = AeroTheme.typography.bodyLarge,
-                    fontSize = 14.sp
-                )
-            }
+            Text(
+                text = text,
+                style = AeroTheme.typography.bodyLarge,
+                fontSize = 14.sp
+            )
         }
     }
 }

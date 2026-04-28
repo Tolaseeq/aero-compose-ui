@@ -3,7 +3,6 @@ package com.mordred.aero.components.buttons
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -78,7 +77,14 @@ public fun AeroButton(
         Button(
             onClick = onClick,
             enabled = enabled,
-            modifier = Modifier.height(height),
+            modifier = Modifier
+                .height(height)
+                .drawWithContent {
+                    drawContent()
+                    if (hovered && enabled) {
+                        drawRect(buttonHoverColor)
+                    }
+                },
             shape = RoundedCornerShape(4.dp),
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp),
             colors = ButtonDefaults.buttonColors(
@@ -89,20 +95,11 @@ public fun AeroButton(
             ),
             interactionSource = interactionSource
         ) {
-            Box(
-                modifier = Modifier.drawWithContent {
-                    drawContent()
-                    if (hovered && enabled) {
-                        drawRect(buttonHoverColor)
-                    }
-                }
-            ) {
-                Text(
-                    text = text,
-                    style = AeroTheme.typography.bodyLarge,
-                    fontSize = 14.sp
-                )
-            }
+            Text(
+                text = text,
+                style = AeroTheme.typography.bodyLarge,
+                fontSize = 14.sp
+            )
         }
     }
 }
