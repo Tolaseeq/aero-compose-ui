@@ -9,6 +9,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -19,19 +21,21 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.mordred.aero.components.containers.AeroScrollBar
 import com.mordred.aero.theme.AeroTheme
 
 /**
  * Multi-line text area with Aero-styled focus border and vertical scrolling.
  *
  * The border animates from [AeroTheme.colors.borderDefault] to [AeroTheme.colors.borderSelected]
- * over 150 ms with LinearEasing on focus.
- *
- * TODO(Phase 3): wrap with AeroScrollArea once CNT-05 ships
+ * over 150 ms with LinearEasing on focus. An [AeroScrollBar] overlay is attached to the
+ * same scroll state as the underlying `BasicTextField`, so when content overflows the
+ * field the user sees an Aero-styled vertical scrollbar.
  *
  * @param value Current text value.
  * @param onValueChange Callback invoked when text changes.
@@ -71,32 +75,44 @@ public fun AeroTextArea(
         label = "borderWidth"
     )
 
-    BasicTextField(
-        value = value,
-        onValueChange = onValueChange,
-        enabled = enabled,
-        singleLine = false,
-        maxLines = Int.MAX_VALUE,
-        interactionSource = interactionSource,
-        textStyle = AeroTheme.typography.bodyLarge.copy(color = colors.onSurface),
-        cursorBrush = SolidColor(colors.primary),
+    Box(
         modifier = modifier
             .heightIn(min = minHeight, max = maxHeight)
             .background(colors.cardBackground, shape)
             .border(borderWidth.dp, borderColor, shape)
-            .padding(8.dp)
-            .verticalScroll(scrollState),
-        decorationBox = { innerTextField ->
-            Box {
-                if (value.isEmpty() && placeholder.isNotEmpty()) {
-                    Text(
-                        text = placeholder,
-                        color = colors.labelText.copy(alpha = 0.5f),
-                        style = AeroTheme.typography.bodyLarge
-                    )
+    ) {
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            enabled = enabled,
+            singleLine = false,
+            maxLines = Int.MAX_VALUE,
+            interactionSource = interactionSource,
+            textStyle = AeroTheme.typography.bodyLarge.copy(color = colors.onSurface),
+            cursorBrush = SolidColor(colors.primary),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(end = 14.dp)        // reserve space so cursor never sits behind the scrollbar
+                .padding(8.dp)
+                .verticalScroll(scrollState),
+            decorationBox = { innerTextField ->
+                Box {
+                    if (value.isEmpty() && placeholder.isNotEmpty()) {
+                        Text(
+                            text = placeholder,
+                            color = colors.labelText.copy(alpha = 0.5f),
+                            style = AeroTheme.typography.bodyLarge
+                        )
+                    }
+                    innerTextField()
                 }
-                innerTextField()
             }
-        }
-    )
+        )
+        AeroScrollBar(
+            scrollState = scrollState,
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .fillMaxHeight()
+        )
+    }
 }

@@ -1,5 +1,8 @@
 package com.mordred.aero.theme
 
+import androidx.compose.foundation.LocalScrollbarStyle
+import androidx.compose.foundation.ScrollbarStyle
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
@@ -8,6 +11,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.unit.dp
 
 /**
  * Provides the active [AeroColorScheme] to all descendants. Defaults to
@@ -62,9 +66,19 @@ public fun AeroTheme(
         labelMedium = typography.label
     )
 
+    val scrollbarStyle = ScrollbarStyle(
+        minimalHeight = 16.dp,
+        thickness = 12.dp,
+        shape = RoundedCornerShape(6.dp),
+        hoverDurationMillis = 150,
+        unhoverColor = colorScheme.cardBackground,
+        hoverColor = colorScheme.borderSelected
+    )
+
     CompositionLocalProvider(
         LocalAeroColors provides colorScheme,
-        LocalAeroTypography provides typography
+        LocalAeroTypography provides typography,
+        LocalScrollbarStyle provides scrollbarStyle
     ) {
         MaterialTheme(
             colorScheme = materialColors,
