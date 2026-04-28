@@ -1,4 +1,4 @@
-package com.mordred.aero.components.dropdown
+package com.mordred.aero.components.popup
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
@@ -14,9 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,54 +27,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntRect
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
+import com.mordred.aero.components.containers.AeroScrollArea
 import com.mordred.aero.theme.AeroTheme
 
 /**
- * Internal PopupPositionProvider that positions the popup below the anchor,
- * clamping to window bounds. If there is no room below, flips above the anchor.
- */
-internal class AeroPopupPositionProvider(
-    private val verticalGap: Int = 4
-) : PopupPositionProvider {
-    override fun calculatePosition(
-        anchorBounds: IntRect,
-        windowSize: IntSize,
-        layoutDirection: LayoutDirection,
-        popupContentSize: IntSize
-    ): IntOffset {
-        // Default: position popup directly below anchor, left-aligned with anchor
-        val proposedX = anchorBounds.left
-        val proposedY = anchorBounds.bottom + verticalGap
-
-        // Clamp X so popup does not exceed window right edge
-        val maxX = windowSize.width - popupContentSize.width
-        val clampedX = proposedX.coerceIn(0, maxX.coerceAtLeast(0))
-
-        // If popup would exceed window bottom, flip ABOVE anchor instead
-        val clampedY = if (proposedY + popupContentSize.height > windowSize.height) {
-            (anchorBounds.top - popupContentSize.height - verticalGap).coerceAtLeast(0)
-        } else {
-            proposedY
-        }
-
-        return IntOffset(clampedX, clampedY)
-    }
-}
-
-/**
- * Internal composable for a single dropdown list item.
+ * Public composable for a single dropdown list item.
  * Renders selected/highlighted/hover states with a 150ms color tween.
+ *
+ * Reusable by [AeroDropdownPopup] and any other list-style popup
+ * (e.g. AeroDropdown, AeroComboBox, AeroMenuBar, AeroPopover, AeroContextMenu).
  */
 @Composable
-internal fun AeroDropdownItem(
+public fun AeroDropdownItem(
     text: String,
     selected: Boolean,
     highlighted: Boolean,
@@ -107,21 +72,31 @@ internal fun AeroDropdownItem(
 }
 
 /**
- * Internal generic popup wrapper used by both [AeroDropdown] and [AeroComboBox].
- * Handles Popup lifecycle, positioning, and glass styling.
+ * Public reusable popup wrapper for anchored dropdowns / menus.
+ *
+ * Used by `AeroDropdown`, `AeroComboBox`, and Phase 3 `AeroMenuBar` /
+ * `AeroPopover` / `AeroContextMenu`. Handles popup lifecycle, smart
+ * position-and-flip via [AeroPopupPositionProvider], and Aero glass styling.
+ *
+ * Internally wraps the scrollable content in [AeroScrollArea] so when the
+ * menu's items overflow, the user sees an Aero-styled vertical scrollbar
+ * (CONTEXT.md retrofit decision — replaces the previous bare `verticalScroll`).
  *
  * @param expanded Whether the popup is visible.
  * @param onDismissRequest Called when the popup should be dismissed.
  * @param anchorWidth Width of the trigger/anchor element. The popup will be at least this wide
  *   so it visually aligns with the trigger. Pass [Dp.Unspecified] to let the popup wrap content.
+ * @param side Side relative to the anchor on which to place the popup. Auto-flips on overflow.
+ *   Defaults to [AeroPopupSide.Bottom] (the historical behavior).
  * @param onKeyEvent Key event handler for keyboard navigation within the popup.
  * @param content The popup's scrollable item list.
  */
 @Composable
-internal fun AeroDropdownPopup(
+public fun AeroDropdownPopup(
     expanded: Boolean,
     onDismissRequest: () -> Unit,
     anchorWidth: Dp = Dp.Unspecified,
+    side: AeroPopupSide = AeroPopupSide.Bottom,
     onKeyEvent: (KeyEvent) -> Boolean = { false },
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -143,7 +118,7 @@ internal fun AeroDropdownPopup(
     }
 
     Popup(
-        popupPositionProvider = remember { AeroPopupPositionProvider() },
+        popupPositionProvider = remember(side) { AeroPopupPositionProvider(side = side) },
         onDismissRequest = onDismissRequest,
         properties = PopupProperties(
             focusable = true,
@@ -153,16 +128,21 @@ internal fun AeroDropdownPopup(
     ) {
         Box(
             widthModifier
-                .heightIn(max = 320.dp)
                 .shadow(elevation = 8.dp, shape = shape)
                 .clip(shape)
                 .background(colors.background, shape)
                 .background(popupBackground, shape)
                 .border(1.dp, colors.glassBorder, shape)
                 .onPreviewKeyEvent(onKeyEvent)
-                .padding(vertical = 4.dp)
         ) {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState()), content = content)
+            // Retrofit (CONTEXT.md): wrap scrollable content in AeroScrollArea so menu visibly
+            // shows an Aero scrollbar when items overflow. Inner Column preserves the existing
+            // `padding(vertical = 4.dp)` so visual layout is unchanged.
+            AeroScrollArea(
+                modifier = Modifier.heightIn(max = 320.dp)
+            ) {
+                Column(modifier = Modifier.padding(vertical = 4.dp), content = content)
+            }
         }
     }
 }
