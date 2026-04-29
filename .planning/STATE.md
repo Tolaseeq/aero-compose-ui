@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Icon System
 status: completed
-stopped_at: Completed 06-showcase-iconssection-02-PLAN.md
-last_updated: "2026-04-29T12:01:27.359Z"
+stopped_at: Completed 06-01-PLAN.md (IconsSection + ShowcaseApp wiring)
+last_updated: "2026-04-29T12:03:01.513Z"
 last_activity: "2026-04-29 — Phase 5 complete: 14 requirements (MIG-01..11, CLN-01..03), materialIconsExtended removed from :library"
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 28
-  completed_plans: 27
+  completed_plans: 28
   percent: 97
 ---
 
@@ -79,6 +79,7 @@ Progress: [██████████] 97%  (25/25 total plans; Phase 6 next
 JAR size: pre-v1.1 = ~0.96 MB (thin lib JAR), post-Phase-5 = ~0.96 MB (delta: -36.02 MB after materialIconsExtended removal from compileClasspath). See .planning/phases/05-component-migrations/05-SUMMARY.md.
 | Phase 05-component-migrations P05 | 15 | 4 tasks | 4 files |
 | Phase 06-showcase-iconssection P02 | 6 | 1 tasks | 1 files |
+| Phase 06-showcase-iconssection P01 | 8 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -160,6 +161,8 @@ Recent decisions affecting current work:
 - [Phase 05-component-migrations]: AeroTitleBar TitleBarButton: textColor param removed; tint uniformly colors.onSurface; hover color only on background; AeroIcons.Square=maximize, AeroIcons.FrameCorners=restore
 - [Phase 05-component-migrations]: Explicit internal.* imports required in test files using AeroIcons — facade alone does not expose extension properties; same pattern as production enums
 - [Phase 05-component-migrations]: Library thin JAR unchanged (0-byte delta) after materialIconsExtended removal — dep was classpath-only, never embedded; material-icons-extended-desktop-1.7.3.jar (~36 MB) eliminated from compileClasspath
+- [Phase 06-showcase-iconssection]: typography.bodyMedium used for empty-state text (typography.body does not exist in AeroTypography; auto-fixed Rule 1)
+- [Phase 06-showcase-iconssection]: 138 explicit internal.* imports used in IconsSection.kt (one per icon, not wildcard), matching Phase 5 precedent
 
 ### Pending Todos
 
@@ -172,7 +175,7 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-29T12:01:27.352Z
-Stopped at: Completed 06-showcase-iconssection-02-PLAN.md
+Last session: 2026-04-29T12:03:01.509Z
+Stopped at: Completed 06-01-PLAN.md (IconsSection + ShowcaseApp wiring)
 Resume file: None
 Next action: `/gsd:plan-phase 6` (Showcase IconsSection — SHW-04, SHW-05, SHW-06)
