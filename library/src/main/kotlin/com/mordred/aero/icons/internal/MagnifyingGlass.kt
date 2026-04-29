@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.mordred.aero.icons.AeroIcons
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
