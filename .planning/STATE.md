@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Icon System
 status: in_progress
-stopped_at: Phase 5 context gathered
-last_updated: "2026-04-29T09:07:58.811Z"
+stopped_at: Completed 05-01-PLAN.md — all 8 component migrations
+last_updated: "2026-04-29T10:08:41.592Z"
 last_activity: "2026-04-29 — 04-01 spike complete: 7 icons, Shape A confirmed, compileKotlin green"
 progress:
   total_phases: 6
   completed_phases: 4
-  total_plans: 20
-  completed_plans: 20
+  total_plans: 25
+  completed_plans: 21
   percent: 95
 ---
 
@@ -69,6 +69,7 @@ Progress: [██████████] 95%  (19/20 total plans; 04-01 at che
 
 *Updated after each plan completion*
 | Phase 04-aeroicons-foundation P04-02 | 35min | 4 tasks | 139 files |
+| Phase 05-component-migrations P01 | 25min | 9 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -143,6 +144,9 @@ Recent decisions affecting current work:
 - [Phase 04-aeroicons-foundation]: Valkyrie 1.1.1 generates Shape A (extension properties); --explicit-mode=true required (not bare flag); post-generation: fix defaultWidth=256→24dp + add AeroIcons import to internal/*.kt
 - [Phase 04-aeroicons-foundation]: Shape A at 138-icon scale — AeroIcons.kt facade empty body; 138 extension properties in internal/*.kt auto-callable as AeroIcons.*
 - [Phase 04-aeroicons-foundation]: Phosphor mixed-fill icons (DotsThree, Warning dot, Info dot, Bug eyes, etc.) correctly retain fill=SolidColor(Color.Black); ColorFilter.tint replaces ALL colors including fill at render time via Icon(tint=...)
+- [Phase 05-component-migrations]: AeroNumberSpinner carets at 12dp/14dp slot approved at visual checkpoint; no fallback needed
+- [Phase 05-component-migrations]: Explicit internal.* extension property imports required alongside AeroIcons facade in all migration files
+- [Phase 05-component-migrations]: Error->AeroIcons.XCircle and Question->AeroIcons.Question (Phosphor naming, replaces Icons.Outlined.Error/HelpOutline)
 
 ### Pending Todos
 
@@ -155,7 +159,7 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-29T09:07:58.790Z
-Stopped at: Phase 5 context gathered
-Resume file: .planning/phases/05-component-migrations/05-CONTEXT.md
+Last session: 2026-04-29T10:08:41.587Z
+Stopped at: Completed 05-01-PLAN.md — all 8 component migrations
+Resume file: None
 Next action: `/gsd:plan-phase 4`

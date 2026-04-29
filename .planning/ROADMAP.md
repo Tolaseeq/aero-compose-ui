@@ -160,5 +160,5 @@ Decimal phases appear between their surrounding integers in numeric order.
 | 2. Atomic Components | 6/6 | Complete | 2026-04-28 |
 | 3. Composite + Navigation | 8/8 | Complete | 2026-04-28 |
 | 4. AeroIcons Foundation | 2/2 | Complete   | 2026-04-29 |
-| 5. Component Migrations + Dependency Removal | 0/5 | Planned | - |
+| 5. Component Migrations + Dependency Removal | 1/5 | In Progress|  |
 | 6. Showcase IconsSection | 0/TBD | Not started | - |
