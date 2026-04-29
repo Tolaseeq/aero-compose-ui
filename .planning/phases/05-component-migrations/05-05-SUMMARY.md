@@ -118,6 +118,19 @@ None.
 - Phase 6 (Showcase IconsSection) is now unblocked
 - No blockers; no open items from Phase 5 scope
 
+## Self-Check: PASSED
+
+- [x] `library/build.gradle.kts` has 0 materialIconsExtended references
+- [x] `compose.material3` retained in build.gradle.kts
+- [x] `05-05-SUMMARY.md` exists (5986 bytes)
+- [x] `05-SUMMARY.md` exists (10251 bytes)
+- [x] STATE.md `JAR size:` line present
+- [x] STATE.md `stopped_at` references Phase 5 complete
+- [x] STATE.md `completed_phases: 5`
+- [x] Commit `7ea31c7` (chore CLN-02) exists
+- [x] Commit `9a1817d` (docs closure) exists
+- [x] Commit `b6d2fa3` (STATE/ROADMAP/REQUIREMENTS) exists
+
 ---
 *Phase: 05-component-migrations*
 *Completed: 2026-04-29*
