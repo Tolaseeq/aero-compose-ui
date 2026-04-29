@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Icon System
 status: in_progress
-stopped_at: Completed 05-01-PLAN.md — all 8 component migrations
-last_updated: "2026-04-29T10:08:41.592Z"
+stopped_at: Completed 05-02-PLAN.md — Wave 2 Canvas deletion (MIG-08, MIG-09)
+last_updated: "2026-04-29T10:13:48.891Z"
 last_activity: "2026-04-29 — 04-01 spike complete: 7 icons, Shape A confirmed, compileKotlin green"
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 25
-  completed_plans: 21
+  completed_plans: 22
   percent: 95
 ---
 
@@ -70,6 +70,7 @@ Progress: [██████████] 95%  (19/20 total plans; 04-01 at che
 *Updated after each plan completion*
 | Phase 04-aeroicons-foundation P04-02 | 35min | 4 tasks | 139 files |
 | Phase 05-component-migrations P01 | 25min | 9 tasks | 8 files |
+| Phase 05-component-migrations P02 | 12min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -147,6 +148,7 @@ Recent decisions affecting current work:
 - [Phase 05-component-migrations]: AeroNumberSpinner carets at 12dp/14dp slot approved at visual checkpoint; no fallback needed
 - [Phase 05-component-migrations]: Explicit internal.* extension property imports required alongside AeroIcons facade in all migration files
 - [Phase 05-component-migrations]: Error->AeroIcons.XCircle and Question->AeroIcons.Question (Phosphor naming, replaces Icons.Outlined.Error/HelpOutline)
+- [Phase 05-component-migrations]: internal.* extension property imports required alongside AeroIcons facade in AeroSearchField + AeroPasswordField (same as 05-01 pattern)
 
 ### Pending Todos
 
@@ -159,7 +161,7 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-29T10:08:41.587Z
-Stopped at: Completed 05-01-PLAN.md — all 8 component migrations
+Last session: 2026-04-29T10:13:48.885Z
+Stopped at: Completed 05-02-PLAN.md — Wave 2 Canvas deletion (MIG-08, MIG-09)
 Resume file: None
 Next action: `/gsd:plan-phase 4`
