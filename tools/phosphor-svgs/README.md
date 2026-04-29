@@ -100,6 +100,19 @@ Additional Valkyrie 1.1.1 behaviors discovered during the spike:
 - `fill` parameter: Omitted for stroke-only paths (defaults to null in Compose — correct behavior). For icons with genuine filled shapes (e.g., Info dot), Valkyrie correctly emits `fill = SolidColor(Color.Black)`.
 - `stroke`: Always `SolidColor(Color.Black)` (Valkyrie uses Color.Black as the literal; tint overrides at the `Icon()` call site).
 
+## Plan 04-02 SVG existence verification (verified 2026-04-29)
+
+The following names from the 138-icon master list were flagged LOW-confidence in
+04-RESEARCH.md and HEAD-checked at the pinned SHA before the bulk fetch:
+
+| Name | HTTP code | Decision |
+|------|-----------|----------|
+| `sort-ascending` | 200 | vendored as-is |
+| `sort-descending` | 200 | vendored as-is |
+| `spinner` | 200 | vendored as-is |
+
+Final 138-icon target after substitutions: 138.
+
 ## License attribution
 
 Phosphor Icons is © Helena Zhang and Tobias Fried, licensed MIT. See `LICENSE` for the
