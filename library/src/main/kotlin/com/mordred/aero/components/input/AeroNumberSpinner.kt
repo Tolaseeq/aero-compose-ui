@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,7 +29,9 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.mordred.aero.icons.AeroIcons
+import com.mordred.aero.icons.`internal`.CaretDown
+import com.mordred.aero.icons.`internal`.CaretUp
 import com.mordred.aero.theme.AeroTheme
 import com.mordred.aero.theme.glassSurface
 
@@ -119,26 +122,36 @@ public fun AeroNumberSpinner(
             // Up button
             Box(
                 modifier = Modifier
-                    .size(width = 16.dp, height = 12.dp)
+                    .size(width = 16.dp, height = 14.dp)
                     .glassSurface(cornerRadius = 2.dp)
                     .clickable(enabled = enabled) {
                         onValueChange((value + step).coerceAtMost(max))
                     },
                 contentAlignment = Alignment.Center
             ) {
-                Text("▲", fontSize = 8.sp, color = colors.onSurface)
+                Icon(
+                    imageVector = AeroIcons.CaretUp,
+                    contentDescription = null,
+                    modifier = Modifier.size(12.dp),
+                    tint = colors.onSurface
+                )
             }
             // Down button
             Box(
                 modifier = Modifier
-                    .size(width = 16.dp, height = 12.dp)
+                    .size(width = 16.dp, height = 14.dp)
                     .glassSurface(cornerRadius = 2.dp)
                     .clickable(enabled = enabled) {
                         onValueChange((value - step).coerceAtLeast(min))
                     },
                 contentAlignment = Alignment.Center
             ) {
-                Text("▼", fontSize = 8.sp, color = colors.onSurface)
+                Icon(
+                    imageVector = AeroIcons.CaretDown,
+                    contentDescription = null,
+                    modifier = Modifier.size(12.dp),
+                    tint = colors.onSurface
+                )
             }
         }
     }
