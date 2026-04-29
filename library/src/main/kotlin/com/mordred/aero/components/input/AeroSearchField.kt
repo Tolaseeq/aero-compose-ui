@@ -1,6 +1,5 @@
 package com.mordred.aero.components.input
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,21 +8,21 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
+import com.mordred.aero.icons.AeroIcons
+import com.mordred.aero.icons.`internal`.MagnifyingGlass
+import com.mordred.aero.icons.`internal`.X
 import com.mordred.aero.theme.AeroTheme
 
 /**
  * Search input field with a leading search icon and a conditional clear button.
  *
- * The search icon is a minimalist monochrome magnifier drawn via Canvas, tinted with
- * [AeroTheme.colors.labelText]. The trailing clear button (x) appears only when [value] is not
+ * The search icon is rendered via [Icon] with [AeroIcons.MagnifyingGlass], tinted with
+ * [AeroTheme.colors.labelText]. The trailing clear button appears only when [value] is not
  * empty.
  *
  * @param value Current search text.
@@ -58,7 +57,12 @@ public fun AeroSearchField(
                 .border(1.dp, AeroTheme.colors.borderDefault, iconShape),
             contentAlignment = Alignment.Center
         ) {
-            SearchIcon()
+            Icon(
+                imageVector = AeroIcons.MagnifyingGlass,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = AeroTheme.colors.labelText
+            )
         }
         AeroTextField(
             value = value,
@@ -73,43 +77,6 @@ public fun AeroSearchField(
     }
 }
 
-/**
- * Minimalist magnifier icon drawn with Canvas — circle outline + diagonal handle.
- * Tinted via [AeroTheme.colors.labelText] so it adapts to any theme.
- */
-@Composable
-private fun SearchIcon() {
-    val iconColor = AeroTheme.colors.labelText
-    Canvas(modifier = Modifier.size(14.dp)) {
-        val strokeWidth = 1.5.dp.toPx()
-        val circleRadius = 4.dp.toPx()
-        val circleCenterX = 4.5.dp.toPx()
-        val circleCenterY = 4.5.dp.toPx()
-
-        // Circle (lens)
-        drawCircle(
-            color = iconColor,
-            radius = circleRadius,
-            center = Offset(circleCenterX, circleCenterY),
-            style = Stroke(width = strokeWidth)
-        )
-
-        // Handle (diagonal line from bottom-right of circle outward)
-        val handleStart = Offset(
-            circleCenterX + circleRadius * 0.7f,
-            circleCenterY + circleRadius * 0.7f
-        )
-        val handleEnd = Offset(12.dp.toPx(), 12.dp.toPx())
-        drawLine(
-            color = iconColor,
-            start = handleStart,
-            end = handleEnd,
-            strokeWidth = strokeWidth,
-            cap = StrokeCap.Round
-        )
-    }
-}
-
 @Composable
 private fun ClearButton(enabled: Boolean, onClick: () -> Unit) {
     Box(
@@ -118,6 +85,11 @@ private fun ClearButton(enabled: Boolean, onClick: () -> Unit) {
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Text("x", color = AeroTheme.colors.labelText, style = AeroTheme.typography.bodyLarge)
+        Icon(
+            imageVector = AeroIcons.X,
+            contentDescription = "Clear search",
+            modifier = Modifier.size(14.dp),
+            tint = AeroTheme.colors.labelText
+        )
     }
 }
