@@ -103,8 +103,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - `AeroIcons.kt` KDoc must include: naming convention table (Phosphor kebab → PascalCase, e.g. `caret-down` → `CaretDown` not `ChevronDown`), recommended size range 16dp–32dp, mandatory explicit `tint` note, and phosphoricons.com lookup URL
 - The 5-icon spot-check and first `compileKotlin` run happen before batch-converting all remaining 131 icons (138 total per CONTEXT-locked correction; row #139 was a duplicate)
 **Plans**: 2 plans
-- [ ] 04-01-PLAN.md — Spike: doc corrections (139→138, stroke 12→16) + 7-icon vendoring + Valkyrie spike + facade authoring + first compile-pass
-- [ ] 04-02-PLAN.md — Batch: verify questionable SVGs + bulk-fetch remaining 131 + Valkyrie full run + facade extension to 138 + final verification gate
+- [x] 04-01-PLAN.md — Spike: doc corrections (139→138, stroke 12→16) + 7-icon vendoring + Valkyrie spike + facade authoring + first compile-pass (completed 2026-04-29)
+- [x] 04-02-PLAN.md — Batch: verify questionable SVGs + bulk-fetch remaining 131 + Valkyrie full run + facade extension to 138 + final verification gate (completed 2026-04-29)
 
 ### Phase 5: Component Migrations + Dependency Removal
 **Goal**: Every text glyph and Material Icons reference is replaced with `AeroIcons.*` across all :library components and tests, and `compose.materialIconsExtended` is removed from the Gradle dependency graph entirely
