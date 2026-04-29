@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Icon System
 current_plan: —
-status: defining_requirements
-stopped_at: Milestone v1.1 started — defining requirements
-last_updated: "2026-04-28T19:30:00.000Z"
-last_activity: 2026-04-28 — Milestone v1.1 Icon System started; PROJECT.md updated, requirements pending
+status: ready_to_plan
+stopped_at: Roadmap created for v1.1 — Phases 4-6 defined; ready to plan Phase 4
+last_updated: "2026-04-29T00:00:00.000Z"
+last_activity: 2026-04-29 — v1.1 roadmap created (Phases 4-6); Phase 4 is next
 progress:
-  total_phases: 0
+  total_phases: 3
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -22,64 +22,53 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-28)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, and a showcase — no manual style work required
-**Current focus:** v1.1 Icon System — defining requirements
+**Current focus:** v1.1 Icon System — Phase 4: AeroIcons Foundation (ready to plan)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements for milestone v1.1 (Icon System)
-Last activity: 2026-04-28 — Milestone v1.1 started
+Phase: 4 — AeroIcons Foundation
+Plan: — (not yet planned)
+Status: ready_to_plan
+Last activity: 2026-04-29 — v1.1 roadmap written; Phases 4-6 appended to ROADMAP.md
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [░░░░░░░░░░] 0%  (0/3 v1.1 phases complete)
 
 ## Previous Milestone
 
-**v1.0 (completed 2026-04-28):** 3 phases, 53 requirements, ~26 plans. Foundation + Atomic Components + Composite/Navigation. All shipped, all visual checkpoints approved.
+**v1.0 (completed 2026-04-28):** 3 phases, 53 requirements, 26 plans. Foundation + Atomic Components + Composite/Navigation. All shipped, all visual checkpoints approved.
 
-## Known Follow-up
+## v1.1 Phase Summary
 
-- **AeroDropdown popup regression** — User reported during 03-03 manual checkpoint: dropdown popup is offset right of the trigger field and has trailing empty space below the last item. Root cause located in Plan 03-01's retrofit: `AeroScrollArea` line 31-35 uses `Column.fillMaxSize()` which forces 320dp height when `heightIn(max=320.dp)` is set, regardless of content; combined with always-visible scrollbar overlay the popup looks shifted. Fix is small (touches AeroScrollArea.kt only) — schedule as gap-closure or fold into 03-08 if a checkpoint surfaces.
+| Phase | Goal | Requirements | Status |
+|-------|------|--------------|--------|
+| 4 — AeroIcons Foundation | 139 Phosphor Regular ImageVector constants, lazy init, KDoc, explicitApi | ICN-01, ICN-02, ICN-03 | Not started |
+| 5 — Migrations + Dep Removal | Replace all text glyphs + Material Icons; remove materialIconsExtended | MIG-01..11, CLN-01..03 | Not started |
+| 6 — Showcase IconsSection | Grid + live search of all 139 icons; three-theme visual checkpoint | SHW-04, SHW-05, SHW-06 | Not started |
+
+## Known Follow-up (from v1.0)
+
+- **AeroDropdown popup regression** — User reported during 03-03 manual checkpoint: dropdown popup is offset right of the trigger field and has trailing empty space below the last item. Root cause: `AeroScrollArea` line 31-35 uses `Column.fillMaxSize()` which forces 320dp height when `heightIn(max=320.dp)` is set; combined with always-visible scrollbar overlay the popup looks shifted. Fix touches AeroScrollArea.kt only — schedule as gap-closure task.
 - **White-border flash on resize** — User accepted as minor visual polish (skip per user instruction).
-- **Commit-message interleaving** — Several Wave-2 commits absorbed sibling plans' files due to parallel staging:
-  - `7fe9eb0` (subject "feat(03-07): StatusBar+TabBar") includes 03-05's AeroContextMenu.kt + AeroContextMenuItem.kt
-  - `9cdf488` (subject "test(03-07): NAV-02") includes 03-03's finalization metadata
-  - `8f63ca4` (subject "feat(03-03): resize handles") includes 03-02's docs
-  Diff content is correct; only subject lines are partially misattributed. Documented in 03-05/03-07 SUMMARYs; no rebase performed.
+- **Commit-message interleaving** — Several Wave-2 commits absorbed sibling plans' files due to parallel staging (documented in 03-05/03-07 SUMMARYs; no rebase performed).
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: ~7 min
-- Total execution time: ~27 min
+- Total plans completed (v1.0): 26
+- Average duration: ~7–25 min per plan
+- Total v1.0 execution time: ~3 days
 
-**By Phase:**
+**By Phase (v1.0):**
 
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| - | - | - | - |
+| Phase | Plans | Total Time | Avg/Plan |
+|-------|-------|------------|----------|
+| 01-foundation | 4 | ~27 min | ~7 min |
+| 02-atomic-components | 6 | ~1 h | ~10 min |
+| 03-composite-navigation | 8 | ~2 h | ~15 min |
 
-**Recent Trend:**
-- Last 5 plans: -
-- Trend: -
+**v1.1 metrics:** pending (no plans completed yet)
 
 *Updated after each plan completion*
-| Phase 01-foundation P01 | 6 | 3 tasks | 14 files |
-| Phase 01-foundation P02 | 11 | 3 tasks | 5 files |
-| Phase 01-foundation P03 | 7 | 2 tasks | 3 files |
-| Phase 01-foundation P04 | 3 | 2 tasks | 5 files |
-| Phase 02-atomic-components P01 | 8 | 3 tasks | 6 files |
-| Phase 02-atomic-components P02 | 7 | 3 tasks | 7 files |
-| Phase 02-atomic-components P05 | 9 | 3 tasks | 5 files |
-| Phase 02-atomic-components P04 | 9 | 3 tasks | 6 files |
-| Phase 02-atomic-components P03 | 10 | 3 tasks | 6 files |
-| Phase 02-atomic-components P06 | ~45 | 3 tasks | 2 files |
-| Phase 03-composite-navigation P01 | 7m | 4 tasks | 16 files |
-| Phase 03-composite-navigation P02 | 11min | 2 tasks | 8 files |
-| Phase 03-composite-navigation P06 | 25min | 2 tasks | 9 files |
-| Phase 03-composite-navigation P04 | 25min | 3 tasks | 8 files |
-| Phase 03-composite-navigation P03 | ~10min | 3 tasks (2 auto + 1 manual checkpoint) | 4 files |
 
 ## Accumulated Context
 
@@ -137,24 +126,33 @@ Recent decisions affecting current work:
 - [Phase 03-composite-navigation]: compose.materialIconsExtended dep added to :library — Outlined.Error and Outlined.HelpOutline are not in icons-core (transitive via material3); AeroAlertKind needs them
 - [Phase 03-composite-navigation]: AeroTitleBar declared as `FrameWindowScope.AeroTitleBar(...)` extension — required so it can call WindowDraggableArea; locks API to "must be invoked inside Window content lambda" which is fine because titlebar has no meaning outside a window
 - [Phase 03-composite-navigation]: AeroResizeHandles is `public` (not `internal`) — `:library` and `:showcase` are separate Gradle modules and Kotlin's per-module `internal` blocks cross-module access; revisit visibility tightening when an internal-only navigation seam appears
-- [Phase 03-composite-navigation]: 8-zone resize handlers — Top/Left edges + TL/TR/BL corners mutate BOTH windowState.size AND windowState.position (deltaApplied = oldSize - newSize, then position += deltaApplied) so the anchored opposite edge stays fixed; Bottom/Right + BR corner only mutate size
+- [Phase 03-composite-navigation]: 8-zone resize handlers — Top/Left edges + TL/TR/BL corners mutate BOTH windowState.size AND windowState.position; Bottom/Right + BR corner only mutate size
 - [Phase 03-composite-navigation]: windowState.position mutation guarded by `is WindowPosition.Absolute` cast — PlatformDefault positions are not mutable; first drag at top/left silently won't move position until OS assigns absolute, acceptable v1 behavior
-- [Phase 03-composite-navigation]: ResizeHandles.kt is a separate file from AeroTitleBar.kt — chrome (visual gradient + buttons + drag) and resize (8-zone overlay + pointerInput) are orthogonal concerns; keeps each file single-responsibility
-- [Phase 03-composite-navigation]: Theme propagation gap accepted for Plan 03-03 — AeroTitleBar always renders AeroBlue colors because theme state lives inside ShowcaseApp; Plan 03-08 will lift theme state to Main.kt to fix
-- [Phase 03-composite-navigation]: Win11 transparent=false rule now enforced at three source-of-truth points (showcase Main.kt top-level Window via Plan 03-03, AeroDialog DialogWindow via Plan 03-04, plus original Phase 1 doctrine) — future window-creating composables should follow the same grep-checkable literal pattern
+- [Phase 03-composite-navigation]: ResizeHandles.kt is a separate file from AeroTitleBar.kt — chrome and resize are orthogonal concerns
+- [Phase 03-composite-navigation]: Theme propagation gap fixed in Plan 03-08 — theme state lifted to Main.kt
+- [Phase 03-composite-navigation]: Win11 transparent=false rule enforced at three source-of-truth points (showcase Main.kt, AeroDialog DialogWindow, Phase 1 doctrine)
+- [v1.1 locked decisions]:
+  - AeroIcons source: Phosphor Regular (not Feather) — softer rounded stroke matches Win7-toolbar-glyph aesthetic
+  - Lazy backing-property pattern mandatory for all 139 constants — eager val at this scale causes measurable startup spike
+  - AeroIcons naming follows Phosphor verbatim (PascalCase from kebab): `X` not `Close`, `CaretDown` not `ChevronDown`, `MagnifyingGlass` not `Search`, `Gear` not `Settings`, `House` not `Home`, `Funnel` not `Filter`, `EyeSlash` not `EyeOff`
+  - AeroBreadcrumb `separator: String` stays as-is in v1.1 — intentional, not an oversight; the separator is the only text-rendered glyph deliberately excluded from migration
+  - Valkyrie CLI 1.1.1 with `--output-format BackingProperty`; generated files committed to src/main (not build/); Phosphor SVGs committed to tools/phosphor-svgs/regular/
+  - Icon() from material3 used directly — no custom AeroIcon() wrapper; tint always passed explicitly in library code
+  - Phase 5 wave ordering is mandatory: Waves 1+2 (component migrations) → Wave 3 (TitleBar) → Wave 4 (test rewrites CLN-01) → Wave 5 (dep removal CLN-02+CLN-03)
+  - AeroNumberSpinner sub-pixel risk: implementer must choose Canvas draw OR button height ≥ 14dp after visual check in AeroDark
 
 ### Pending Todos
 
-None yet.
+- Gap-close: AeroDropdown popup offset regression (from v1.0 checkpoint; does not block v1.1)
 
 ### Blockers/Concerns
 
-- Phase 1: Validate whether Win11 `undecorated+transparent` crash is fixed in CMP 1.10.3 (may have been patched — test in Phase 1)
-- Phase 1: Decide Haze vs. gradient-only glass rendering after seeing demo output
-- Phase 3: AeroTitleBar + native Aero Snap (HTCAPTION) requires spike — `WindowDraggableArea` does not pass HTCAPTION to OS; this is a documented limitation
+- Phase 1: Validate whether Win11 `undecorated+transparent` crash is fixed in CMP 1.10.3 (may have been patched — test in Phase 1) — inherited from v1.0, no action in v1.1
+- AeroNumberSpinner small-size: sub-pixel stroke at 10dp; implementation choice deferred to Phase 5 plan
 
 ## Session Continuity
 
-Last session: 2026-04-28T16:35:00Z
-Stopped at: Completed 03-03-PLAN.md (NAV-01 AeroTitleBar + 8-zone AeroResizeHandles + showcase Window(undecorated=true, transparent=false))
+Last session: 2026-04-29
+Stopped at: v1.1 roadmap created — Phases 4, 5, 6 written to ROADMAP.md; REQUIREMENTS.md traceability updated; STATE.md updated
 Resume file: None
+Next action: `/gsd:plan-phase 4`

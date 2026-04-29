@@ -4,6 +4,8 @@
 
 Three phases deliver a complete Compose Desktop UI component library styled after Windows Aero. Phase 1 establishes the theme system and glass modifiers — everything else depends on it. Phase 2 builds all atomic components (buttons, inputs, selection, sliders, lists) that define reusable interaction patterns. Phase 3 completes the library with composite containers, overlays, and window chrome components that depend on atomic primitives. The showcase application grows with each phase so the library is always demonstrable.
 
+Milestone v1.1 (Icon System) appends Phases 4–6. Phases 1–3 are complete and not renumbered.
+
 ## Phases
 
 **Phase Numbering:**
@@ -12,9 +14,17 @@ Three phases deliver a complete Compose Desktop UI component library styled afte
 
 Decimal phases appear between their surrounding integers in numeric order.
 
+### v1.0 (Complete)
+
 - [x] **Phase 1: Foundation** - Theme system, glass modifiers, module structure, showcase skeleton (completed 2026-04-27)
 - [x] **Phase 2: Atomic Components** - Buttons, inputs, selection controls, sliders, list items, badges (completed 2026-04-28)
 - [x] **Phase 3: Composite + Navigation** - Containers, overlays, dialogs, menus, tabs, window chrome (completed 2026-04-28)
+
+### v1.1 Icon System (Active)
+
+- [ ] **Phase 4: AeroIcons Foundation** - Valkyrie CLI conversion of 139 Phosphor Regular SVGs; lazy backing-property pattern; KDoc; explicitApi; spot-check 5 icons before full batch
+- [ ] **Phase 5: Component Migrations + Dependency Removal** - Wave-ordered migrations of 11 components; Canvas composable deletions; TitleBar private restructure; test rewrites; materialIconsExtended Gradle line removal + grep verification
+- [ ] **Phase 6: Showcase IconsSection** - LazyVerticalGrid of all 139 icons with name labels and live search filter; ButtonsSection glyph demos updated; three-theme visual checkpoint
 
 ## Phase Details
 
@@ -29,10 +39,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. The `:showcase` app launches, shows an empty component grid grouped by category, and a theme switcher toggles between AeroBlue / AeroDark / Classic instantly
   5. A developer can supply a custom `AeroColorScheme` to `AeroTheme` and all glass surfaces and text reflect the custom tokens
 **Plans**: 4 plans
-- [ ] 01-01-PLAN.md — Gradle skeleton: root build, version catalog, :library + :showcase modules with explicitApi
-- [ ] 01-02-PLAN.md — AeroColorScheme (23 tokens, 3 presets) + AeroTypography data classes (TDD)
-- [ ] 01-03-PLAN.md — AeroTheme composable + LocalAero* CompositionLocals + glass modifiers (single-pass drawBehind)
-- [ ] 01-04-PLAN.md — :showcase skeleton: Main, ShowcaseApp, ThemeSwitcher, FoundationSection, PlaceholderSection (visual checkpoint)
+- [x] 01-01-PLAN.md — Gradle skeleton: root build, version catalog, :library + :showcase modules with explicitApi (completed 2026-04-27)
+- [x] 01-02-PLAN.md — AeroColorScheme (23 tokens, 3 presets) + AeroTypography data classes (TDD) (completed 2026-04-27)
+- [x] 01-03-PLAN.md — AeroTheme composable + LocalAero* CompositionLocals + glass modifiers (single-pass drawBehind) (completed 2026-04-27)
+- [x] 01-04-PLAN.md — :showcase skeleton: Main, ShowcaseApp, ThemeSwitcher, FoundationSection, PlaceholderSection (visual checkpoint) (completed 2026-04-27)
 
 ### Phase 2: Atomic Components
 **Goal**: All self-contained interactive components are implemented and interactive in the showcase — hover, focus, disabled, and pressed states work correctly using theme tokens
@@ -45,12 +55,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. AeroSlider moves a single thumb and emits the correct float value; AeroProgressBar displays both determinate (with %) and indeterminate (animated shimmer) modes
   5. AeroDropdown and AeroComboBox open a themed dropdown, allow item selection, and close — AeroComboBox also accepts free-text input
 **Plans**: 6 plans
-- [ ] 02-01-PLAN.md — Buttons (BTN-01..04): AeroButton, AeroOutlinedButton, AeroIconButton, AeroToolbar + ButtonsSection
-- [ ] 02-02-PLAN.md — Text inputs (INP-01..06): AeroTextField, AeroTextArea, AeroPasswordField, AeroNumberSpinner, AeroSearchField, AeroFilePicker + InputSection
-- [ ] 02-03-PLAN.md — Selection controls (SEL-01..05): AeroCheckbox, AeroRadioButton/Group, AeroSwitch, AeroChip, AeroSegmentedControl + SelectionSection
+- [x] 02-01-PLAN.md — Buttons (BTN-01..04): AeroButton, AeroOutlinedButton, AeroIconButton, AeroToolbar + ButtonsSection (completed 2026-04-28)
+- [x] 02-02-PLAN.md — Text inputs (INP-01..06): AeroTextField, AeroTextArea, AeroPasswordField, AeroNumberSpinner, AeroSearchField, AeroFilePicker + InputSection (completed 2026-04-28)
+- [x] 02-03-PLAN.md — Selection controls (SEL-01..05): AeroCheckbox, AeroRadioButton/Group, AeroSwitch, AeroChip, AeroSegmentedControl + SelectionSection (completed 2026-04-28)
 - [x] 02-04-PLAN.md — Range + Lists (RNG-01..02, LST-01..02): AeroSlider, AeroProgressBar, AeroListItem, AeroBadge + RangeSection + ListSection (completed 2026-04-28)
-- [ ] 02-05-PLAN.md — Dropdowns (DRP-01..02): AeroDropdown + AeroComboBox + AeroPopupPositionProvider + DropdownSection
-- [ ] 02-06-PLAN.md — Wire all sections into ShowcaseApp + ThemeSwitcher swap to AeroSegmentedControl + visual checkpoint
+- [x] 02-05-PLAN.md — Dropdowns (DRP-01..02): AeroDropdown + AeroComboBox + AeroPopupPositionProvider + DropdownSection (completed 2026-04-28)
+- [x] 02-06-PLAN.md — Wire all sections into ShowcaseApp + ThemeSwitcher swap to AeroSegmentedControl + visual checkpoint (completed 2026-04-28)
 
 ### Phase 3: Composite + Navigation
 **Goal**: All container, overlay, and navigation components are implemented — a complete Compose Desktop window can be built using only aero-compose-ui with no custom chrome or raw Material3 surfaces visible
@@ -72,12 +82,76 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] 03-07-PLAN.md — Remaining navigation: AeroMenuBar (NAV-02), AeroStatusBar (NAV-03), AeroBreadcrumb (NAV-04), AeroTabBar (NAV-05) (completed 2026-04-28)
 - [x] 03-08-PLAN.md — ShowcaseApp wiring: 3 new sections + AeroToastHost mount + theme hoisting + final visual checkpoint (completed 2026-04-28)
 
+---
+
+## v1.1 Icon System — Phase Details
+
+### Phase 4: AeroIcons Foundation
+**Goal**: The typed icon set exists and compiles — every one of the 139 Phosphor Regular ImageVector constants is accessible via `AeroIcons.*` autocomplete with lazy initialization, and the object satisfies `explicitApi()`
+**Depends on**: Phase 3 (v1.0 complete; all migration targets already exist in :library)
+**Requirements**: ICN-01, ICN-02, ICN-03
+**Success Criteria** (what must be TRUE):
+  1. A developer can write `Icon(AeroIcons.X, contentDescription = null, tint = colors.onSurface)` in any :library or :showcase file and the close-X glyph renders as a Phosphor Regular rounded-stroke vector — no text character, no Canvas draw
+  2. `Icon(AeroIcons.CaretDown, ...)`, `Icon(AeroIcons.MagnifyingGlass, ...)`, `Icon(AeroIcons.Gear, ...)`, `Icon(AeroIcons.House, ...)`, `Icon(AeroIcons.Funnel, ...)` all compile and render the correct Phosphor glyphs (not their Material/Feather namesakes)
+  3. `./gradlew :library:compileKotlin` passes with no `explicitApi()` errors on `AeroIcons.kt` or any `icons/` file; every public constant has an explicit `public` modifier
+  4. Accessing `AeroIcons.X` for the first time does not cause a measurable startup spike — every constant uses the null-backed lazy getter pattern (`private var _X: ImageVector? = null; public val X: ImageVector get() = _X ?: loadX().also { _X = it }`), not an eager `val`
+  5. Spot-check of 5 representative icons (at minimum: `X`, `CaretDown`, `MagnifyingGlass`, `Check`, `Info`) confirms `viewportWidth = 256f`, `strokeLineWidth = 12f`, `strokeLineCap = StrokeCap.Round`, `fill = Color.Transparent` in the generated Kotlin — `grep -rn "viewportWidth=24f" library/src/main/kotlin/com/mordred/aero/icons/` returns 0 hits
+
+**Phase notes:**
+- Phosphor SVG source committed to `tools/phosphor-svgs/regular/` alongside a `.pin` file recording the exact `phosphor-icons/core` commit hash used for conversion
+- Valkyrie CLI 1.1.1 used for batch conversion with `--output-format BackingProperty`; the Gradle build does NOT invoke Valkyrie at build time — generated `.kt` files are committed as ordinary source
+- `AeroIcons.kt` KDoc must include: naming convention table (Phosphor kebab → PascalCase, e.g. `caret-down` → `CaretDown` not `ChevronDown`), recommended size range 16dp–32dp, mandatory explicit `tint` note, and phosphoricons.com lookup URL
+- The 5-icon spot-check and first `compileKotlin` run happen before batch-converting all remaining 134 icons
+**Plans**: TBD
+
+### Phase 5: Component Migrations + Dependency Removal
+**Goal**: Every text glyph and Material Icons reference is replaced with `AeroIcons.*` across all :library components and tests, and `compose.materialIconsExtended` is removed from the Gradle dependency graph entirely
+**Depends on**: Phase 4
+**Requirements**: MIG-01, MIG-02, MIG-03, MIG-04, MIG-05, MIG-06, MIG-07, MIG-08, MIG-09, MIG-10, MIG-11, CLN-01, CLN-02, CLN-03
+**Success Criteria** (what must be TRUE):
+  1. `grep -rn 'Text("▲\|▼\|▶\|✕\|✓\|─\|□\|❒\|–")' library/src/` returns 0 hits; `grep -rn 'Text("x"' library/src/` returns 0 hits — AeroSearchField's lowercase-x clear button is confirmed migrated
+  2. `AeroCheckbox` renders `Icon(AeroIcons.Check, ...)` for checked state and `Icon(AeroIcons.Minus, ...)` for indeterminate; `AeroTitleBar` window control buttons render `AeroIcons.Minus` (minimize), `AeroIcons.Square` / `AeroIcons.FrameCorners` (maximize/restore), `AeroIcons.X` (close) — private `TitleBarButton` accepts `ImageVector` not `String`
+  3. `AeroSearchField` has no `SearchIcon()` Canvas composable — the private function is deleted; `AeroPasswordField` has no `EyeOpenIcon()` or `EyeClosedIcon()` Canvas composables — both private functions are deleted; `Icon(AeroIcons.Eye)` / `Icon(AeroIcons.EyeSlash)` are used at the call sites
+  4. `./gradlew :library:compileKotlin` succeeds with `implementation(compose.materialIconsExtended)` removed from `library/build.gradle.kts`; `./gradlew :library:dependencies --configuration compileClasspath | grep -i materialIcons` returns 0 lines; `grep -rn "androidx.compose.material.icons" library/src/` returns 0 hits (including test sources)
+  5. JAR size after removal is documented (expected reduction: ~6–8 MB vs pre-migration JAR); `AeroNumberSpinner` up/down icons are visually confirmed not sub-pixel-thin in all three themes — if Phosphor stroke at the button's render size antialiases to below ~0.5dp, the plan documents the chosen mitigation (Canvas draw or button height increase to 14dp+)
+
+**Phase notes — wave ordering (must be respected):**
+- Wave 1 (parallel, internal-only, no API impact): AeroCheckbox (MIG-01), AeroDropdown (MIG-02), AeroNumberSpinner (MIG-03), AeroToastHost (MIG-06), AeroNotificationBanner (MIG-07), AeroContextMenu (MIG-05), AeroAlertKind (MIG-10), AeroBannerKind (MIG-11)
+- Wave 2 (Canvas deletions, parallel per file): AeroSearchField (MIG-08), AeroPasswordField (MIG-09)
+- Wave 3 (isolated): AeroTitleBar private restructure — `TitleBarButton(glyph: String)` → `TitleBarButton(icon: ImageVector)` (MIG-04)
+- Wave 4 (gate for dep removal): AeroAlertKindTest.kt and AeroBannerKindTest.kt rewritten to assert `AeroIcons.*` by name — CLN-01; this MUST complete before Wave 5
+- Wave 5 (final): remove `implementation(compose.materialIconsExtended)` from `library/build.gradle.kts` (CLN-02) + grep verification (CLN-03)
+- AeroBreadcrumb `separator: String` is intentionally NOT migrated to `ImageVector` in v1.1 — this is a locked decision; do not change the parameter type during any migration sweep
+- AeroNumberSpinner sub-pixel risk: at 10dp render, Phosphor stroke = 10×(12/256) ≈ 0.47dp (sub-pixel at 96 DPI); visual checkpoint required in AeroDark disabled state; Canvas draw or button height ≥ 14dp are the accepted mitigations
+**Plans**: TBD
+
+### Phase 6: Showcase IconsSection
+**Goal**: The showcase has a scrollable, searchable grid of all 139 AeroIcons that serves as the visual sign-off checkpoint for the entire v1.1 milestone across all three themes
+**Depends on**: Phase 5
+**Requirements**: SHW-04, SHW-05, SHW-06
+**Success Criteria** (what must be TRUE):
+  1. `IconsSection` is visible in the running showcase after `FoundationSection`; it displays all 139 icons in a `LazyVerticalGrid(GridCells.Adaptive(80.dp))` with each cell showing the icon at 24dp and its Kotlin identifier name below — all 139 are visible without horizontal scrolling
+  2. Typing a query into the `AeroSearchField` at the top of `IconsSection` filters the grid in real-time (case-insensitive substring match on identifier name); typing `"caret"` shows only `CaretDown`, `CaretUp`, `CaretLeft`, `CaretRight`; clearing the field restores all 139 icons; an empty result shows a "not found" message
+  3. Switching to AeroDark theme: all 139 icons are visible with correct contrast — no black or invisible icons (explicit `tint = AeroTheme.colors.onSurface` is confirmed at the `Icon()` call site in `IconCell`); `AeroNumberSpinner` disabled-state up/down icons are confirmed visible in AeroDark
+  4. Switching to Classic theme: all 139 icons render with correct tint and Phosphor stroke contrast is acceptable at 24dp; stroke-weight check passes eye-on-screen for representative icons (`X`, `CaretDown`, `MagnifyingGlass`, `FrameCorners`, `Warning`)
+  5. `ButtonsSection` demo `AeroIconButton` cells use `Icon(AeroIcons.CaretUp, ...)`, `Icon(AeroIcons.CaretDown, ...)`, and `Icon(AeroIcons.X, ...)` — no text glyphs remain in showcase source; `grep -rn 'Text("▲\|▼\|×\|✕")' showcase/src/` returns 0 hits
+
+**Phase notes:**
+- `LazyVerticalGrid` requires `Modifier.height(400.dp)` (or `heightIn(max=600.dp)`) — without a bounded height it cannot measure itself inside the parent vertically-scrolling `Column` and will crash at layout
+- `IconsSection` is registered in `ShowcaseApp.kt` positioned after `FoundationSection` and before `ButtonsSection` — icons are foundational infrastructure and deserve early prominence
+- The three-theme visual checkpoint is the formal sign-off gate for the entire v1.1 milestone; do not mark Phase 6 complete without eye-on-screen verification in all three themes
+- Phosphor stroke on AeroDark background requires specific attention: Phosphor Regular at 24dp renders ~1.13dp stroke at 96 DPI — confirm visibility is acceptable, especially for fine-detail icons like `FrameCorners` and `Square`
+**Plans**: TBD
+
 ## Progress
 
-**Execution Order:** 1 → 2 → 3
+**Execution Order:** 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 4/4 | Complete   | 2026-04-27 |
-| 2. Atomic Components | 6/6 | Complete   | 2026-04-28 |
-| 3. Composite + Navigation | 8/8 | Complete   | 2026-04-28 |
+| 1. Foundation | 4/4 | Complete | 2026-04-27 |
+| 2. Atomic Components | 6/6 | Complete | 2026-04-28 |
+| 3. Composite + Navigation | 8/8 | Complete | 2026-04-28 |
+| 4. AeroIcons Foundation | 0/TBD | Not started | - |
+| 5. Component Migrations + Dependency Removal | 0/TBD | Not started | - |
+| 6. Showcase IconsSection | 0/TBD | Not started | - |

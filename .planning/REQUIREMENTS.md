@@ -165,7 +165,7 @@ Milestone v1.1 — Icon System. Замена всех текстовых сим�
 
 ## Traceability
 
-Updated: 2026-04-27 (roadmap created — 3 phases)
+Updated: 2026-04-29 (v1.1 roadmap created — Phases 4-6; all 17 v1.1 requirements mapped)
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
@@ -222,32 +222,35 @@ Updated: 2026-04-27 (roadmap created — 3 phases)
 | NAV-03 | Phase 3 | Complete |
 | NAV-04 | Phase 3 | Complete |
 | NAV-05 | Phase 3 | Complete |
-| ICN-01 | TBD | Pending |
-| ICN-02 | TBD | Pending |
-| ICN-03 | TBD | Pending |
-| MIG-01 | TBD | Pending |
-| MIG-02 | TBD | Pending |
-| MIG-03 | TBD | Pending |
-| MIG-04 | TBD | Pending |
-| MIG-05 | TBD | Pending |
-| MIG-06 | TBD | Pending |
-| MIG-07 | TBD | Pending |
-| MIG-08 | TBD | Pending |
-| MIG-09 | TBD | Pending |
-| MIG-10 | TBD | Pending |
-| MIG-11 | TBD | Pending |
-| CLN-01 | TBD | Pending |
-| CLN-02 | TBD | Pending |
-| CLN-03 | TBD | Pending |
-| SHW-04 | TBD | Pending |
-| SHW-05 | TBD | Pending |
-| SHW-06 | TBD | Pending |
+| ICN-01 | Phase 4 | Pending |
+| ICN-02 | Phase 4 | Pending |
+| ICN-03 | Phase 4 | Pending |
+| MIG-01 | Phase 5 | Pending |
+| MIG-02 | Phase 5 | Pending |
+| MIG-03 | Phase 5 | Pending |
+| MIG-04 | Phase 5 | Pending |
+| MIG-05 | Phase 5 | Pending |
+| MIG-06 | Phase 5 | Pending |
+| MIG-07 | Phase 5 | Pending |
+| MIG-08 | Phase 5 | Pending |
+| MIG-09 | Phase 5 | Pending |
+| MIG-10 | Phase 5 | Pending |
+| MIG-11 | Phase 5 | Pending |
+| CLN-01 | Phase 5 | Pending |
+| CLN-02 | Phase 5 | Pending |
+| CLN-03 | Phase 5 | Pending |
+| SHW-04 | Phase 6 | Pending |
+| SHW-05 | Phase 6 | Pending |
+| SHW-06 | Phase 6 | Pending |
 
 **Coverage:**
 - v1.0 requirements: 53 (all Complete) — Phase 1 (13) + Phase 2 (21) + Phase 3 (19)
-- v1.1 requirements: 17 total — pending phase mapping by roadmapper
-- Unmapped (v1.1): 17 ⚠️ (filled by roadmap creation)
+- v1.1 requirements: 17 total — all mapped
+  - Phase 4: ICN-01, ICN-02, ICN-03 (3 requirements)
+  - Phase 5: MIG-01..11, CLN-01..03 (14 requirements)
+  - Phase 6: SHW-04, SHW-05, SHW-06 (3 requirements)
+- Unmapped: 0 (coverage 100%)
 
 ---
 *Requirements defined: 2026-04-27 (v1.0); 2026-04-28 (v1.1 Icon System)*
-*Last updated: 2026-04-28 — v1.1 Icon System requirements added; phase mapping pending*
+*Last updated: 2026-04-29 — v1.1 phase mapping complete; all 17 requirements assigned to Phases 4-6*
