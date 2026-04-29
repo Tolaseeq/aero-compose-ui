@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Icon System
 status: in_progress
-stopped_at: Completed 05-03-PLAN.md — Wave 3 AeroTitleBar TitleBarButton icon migration (MIG-04)
-last_updated: "2026-04-29T10:17:55.402Z"
+stopped_at: Completed 05-04-PLAN.md — Wave 4 test rewrites CLN-01 (AeroAlertKindTest + AeroBannerKindTest); Wave 5 gate open
+last_updated: "2026-04-29T10:23:17.342Z"
 last_activity: "2026-04-29 — 04-01 spike complete: 7 icons, Shape A confirmed, compileKotlin green"
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 25
-  completed_plans: 23
+  completed_plans: 24
   percent: 95
 ---
 
@@ -72,6 +72,7 @@ Progress: [██████████] 95%  (19/20 total plans; 04-01 at che
 | Phase 05-component-migrations P01 | 25min | 9 tasks | 8 files |
 | Phase 05-component-migrations P02 | 12min | 2 tasks | 2 files |
 | Phase 05-component-migrations P03 | 4min | 1 tasks | 1 files |
+| Phase 05-component-migrations P04 | 5min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -151,6 +152,7 @@ Recent decisions affecting current work:
 - [Phase 05-component-migrations]: Error->AeroIcons.XCircle and Question->AeroIcons.Question (Phosphor naming, replaces Icons.Outlined.Error/HelpOutline)
 - [Phase 05-component-migrations]: internal.* extension property imports required alongside AeroIcons facade in AeroSearchField + AeroPasswordField (same as 05-01 pattern)
 - [Phase 05-component-migrations]: AeroTitleBar TitleBarButton: textColor param removed; tint uniformly colors.onSurface; hover color only on background; AeroIcons.Square=maximize, AeroIcons.FrameCorners=restore
+- [Phase 05-component-migrations]: Explicit internal.* imports required in test files using AeroIcons — facade alone does not expose extension properties; same pattern as production enums
 
 ### Pending Todos
 
@@ -163,7 +165,7 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-29T10:17:55.395Z
-Stopped at: Completed 05-03-PLAN.md — Wave 3 AeroTitleBar TitleBarButton icon migration (MIG-04)
+Last session: 2026-04-29T10:23:17.331Z
+Stopped at: Completed 05-04-PLAN.md — Wave 4 test rewrites CLN-01 (AeroAlertKindTest + AeroBannerKindTest); Wave 5 gate open
 Resume file: None
 Next action: `/gsd:plan-phase 4`
