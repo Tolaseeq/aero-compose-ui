@@ -1,10 +1,10 @@
 package com.mordred.aero.components.overlay
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.Error
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Warning
+import com.mordred.aero.icons.AeroIcons
+import com.mordred.aero.icons.`internal`.Info
+import com.mordred.aero.icons.`internal`.Warning
+import com.mordred.aero.icons.`internal`.XCircle
+import com.mordred.aero.icons.`internal`.CheckCircle
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -18,21 +18,21 @@ class AeroBannerKindTest {
 
     @Test
     fun infoMapsToInfoIcon() {
-        assertEquals(Icons.Outlined.Info, AeroBannerKind.Info.icon)
+        assertEquals(AeroIcons.Info, AeroBannerKind.Info.icon)
     }
 
     @Test
     fun warningMapsToWarningIcon() {
-        assertEquals(Icons.Outlined.Warning, AeroBannerKind.Warning.icon)
+        assertEquals(AeroIcons.Warning, AeroBannerKind.Warning.icon)
     }
 
     @Test
     fun errorMapsToErrorIcon() {
-        assertEquals(Icons.Outlined.Error, AeroBannerKind.Error.icon)
+        assertEquals(AeroIcons.XCircle, AeroBannerKind.Error.icon)
     }
 
     @Test
     fun successMapsToCheckCircleIcon() {
-        assertEquals(Icons.Outlined.CheckCircle, AeroBannerKind.Success.icon)
+        assertEquals(AeroIcons.CheckCircle, AeroBannerKind.Success.icon)
     }
 }
