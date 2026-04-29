@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Icon System
 status: completed
-stopped_at: Completed 06-01-PLAN.md (IconsSection + ShowcaseApp wiring)
-last_updated: "2026-04-29T12:03:01.513Z"
+stopped_at: Completed 06-03-PLAN.md (three-theme visual checkpoint — v1.1 milestone sign-off)
+last_updated: "2026-04-29T15:25:23.603Z"
 last_activity: "2026-04-29 — Phase 5 complete: 14 requirements (MIG-01..11, CLN-01..03), materialIconsExtended removed from :library"
 progress:
   total_phases: 6
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 28
-  completed_plans: 28
+  completed_plans: 29
   percent: 97
 ---
 
@@ -80,6 +80,7 @@ JAR size: pre-v1.1 = ~0.96 MB (thin lib JAR), post-Phase-5 = ~0.96 MB (delta: -3
 | Phase 05-component-migrations P05 | 15 | 4 tasks | 4 files |
 | Phase 06-showcase-iconssection P02 | 6 | 1 tasks | 1 files |
 | Phase 06-showcase-iconssection P01 | 8 | 2 tasks | 2 files |
+| Phase 06-showcase-iconssection P03 | 10 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -163,6 +164,8 @@ Recent decisions affecting current work:
 - [Phase 05-component-migrations]: Library thin JAR unchanged (0-byte delta) after materialIconsExtended removal — dep was classpath-only, never embedded; material-icons-extended-desktop-1.7.3.jar (~36 MB) eliminated from compileClasspath
 - [Phase 06-showcase-iconssection]: typography.bodyMedium used for empty-state text (typography.body does not exist in AeroTypography; auto-fixed Rule 1)
 - [Phase 06-showcase-iconssection]: 138 explicit internal.* imports used in IconsSection.kt (one per icon, not wildcard), matching Phase 5 precedent
+- [Phase 06-showcase-iconssection]: Three-theme visual checkpoint approved: all AeroBlue/AeroDark/Classic items PASS; v1.1 milestone signed off 2026-04-29
+- [Phase 06-showcase-iconssection]: AeroNumberSpinner Phase 5 approval confirmed — no regression at 12dp/14dp on AeroDark
 
 ### Pending Todos
 
@@ -175,7 +178,7 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-29T12:03:01.509Z
-Stopped at: Completed 06-01-PLAN.md (IconsSection + ShowcaseApp wiring)
+Last session: 2026-04-29T15:25:23.599Z
+Stopped at: Completed 06-03-PLAN.md (three-theme visual checkpoint — v1.1 milestone sign-off)
 Resume file: None
 Next action: `/gsd:plan-phase 6` (Showcase IconsSection — SHW-04, SHW-05, SHW-06)

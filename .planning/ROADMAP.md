@@ -24,7 +24,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 4: AeroIcons Foundation** - Valkyrie CLI conversion of 138 Phosphor Regular SVGs; lazy backing-property pattern; KDoc; explicitApi; spot-check 5 icons before full batch (completed 2026-04-29)
 - [x] **Phase 5: Component Migrations + Dependency Removal** - Wave-ordered migrations of 11 components; Canvas composable deletions; TitleBar private restructure; test rewrites; materialIconsExtended Gradle line removal + grep verification (completed 2026-04-29)
-- [ ] **Phase 6: Showcase IconsSection** - LazyVerticalGrid of all 138 icons with name labels and live search filter; ButtonsSection glyph demos updated; three-theme visual checkpoint
+- [x] **Phase 6: Showcase IconsSection** - LazyVerticalGrid of all 138 icons with name labels and live search filter; ButtonsSection glyph demos updated; three-theme visual checkpoint (completed 2026-04-29)
 
 ## Phase Details
 
@@ -164,4 +164,4 @@ Decimal phases appear between their surrounding integers in numeric order.
 | 3. Composite + Navigation | 8/8 | Complete | 2026-04-28 |
 | 4. AeroIcons Foundation | 2/2 | Complete   | 2026-04-29 |
 | 5. Component Migrations + Dependency Removal | 6/5 | Complete   | 2026-04-29 |
-| 6. Showcase IconsSection | 2/3 | In Progress|  |
+| 6. Showcase IconsSection | 3/3 | Complete   | 2026-04-29 |
