@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -35,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.mordred.aero.components.popup.AeroCursorPositionProvider
+import com.mordred.aero.icons.AeroIcons
+import com.mordred.aero.icons.`internal`.CaretRight
 import com.mordred.aero.theme.AeroTheme
 import kotlin.math.roundToInt
 
@@ -180,7 +183,12 @@ private fun ContextMenuItemRow(
                     style = AeroTheme.typography.bodyLarge,
                     modifier = Modifier.weight(1f)
                 )
-                Text("▶", color = colors.labelText, style = AeroTheme.typography.label)
+                Icon(
+                    imageVector = AeroIcons.CaretRight,
+                    contentDescription = null,
+                    modifier = Modifier.size(12.dp),
+                    tint = colors.labelText
+                )
             }
         }
     }
