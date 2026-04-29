@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Icon System
 status: in_progress
-stopped_at: Completed 05-04-PLAN.md — Wave 4 test rewrites CLN-01 (AeroAlertKindTest + AeroBannerKindTest); Wave 5 gate open
-last_updated: "2026-04-29T10:23:17.342Z"
-last_activity: "2026-04-29 — 04-01 spike complete: 7 icons, Shape A confirmed, compileKotlin green"
+stopped_at: "Phase 5 complete"
+last_updated: "2026-04-29T10:39:00Z"
+last_activity: "2026-04-29 — Phase 5 complete: 14 requirements migrated, materialIconsExtended removed, JAR delta -36.02 MB (classpath dep eliminated)"
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 25
-  completed_plans: 24
-  percent: 95
+  completed_plans: 25
+  percent: 97
 ---
 
 # Project State
@@ -25,12 +25,14 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 
 ## Current Position
 
-Phase: 4 — AeroIcons Foundation
-Plan: 01 (spike complete; at checkpoint:verify gate)
-Status: in_progress
-Last activity: 2026-04-29 — 04-01 spike complete: 7 icons, Shape A confirmed, compileKotlin green
+Phase: 5 — Component Migrations + Dependency Removal — COMPLETE
+Plan: 05 (final wave — dep removal + verification + docs)
+Status: complete
+Last activity: 2026-04-29 — Phase 5 complete: 14 requirements (MIG-01..11, CLN-01..03), materialIconsExtended removed from :library
 
-Progress: [██████████] 95%  (19/20 total plans; 04-01 at checkpoint)
+Progress: [██████████] 97%  (25/25 total plans; Phase 6 next)
+
+**Phase 6 — Showcase IconsSection — READY TO START**
 
 ## Previous Milestone
 
@@ -40,8 +42,8 @@ Progress: [██████████] 95%  (19/20 total plans; 04-01 at che
 
 | Phase | Goal | Requirements | Status |
 |-------|------|--------------|--------|
-| 4 — AeroIcons Foundation | 138 Phosphor Regular ImageVector constants, lazy init, KDoc, explicitApi | ICN-01, ICN-02, ICN-03 | Not started |
-| 5 — Migrations + Dep Removal | Replace all text glyphs + Material Icons; remove materialIconsExtended | MIG-01..11, CLN-01..03 | Not started |
+| 4 — AeroIcons Foundation | 138 Phosphor Regular ImageVector constants, lazy init, KDoc, explicitApi | ICN-01, ICN-02, ICN-03 | Complete |
+| 5 — Migrations + Dep Removal | Replace all text glyphs + Material Icons; remove materialIconsExtended | MIG-01..11, CLN-01..03 | Complete |
 | 6 — Showcase IconsSection | Grid + live search of all 138 icons; three-theme visual checkpoint | SHW-04, SHW-05, SHW-06 | Not started |
 
 ## Known Follow-up (from v1.0)
@@ -73,6 +75,8 @@ Progress: [██████████] 95%  (19/20 total plans; 04-01 at che
 | Phase 05-component-migrations P02 | 12min | 2 tasks | 2 files |
 | Phase 05-component-migrations P03 | 4min | 1 tasks | 1 files |
 | Phase 05-component-migrations P04 | 5min | 3 tasks | 2 files |
+| Phase 05-component-migrations P05 | 15min | 4 tasks | 2 files |
+JAR size: pre-v1.1 = ~0.96 MB (thin lib JAR), post-Phase-5 = ~0.96 MB (delta: -36.02 MB after materialIconsExtended removal from compileClasspath). See .planning/phases/05-component-migrations/05-SUMMARY.md.
 
 ## Accumulated Context
 
@@ -161,11 +165,11 @@ Recent decisions affecting current work:
 ### Blockers/Concerns
 
 - Phase 1: Validate whether Win11 `undecorated+transparent` crash is fixed in CMP 1.10.3 (may have been patched — test in Phase 1) — inherited from v1.0, no action in v1.1
-- AeroNumberSpinner small-size: sub-pixel stroke at 10dp; implementation choice deferred to Phase 5 plan
+- AeroNumberSpinner small-size: RESOLVED in Phase 5 — 12dp / 14dp slot approved at visual checkpoint; no blockers remaining for Phase 6
 
 ## Session Continuity
 
-Last session: 2026-04-29T10:23:17.331Z
-Stopped at: Completed 05-04-PLAN.md — Wave 4 test rewrites CLN-01 (AeroAlertKindTest + AeroBannerKindTest); Wave 5 gate open
+Last session: 2026-04-29T10:39:00Z
+Stopped at: Completed 05-05-PLAN.md — Wave 5 dep removal; Phase 5 complete
 Resume file: None
-Next action: `/gsd:plan-phase 4`
+Next action: `/gsd:plan-phase 6` (Showcase IconsSection — SHW-04, SHW-05, SHW-06)
