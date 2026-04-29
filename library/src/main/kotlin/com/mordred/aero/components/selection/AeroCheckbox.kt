@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.triStateToggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -20,7 +21,9 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.mordred.aero.icons.AeroIcons
+import com.mordred.aero.icons.`internal`.Check
+import com.mordred.aero.icons.`internal`.Minus
 import com.mordred.aero.theme.AeroTheme
 
 /**
@@ -94,8 +97,18 @@ public fun AeroTriStateCheckbox(
             contentAlignment = Alignment.Center
         ) {
             when (state) {
-                ToggleableState.On -> Text("✓", color = colors.onPrimary, fontSize = 11.sp)
-                ToggleableState.Indeterminate -> Text("–", color = colors.onPrimary, fontSize = 11.sp)
+                ToggleableState.On -> Icon(
+                    imageVector = AeroIcons.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(12.dp),
+                    tint = colors.onPrimary
+                )
+                ToggleableState.Indeterminate -> Icon(
+                    imageVector = AeroIcons.Minus,
+                    contentDescription = null,
+                    modifier = Modifier.size(12.dp),
+                    tint = colors.onPrimary
+                )
                 ToggleableState.Off -> Box(Modifier)
             }
         }
