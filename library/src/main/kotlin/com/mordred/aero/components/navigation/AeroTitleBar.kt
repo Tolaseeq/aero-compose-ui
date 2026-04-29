@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.window.WindowDraggableArea
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,12 +24,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.FrameWindowScope
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowState
+import com.mordred.aero.icons.AeroIcons
+import com.mordred.aero.icons.`internal`.FrameCorners
+import com.mordred.aero.icons.`internal`.Minus
+import com.mordred.aero.icons.`internal`.Square
+import com.mordred.aero.icons.`internal`.X
 import com.mordred.aero.theme.AeroTheme
 
 /**
@@ -104,15 +111,21 @@ public fun FrameWindowScope.AeroTitleBar(
             )
             Row(horizontalArrangement = Arrangement.spacedBy(0.dp)) {
                 TitleBarButton(
-                    glyph = "─",
+                    icon = AeroIcons.Minus,
                     hoverColor = colors.buttonHover,
-                    textColor = colors.titleBarText,
+                    contentDescription = "Minimize window",
                     onClick = { windowState.isMinimized = true }
                 )
                 TitleBarButton(
-                    glyph = if (windowState.placement == WindowPlacement.Maximized) "❒" else "□",
+                    icon = if (windowState.placement == WindowPlacement.Maximized)
+                               AeroIcons.FrameCorners
+                           else
+                               AeroIcons.Square,
                     hoverColor = colors.buttonHover,
-                    textColor = colors.titleBarText,
+                    contentDescription = if (windowState.placement == WindowPlacement.Maximized)
+                                             "Restore window"
+                                         else
+                                             "Maximize window",
                     onClick = {
                         windowState.placement =
                             if (windowState.placement == WindowPlacement.Maximized)
@@ -122,9 +135,9 @@ public fun FrameWindowScope.AeroTitleBar(
                     }
                 )
                 TitleBarButton(
-                    glyph = "✕",
+                    icon = AeroIcons.X,
                     hoverColor = colors.closeButtonHover,
-                    textColor = colors.titleBarText,
+                    contentDescription = "Close window",
                     onClick = onCloseRequest
                 )
             }
@@ -134,9 +147,9 @@ public fun FrameWindowScope.AeroTitleBar(
 
 @Composable
 private fun TitleBarButton(
-    glyph: String,
+    icon: ImageVector,
     hoverColor: Color,
-    textColor: Color,
+    contentDescription: String?,
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -150,10 +163,11 @@ private fun TitleBarButton(
             .background(if (hovered) hoverColor else Color.Transparent),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = glyph,
-            color = textColor,
-            fontSize = 13.sp
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            modifier = Modifier.size(12.dp),
+            tint = AeroTheme.colors.onSurface
         )
     }
 }
