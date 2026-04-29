@@ -148,7 +148,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 - `IconsSection` is registered in `ShowcaseApp.kt` positioned after `FoundationSection` and before `ButtonsSection` — icons are foundational infrastructure and deserve early prominence
 - The three-theme visual checkpoint is the formal sign-off gate for the entire v1.1 milestone; do not mark Phase 6 complete without eye-on-screen verification in all three themes
 - Phosphor stroke on AeroDark background requires specific attention: Phosphor Regular at 24dp renders ~1.13dp stroke at 96 DPI — confirm visibility is acceptable, especially for fine-detail icons like `FrameCorners` and `Square`
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 06-01-PLAN.md — Create IconsSection.kt (138-icon grid + search/filter + click-to-copy) and wire into ShowcaseApp.kt (SHW-04, SHW-05) [Wave 1]
+- [ ] 06-02-PLAN.md — Migrate ButtonsSection.kt three text glyphs to Icon(AeroIcons.{CaretUp,CaretDown,X}) (SHW-06) [Wave 1]
+- [ ] 06-03-PLAN.md — Three-theme visual checkpoint (AeroBlue + AeroDark + Classic) — v1.1 milestone sign-off gate [Wave 2]
 
 ## Progress
 
@@ -161,4 +164,4 @@ Decimal phases appear between their surrounding integers in numeric order.
 | 3. Composite + Navigation | 8/8 | Complete | 2026-04-28 |
 | 4. AeroIcons Foundation | 2/2 | Complete   | 2026-04-29 |
 | 5. Component Migrations + Dependency Removal | 6/5 | Complete   | 2026-04-29 |
-| 6. Showcase IconsSection | 0/TBD | Not started | - |
+| 6. Showcase IconsSection | 0/3 | Not started | - |
