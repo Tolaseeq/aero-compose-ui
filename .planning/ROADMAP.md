@@ -101,8 +101,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 - Phosphor SVG source committed to `tools/phosphor-svgs/regular/` alongside a `.pin` file recording the exact `phosphor-icons/core` commit hash used for conversion
 - Valkyrie CLI 1.1.1 used for batch conversion with `--output-format BackingProperty`; the Gradle build does NOT invoke Valkyrie at build time — generated `.kt` files are committed as ordinary source
 - `AeroIcons.kt` KDoc must include: naming convention table (Phosphor kebab → PascalCase, e.g. `caret-down` → `CaretDown` not `ChevronDown`), recommended size range 16dp–32dp, mandatory explicit `tint` note, and phosphoricons.com lookup URL
-- The 5-icon spot-check and first `compileKotlin` run happen before batch-converting all remaining 134 icons
-**Plans**: TBD
+- The 5-icon spot-check and first `compileKotlin` run happen before batch-converting all remaining 131 icons (138 total per CONTEXT-locked correction; row #139 was a duplicate)
+**Plans**: 2 plans
+- [ ] 04-01-PLAN.md — Spike: doc corrections (139→138, stroke 12→16) + 7-icon vendoring + Valkyrie spike + facade authoring + first compile-pass
+- [ ] 04-02-PLAN.md — Batch: verify questionable SVGs + bulk-fetch remaining 131 + Valkyrie full run + facade extension to 138 + final verification gate
 
 ### Phase 5: Component Migrations + Dependency Removal
 **Goal**: Every text glyph and Material Icons reference is replaced with `AeroIcons.*` across all :library components and tests, and `compose.materialIconsExtended` is removed from the Gradle dependency graph entirely
@@ -152,6 +154,6 @@ Decimal phases appear between their surrounding integers in numeric order.
 | 1. Foundation | 4/4 | Complete | 2026-04-27 |
 | 2. Atomic Components | 6/6 | Complete | 2026-04-28 |
 | 3. Composite + Navigation | 8/8 | Complete | 2026-04-28 |
-| 4. AeroIcons Foundation | 0/TBD | Not started | - |
+| 4. AeroIcons Foundation | 0/2 | Not started | - |
 | 5. Component Migrations + Dependency Removal | 0/TBD | Not started | - |
 | 6. Showcase IconsSection | 0/TBD | Not started | - |
