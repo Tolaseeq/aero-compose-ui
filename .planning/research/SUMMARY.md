@@ -1,122 +1,209 @@
 # Project Research Summary
 
-**Project:** aero-compose-ui
-**Domain:** Compose Desktop UI component library (Windows Aero / glassmorphism visual style)
-**Researched:** 2026-04-27
+**Project:** aero-compose-ui -- v1.1 Icon System
+**Domain:** Compose Desktop UI component library -- typed icon set introduction (Phosphor Regular)
+**Researched:** 2026-04-29
 **Confidence:** HIGH
 
 ## Executive Summary
 
-aero-compose-ui — Kotlin/Compose Multiplatform Desktop библиотека компонентов с эстетикой Windows 7 Aero. Рекомендуемый подход: оборачивать Material3-примитивы, а не заменять их; поверх строить систему токенов (`AeroColorScheme` / `AeroTypography` / `AeroShapes`) через `CompositionLocal`; стеклянный вид реализовывать через единый `drawBehind`-модификатор, а не стеком полупрозрачных `Box`.
+v1.1 replaces every text-glyph icon and all compose.materialIconsExtended usage with a unified typed vector icon set derived from Phosphor Icons Regular weight. Phosphor was chosen over Feather because its softer rounded stroke at 256-unit viewBox more closely matches the Win7-toolbar-glyph aesthetic that defines aero-compose-ui's visual identity. Valkyrie CLI 1.1.1 batch-converts selected Phosphor SVGs to Kotlin ImageVector builders, producing one .kt file per icon under com.mordred.aero.icons.internal/, with a public AeroIcons facade object exposing all 139 typed constants via lazy backing properties. No new runtime dependencies are added; compose.materialIconsExtended is removed.
 
-Проект имеет сильный задел: `GlassModifiers.kt`, `MordredColorScheme` и три валидированные темы (AeroBlue, AeroDark, Classic) переносятся из mordred напрямую. Стек полностью зафиксирован: Kotlin 2.3.21, CMP 1.10.3, Gradle 9.4.1 с Kotlin DSL и `libs.versions.toml`, `maven-publish` для локальной доставки.
+The 139-icon set covers all existing component migration requirements (17 required icons) plus a standard desktop UI vocabulary. Icons are named verbatim after their Phosphor source names in PascalCase -- CaretDown not ChevronDown, MagnifyingGlass not Search, Gear not Settings, House not Home, Funnel not Filter -- ensuring frictionless 1-to-1 lookup against phosphoricons.com. The set lives inside :library (not a separate Gradle module), preserving single-artifact delivery.
 
-**Главный риск — `AeroTitleBar`:** комбинация `undecorated=true` + `transparent=true` вызывает `EXCEPTION_ACCESS_VIOLATION` на Windows 11 (JetBrains issue #3757). Митигация: `undecorated=true` без `transparent=true`, стекло симулируется градиентом на тёмном фоне. `WindowDraggableArea` не передаёт `HTCAPTION` ОС — Aero Snap невозможен, это задокументированное ограничение.
+The primary risks are mechanical rather than conceptual: lazy initialization must be enforced from the start (eager val at 139 icons causes a measurable startup spike); compose.materialIconsExtended removal requires purging 4 files (2 source + 2 test) before the Gradle line is touched; AeroNumberSpinner's 16x12dp buttons are too small for Icon() at the Phosphor stroke weight -- at 10dp render the stroke is 0.47dp sub-pixel -- and require a Canvas or oversized-button solution; tint must always be passed explicitly because Icon()'s default LocalContentColor is not set by AeroTheme.
+
+---
 
 ## Key Findings
 
-### Stack
+### Recommended Stack
 
-| Компонент | Версия | Уверенность |
-|-----------|--------|-------------|
-| Kotlin | 2.3.21 | HIGH |
-| Compose Multiplatform | 1.10.3 | HIGH |
-| Gradle | 9.4.1 (Kotlin DSL) | HIGH |
-| JDK | 17 min / 21 рекомендован | HIGH |
-| kotlinx-coroutines | 1.10.2 | HIGH |
-| maven-publish (built-in) | — | HIGH |
-| Haze (GPU blur) | 1.7.2 | MEDIUM — опционально, не нужно для v1 |
+The existing stack (Kotlin 2.1.21, CMP 1.7.3, Gradle 8.14.3, JDK 17) requires zero changes for v1.1. The only build-file modification is removal of implementation(compose.materialIconsExtended) from library/build.gradle.kts -- done last, after all migration is verified.
 
-**Критично:** в библиотечном модуле использовать `compose.desktop.common`, **не** `currentOs` — иначе в JAR попадёт платформо-зависимый Skiko-бинарник.
+**Tooling:**
+- **Valkyrie CLI 1.1.1** (ComposeGears/Valkyrie) -- batch SVG-to-ImageVector; --output-format BackingProperty; run once offline, commit output
+- **Phosphor Icons Regular** (github.com/phosphor-icons/core, MIT) -- SVGs at raw/regular/*.svg; viewBox 256x256, stroke-width 12, stroke-linecap round
 
-### Features
+**Generated builder constants (Phosphor -- override Feather values in STACK.md body):**
+- defaultWidth = 24.dp, defaultHeight = 24.dp (render target, unchanged)
+- viewportWidth = 256f, viewportHeight = 256f (Feather was 24f)
+- strokeLineWidth = 12f (Feather was 2f -- Valkyrie handles this automatically)
 
-**Table stakes (P1 — обязательно для v1):**
-- `AeroTheme` + `AeroColorScheme` + 3 темы + `GlassModifiers`
-- `AeroButton` (filled + outlined + icon), `AeroTextField`, `AeroCheckbox`, `AeroRadioButton`, `AeroSwitch`
-- `AeroDropdown` / `AeroComboBox`, `AeroSlider`, `AeroProgressBar`
-- `AeroCard` / `AeroPanel`, `AeroScrollArea` + `AeroScrollBar`
-- `AeroDialog` / `AeroAlertDialog`, `AeroTooltip`, `AeroContextMenu`
-- `AeroToast` / `AeroSnackbar` / `AeroNotificationBanner`
-- `AeroTitleBar`, `AeroMenuBar`, `AeroTabBar`, `AeroStatusBar`
-- Showcase-приложение (отдельный модуль)
+### Expected Features
 
-**Should-have (P2 — v1.x):**
-- `AeroDataTable` (нет аналога в экосистеме Compose Desktop)
-- `AeroTreeView` (Jewel имеет только несвязанный `BasicLazyTree`)
-- `AeroDatePicker` / `AeroTimePicker` / `AeroDateRangePicker` (нет аналога нигде)
-- `AeroColorPicker`, `AeroRangeSlider`, `AeroSplitPane`, `AeroAccordion`, `AeroSidebar`, `AeroStepperWizard`
+**Must have (table stakes -- v1.1 launch blockers):**
+- AeroIcons object with 139 typed ImageVector constants, flat namespace, lazy backing property, explicitApi() compatible
+- All 17 required migration icons present before any component touch
+- All 10 component text-glyph migrations: AeroCheckbox, AeroDropdown, AeroNumberSpinner, AeroTitleBar, AeroToastHost, AeroNotificationBanner, AeroContextMenu, AeroSearchField, AeroPasswordField, plus AeroAlertKind/AeroBannerKind off Icons.Outlined.*
+- compose.materialIconsExtended removed from :library/build.gradle.kts
+- IconsSection in showcase -- LazyVerticalGrid of all 139 icons with name labels, AeroSearchField live filter
 
-**Defer v2+:** DWM/OS-blur, Maven Central, Android/iOS/Web, RTL/i18n.
+**Critical naming table (Phosphor deviates from industry conventions):**
 
-**Anti-features:** настоящее OS-стекло как дефолт, мультиплатформа (не Desktop), WCAG-гарантии в v1.
+| Use | Not |
+|-----|-----|
+| AeroIcons.CaretDown | ChevronDown |
+| AeroIcons.MagnifyingGlass | Search |
+| AeroIcons.Gear | Settings |
+| AeroIcons.House | Home |
+| AeroIcons.Funnel | Filter |
+| AeroIcons.EyeSlash | EyeOff |
+| AeroIcons.X | Close |
+| AeroIcons.Warning | AlertTriangle |
+| AeroIcons.XCircle | Error / AlertCircle |
+| AeroIcons.Question | HelpCircle / HelpOutline |
+| AeroIcons.Envelope | Mail |
+| AeroIcons.PaperPlane | Send |
 
-### Architecture
+Full 139-icon master list: FEATURES.md section 3 (Required column marks the 17 migration-blocking icons).
 
-4 слоя без обратных зависимостей:
+**Defer to v1.2+:** Filled/Bold/Duotone variants; separate :icons Gradle module; custom icon registration API; brand/currency/weather/medical icons.
+### Architecture Approach
 
-```
-theme/          AeroColorScheme (@Immutable), staticCompositionLocalOf, AeroTheme → MaterialTheme
-    ↓
-modifiers/      GlassModifiers (drawBehind, явный AeroColorScheme-параметр, не @Composable)
-    ↓
-components/     7 пакетов; stateless-ядро + stateful-обёртка; читают AeroTheme.colors
-    ↓
-:showcase       отдельный Gradle-модуль, project-зависимость от :library
-```
+The architecture follows the Material Icons Extended pattern exactly: a public object AeroIcons facade exposes 139 constants as public val Name: ImageVector get() lazy properties backed by private var _Name: ImageVector? = null; per-icon ImageVector.Builder calls live in internal fun functions inside icons/internal/ (one file per icon). compose.material3.Icon() is used at all call sites -- no custom AeroIcon() wrapper. Tint is always passed explicitly; LocalContentColor is never relied upon inside library code.
 
-**Порядок сборки:** theme → glass modifiers → atomic components → showcase skeleton → composite → complex stateful → window chrome.
+**Major components:**
+1. **icons/AeroIcons.kt** -- public facade, 139 lazy-property constants, KDoc with naming guide and phosphoricons.com lookup instructions
+2. **icons/internal/*.kt** -- one file per icon; internal fun loadX(): ImageVector with viewportWidth=256f, viewportHeight=256f, strokeLineWidth=12f
+3. **Migrated library components** -- Text(glyph) / Canvas drawing / Icons.Outlined.* replaced with Icon(AeroIcons.Name, tint=colors.X, modifier=Modifier.size(Ndp))
+4. **IconsSection.kt (showcase)** -- LazyVerticalGrid(GridCells.Adaptive(80.dp)), bounded Modifier.height(400.dp), AeroSearchField filter
 
-### Pitfalls (топ-5)
+**API decision locked:** AeroBreadcrumb.separator stays as a String parameter in v1.1 -- intentional. Only the internal submenu indicator in AeroContextMenu is migrated to Icon(AeroIcons.CaretRight).
 
-| # | Проблема | Митигация | Фаза |
-|---|----------|-----------|------|
-| 1 | `undecorated+transparent` крашится на Win11 | `undecorated=true` без `transparent`; симулировать стекло градиентом | Фаза 1 |
-| 2 | Glass-overdraw из стека `Box`-слоёв → 20 FPS на iGPU | Всё стекло в одном `drawBehind`-блоке | Фаза 1 |
-| 3 | M3-дефолты просачиваются (фиолетовый ripple) | Явно переопределять `LocalRippleConfiguration` в каждом компоненте | Фазы 2–3 |
-| 4 | Нестабильные `List<T>`-параметры → вся ветка пересчитывается | `ImmutableList` + `@Immutable` на всех токенах | Фаза 1 |
-| 5 | Внутренние типы утекают в публичный JAR | `explicitApi()` в `build.gradle.kts` с первого дня | Фаза 1 |
+### Critical Pitfalls
+
+1. **Eager ImageVector initialization** -- every constant must use the lazy backing pattern (get() = _X ?: loadX().also { _X = it }). Never eager val. Verify after writing first 5 icons before batch-generating the rest. (PITFALLS.md section 1)
+
+2. **materialIconsExtended removal requires 4-file purge including tests** -- AeroAlertKindTest.kt and AeroBannerKindTest.kt import Icons.Outlined.* in assertions. Grep library/src/ before touching the Gradle line; must return zero results. (PITFALLS.md sections 2, 4)
+
+3. **AeroNumberSpinner buttons too small for Phosphor stroke** -- at 10dp render, stroke = 10*(12/256) = 0.47dp sub-pixel. Raise button to 14dp+ with Modifier.size(12.dp), or Canvas-draw the chevrons. (PITFALLS.md section 8)
+
+4. **Tint discipline -- always explicit** -- Icon()'s default tint is LocalContentColor, which AeroTheme does not set. Every Icon() in :library must pass tint=colors.X explicitly. Verify in all three themes. (PITFALLS.md section 5)
+
+5. **Phosphor naming confusion** -- AeroIcons.Close does not exist; the name is AeroIcons.X. Document in KDoc with full naming table. (PITFALLS.md Phosphor revision point 3)
+
+6. **SVG conversion verification** -- spot-check 5 icons after Valkyrie batch: viewportWidth=256f (not 24f), strokeLineWidth=12f (not 2f), fill=Color.Transparent. Grep for viewportWidth=24f in icons/internal/ -- must return nothing. (PITFALLS.md section 9)
+
+7. **Easy-to-miss clear button glyph** -- AeroSearchField line 121 uses a plain lowercase-x text character, not a Unicode glyph. Add a dedicated grep for this pattern to the migration checklist. (PITFALLS.md section 16)
+---
 
 ## Implications for Roadmap
 
-**Рекомендуемые 5 фаз:**
+v1.0 completed through Phase 3. v1.1 continues numbering from Phase 4.
 
-1. **Foundation and Theme System** — `AeroColorScheme` + `GlassModifiers` + валидация краша на Win11; всё блокируется этим. `explicitApi()` и структура модулей фиксируются до любого кода.
+### Phase 4: AeroIcons Foundation
 
-2. **Atomic Components** — кнопки, поля ввода, чекбоксы, слайдер, разделители; нет межкомпонентных зависимостей; определяет паттерны hover/focus/disabled, унаследованные всеми последующими.
+**Rationale:** Hard build-order gate -- all 139 component migrations and the showcase require AeroIcons.* to compile. Nothing else in v1.1 can proceed until this exists and is verified.
 
-3. **Composite and Navigation** — `AeroCard`, `AeroScrollArea`, `AeroDialog`, `AeroDropdown`, `AeroContextMenu`, `AeroTooltip`, `AeroTitleBar`, `AeroMenuBar`, `AeroTabBar`, `AeroStatusBar`; зависят от атомарных компонентов.
+**Delivers:**
+- icons/AeroIcons.kt -- 139 lazy properties, KDoc with naming convention and phosphoricons.com lookup
+- icons/internal/*.kt -- 139 ImageVector.Builder files generated via Valkyrie CLI from Phosphor Regular SVGs
+- Phosphor SVG source pinned and committed to tools/phosphor-svgs/regular/
+- Spot-check of 5 representative icons (viewportWidth=256f, strokeLineWidth=12f, fill=Transparent, strokeLineCap=Round) before batch-generating the rest
+- explicitApi() first-compile verified on initial 5 icons
+- KDoc: naming convention table, recommended size range 16-32dp, tint requirement, phosphoricons.com URL
 
-4. **Complex Stateful Components** — `AeroDataTable`, `AeroTreeView`, `AeroDatePicker`, `AeroColorPicker`, `AeroRangeSlider`; аналогов нет, наибольшая внутренняя сложность; `ImmutableList` критичен.
+**Avoids:** eager init (Pitfall 1), SVG conversion artifacts (Pitfall 9), explicitApi() surprises (Pitfall 11), file hygiene (Pitfall 12)
 
-5. **Advanced Layout and v1 Polish** — `AeroAccordion`, `AeroSplitPane`, `AeroDrawer`, `AeroSidebar`, `AeroStepperWizard`; тест software-рендерера; аудит JAR; `publishToMavenLocal` верификация; полная showcase.
+**Research flag:** No research-phase needed. Material Icons pattern and Valkyrie CLI are HIGH-confidence verified.
 
-**Нужен доп. ресёрч при планировании:**
-- Фаза 3: `AeroTitleBar` + JNA / `WM_NCHITTEST` для нативного Aero Snap
-- Фаза 4: `AeroDatePicker` — нет референсной реализации для Compose Desktop
-- Фаза 4: `AeroColorPicker` — нет референсной реализации для Compose Desktop
+---
 
-**Стандартные паттерны (ресёрч не нужен):**
-- Фаза 1: зеркалит mordred + официальная документация
-- Фаза 2: канонический паттерн оборачивания M3
-- Фаза 5: стандартный Gradle-инструментарий
+### Phase 5: Component Migrations + Dependency Removal
+
+**Rationale:** Once AeroIcons compiles, all migrations are unblocked. materialIconsExtended removal can only happen after every consumer -- including test files -- is migrated. This phase ends with a passing build and verified JAR size reduction.
+
+**Delivers:**
+- 10 text-glyph component migrations (exact file/line locations in FEATURES.md section 5 and ARCHITECTURE.md section 3)
+- AeroAlertKind and AeroBannerKind migrated to AeroIcons.*
+- AeroAlertKindTest and AeroBannerKindTest rewritten to assert AeroIcons.* by name
+- compose.materialIconsExtended removed; ./gradlew :library:dependencies | grep materialIcons returns nothing
+- Full glyph grep passes zero hits in library source (including separate lowercase-x clear-button check)
+- JAR size before/after documented
+
+**Wave ordering within phase:**
+1. Wave 1 (parallel): AeroCheckbox, AeroDropdown, AeroNumberSpinner, AeroToastHost, AeroNotificationBanner, AeroContextMenu, AeroAlertKind, AeroBannerKind
+2. Wave 2 (parallel): AeroSearchField, AeroPasswordField (Canvas composables deleted)
+3. Wave 3: AeroTitleBar (private TitleBarButton restructured from glyph: String to icon: ImageVector)
+4. Wave 4: test file rewrites (AeroAlertKindTest, AeroBannerKindTest)
+5. Wave 5: remove materialIconsExtended + verify
+
+**Avoids:** 4-file purge missed (Pitfalls 2+4), AeroNumberSpinner stroke too thin (Pitfall 8), tint omitted (Pitfall 5), ContextMenu submenu glyph missed (Pitfall 14), JAR size not verified (Pitfall 13)
+
+**Research flag:** No research-phase needed. All 14 migration touchpoints inventoried with exact file/line references.
+---
+
+### Phase 6: Showcase IconsSection
+
+**Rationale:** Showcase is the visual sign-off checkpoint for the entire v1.1 milestone. Sequenced last so it exercises the final verified icon set and serves as the three-theme visual validation gate.
+
+**Delivers:**
+- showcase/sections/IconsSection.kt -- LazyVerticalGrid(GridCells.Adaptive(80.dp)), bounded Modifier.height(400.dp), AeroSearchField live name filter, explicit tint=AeroTheme.colors.onSurface
+- ButtonsSection.kt glyph demos updated to Icon(AeroIcons.CaretUp/CaretDown/X)
+- IconsSection registered in ShowcaseApp.kt (after FoundationSection)
+- Three-theme visual checkpoint: AeroBlue, AeroDark, Classic -- all 139 icons visible with correct tint
+- AeroNumberSpinner disabled-state visual checkpoint in AeroDark
+
+**Avoids:** LazyVerticalGrid unbounded height crash (ARCHITECTURE.md section 6), tint invisible in dark themes (Pitfall 5), stroke too faint at small sizes (Pitfall 15)
+
+**Research flag:** No research-phase needed. Standard Compose patterns throughout.
+
+---
+
+### Phase Ordering Rationale
+
+- Phase 4 to 5 to 6 is a hard dependency chain: foundation must compile before migration, migration must complete (including test files) before dependency removal, showcase is the final visual sign-off
+- Migrations within Phase 5 are mostly parallel (Wave 1) with four sequential gates: Canvas deletion after glyph replacements; TitleBar isolated for higher complexity; test rewrites before dep removal; dep removal before showcase sign-off
+- AeroBreadcrumb.separator is intentionally excluded from migration -- locked decision, not an oversight
+
+### Research Flags
+
+- **Phase 4:** No additional research needed
+- **Phase 5:** No additional research needed
+- **Phase 6:** No additional research needed
+
+All three phases use well-documented patterns with HIGH-confidence verified specifics.
+
+---
 
 ## Confidence Assessment
 
-| Область | Уверенность | Примечание |
-|---------|-------------|-----------|
-| Stack | HIGH | Версии верифицированы через официальные docs + GitHub releases |
-| Features | MEDIUM-HIGH | Table stakes подтверждены Jewel; Aero-паттерны — из mordred + API Guidelines |
-| Architecture | HIGH | Официальные Android docs + инспекция mordred + Jewel как референс |
-| Pitfalls (критические) | HIGH | Issue tracker с репродьюсерами |
-| Pitfalls (производительность) | MEDIUM | Общая документация Compose, экстраполяция |
+| Area | Confidence | Notes |
+|------|------------|-------|
+| Stack | HIGH | Versions locked in libs.versions.toml; Valkyrie CLI 1.1.1 confirmed active Feb 2026; Phosphor MIT license confirmed |
+| Features | HIGH | 139 icons cross-referenced against official Phosphor React port and Kotlin port; all PascalCase names verified against phosphoricons.com |
+| Architecture | HIGH | Direct codebase inspection of all 14 migration targets; exact file/line locations confirmed |
+| Pitfalls | HIGH | Sourced from direct code inspection; AeroNumberSpinner size math computed; Phosphor stroke scaling recalculated for 256-unit viewBox |
 
-**Итого: HIGH**
+**Overall confidence:** HIGH
 
-### Gaps
+### Gaps to Address
 
-- Статус краша Win11 в CMP 1.10.3 (может быть починено — валидировать в фазе 1)
-- Haze vs. gradient-only — решение в фазе 1 по итогам демо
-- AeroTitleBar + нативный snap — нужен отдельный spike
-- Лицензирование шрифтов (если будут бандлиться Windows-эра шрифты)
-- Baseline Compose compiler metrics не установлен
+- **AeroNumberSpinner size decision:** Research confirms the sub-pixel stroke problem at 10dp but defers implementation choice (Canvas draw vs button height increase) to Phase 5 execution. Implementer must test visually.
+- **Phosphor SVG commit hash:** The exact commit to pin from phosphor-icons/core is resolved at conversion time. Record in tools/phosphor-svgs/.pin or a README alongside the SVGs.
+- **frame-corners and square visual weight:** These two title-bar icons must be spot-checked after Valkyrie conversion to confirm acceptable appearance against AeroTitleBar's glassmorphic background.
+- **AeroBreadcrumb separator:** Confirmed intentionally left as String -- document in Phase 5 plan so it is not accidentally changed during migration sweep.
+
+---
+
+## Sources
+
+### Primary (HIGH confidence)
+- github.com/phosphor-icons/core -- SVG source repository, file naming, viewBox 256x256 spec, stroke-width 12 spec
+- github.com/phosphor-icons/react -- confirms Question, SpeakerHigh/Low/X, BatteryFull/Low/Empty names
+- github.com/dev778g-me/PhosphorIcon-compose -- official Kotlin/CMP port; all 139 PascalCase names confirmed
+- github.com/ComposeGears/Valkyrie (cli-1.1.1, Feb 2026) -- batch conversion tool; BackingProperty output format
+- Direct codebase inspection -- all 14 migration target files in :library; AeroAlertKindTest.kt; AeroBannerKindTest.kt; library/build.gradle.kts line 15; ButtonsSection.kt lines 50-52
+- Material Icons Extended source -- lazy backing-field pattern reference
+- phosphoricons.com -- official icon browser, name verification
+
+### Secondary (MEDIUM confidence)
+- iconbolt.com/iconsets/phosphor-regular/* -- cross-reference for arrow-square-out, lock-open
+- icon-sets.iconify.design/ph/ -- cross-reference for wifi-high, wifi-slash, frame-corners
+- github.com/adamglin0/compose-phosphor-icon -- secondary Kotlin port namespace confirmation
+- github.com/rafaeltonholo/svg-to-compose (v2.2.0) -- fallback conversion tool if Valkyrie has issues
+
+---
+*Research completed: 2026-04-29*
+*Ready for roadmap: yes*
