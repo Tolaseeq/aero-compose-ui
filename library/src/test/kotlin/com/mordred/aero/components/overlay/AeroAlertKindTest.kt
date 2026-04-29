@@ -1,10 +1,10 @@
 package com.mordred.aero.components.overlay
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Error
-import androidx.compose.material.icons.outlined.HelpOutline
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Warning
+import com.mordred.aero.icons.AeroIcons
+import com.mordred.aero.icons.`internal`.Info
+import com.mordred.aero.icons.`internal`.Warning
+import com.mordred.aero.icons.`internal`.XCircle
+import com.mordred.aero.icons.`internal`.Question
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -18,21 +18,21 @@ class AeroAlertKindTest {
 
     @Test
     fun infoMapsToInfoIcon() {
-        assertEquals(Icons.Outlined.Info, AeroAlertKind.Info.icon)
+        assertEquals(AeroIcons.Info, AeroAlertKind.Info.icon)
     }
 
     @Test
     fun warningMapsToWarningIcon() {
-        assertEquals(Icons.Outlined.Warning, AeroAlertKind.Warning.icon)
+        assertEquals(AeroIcons.Warning, AeroAlertKind.Warning.icon)
     }
 
     @Test
     fun errorMapsToErrorIcon() {
-        assertEquals(Icons.Outlined.Error, AeroAlertKind.Error.icon)
+        assertEquals(AeroIcons.XCircle, AeroAlertKind.Error.icon)
     }
 
     @Test
     fun questionMapsToHelpOutlineIcon() {
-        assertEquals(Icons.Outlined.HelpOutline, AeroAlertKind.Question.icon)
+        assertEquals(AeroIcons.Question, AeroAlertKind.Question.icon)
     }
 }
