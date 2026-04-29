@@ -14,10 +14,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
  * [phosphoricons.com](https://phosphoricons.com) and use the source name directly — no
  * renaming layer. Phosphor's vocabulary differs from Material/Feather conventions:
  *
- * | Phosphor name      | AeroIcons identifier | NOT (other libraries)   |
- * |--------------------|----------------------|-------------------------|
- * | `caret-down`       | `CaretDown`          | ~~ChevronDown~~         |
- * | `magnifying-glass` | `MagnifyingGlass`    | ~~Search~~              |
+ * | Phosphor name (kebab-case) | AeroIcons identifier (PascalCase) | NOT (other libraries) |
+ * |----------------------------|-----------------------------------|------------------------|
+ * | `caret-down`               | `CaretDown`                       | ~~ChevronDown~~        |
+ * | `magnifying-glass`         | `MagnifyingGlass`                 | ~~Search~~             |
  * | `house`            | `House`              | ~~Home~~                |
  * | `funnel`           | `Funnel`             | ~~Filter~~              |
  * | `gear`             | `Gear`               | ~~Settings~~            |
