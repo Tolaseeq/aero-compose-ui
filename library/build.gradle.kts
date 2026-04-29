@@ -12,7 +12,6 @@ kotlin {
 dependencies {
     implementation(compose.desktop.common)
     implementation(compose.material3)
-    implementation(compose.materialIconsExtended)
     implementation(compose.animation)
     implementation(compose.foundation)
     implementation(compose.runtime)
