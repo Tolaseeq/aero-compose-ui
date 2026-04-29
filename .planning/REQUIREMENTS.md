@@ -3,9 +3,9 @@
 **Defined:** 2026-04-27
 **Core Value:** Разработчик подключает одну зависимость и получает полный набор Aero-styled компонентов с тремя темами, кастомной шапкой окна и showcase-витриной
 
-## v1 Requirements
+## v1.0 Requirements (shipped)
 
-Требования первого релиза. Каждое отображается на фазу роадмапа.
+Требования первого релиза. Все 53 завершены и проверены через showcase в Phases 1–3.
 
 ### Foundation (система тем и токены)
 
@@ -92,6 +92,42 @@
 
 - [x] **LST-01**: `AeroListItem` — стилизованный элемент списка с hover-состоянием, поддержкой leading/trailing содержимого
 - [x] **LST-02**: `AeroBadge` / `AeroTag` — компактный ярлык-метка для статусов и числовых счётчиков
+
+## v1.1 Requirements
+
+Milestone v1.1 — Icon System. Замена всех текстовых символов-иконок и Material Icons на единый набор векторных иконок `AeroIcons` (порт Phosphor Regular, ~139 шт.). Подробности — в `.planning/research/SUMMARY.md`.
+
+### Icon Set (Foundation)
+
+- [ ] **ICN-01**: `public object AeroIcons` существует в `library/src/main/kotlin/com/mordred/aero/icons/AeroIcons.kt`; каждая иконка — `public val Name: ImageVector` с lazy backing-property pattern (private nullable `_Name` + getter, как в Material Icons Extended); explicitApi-совместимо
+- [ ] **ICN-02**: KDoc на `AeroIcons` объясняет именование (Phosphor kebab-case → Kotlin PascalCase: `AeroIcons.X` вместо `Close`, `CaretDown` вместо `ChevronDown`, `Gear` вместо `Settings`, `House` вместо `Home`, `Funnel` вместо `Filter`, `MagnifyingGlass` вместо `Search`) и рекомендации по размеру (16/20/24dp); упоминает обязательность явного `tint` на тёмных темах
+- [ ] **ICN-03**: 139 ImageVector-констант (порт Phosphor Regular, viewBox 256×256, stroke 12, rounded caps/joins, `defaultWidth=defaultHeight=24.dp`) доступны через `AeroIcons.*` autocomplete; полный список соответствует Part 3 из `.planning/research/FEATURES.md`
+
+### Component Migration (Library)
+
+- [ ] **MIG-01**: `AeroCheckbox` — `Icon(AeroIcons.Check)` (checked) и `Icon(AeroIcons.Minus)` (indeterminate) вместо `Text("✓")` / `Text("–")`
+- [ ] **MIG-02**: `AeroDropdown` — `Icon(AeroIcons.CaretDown)` вместо `Text("▼")`
+- [ ] **MIG-03**: `AeroNumberSpinner` — `Icon(AeroIcons.CaretUp)` / `Icon(AeroIcons.CaretDown)` вместо `Text("▲")` / `Text("▼")`; sub-pixel pitfall учтён (либо размер кнопки увеличен, либо эквивалентное визуальное решение, проверяется на UAT)
+- [ ] **MIG-04**: `AeroTitleBar` window controls — `AeroIcons.X` (close), `AeroIcons.Minus` (minimize), `AeroIcons.Square` (maximize), `AeroIcons.FrameCorners` (restore from maximized); внутренний `TitleBarButton` принимает `ImageVector` вместо `String`
+- [ ] **MIG-05**: `AeroContextMenu` submenu indicator — `Icon(AeroIcons.CaretRight)` вместо `Text("▶")`
+- [ ] **MIG-06**: `AeroToastHost` close-кнопка — `Icon(AeroIcons.X)` вместо `Text("✕")`
+- [ ] **MIG-07**: `AeroNotificationBanner` close-кнопка — `Icon(AeroIcons.X)` вместо `Text("✕")`
+- [ ] **MIG-08**: `AeroSearchField` — `Icon(AeroIcons.MagnifyingGlass)` для лупы и `Icon(AeroIcons.X)` для clear-кнопки; private composable `SearchIcon()` (Canvas) удалён
+- [ ] **MIG-09**: `AeroPasswordField` — `Icon(AeroIcons.Eye)` / `Icon(AeroIcons.EyeSlash)` для toggle show/hide; private composables `EyeOpenIcon()` / `EyeClosedIcon()` (Canvas) удалены
+- [ ] **MIG-10**: `AeroAlertKind` enum — поле `icon: ImageVector` ссылается на `AeroIcons.Info` / `AeroIcons.Warning` / `AeroIcons.XCircle` / `AeroIcons.Question` вместо `Icons.Outlined.*`
+- [ ] **MIG-11**: `AeroBannerKind` enum — поле `icon: ImageVector` ссылается на `AeroIcons.Info` / `AeroIcons.Warning` / `AeroIcons.XCircle` / `AeroIcons.CheckCircle` вместо `Icons.Outlined.*`
+
+### Dependency Cleanup
+
+- [ ] **CLN-01**: Тесты `AeroAlertKindTest.kt` и `AeroBannerKindTest.kt` обновлены — используют `AeroIcons.*` (предусловие для CLN-02; их компиляция ломается без рефакторинга)
+- [ ] **CLN-02**: Строка `implementation(compose.materialIconsExtended)` удалена из `library/build.gradle.kts`; `./gradlew :library:dependencies --configuration compileClasspath` не показывает `material-icons-extended` ни на одном уровне
+- [ ] **CLN-03**: `grep -rn "androidx.compose.material.icons" library/src/` возвращает 0 результатов в production-коде (включая тесты)
+
+### Showcase
+
+- [ ] **SHW-04**: Showcase содержит `IconsSection` с `LazyVerticalGrid` всех 139 иконок (имя + рендер, минимум 80dp ширина ячейки); проходит визуальный checkpoint во всех трёх темах (AeroBlue / AeroDark / Classic)
+- [ ] **SHW-05**: `IconsSection` имеет `AeroSearchField` сверху, фильтрующий иконки по подстроке имени (case-insensitive, real-time); пустая выдача показывает текстовое сообщение «не найдено»
+- [ ] **SHW-06**: `ButtonsSection` демо-глифы (`▲ ▼ ×`) заменены на `AeroIcons.*` (демонстрация AeroIconButton с реальной векторной иконкой)
 
 ## v2 Requirements
 
@@ -186,14 +222,32 @@ Updated: 2026-04-27 (roadmap created — 3 phases)
 | NAV-03 | Phase 3 | Complete |
 | NAV-04 | Phase 3 | Complete |
 | NAV-05 | Phase 3 | Complete |
+| ICN-01 | TBD | Pending |
+| ICN-02 | TBD | Pending |
+| ICN-03 | TBD | Pending |
+| MIG-01 | TBD | Pending |
+| MIG-02 | TBD | Pending |
+| MIG-03 | TBD | Pending |
+| MIG-04 | TBD | Pending |
+| MIG-05 | TBD | Pending |
+| MIG-06 | TBD | Pending |
+| MIG-07 | TBD | Pending |
+| MIG-08 | TBD | Pending |
+| MIG-09 | TBD | Pending |
+| MIG-10 | TBD | Pending |
+| MIG-11 | TBD | Pending |
+| CLN-01 | TBD | Pending |
+| CLN-02 | TBD | Pending |
+| CLN-03 | TBD | Pending |
+| SHW-04 | TBD | Pending |
+| SHW-05 | TBD | Pending |
+| SHW-06 | TBD | Pending |
 
 **Coverage:**
-- v1 requirements: 53 total
-- Phase 1: 13 (FOUND-01..10, SHW-01..03)
-- Phase 2: 21 (BTN-01..04, INP-01..06, SEL-01..05, DRP-01..02, RNG-01..02, LST-01..02)
-- Phase 3: 19 (CNT-01..06, OVL-01..08, NAV-01..05)
-- Unmapped: 0
+- v1.0 requirements: 53 (all Complete) — Phase 1 (13) + Phase 2 (21) + Phase 3 (19)
+- v1.1 requirements: 17 total — pending phase mapping by roadmapper
+- Unmapped (v1.1): 17 ⚠️ (filled by roadmap creation)
 
 ---
-*Requirements defined: 2026-04-27*
-*Last updated: 2026-04-27 — roadmap created, traceability expanded to individual requirement level*
+*Requirements defined: 2026-04-27 (v1.0); 2026-04-28 (v1.1 Icon System)*
+*Last updated: 2026-04-28 — v1.1 Icon System requirements added; phase mapping pending*
