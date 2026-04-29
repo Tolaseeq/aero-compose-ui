@@ -18,7 +18,7 @@
 | License | MIT | **MIT** (unchanged) |
 | Total icons available | ~286 | **~1300 in Regular weight** |
 | viewBox | `0 0 24 24` | **`0 0 256 256`** |
-| stroke-width attribute | `2` | **`12`** (in 256-unit space — equivalent visual weight to ~1.13px when rendered at 24dp; matches Aero soft-outline target) |
+| stroke-width attribute | `2` | **`16`** (in 256-unit space — equivalent visual weight to ~1.5px when rendered at 24dp; matches Aero soft-outline target) |
 | stroke-linecap / stroke-linejoin | `round` / `round` | `round` / `round` (unchanged) |
 | Maintenance status | Archived (no further releases) | **Active** (multi-weight family, regular branch maintained) |
 | Naming idioms | `chevron-down`, `home`, `settings`, `filter`, `mail`, `send` | **`caret-down`, `house`, `gear`, `funnel`, `envelope`, `paper-plane`** — keep Phosphor names verbatim for traceability against phosphoricons.com |
@@ -26,7 +26,7 @@
 **ImageVector.Builder constants (Phosphor):**
 - `defaultWidth = 24.dp`, `defaultHeight = 24.dp` (render target — unchanged from Feather plan)
 - `viewportWidth = 256f`, `viewportHeight = 256f` (was `24f`/`24f`)
-- `strokeLineWidth = 12f` (in viewport units; was `2f`)
+- `strokeLineWidth = 16f` (in viewport units; was `2f`)
 
 Valkyrie CLI handles the viewBox/stroke math automatically when converting raw Phosphor SVGs — no manual scaling needed.
 

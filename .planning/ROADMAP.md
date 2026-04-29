@@ -22,9 +22,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ### v1.1 Icon System (Active)
 
-- [ ] **Phase 4: AeroIcons Foundation** - Valkyrie CLI conversion of 139 Phosphor Regular SVGs; lazy backing-property pattern; KDoc; explicitApi; spot-check 5 icons before full batch
+- [ ] **Phase 4: AeroIcons Foundation** - Valkyrie CLI conversion of 138 Phosphor Regular SVGs; lazy backing-property pattern; KDoc; explicitApi; spot-check 5 icons before full batch
 - [ ] **Phase 5: Component Migrations + Dependency Removal** - Wave-ordered migrations of 11 components; Canvas composable deletions; TitleBar private restructure; test rewrites; materialIconsExtended Gradle line removal + grep verification
-- [ ] **Phase 6: Showcase IconsSection** - LazyVerticalGrid of all 139 icons with name labels and live search filter; ButtonsSection glyph demos updated; three-theme visual checkpoint
+- [ ] **Phase 6: Showcase IconsSection** - LazyVerticalGrid of all 138 icons with name labels and live search filter; ButtonsSection glyph demos updated; three-theme visual checkpoint
 
 ## Phase Details
 
@@ -87,7 +87,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 ## v1.1 Icon System — Phase Details
 
 ### Phase 4: AeroIcons Foundation
-**Goal**: The typed icon set exists and compiles — every one of the 139 Phosphor Regular ImageVector constants is accessible via `AeroIcons.*` autocomplete with lazy initialization, and the object satisfies `explicitApi()`
+**Goal**: The typed icon set exists and compiles — every one of the 138 Phosphor Regular ImageVector constants is accessible via `AeroIcons.*` autocomplete with lazy initialization, and the object satisfies `explicitApi()`
 **Depends on**: Phase 3 (v1.0 complete; all migration targets already exist in :library)
 **Requirements**: ICN-01, ICN-02, ICN-03
 **Success Criteria** (what must be TRUE):
@@ -95,7 +95,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. `Icon(AeroIcons.CaretDown, ...)`, `Icon(AeroIcons.MagnifyingGlass, ...)`, `Icon(AeroIcons.Gear, ...)`, `Icon(AeroIcons.House, ...)`, `Icon(AeroIcons.Funnel, ...)` all compile and render the correct Phosphor glyphs (not their Material/Feather namesakes)
   3. `./gradlew :library:compileKotlin` passes with no `explicitApi()` errors on `AeroIcons.kt` or any `icons/` file; every public constant has an explicit `public` modifier
   4. Accessing `AeroIcons.X` for the first time does not cause a measurable startup spike — every constant uses the null-backed lazy getter pattern (`private var _X: ImageVector? = null; public val X: ImageVector get() = _X ?: loadX().also { _X = it }`), not an eager `val`
-  5. Spot-check of 5 representative icons (at minimum: `X`, `CaretDown`, `MagnifyingGlass`, `Check`, `Info`) confirms `viewportWidth = 256f`, `strokeLineWidth = 12f`, `strokeLineCap = StrokeCap.Round`, `fill = Color.Transparent` in the generated Kotlin — `grep -rn "viewportWidth=24f" library/src/main/kotlin/com/mordred/aero/icons/` returns 0 hits
+  5. Spot-check of 5 representative icons (at minimum: `X`, `CaretDown`, `MagnifyingGlass`, `Check`, `Info`) confirms `viewportWidth = 256f`, `strokeLineWidth = 16f`, `strokeLineCap = StrokeCap.Round`, `fill = Color.Transparent` in the generated Kotlin — `grep -rn "viewportWidth=24f" library/src/main/kotlin/com/mordred/aero/icons/` returns 0 hits
 
 **Phase notes:**
 - Phosphor SVG source committed to `tools/phosphor-svgs/regular/` alongside a `.pin` file recording the exact `phosphor-icons/core` commit hash used for conversion
@@ -124,18 +124,18 @@ Decimal phases appear between their surrounding integers in numeric order.
 - Wave 4 (gate for dep removal): AeroAlertKindTest.kt and AeroBannerKindTest.kt rewritten to assert `AeroIcons.*` by name — CLN-01; this MUST complete before Wave 5
 - Wave 5 (final): remove `implementation(compose.materialIconsExtended)` from `library/build.gradle.kts` (CLN-02) + grep verification (CLN-03)
 - AeroBreadcrumb `separator: String` is intentionally NOT migrated to `ImageVector` in v1.1 — this is a locked decision; do not change the parameter type during any migration sweep
-- AeroNumberSpinner sub-pixel risk: at 10dp render, Phosphor stroke = 10×(12/256) ≈ 0.47dp (sub-pixel at 96 DPI); visual checkpoint required in AeroDark disabled state; Canvas draw or button height ≥ 14dp are the accepted mitigations
+- AeroNumberSpinner sub-pixel risk: at 10dp render, Phosphor stroke = 10×(16/256) ≈ 0.63dp (sub-pixel at 96 DPI); visual checkpoint required in AeroDark disabled state; Canvas draw or button height ≥ 14dp are the accepted mitigations
 **Plans**: TBD
 
 ### Phase 6: Showcase IconsSection
-**Goal**: The showcase has a scrollable, searchable grid of all 139 AeroIcons that serves as the visual sign-off checkpoint for the entire v1.1 milestone across all three themes
+**Goal**: The showcase has a scrollable, searchable grid of all 138 AeroIcons that serves as the visual sign-off checkpoint for the entire v1.1 milestone across all three themes
 **Depends on**: Phase 5
 **Requirements**: SHW-04, SHW-05, SHW-06
 **Success Criteria** (what must be TRUE):
-  1. `IconsSection` is visible in the running showcase after `FoundationSection`; it displays all 139 icons in a `LazyVerticalGrid(GridCells.Adaptive(80.dp))` with each cell showing the icon at 24dp and its Kotlin identifier name below — all 139 are visible without horizontal scrolling
-  2. Typing a query into the `AeroSearchField` at the top of `IconsSection` filters the grid in real-time (case-insensitive substring match on identifier name); typing `"caret"` shows only `CaretDown`, `CaretUp`, `CaretLeft`, `CaretRight`; clearing the field restores all 139 icons; an empty result shows a "not found" message
-  3. Switching to AeroDark theme: all 139 icons are visible with correct contrast — no black or invisible icons (explicit `tint = AeroTheme.colors.onSurface` is confirmed at the `Icon()` call site in `IconCell`); `AeroNumberSpinner` disabled-state up/down icons are confirmed visible in AeroDark
-  4. Switching to Classic theme: all 139 icons render with correct tint and Phosphor stroke contrast is acceptable at 24dp; stroke-weight check passes eye-on-screen for representative icons (`X`, `CaretDown`, `MagnifyingGlass`, `FrameCorners`, `Warning`)
+  1. `IconsSection` is visible in the running showcase after `FoundationSection`; it displays all 138 icons in a `LazyVerticalGrid(GridCells.Adaptive(80.dp))` with each cell showing the icon at 24dp and its Kotlin identifier name below — all 138 are visible without horizontal scrolling
+  2. Typing a query into the `AeroSearchField` at the top of `IconsSection` filters the grid in real-time (case-insensitive substring match on identifier name); typing `"caret"` shows only `CaretDown`, `CaretUp`, `CaretLeft`, `CaretRight`; clearing the field restores all 138 icons; an empty result shows a "not found" message
+  3. Switching to AeroDark theme: all 138 icons are visible with correct contrast — no black or invisible icons (explicit `tint = AeroTheme.colors.onSurface` is confirmed at the `Icon()` call site in `IconCell`); `AeroNumberSpinner` disabled-state up/down icons are confirmed visible in AeroDark
+  4. Switching to Classic theme: all 138 icons render with correct tint and Phosphor stroke contrast is acceptable at 24dp; stroke-weight check passes eye-on-screen for representative icons (`X`, `CaretDown`, `MagnifyingGlass`, `FrameCorners`, `Warning`)
   5. `ButtonsSection` demo `AeroIconButton` cells use `Icon(AeroIcons.CaretUp, ...)`, `Icon(AeroIcons.CaretDown, ...)`, and `Icon(AeroIcons.X, ...)` — no text glyphs remain in showcase source; `grep -rn 'Text("▲\|▼\|×\|✕")' showcase/src/` returns 0 hits
 
 **Phase notes:**

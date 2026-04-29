@@ -40,9 +40,9 @@ Progress: [░░░░░░░░░░] 0%  (0/3 v1.1 phases complete)
 
 | Phase | Goal | Requirements | Status |
 |-------|------|--------------|--------|
-| 4 — AeroIcons Foundation | 139 Phosphor Regular ImageVector constants, lazy init, KDoc, explicitApi | ICN-01, ICN-02, ICN-03 | Not started |
+| 4 — AeroIcons Foundation | 138 Phosphor Regular ImageVector constants, lazy init, KDoc, explicitApi | ICN-01, ICN-02, ICN-03 | Not started |
 | 5 — Migrations + Dep Removal | Replace all text glyphs + Material Icons; remove materialIconsExtended | MIG-01..11, CLN-01..03 | Not started |
-| 6 — Showcase IconsSection | Grid + live search of all 139 icons; three-theme visual checkpoint | SHW-04, SHW-05, SHW-06 | Not started |
+| 6 — Showcase IconsSection | Grid + live search of all 138 icons; three-theme visual checkpoint | SHW-04, SHW-05, SHW-06 | Not started |
 
 ## Known Follow-up (from v1.0)
 
@@ -132,7 +132,7 @@ Recent decisions affecting current work:
 - [Phase 03-composite-navigation]: Win11 transparent=false rule enforced at three source-of-truth points (showcase Main.kt, AeroDialog DialogWindow, Phase 1 doctrine)
 - [v1.1 locked decisions]:
   - AeroIcons source: Phosphor Regular (not Feather) — softer rounded stroke matches Win7-toolbar-glyph aesthetic
-  - Lazy backing-property pattern mandatory for all 139 constants — eager val at this scale causes measurable startup spike
+  - Lazy backing-property pattern mandatory for all 138 constants — eager val at this scale causes measurable startup spike
   - AeroIcons naming follows Phosphor verbatim (PascalCase from kebab): `X` not `Close`, `CaretDown` not `ChevronDown`, `MagnifyingGlass` not `Search`, `Gear` not `Settings`, `House` not `Home`, `Funnel` not `Filter`, `EyeSlash` not `EyeOff`
   - AeroBreadcrumb `separator: String` stays as-is in v1.1 — intentional, not an oversight; the separator is the only text-rendered glyph deliberately excluded from migration
   - Valkyrie CLI 1.1.1 with `--output-format BackingProperty`; generated files committed to src/main (not build/); Phosphor SVGs committed to tools/phosphor-svgs/regular/

@@ -12,11 +12,11 @@
 
 **Pitfalls that need re-calibration for Phosphor:**
 
-1. **Pitfall 6 / 11 — Stroke contrast at small sizes:** Phosphor Regular stroke is 12 in a 256-unit viewBox = `12/256 ≈ 4.7%` of dimension. At 24dp render the stroke is `24 × 0.047 ≈ 1.13dp`; at 16dp render it's `16 × 0.047 ≈ 0.75dp`; at 10dp (AeroNumberSpinner button context) it's `10 × 0.047 ≈ 0.47dp` — sub-pixel at 96 DPI, will antialias to a faint line. **Same risk as Feather**, slightly thinner stroke makes the small-size problem marginally worse. Mitigation unchanged: Canvas-draw the spinner chevrons explicitly at the small size, OR raise spinner button to 14dp+, OR use Phosphor `Bold` weight icons just for spinner (rejected per "one weight only" decision).
+1. **Pitfall 6 / 11 — Stroke contrast at small sizes:** Phosphor Regular stroke is 16 in a 256-unit viewBox = `16/256 ≈ 6.25%` of dimension. At 24dp render the stroke is `24 × 0.0625 = 1.5dp`; at 16dp render it's `16 × 0.0625 = 1.0dp`; at 10dp (AeroNumberSpinner button context) it's `10 × 0.0625 ≈ 0.63dp` — sub-pixel at 96 DPI, will antialias to a faint line. **Same risk as Feather**, though slightly thicker stroke than originally assumed. Mitigation unchanged: Canvas-draw the spinner chevrons explicitly at the small size, OR raise spinner button to 14dp+, OR use Phosphor `Bold` weight icons just for spinner (rejected per "one weight only" decision).
 
 2. **Pitfall 12 — SVG conversion artifacts:** All conversion-bug categories still apply, but the specific values to verify in generated `.kt` change:
    - `viewportWidth`/`viewportHeight` must be `256f` (NOT `24f`)
-   - `strokeLineWidth` must be `12f` (NOT `2f`)
+   - `strokeLineWidth` must be `16f` (NOT `2f`)
    - `defaultWidth`/`defaultHeight` stays at `24.dp`
    - `strokeLineCap = StrokeCap.Round`, `strokeLineJoin = StrokeJoin.Round` (unchanged — Phosphor also uses round)
    - `fill = Color.Transparent` for stroke-only icons (Phosphor Regular is pure stroke; some icons also use small filled shapes — verify per-icon when conversion completes)

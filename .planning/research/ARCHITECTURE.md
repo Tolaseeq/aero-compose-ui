@@ -22,11 +22,11 @@ ImageVector.Builder(name = "Close", defaultWidth = 24.dp, defaultHeight = 24.dp,
 // New (Phosphor Regular):
 ImageVector.Builder(name = "X", defaultWidth = 24.dp, defaultHeight = 24.dp,
     viewportWidth = 256f, viewportHeight = 256f).apply {
-    path(stroke = SolidColor(Color.Black), strokeLineWidth = 12f, ...)
+    path(stroke = SolidColor(Color.Black), strokeLineWidth = 16f, ...)
 }
 ```
 
-`defaultWidth`/`defaultHeight` stay at 24dp (render target). Only `viewportWidth`/`viewportHeight` (24f → 256f) and `strokeLineWidth` (2f → 12f) change. Valkyrie CLI handles this automatically per source SVG.
+`defaultWidth`/`defaultHeight` stay at 24dp (render target). Only `viewportWidth`/`viewportHeight` (24f → 256f) and `strokeLineWidth` (2f → 16f) change. Valkyrie CLI handles this automatically per source SVG.
 
 **Naming differences (relevant for Wave-by-wave migration recipes below):**
 - `Close` → `X` (Phosphor calls it "x")
@@ -78,11 +78,11 @@ library/src/main/kotlin/com/mordred/aero/
 **Why facade + internal/:** The facade (`AeroIcons.kt`) is the only file the IDE shows in autocomplete. All `val` properties on the `AeroIcons` object reference internal backing functions defined in `icons/internal/`. This is identical to the Compose Material Icons architecture (`Icons.Outlined.Info` is a property on the `Outlined` object; the path data lives in a generated file in `material-icons-extended`). It gives:
 
 - Clean IDE autocomplete: type `AeroIcons.` and see all icons — nothing else
-- No file size limit problem: each icon file is ~40-80 lines of `ImageVector.Builder` calls; a single file with 140 icons would be ~8,000-10,000 lines (unacceptable for navigation and compilation)
+- No file size limit problem: each icon file is ~40-80 lines of `ImageVector.Builder` calls; a single file with 138 icons would be ~8,000-10,000 lines (unacceptable for navigation and compilation)
 - Lazy initialization per-icon: each backing property is initialized once on first access, held by its private `_Icon` variable — not on class load
-- Compile-time isolation: changing one icon's path data only recompiles that file, not all 140
+- Compile-time isolation: changing one icon's path data only recompiles that file, not all 138
 
-**Why NOT a single-file approach:** A monolithic `AeroIcons.kt` with all 140 icon builders inline would be 8,000-10,000 lines. Kotlin has no hard line-count limit, but the Kotlin compiler allocates one `$init$` block per file — a 10,000-line `object` with 140 inline `ImageVector.Builder` chains produces a very large bytecode class. IDE "Go to definition" on any property would navigate to the same file with no locality benefit. Build incremental compilation becomes coarser.
+**Why NOT a single-file approach:** A monolithic `AeroIcons.kt` with all 138 icon builders inline would be 8,000-10,000 lines. Kotlin has no hard line-count limit, but the Kotlin compiler allocates one `$init$` block per file — a 10,000-line `object` with 138 inline `ImageVector.Builder` chains produces a very large bytecode class. IDE "Go to definition" on any property would navigate to the same file with no locality benefit. Build incremental compilation becomes coarser.
 
 **Why NOT subpackages by category (`icons/navigation/`, `icons/files/`):** Feather icons are already a curated flat set with no official category grouping. Imposing a taxonomy creates ambiguity (does `ChevronRight` go in `navigation/` or `arrows/`?) and forces callers to know the category before autocomplete can help. A single `AeroIcons` object surface is simpler.
 
@@ -224,7 +224,7 @@ internal fun close(): ImageVector = ImageVector.Builder(
 
 **Alternative A — `val Close: ImageVector = buildClose()`** (eager, direct assignment):
 
-Eager initialization means all ~140 icons are constructed when `AeroIcons` object is first accessed. For a class-loading scenario where the app uses only 15 icons, the other 125 are wasted allocations. Each `ImageVector` built via `ImageVector.Builder` allocates several objects internally (the vector, its paths, the path data). Lazy is strictly better.
+Eager initialization means all ~138 icons are constructed when `AeroIcons` object is first accessed. For a class-loading scenario where the app uses only 15 icons, the other 123 are wasted allocations. Each `ImageVector` built via `ImageVector.Builder` allocates several objects internally (the vector, its paths, the path data). Lazy is strictly better.
 
 **Alternative B — `val Close: ImageVector by lazy { buildClose() }`** (stdlib lazy delegation):
 
@@ -753,7 +753,7 @@ fun IconsSection() {
         listOf(
             "Close" to AeroIcons.Close,
             "Minimize" to AeroIcons.Minimize,
-            // ... all ~140 icons in alphabetical order
+            // ... all 138 icons in alphabetical order
         )
     }
     var query by remember { mutableStateOf("") }
@@ -932,7 +932,7 @@ implementation(compose.materialIconsExtended)   // line 15 — REMOVE in Phase G
 │  │  ├── val Close: ImageVector    (lazy, public)        │   │
 │  │  ├── val ChevronDown: ImageVector                    │   │
 │  │  ├── val Check: ImageVector                          │   │
-│  │  └── ... ~140 more                                   │   │
+│  │  └── ... ~138 total                                  │   │
 │  │                                                      │   │
 │  │  icons/internal/ (package-private)                   │   │
 │  │  ├── fun close(): ImageVector                        │   │

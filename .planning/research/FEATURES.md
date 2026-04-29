@@ -21,7 +21,7 @@ The feature question here is: which icons to include, how to name them, and what
 Source confirmed: **Phosphor Icons Regular weight**
 - License: MIT
 - Viewbox: 256×256
-- Stroke-width: 12 (equivalent ~1.5 px at 24 dp render)
+- Stroke-width: 16 (equivalent ~1.5 px at 24 dp render)
 - Caps/joins: round — matching Win7-toolbar-glyph softness
 - Repository: https://github.com/phosphor-icons/core — SVGs at `raw/regular/*.svg`
 - File naming: `{icon-name}-regular.svg` (e.g. `caret-down-regular.svg`)
@@ -309,7 +309,7 @@ Phosphor Regular corpus (~1,300 icons) against desktop UI patterns.
 
 ---
 
-## Part 3: Complete v1.1 Icon List (Master Reference — ~140 icons)
+## Part 3: Complete v1.1 Icon List (Master Reference — 138 icons)
 
 Authoritative list of all AeroIcons for v1.1. Phosphor kebab-case → Kotlin PascalCase.
 
@@ -460,9 +460,8 @@ Authoritative list of all AeroIcons for v1.1. Phosphor kebab-case → Kotlin Pas
 | 136 | `wrench` | `Wrench` | Dev | |
 | 137 | `x` | `X` | Actions | YES |
 | 138 | `x-circle` | `XCircle` | Actions/Status | YES |
-| 139 | `arrow-up-right` | `ArrowUpRight` | Actions | |
 
-**Total: 139 icons** (15 required for migration + 124 standard). Within the 120–150 target.
+**Total: 138 icons** (17 required for migration + 121 standard). Within the 120–150 target.
 
 **Required icons (15 unique, covering all text-glyph and Material Icons replacements):**
 `X, CaretDown, CaretUp, CaretRight, Check, Minus, Square, FrameCorners, MagnifyingGlass,
@@ -498,7 +497,7 @@ call it `Home` they must know the renaming happened. Keeping Phosphor names mean
 in code is a direct 1:1 match with the source asset name — zero lookup friction.
 
 **Why flat (not grouped by category):**
-At ~139 icons, grouping adds friction without benefit. Grouped namespaces
+At ~138 icons, grouping adds friction without benefit. Grouped namespaces
 (`AeroIcons.Navigation.CaretDown`) require knowing the category before finding the icon. Material
 Icons uses flat-by-style (`Icons.Outlined.CaretDown`). The PhosphorIcon-compose Kotlin library
 uses `PhIcons.Regular.CaretDownRegular`. A flat `AeroIcons.CaretDown` is simpler and consistent
@@ -532,7 +531,7 @@ PascalCase since it follows a hyphen. Single-letter names like `x` become `X`.
  * - phosphoricons.com "funnel" → `AeroIcons.Funnel`  (Phosphor uses `funnel`, not `filter`)
  * - phosphoricons.com "gear" → `AeroIcons.Gear`  (Phosphor uses `gear`, not `settings`)
  *
- * Source: Phosphor Icons Regular, MIT license. ViewBox 256×256, stroke-width 12.
+ * Source: Phosphor Icons Regular, MIT license. ViewBox 256×256, stroke-width 16.
  */
 public object AeroIcons {
     public val CaretDown: ImageVector get() = loadCaretDown()
@@ -641,9 +640,9 @@ Exact per-file changes, using Phosphor names throughout.
 |---------|--------------|------------|-------|
 | All 15 required migration icons in `AeroIcons` | Cannot remove `materialIconsExtended` without them | LOW | Direct SVG-path port from Phosphor Regular |
 | `AeroIcons` Kotlin object with typed `ImageVector` constants | Compile-time safety, IDE autocomplete | LOW | Same pattern as `object Icons` in Material |
-| Flat `AeroIcons.IconName` access | Discoverable via IDE at ~139 icons | LOW | No category grouping needed at this scale |
+| Flat `AeroIcons.IconName` access | Discoverable via IDE at ~138 icons | LOW | No category grouping needed at this scale |
 | PascalCase naming mirroring Phosphor source | Kotlin idiomatic; 1-to-1 with phosphoricons.com | LOW | kebab → PascalCase conversion rule |
-| All icons 256×256 viewBox, stroke-width 12, rounded caps/joins | Visual consistency | LOW | Port Phosphor Regular spec faithfully |
+| All icons 256×256 viewBox, stroke-width 16, rounded caps/joins | Visual consistency | LOW | Port Phosphor Regular spec faithfully |
 | Migration of all 10 components off text glyphs | Every component uses `AeroIcons` | MEDIUM | Per-component `Icon()` replacement |
 | Showcase `IconsSection` with grid + search | Developers must browse the set visually | MEDIUM | `AeroSearchField` + `LazyVerticalGrid` |
 | Removal of `compose.materialIconsExtended` from `:library` | Reduces JAR size; explicit v1.1 goal | LOW | After AeroAlertKind + AeroBannerKind migrated |
@@ -653,7 +652,7 @@ Exact per-file changes, using Phosphor names throughout.
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
 | Phosphor Regular aesthetic matches Aero visual style | Rounded stroke, no harsh fills — aligns with glassmorphism and Win7-toolbar-glyph | LOW | Zero design work; Phosphor Regular is already correct aesthetic |
-| ~139 icons covers 95% of desktop app needs | Consumer does not need a second icon dependency | LOW | Selection driven by desktop UI pattern analysis |
+| ~138 icons covers 95% of desktop app needs | Consumer does not need a second icon dependency | LOW | Selection driven by desktop UI pattern analysis |
 | MIT-licensed source | No attribution overhead for library consumers | LOW | Phosphor is MIT — port paths directly |
 | Single-file `AeroIcons` object | One import, one dependency | LOW | All in `:library` JAR |
 | 1-to-1 name traceability to phosphoricons.com | Developer look-up is frictionless | LOW | No renaming layer to maintain |
@@ -671,7 +670,7 @@ Exact per-file changes, using Phosphor names throughout.
 | Icons in separate `:icons` Gradle module | Modular delivery | Over-engineers for v1.1; decided to keep in `:library` per PROJECT.md | Separate module in v2 if JAR size matters |
 | Multi-weight numeric suffix in identifier (`CaretDownRegular`) | Explicit weight in name | Only one weight in v1.1 — suffix is noise; if/when Bold is added, add `AeroIcons.Bold.*` sub-object | `AeroIcons.CaretDown` (no weight suffix for default Regular) |
 
-**Explicitly excluded Phosphor icons (not in the 139-icon list):**
+**Explicitly excluded Phosphor icons (not in the 138-icon list):**
 - Brand/logo icons: all `*-logo` variants (amazon-logo, android-logo, apple-logo, etc.)
 - Currency: `currency-*`, `bitcoin`, `coins`, `money`
 - Weather: `cloud-rain`, `cloud-snow`, `cloud-lightning`, `sun`, `moon`, `thermometer`, `wind`
@@ -688,7 +687,7 @@ Exact per-file changes, using Phosphor names throughout.
 ## Feature Dependencies
 
 ```
-AeroIcons object (all 139 ImageVector constants)
+AeroIcons object (all 138 ImageVector constants)
     └──required by──> All migrated components
     └──required by──> IconsSection in showcase
 
@@ -716,7 +715,7 @@ compose.materialIconsExtended removal
     └──requires──> grep confirm: zero Icons.* references remain in :library
 
 IconsSection in showcase
-    └──requires──> AeroIcons object (all 139)
+    └──requires──> AeroIcons object (all 138)
     └──requires──> AeroSearchField (for live icon name filter)
     └──uses──> LazyVerticalGrid layout
 ```
@@ -734,17 +733,17 @@ IconsSection in showcase
 
 ### v1.1 Launch With
 
-- [ ] `AeroIcons` object — 139 typed `ImageVector` constants, flat namespace, lazy `get()`
+- [ ] `AeroIcons` object — 138 typed `ImageVector` constants, flat namespace, lazy `get()`
 - [ ] All 10 component migrations (AeroCheckbox, AeroDropdown, AeroNumberSpinner, AeroTitleBar, AeroToastHost, AeroNotificationBanner, AeroContextMenu, AeroSearchField, AeroPasswordField — text glyphs + Canvas drawings)
 - [ ] `AeroAlertKind` migration — off `Icons.Outlined.*`, onto `AeroIcons.*`
 - [ ] `AeroBannerKind` migration — off `Icons.Outlined.*`, onto `AeroIcons.*`
 - [ ] `compose.materialIconsExtended` removed from `:library` build
-- [ ] `IconsSection` in showcase — `LazyVerticalGrid` of all 139 icons with name labels, `AeroSearchField` live filter
+- [ ] `IconsSection` in showcase — `LazyVerticalGrid` of all 138 icons with name labels, `AeroSearchField` live filter
 
 ### Deferred to v1.2 or Later
 
 - [ ] Filled icon variants (`AeroIcons.Filled.*`) — only if consumer demand arises post-launch
-- [ ] Additional niche icons beyond the 139 — add on-demand from consumer requests
+- [ ] Additional niche icons beyond the 138 — add on-demand from consumer requests
 - [ ] Separate `:icons` Gradle module — only if JAR size becomes a measurable concern
 - [ ] Bold/Light weight variants — only if aesthetic need is identified
 
@@ -763,7 +762,7 @@ IconsSection in showcase
 | 15 required migration icons | HIGH | LOW | P1 |
 | All component text-glyph migrations | HIGH | MEDIUM | P1 |
 | Material Icons replacements (AeroAlertKind/BannerKind) | HIGH | LOW | P1 |
-| Full 139-icon set | MEDIUM | MEDIUM | P1 |
+| Full 138-icon set | MEDIUM | MEDIUM | P1 |
 | `materialIconsExtended` removal | MEDIUM | LOW | P1 (after migration) |
 | IconsSection in showcase | MEDIUM | MEDIUM | P1 |
 | Filled/bold icon variants | LOW | HIGH | P3 |
