@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -15,6 +17,10 @@ import com.mordred.aero.components.buttons.AeroIconButton
 import com.mordred.aero.components.buttons.AeroOutlinedButton
 import com.mordred.aero.components.buttons.AeroToolbar
 import com.mordred.aero.components.buttons.AeroToolbarDefaults
+import com.mordred.aero.icons.AeroIcons
+import com.mordred.aero.icons.`internal`.CaretDown
+import com.mordred.aero.icons.`internal`.CaretUp
+import com.mordred.aero.icons.`internal`.X
 import com.mordred.aero.theme.AeroTheme
 
 /**
@@ -47,9 +53,15 @@ fun ButtonsSection() {
 
         // Row 3: AeroIconButton (BTN-03) — three icon buttons, one disabled
         SectionRow(label = "AeroIconButton") {
-            AeroIconButton(onClick = {}) { Text("▲", color = colors.onSurface) } // ▲
-            AeroIconButton(onClick = {}) { Text("▼", color = colors.onSurface) } // ▼
-            AeroIconButton(onClick = {}, enabled = false) { Text("×", color = colors.onSurface) } // ×
+            AeroIconButton(onClick = {}) {
+                Icon(AeroIcons.CaretUp, contentDescription = null, tint = colors.onSurface, modifier = Modifier.size(14.dp))
+            }
+            AeroIconButton(onClick = {}) {
+                Icon(AeroIcons.CaretDown, contentDescription = null, tint = colors.onSurface, modifier = Modifier.size(14.dp))
+            }
+            AeroIconButton(onClick = {}, enabled = false) {
+                Icon(AeroIcons.X, contentDescription = null, tint = colors.onSurface, modifier = Modifier.size(14.dp))
+            }
         }
 
         // Row 4: AeroToolbar (BTN-04) — grouped icon buttons with a divider
