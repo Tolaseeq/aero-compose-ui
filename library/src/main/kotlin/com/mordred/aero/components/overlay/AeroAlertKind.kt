@@ -1,12 +1,12 @@
 package com.mordred.aero.components.overlay
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Error
-import androidx.compose.material.icons.outlined.HelpOutline
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.mordred.aero.icons.AeroIcons
+import com.mordred.aero.icons.`internal`.Info
+import com.mordred.aero.icons.`internal`.Warning
+import com.mordred.aero.icons.`internal`.XCircle
+import com.mordred.aero.icons.`internal`.Question
 
 /**
  * OVL-02: Variant of [AeroAlertDialog]. Drives icon, accent color, and default buttons.
@@ -17,13 +17,13 @@ public enum class AeroAlertKind {
     Error,
     Question;
 
-    /** Returns the Material Icons.Outlined icon paired with this kind. */
+    /** Returns the AeroIcons Phosphor icon paired with this kind. */
     public val icon: ImageVector
         get() = when (this) {
-            Info     -> Icons.Outlined.Info
-            Warning  -> Icons.Outlined.Warning
-            Error    -> Icons.Outlined.Error
-            Question -> Icons.Outlined.HelpOutline
+            Info     -> AeroIcons.Info
+            Warning  -> AeroIcons.Warning
+            Error    -> AeroIcons.XCircle
+            Question -> AeroIcons.Question
         }
 
     /**
