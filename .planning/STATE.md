@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Icon System
-status: ready_to_plan
+status: in_progress
 stopped_at: Phase 4 context gathered
-last_updated: "2026-04-29T05:40:53.207Z"
-last_activity: 2026-04-29 — v1.1 roadmap written; Phases 4-6 appended to ROADMAP.md
+last_updated: "2026-04-29T07:24:53.992Z"
+last_activity: "2026-04-29 — 04-01 spike complete: 7 icons, Shape A confirmed, compileKotlin green"
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 18
-  completed_plans: 18
-  percent: 0
+  total_plans: 20
+  completed_plans: 19
+  percent: 95
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 ## Current Position
 
 Phase: 4 — AeroIcons Foundation
-Plan: — (not yet planned)
-Status: ready_to_plan
-Last activity: 2026-04-29 — v1.1 roadmap written; Phases 4-6 appended to ROADMAP.md
+Plan: 01 (spike complete; at checkpoint:verify gate)
+Status: in_progress
+Last activity: 2026-04-29 — 04-01 spike complete: 7 icons, Shape A confirmed, compileKotlin green
 
-Progress: [░░░░░░░░░░] 0%  (0/3 v1.1 phases complete)
+Progress: [██████████] 95%  (19/20 total plans; 04-01 at checkpoint)
 
 ## Previous Milestone
 
@@ -139,6 +139,7 @@ Recent decisions affecting current work:
   - Icon() from material3 used directly — no custom AeroIcon() wrapper; tint always passed explicitly in library code
   - Phase 5 wave ordering is mandatory: Waves 1+2 (component migrations) → Wave 3 (TitleBar) → Wave 4 (test rewrites CLN-01) → Wave 5 (dep removal CLN-02+CLN-03)
   - AeroNumberSpinner sub-pixel risk: implementer must choose Canvas draw OR button height ≥ 14dp after visual check in AeroDark
+- [Phase 04-aeroicons-foundation]: Valkyrie 1.1.1 generates Shape A (extension properties); --explicit-mode=true required (not bare flag); post-generation: fix defaultWidth=256→24dp + add AeroIcons import to internal/*.kt
 
 ### Pending Todos
 
