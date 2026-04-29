@@ -30,12 +30,12 @@ Create the typed icon set — 138 Phosphor Icons Regular `ImageVector` constants
 ### Phosphor SVG vendoring
 - **Vendor only the 138 SVGs we use** to `tools/phosphor-svgs/regular/` (~138 files × ~1–2 KB ≈ 200–300 KB total). NOT the full ~1,300-icon Regular set — lean repo wins; the `.pin` file is the recovery path if more icons are needed later.
 - **`.pin` file format: single line** — plain text `<40-char-commit-sha>\nhttps://github.com/phosphor-icons/core/tree/<sha>/raw/regular`. Trivial to parse, trivial to verify, trivial to update. Lives at `tools/phosphor-svgs/.pin`.
-- **`tools/phosphor-svgs/README.md`** documents: what was pinned, the exact Valkyrie command used, and how to retroactively extract any unvendored icon (`git checkout <pin> -- raw/regular/<name>-regular.svg` against a clone of `phosphor-icons/core`).
+- **`tools/phosphor-svgs/README.md`** documents: what was pinned, the exact Valkyrie command used, and how to retroactively extract any unvendored icon (`git checkout <pin> -- raw/regular/<name>.svg` against a clone of `phosphor-icons/core`; filename in `raw/regular/` is `<name>.svg` with NO `-regular` suffix — the suffix appears only in `assets/regular/` which is the wrong fill-based directory).
 - **Phosphor MIT license file** (`LICENSE` from the source repo) is committed alongside the vendored SVGs at `tools/phosphor-svgs/LICENSE`. Required for MIT compliance even though the JAR redistributes only generated `.kt` files.
 
 ### Tooling (Valkyrie CLI)
-- **Tool: Valkyrie CLI 1.1.1** (ComposeGears/Valkyrie) with `--output-format BackingProperty`. Locked.
-- **Generated files write direct to `library/src/main/kotlin/com/mordred/aero/icons/internal/`** — Valkyrie invocation includes `--package com.mordred.aero.icons.internal` and `--output library/src/main/kotlin/com/mordred/aero/icons/internal/`. No staging directory.
+- **Tool: Valkyrie CLI 1.1.1** (ComposeGears/Valkyrie) with `--output-format backing-property` (lowercase hyphenated; corrected from prior `BackingProperty` per RESEARCH.md verification of CLI source). Locked.
+- **Generated files write direct to `library/src/main/kotlin/com/mordred/aero/icons/internal/`** — Valkyrie invocation uses `--package-name com.mordred.aero.icons.internal`, `--output-path library/src/main/kotlin/com/mordred/aero/icons/internal/`, `--iconpack-name AeroIcons`, `--explicit-mode`. No staging directory. (Flag names corrected per RESEARCH.md source-verification.)
 - **Invocation: documented one-shot in plan + `tools/phosphor-svgs/README.md`** — NOT wired into Gradle, NOT a shell script. Plan documents the exact command. Re-run is manual when SVGs change. Matches the locked decision: "Gradle build does NOT invoke Valkyrie at build time."
 - **Gradle build does NOT depend on Valkyrie** — generated files are committed as ordinary source.
 
@@ -68,7 +68,7 @@ public object AeroIcons {
 
 ### KDoc (ICN-02)
 - **Object-level KDoc only.** No per-property docs. Single block on `public object AeroIcons` covering:
-  1. Phosphor source + MIT license + viewBox `256×256` + stroke `12`
+  1. Phosphor source + MIT license + viewBox `256×256` + stroke `16` (corrected from prior research claim of 12 per RESEARCH.md direct SVG inspection)
   2. kebab→PascalCase mapping rule
   3. Naming-convention table with 6–8 examples covering the surprises:
      - `caret-down` → `CaretDown` (NOT `ChevronDown`)
@@ -89,7 +89,7 @@ public object AeroIcons {
   2. Vendor 7 SVGs to `tools/phosphor-svgs/regular/` (X, CaretDown, MagnifyingGlass, Check, Info, FrameCorners, Square) + `.pin` file + `LICENSE` + `README.md`
   3. Run Valkyrie on the 7 SVGs → 7 files in `icons/internal/`
   4. Author `AeroIcons.kt` facade with 7 alphabetized properties + full object-level KDoc
-  5. Verify: `:library:compileKotlin` passes; `grep -rn 'viewportWidth=24f' library/src/main/kotlin/com/mordred/aero/icons/` returns 0; spot-read all 7 `internal/*.kt` to confirm `viewportWidth=256f` + `strokeLineWidth=12f` + `fill=Color.Transparent` + `StrokeCap.Round` + `StrokeJoin.Round`
+  5. Verify: `:library:compileKotlin` passes; `grep -rn 'viewportWidth=24f' library/src/main/kotlin/com/mordred/aero/icons/` returns 0; spot-read all 7 `internal/*.kt` to confirm `viewportWidth=256f` + `strokeLineWidth=16f` + `fill=Color.Transparent` + `StrokeCap.Round` + `StrokeJoin.Round` (stroke-width corrected from 12 to 16 per RESEARCH.md SVG inspection)
   6. Commit each natural step atomically
 - **04-02 (Batch, ~1 plan):**
   1. Vendor remaining 131 SVGs to `tools/phosphor-svgs/regular/`
@@ -101,7 +101,7 @@ public object AeroIcons {
 ### Verification gates (Phase 4 done criteria)
 - ✓ `./gradlew :library:compileKotlin` passes — proves: explicitApi compatibility, lazy backing-property pattern compiles, all 138 properties + 138 builder fns resolve
 - ✓ `grep -rn 'viewportWidth=24f' library/src/main/kotlin/com/mordred/aero/icons/` returns **0 hits** — proves: every icon converted to Phosphor 256-unit viewBox (Feather artifacts purged)
-- ✓ Spot-read 5–10 random `icons/internal/*.kt` files confirm `viewportWidth=256f`, `strokeLineWidth=12f`, `fill=Color.Transparent`, `StrokeCap.Round`, `StrokeJoin.Round` are correct in generated code
+- ✓ Spot-read 5–10 random `icons/internal/*.kt` files confirm `viewportWidth=256f`, `strokeLineWidth=16f`, `fill=Color.Transparent`, `StrokeCap.Round`, `StrokeJoin.Round` are correct in generated code (stroke-width corrected to 16 per RESEARCH.md)
 - ✗ **No smoke test in Phase 4** — ICN-01/02/03 acceptance is structural; the compiler enforces all three. Reflective tests would re-assert what the compiler already proved.
 - ✗ **No visual sign-off in Phase 4** — Phase 6 IconsSection is the formal three-theme visual checkpoint. Phase 4 is pure infrastructure; nothing the user sees changes.
 - ✗ **No temporary preview render in showcase** — keeps Phase 4 invisible to the user; Phase 6 owns visual sign-off.
@@ -153,7 +153,7 @@ public object AeroIcons {
 - `library/src/main/kotlin/com/mordred/aero/theme/AeroTheme.kt` — `LocalAeroColors` accessor; per the locked decision, `LocalContentColor` is NOT bridged here (KDoc warns explicit-tint requirement)
 
 ### External / upstream sources
-- `https://github.com/phosphor-icons/core` — SVG source repository; raw SVGs at `raw/regular/<name>-regular.svg`; viewBox 256×256, stroke-width 12, stroke-linecap round
+- `https://github.com/phosphor-icons/core` — SVG source repository; raw SVGs at `raw/regular/<name>.svg` (NO `-regular` suffix in `raw/`; the `-regular` suffix is in `assets/regular/` which is fill-based, not stroke-based — wrong dir); viewBox 256×256, stroke-width **16** (corrected from prior research claim of 12 per RESEARCH.md direct SVG inspection), stroke-linecap round
 - `https://github.com/phosphor-icons/core/blob/main/LICENSE` — MIT license text (vendor copy at `tools/phosphor-svgs/LICENSE`)
 - `https://github.com/ComposeGears/Valkyrie` — CLI tool 1.1.1 used to convert SVG → Kotlin `ImageVector.Builder`; `--output-format BackingProperty` is the lock-in flag
 - `https://phosphoricons.com` — official icon browser; canonical lookup URL referenced in `AeroIcons` KDoc
@@ -190,7 +190,7 @@ public object AeroIcons {
 ### File-creation manifest (Phase 4 produces)
 - `library/src/main/kotlin/com/mordred/aero/icons/AeroIcons.kt` — facade object (1 file)
 - `library/src/main/kotlin/com/mordred/aero/icons/internal/<IconName>.kt` × 138 (138 files)
-- `tools/phosphor-svgs/regular/<icon-name>-regular.svg` × 138 (138 files)
+- `tools/phosphor-svgs/regular/<icon-name>.svg` × 138 (138 files; mirrors source filename in `raw/regular/`)
 - `tools/phosphor-svgs/.pin` (1 file, plain text)
 - `tools/phosphor-svgs/LICENSE` (1 file, MIT text)
 - `tools/phosphor-svgs/README.md` (1 file, Valkyrie command + recovery instructions)
