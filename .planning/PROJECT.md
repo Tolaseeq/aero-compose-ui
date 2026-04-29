@@ -10,12 +10,13 @@
 
 ## Current Milestone: v1.1 Icon System
 
-**Goal:** Полностью убрать текстовые символы-иконки (✕, ▲▼, ›, ▶, ✓ и т.п.) из библиотеки и showcase, ввести единый набор минималистичных векторных иконок `AeroIcons` (порт Feather, ~120–150 шт.), и заменить им как существующие глифы, так и Material Icons в `AeroAlertKind`/`AeroBannerKind`.
+**Goal:** Полностью убрать текстовые символы-иконки (✕, ▲▼, ›, ▶, ✓ и т.п.) из библиотеки и showcase, ввести единый набор векторных иконок `AeroIcons` в мягком outline-стиле (порт Phosphor Regular, ~120–150 шт.), и заменить им как существующие глифы, так и Material Icons в `AeroAlertKind`/`AeroBannerKind`.
 
 **Target features:**
-- `AeroIcons` — типизированные `ImageVector`-константы (`AeroIcons.Close`, `AeroIcons.ChevronDown` и т.д.), порт Feather (regular weight, 24x24 viewBox, stroke 2)
+- `AeroIcons` — типизированные `ImageVector`-константы (`AeroIcons.Close`, `AeroIcons.ChevronDown` и т.д.), порт **Phosphor Regular** (~stroke 1.5px, 256×256 viewBox, rounded caps/joins — мягче и ближе к Win7-glyph-эстетике, чем Feather/Lucide flat-outline)
 - ~120–150 иконок: closed set покрывает все текущие места + общеупотребимые (edit/delete/save/copy/settings/user/home/file/calendar/clock/etc.) + домен-специфичные (bluetooth/wifi/battery/play/pause/print/mail/cloud/database/etc.)
-- Миграция всех компонентов с текстовых глифов на `AeroIcons` (AeroCheckbox, AeroDropdown, AeroNumberSpinner, AeroTitleBar, AeroBreadcrumb, AeroContextMenu, AeroToastHost, AeroNotificationBanner)
+- Миграция всех компонентов с текстовых глифов на `AeroIcons` (AeroCheckbox, AeroDropdown, AeroComboBox, AeroNumberSpinner, AeroTitleBar, AeroContextMenu, AeroToastHost, AeroNotificationBanner)
+- Замена встроенных Canvas-glyphs в AeroSearchField (лупа, ✕) и AeroPasswordField (eye/eye-off) на `Icon(AeroIcons.*)`
 - Замена `Icons.Outlined.*` на `AeroIcons.*` в `AeroAlertKind` и `AeroBannerKind`; удаление зависимости `compose.materialIconsExtended` из `:library`
 - `IconsSection` в showcase — сетка всех иконок + поиск через `AeroSearchField`
 - Иконки живут в том же модуле `:library` (тот же JAR `com.mordred:aero-compose-ui`)
@@ -75,7 +76,8 @@
 | Три темы из mordred как дефолтные | Уже отработаны визуально в реальном проекте | — Pending |
 | Отдельный showcase-модуль | Позволяет проверять компоненты между фазами без внешнего проекта | — Pending |
 | Каждая анимация утверждается отдельно | Контроль над визуальной сложностью и производительностью | — Pending |
-| AeroIcons как порт Feather (regular, stroke 2) | MIT, минималистичный outline, единый вес — простая порт-механика; ложится на Aero-эстетику | — Pending |
+| AeroIcons как порт Phosphor Regular (stroke ~1.5, 256×256 viewBox) | MIT, мягкий скруглённый outline — ближе к Win7-toolbar-glyph, чем плоский Feather; rounded caps/joins ложатся на Aero-эстетику | — Pending |
+| Один вес (Regular), без filled / glass-treatment | Filled-варианты противоречат «мягкий outline без gloss»; glass-обвязка вокруг каждой иконки — отдельный AeroIconButton-уровень, не уровень иконки | — Pending |
 | Типизированные константы AeroIcons.* (не name-based lookup) | Compile-time safety, IDE autocomplete, привычно после Material Icons | — Pending |
 | materialIconsExtended удаляется из :library | «Единый набор векторных иконок» — Material визуально не Aero; снижает вес JAR | — Pending |
 | Иконки в :library, не в отдельном :icons | Меньше Gradle-сложности для v1.1; разделение возможно в v2.0+ если появится консьюмер | — Pending |

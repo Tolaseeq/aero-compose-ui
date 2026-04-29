@@ -125,7 +125,12 @@ Decimal phases appear between their surrounding integers in numeric order.
 - Wave 5 (final): remove `implementation(compose.materialIconsExtended)` from `library/build.gradle.kts` (CLN-02) + grep verification (CLN-03)
 - AeroBreadcrumb `separator: String` is intentionally NOT migrated to `ImageVector` in v1.1 — this is a locked decision; do not change the parameter type during any migration sweep
 - AeroNumberSpinner sub-pixel risk: at 10dp render, Phosphor stroke = 10×(16/256) ≈ 0.63dp (sub-pixel at 96 DPI); visual checkpoint required in AeroDark disabled state; Canvas draw or button height ≥ 14dp are the accepted mitigations
-**Plans**: TBD
+**Plans**: 5 plans
+- [ ] 05-01-PLAN.md — Wave 1: internal-only Text-glyph and Material-icon swaps (MIG-01, MIG-02, MIG-03, MIG-05, MIG-06, MIG-07, MIG-10, MIG-11) + inline AeroNumberSpinner visual checkpoint
+- [ ] 05-02-PLAN.md — Wave 2: Canvas composable deletions (MIG-08 AeroSearchField, MIG-09 AeroPasswordField)
+- [ ] 05-03-PLAN.md — Wave 3: AeroTitleBar private restructure (MIG-04, atomic signature + 3 call sites)
+- [ ] 05-04-PLAN.md — Wave 4: Test rewrites (CLN-01 — AeroAlertKindTest + AeroBannerKindTest); gate for Wave 5
+- [ ] 05-05-PLAN.md — Wave 5: Dependency removal (CLN-02 + CLN-03) + JAR-size pre/post measurement
 
 ### Phase 6: Showcase IconsSection
 **Goal**: The showcase has a scrollable, searchable grid of all 138 AeroIcons that serves as the visual sign-off checkpoint for the entire v1.1 milestone across all three themes
@@ -155,5 +160,5 @@ Decimal phases appear between their surrounding integers in numeric order.
 | 2. Atomic Components | 6/6 | Complete | 2026-04-28 |
 | 3. Composite + Navigation | 8/8 | Complete | 2026-04-28 |
 | 4. AeroIcons Foundation | 2/2 | Complete   | 2026-04-29 |
-| 5. Component Migrations + Dependency Removal | 0/TBD | Not started | - |
+| 5. Component Migrations + Dependency Removal | 0/5 | Planned | - |
 | 6. Showcase IconsSection | 0/TBD | Not started | - |
