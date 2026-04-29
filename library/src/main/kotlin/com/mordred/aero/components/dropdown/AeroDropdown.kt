@@ -9,12 +9,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -37,6 +39,8 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.mordred.aero.components.popup.AeroDropdownItem
 import com.mordred.aero.components.popup.AeroPopupPositionProvider
+import com.mordred.aero.icons.AeroIcons
+import com.mordred.aero.icons.`internal`.CaretDown
 import com.mordred.aero.theme.AeroTheme
 
 /**
@@ -104,10 +108,11 @@ public fun <T> AeroDropdown(
                     style = AeroTheme.typography.bodyLarge,
                     modifier = Modifier.weight(1f)
                 )
-                Text(
-                    text = "▼",
-                    color = colors.labelText,
-                    style = AeroTheme.typography.label
+                Icon(
+                    imageVector = AeroIcons.CaretDown,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = colors.labelText
                 )
             }
         }
