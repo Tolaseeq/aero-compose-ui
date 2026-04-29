@@ -24,6 +24,7 @@ import com.mordred.showcase.sections.ButtonsSection
 import com.mordred.showcase.sections.ContainersSection
 import com.mordred.showcase.sections.DropdownSection
 import com.mordred.showcase.sections.FoundationSection
+import com.mordred.showcase.sections.IconsSection
 import com.mordred.showcase.sections.InputSection
 import com.mordred.showcase.sections.ListSection
 import com.mordred.showcase.sections.NavigationSection
@@ -77,6 +78,8 @@ fun ShowcaseApp(
                     )
                     FoundationSection()
                 }
+
+                IconsSection(toastState = toastState)
 
                 ButtonsSection()
                 InputSection()
