@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Icon System
-status: in_progress
-stopped_at: "Phase 5 complete"
-last_updated: "2026-04-29T10:39:00Z"
-last_activity: "2026-04-29 — Phase 5 complete: 14 requirements migrated, materialIconsExtended removed, JAR delta -36.02 MB (classpath dep eliminated)"
+status: completed
+stopped_at: "Completed 05-05-PLAN.md — Phase 5 complete: materialIconsExtended removed, 14 requirements closed"
+last_updated: "2026-04-29T10:30:01.825Z"
+last_activity: "2026-04-29 — Phase 5 complete: 14 requirements (MIG-01..11, CLN-01..03), materialIconsExtended removed from :library"
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 25
-  completed_plans: 25
+  completed_plans: 26
   percent: 97
 ---
 
@@ -77,6 +77,7 @@ Progress: [██████████] 97%  (25/25 total plans; Phase 6 next
 | Phase 05-component-migrations P04 | 5min | 3 tasks | 2 files |
 | Phase 05-component-migrations P05 | 15min | 4 tasks | 2 files |
 JAR size: pre-v1.1 = ~0.96 MB (thin lib JAR), post-Phase-5 = ~0.96 MB (delta: -36.02 MB after materialIconsExtended removal from compileClasspath). See .planning/phases/05-component-migrations/05-SUMMARY.md.
+| Phase 05-component-migrations P05 | 15 | 4 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -157,6 +158,7 @@ Recent decisions affecting current work:
 - [Phase 05-component-migrations]: internal.* extension property imports required alongside AeroIcons facade in AeroSearchField + AeroPasswordField (same as 05-01 pattern)
 - [Phase 05-component-migrations]: AeroTitleBar TitleBarButton: textColor param removed; tint uniformly colors.onSurface; hover color only on background; AeroIcons.Square=maximize, AeroIcons.FrameCorners=restore
 - [Phase 05-component-migrations]: Explicit internal.* imports required in test files using AeroIcons — facade alone does not expose extension properties; same pattern as production enums
+- [Phase 05-component-migrations]: Library thin JAR unchanged (0-byte delta) after materialIconsExtended removal — dep was classpath-only, never embedded; material-icons-extended-desktop-1.7.3.jar (~36 MB) eliminated from compileClasspath
 
 ### Pending Todos
 
@@ -169,7 +171,7 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-29T10:39:00Z
-Stopped at: Completed 05-05-PLAN.md — Wave 5 dep removal; Phase 5 complete
+Last session: 2026-04-29T10:30:01.817Z
+Stopped at: Completed 05-05-PLAN.md — Phase 5 complete: materialIconsExtended removed, 14 requirements closed
 Resume file: None
 Next action: `/gsd:plan-phase 6` (Showcase IconsSection — SHW-04, SHW-05, SHW-06)
