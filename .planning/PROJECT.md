@@ -15,6 +15,33 @@
 
 **Codebase:** Kotlin / Compose Desktop 1.7.3, Kotlin 2.1.21, Gradle 8.14.3, JDK 17. Library JAR ≈ 0.96 MB (thin); compileClasspath shed ~36 MB после удаления `materialIconsExtended`.
 
+## Current Milestone: v2.0 Stateful + Layout
+
+**Goal:** Добавить полный набор сложных stateful-компонентов (data table, tree, date/time pickers, color picker, range slider) и продвинутых layout-примитивов (accordion, split pane, sidebar, stepper wizard) — те самые «v2 deferred» из v1.0/v1.1, которые в реальном desktop-приложении нужны для полноценного UI. Это major-feature drop сравнимый с v1.0 по объёму (12 новых компонентов), без breaking changes к существующему API.
+
+**Target features:**
+
+**Complex Stateful (CMPLX):**
+- `AeroDataTable` — таблица с заголовками, виртуализацией строк (LazyColumn), сортировкой по клику на заголовок, выделением строк (single/multi с Ctrl/Shift), и resizable колонками (drag splitter)
+- `AeroTreeView` — иерархическое дерево с раскрытием/свёрткой узлов через `onExpand` callback (lazy children loading), опциональными иконками
+- `AeroDatePicker` — выбор одной даты через popup-календарь
+- `AeroTimePicker` — выбор времени (часы + минуты)
+- `AeroDateTimePicker` — комбинированный выбор даты + времени
+- `AeroDateRangePicker` — выбор диапазона дат через двойной календарь
+- `AeroColorPicker` — HSV-квадрат + hue полоса + RGB sliders + HEX input + палитра предустановленных swatches; альфа-канал опционален
+- `AeroRangeSlider` — ползунок с двумя ручками (от–до), композиция поверх AeroSlider
+
+**Advanced Layout (ADVL):**
+- `AeroAccordion` — сворачиваемые секции; параметр `mode = single | multi`
+- `AeroSplitPane` — N-pane через рекурсивную композицию (публичный API — 2-pane с `orientation = horizontal | vertical`); вложенность через каллер
+- `AeroSidebar` — persistent боковая навигация (новый компонент рядом с `AeroDrawer`, разная механика); три режима: expanded (иконка+лейбл) / collapsed (только иконки + tooltip) / hidden
+- `AeroStepperWizard` — линейный шаговый процесс с `onValidate: () -> Boolean` per-step (next блокируется при false)
+
+**Integration:**
+- Все компоненты следуют существующим конвенциям: префикс `Aero`, `Icon(AeroIcons.*)` для глифов, явный `tint`, glass modifiers где уместно, поддержка трёх тем (AeroBlue / AeroDark / Classic)
+- `:library` остаётся единым модулем — отдельный `:datepickers` или `:datatable` НЕ создаётся в v2.0
+- showcase получает по секции на каждую группу (DataSection, PickersSection, LayoutSection и т.д.) или расширения существующих секций — решается на этапе планирования
+
 ## Requirements
 
 ### Validated
@@ -35,9 +62,17 @@
 
 ### Active
 
-<!-- No milestone in flight. Use /gsd:new-milestone to define v1.2/v2.0 scope. -->
+<!-- v2.0 scope — full requirements list lives in REQUIREMENTS.md. -->
 
-- (none — awaiting next milestone definition)
+- [ ] **AeroDataTable** — sortable columns, virtualized rows, single/multi row selection, resizable columns
+- [ ] **AeroTreeView** — lazy children via `onExpand` callback
+- [ ] **Date/time pickers** — `AeroDatePicker`, `AeroTimePicker`, `AeroDateTimePicker`, `AeroDateRangePicker`
+- [ ] **AeroColorPicker** — HSV+RGB+HEX+swatches; alpha optional
+- [ ] **AeroRangeSlider** — dual-thumb slider
+- [ ] **AeroAccordion** — single | multi mode
+- [ ] **AeroSplitPane** — 2-pane public API with N-pane via nesting
+- [ ] **AeroSidebar** — expanded | collapsed | hidden modes; persistent (alongside AeroDrawer)
+- [ ] **AeroStepperWizard** — linear with per-step `onValidate` callback
 
 ### Out of Scope
 
@@ -52,6 +87,16 @@
 - Настоящий DWM Aero blur через JNI/WinAPI — симуляция через градиенты визуально достаточна
 - WCAG-совместимость гарантии — цвета Aero-тем не оптимизированы под контрастность
 - Aero Snap на кастомном окне — `WindowDraggableArea` не передаёт HTCAPTION OS, известное ограничение
+- v2.0-specific exclusions:
+  - **Inline-mode date/time pickers** — только popup-based варианты; inline-режим (всегда видимый календарь) откладывается до v2.x
+  - **DataTable cell editing / inline editing** — только read-only render с selection в v2.0; редактирование добавится в отдельном milestone если появится consumer-запрос
+  - **DataTable column reordering (drag-to-rearrange)** — resize ✓, reorder ✗
+  - **DataTable column filtering UI** — sort ✓, фильтрация откладывается (caller сам фильтрует data до передачи)
+  - **TreeView drag-and-drop reordering** — выбор и раскрытие ✓, перетаскивание узлов ✗
+  - **ColorPicker eyedropper** — палитра + sliders + HEX, screen color picking требует platform-specific и откладывается
+  - **StepperWizard branching (non-linear)** — только линейный проход в v2.0; branching откладывается
+  - **AeroSidebar drag-to-resize width** — фиксированные ширины для expanded/collapsed; ручная регулировка откладывается
+  - **AeroDropdown popup-offset regression fix** (v1.0 carry-over) — НЕ в scope v2.0; отдельный gap-closure phase или v2.x
 
 ## Context
 
@@ -96,4 +141,4 @@
 | `Icon()` из material3 напрямую, без `AeroIcon()` wrapper | Меньше поверхности API; tint всегда явно передаётся в library-коде | ✓ Good — все 11 миграций следуют паттерну единообразно |
 
 ---
-*Last updated: 2026-04-30 after v1.1 Icon System milestone*
+*Last updated: 2026-04-30 after starting milestone v2.0 Stateful + Layout*
