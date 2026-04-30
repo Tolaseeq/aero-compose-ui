@@ -1,788 +1,622 @@
-# Feature Research — v1.1 AeroIcons (Phosphor Edition)
+# Feature Research — aero-compose-ui v2.0 Stateful + Layout
 
-**Domain:** Compose Desktop UI component library — icon set milestone (v1.1)
-**Researched:** 2026-04-29
-**Confidence:** HIGH (Phosphor icon names confirmed via dev778g-me/PhosphorIcon-compose Kotlin port, Iconify ph/ collection, iconbolt.com phosphor-regular listings, and official Phosphor React package; source SVG format confirmed from phosphor-icons/core repository)
-
-> **REVISION NOTE:** This document replaces the 2026-04-28 version that used Feather icon names.
-> The source has been changed to **Phosphor Icons Regular weight** throughout. All Feather names
-> (chevron-*, eye-off, search, alert-triangle, alert-circle, help-circle, maximize-2, minimize-2)
-> are replaced with their Phosphor equivalents (caret-*, eye-slash, magnifying-glass, warning,
-> x-circle, question, frame-corners / square, minus). Migration touchpoints are unchanged.
+**Domain:** Desktop UI component library — complex stateful + advanced layout components
+**Researched:** 2026-04-30
+**Confidence:** HIGH (cross-verified across WPF, JavaFX, Qt, Flutter, MUI X, AG Grid, NN/g UX research)
 
 ---
 
-## Context
+## Shared Primitives (DRY across multiple components)
 
-This document covers only the **v1.1 AeroIcons milestone** — the addition of a typed ImageVector
-icon set to the existing aero-compose-ui library. All v1.0 component features are already shipped.
-The feature question here is: which icons to include, how to name them, and what to exclude.
+Before per-component breakdowns, the following reusable building blocks appear in two or more components.
+Build these once; do not duplicate.
 
-Source confirmed: **Phosphor Icons Regular weight**
-- License: MIT
-- Viewbox: 256×256
-- Stroke-width: 16 (equivalent ~1.5 px at 24 dp render)
-- Caps/joins: round — matching Win7-toolbar-glyph softness
-- Repository: https://github.com/phosphor-icons/core — SVGs at `raw/regular/*.svg`
-- File naming: `{icon-name}-regular.svg` (e.g. `caret-down-regular.svg`)
-- Total Regular weight icons: ~1,300 (Phosphor v2.1+)
-
----
-
-## Part 1: Required Icons — Current Usages in aero-compose-ui
-
-Every text-glyph and Material Icons usage in `:library` must map to a concrete Phosphor icon name.
-
-### 1.1 Text Glyphs (must replace)
-
-| Component | File | Glyph Used | Role | Phosphor Name (kebab) | Kotlin Identifier |
-|-----------|------|-----------|------|----------------------|-------------------|
-| `AeroDropdown` | `dropdown/AeroDropdown.kt:108` | `"▼"` text | Collapsed indicator | `caret-down` | `AeroIcons.CaretDown` |
-| `AeroNumberSpinner` | `input/AeroNumberSpinner.kt:129` | `"▲"` Text | Increment button | `caret-up` | `AeroIcons.CaretUp` |
-| `AeroNumberSpinner` | `input/AeroNumberSpinner.kt:141` | `"▼"` Text | Decrement button | `caret-down` | `AeroIcons.CaretDown` |
-| `AeroCheckbox` | `selection/AeroCheckbox.kt:97` | `"✓"` Text | Checked state mark | `check` | `AeroIcons.Check` |
-| `AeroCheckbox` | `selection/AeroCheckbox.kt:98` | `"–"` Text | Indeterminate state | `minus` | `AeroIcons.Minus` |
-| `AeroTitleBar` | `navigation/AeroTitleBar.kt:107` | `"─"` glyph | Minimize window | `minus` | `AeroIcons.Minus` |
-| `AeroTitleBar` | `navigation/AeroTitleBar.kt:113` | `"□"` glyph | Maximize window | `square` | `AeroIcons.Square` |
-| `AeroTitleBar` | `navigation/AeroTitleBar.kt:113` | `"❒"` glyph | Restore from maximized | `frame-corners` | `AeroIcons.FrameCorners` |
-| `AeroTitleBar` | `navigation/AeroTitleBar.kt:125` | `"✕"` glyph | Close window | `x` | `AeroIcons.X` |
-| `AeroToastHost` | `overlay/AeroToastHost.kt:92` | `"✕"` Text | Dismiss toast | `x` | `AeroIcons.X` |
-| `AeroNotificationBanner` | `overlay/AeroNotificationBanner.kt:64` | `"✕"` Text | Dismiss banner | `x` | `AeroIcons.X` |
-| `AeroContextMenu` | `overlay/AeroContextMenu.kt:183` | `"▶"` Text | Submenu indicator | `caret-right` | `AeroIcons.CaretRight` |
-| `AeroSearchField` | `input/AeroSearchField.kt:81–110` | Canvas magnifier | Search leading icon | `magnifying-glass` | `AeroIcons.MagnifyingGlass` |
-| `AeroSearchField` | `input/AeroSearchField.kt:121` | `"x"` Text | Clear button | `x` | `AeroIcons.X` |
-| `AeroPasswordField` | `input/AeroPasswordField.kt:121–122` | Canvas eye open | Show password toggle | `eye` | `AeroIcons.Eye` |
-| `AeroPasswordField` | `input/AeroPasswordField.kt:121–122` | Canvas eye+slash | Hide password toggle | `eye-slash` | `AeroIcons.EyeSlash` |
-| `AeroFilePicker` | `input/AeroFilePicker.kt:71` | `"Обзор"` text | Browse file system | `folder` | `AeroIcons.Folder` |
-
-**Notes:**
-- `AeroBreadcrumb` uses `separator: String = "›"` — this is intentionally a `String` parameter, not
-  an icon. The default `"›"` text separator stays as-is in v1.1.
-- `AeroContextMenu` Action items have an `item.icon: ImageVector?` slot already — consumers pass
-  their own icon there. The only text-glyph to replace is the `"▶"` submenu indicator on line 183.
-- `AeroFilePicker` "Обзор" is currently text-only. Migration to `Icon(AeroIcons.Folder)` is
-  optional (a component-level decision). The icon is available; inclusion is at implementer's
-  discretion.
-- `AeroTitleBar` maximize/restore: Phosphor `square` (a simple open square) maps to the plain
-  maximize glyph "□"; `frame-corners` (four corner-brackets) maps to the restore-from-maximized
-  glyph "❒". Both are confirmed present in Phosphor Regular.
-
-### 1.2 Material Icons (must replace to remove `compose.materialIconsExtended` dependency)
-
-| File | Line | Material Icon | Role | Phosphor Name (kebab) | Kotlin Identifier |
-|------|------|--------------|------|----------------------|-------------------|
-| `AeroAlertKind.kt` | 23 | `Icons.Outlined.Info` | Info alert icon | `info` | `AeroIcons.Info` |
-| `AeroAlertKind.kt` | 24 | `Icons.Outlined.Warning` | Warning alert icon | `warning` | `AeroIcons.Warning` |
-| `AeroAlertKind.kt` | 25 | `Icons.Outlined.Error` | Error alert icon | `x-circle` | `AeroIcons.XCircle` |
-| `AeroAlertKind.kt` | 26 | `Icons.Outlined.HelpOutline` | Question/help icon | `question` | `AeroIcons.Question` |
-| `AeroBannerKind.kt` | 19 | `Icons.Outlined.Info` | Info banner icon | `info` | `AeroIcons.Info` |
-| `AeroBannerKind.kt` | 20 | `Icons.Outlined.Warning` | Warning banner icon | `warning` | `AeroIcons.Warning` |
-| `AeroBannerKind.kt` | 21 | `Icons.Outlined.Error` | Error banner icon | `x-circle` | `AeroIcons.XCircle` |
-| `AeroBannerKind.kt` | 22 | `Icons.Outlined.CheckCircle` | Success banner icon | `check-circle` | `AeroIcons.CheckCircle` |
-
-**Phosphor naming notes vs. Feather/Material:**
-- Material `Icons.Outlined.Warning` → Phosphor `warning` (triangle with `!`) — confirmed name
-- Material `Icons.Outlined.Error` → Phosphor `x-circle` (circle with X) — stronger than
-  `warning-circle` for error severity. `warning-octagon` is also available for critical/stop-sign
-  style; `x-circle` is the recommended default.
-- Material `Icons.Outlined.HelpOutline` → Phosphor `question` (standalone `?` mark) —
-  confirmed in Phosphor React port. Alternatively `question-mark` but `question` is the base name.
-- Material `Icons.Outlined.CheckCircle` → Phosphor `check-circle` — exact match.
-
-**Total unique icons required for migration: 15 distinct icons.**
-
-`x, caret-down, caret-up, caret-right, check, minus, square, frame-corners, magnifying-glass,
-eye, eye-slash, folder, info, warning, x-circle, question, check-circle`
+| Primitive | Used By | Notes |
+|-----------|---------|-------|
+| **Calendar grid** (month grid, prev/next nav, day cells) | AeroDatePicker, AeroDateRangePicker, AeroDateTimePicker | Single source — DateRangePicker uses two instances |
+| **Popup anchor + dismiss logic** (open/close on trigger click, Escape closes, click-outside closes) | AeroDatePicker, AeroTimePicker, AeroDateTimePicker, AeroDateRangePicker, AeroColorPicker | Reuse existing AeroPopover dismiss contract |
+| **Single-thumb slider track + thumb** | AeroRangeSlider (two thumbs), AeroColorPicker (hue strip + alpha strip) | AeroSlider already exists — compose/extend it |
+| **Scroll area + scrollbar** | AeroDataTable (both axes), AeroTreeView (vertical), AeroSidebar (overflow items) | AeroScrollArea + AeroScrollBar already exist in library |
+| **Text field with validation** | AeroColorPicker (HEX input, RGB inputs) | AeroTextField already exists in library |
+| **Expand/collapse animated section** | AeroAccordion (sections), AeroTreeView (node children), AeroSidebar (mode transition) | Share animation curve; AnimatedVisibility or explicit tween |
+| **Divider line** | AeroDataTable (column resizer), AeroSplitPane (pane divider), AeroAccordion (section borders) | AeroDivider already exists — extend with drag affordance for resizable variants |
 
 ---
 
-## Part 2: Standard Icons (~100–115 commonly needed)
+## 1. AeroDataTable
 
-Not required by existing components but needed by consuming apps. Selection cross-references the
-Phosphor Regular corpus (~1,300 icons) against desktop UI patterns.
+**Complexity: LARGE**
 
-**Phosphor naming idiosyncrasies vs. industry conventions** (critical for developers):
+### Table Stakes
 
-| Industry Convention | Phosphor Actual Name | Notes |
-|--------------------|---------------------|-------|
-| `home` | `house` | Phosphor uses `house`, not `home` |
-| `settings` / `gear` | `gear` | Phosphor has `gear` (6-tooth) and `gear-six` (6-tooth variant) |
-| `filter` | `funnel` | Phosphor uses `funnel`, not `filter` |
-| `send` | `paper-plane` | Phosphor uses `paper-plane` |
-| `mail` | `envelope` | Phosphor uses `envelope`, not `mail` |
-| `message` | `chat-circle` | Phosphor uses `chat-circle` for round chat bubbles |
-| `external-link` | `arrow-square-out` | Phosphor's external-link icon name |
-| `sort` | `arrows-down-up` | Phosphor sort arrows |
-| `more-horizontal` | `dots-three` | Phosphor's three dots horizontal |
-| `more-vertical` | `dots-three-vertical` | Phosphor's three dots vertical |
-| `delete` / `trash` | `trash` | Phosphor also has `trash-simple` (simpler form) |
-| `edit` | `pencil-simple` | Phosphor prefers `pencil-simple` for edit actions |
-| `save` | `floppy-disk` | Phosphor's save icon name |
-| `zoom-in` | `magnifying-glass-plus` | Phosphor's zoom-in |
-| `zoom-out` | `magnifying-glass-minus` | Phosphor's zoom-out |
-| `eye-off` | `eye-slash` | Phosphor uses `eye-slash`, NOT `eye-off` |
-| `chevron-*` | `caret-*` | Phosphor uses `caret-down/up/left/right` not `chevron-*` |
-| `volume-x` (mute) | `speaker-x` | Phosphor speaker mute |
-| `volume` / `volume-2` | `speaker-high` / `speaker-low` | Phosphor speaker volume levels |
-| `mic` | `microphone` | Phosphor uses full word `microphone` |
-| `mic-off` | `microphone-slash` | Phosphor mic mute |
-| `wifi` (full) | `wifi-high` | Phosphor uses signal-level naming |
-| `wifi-off` | `wifi-slash` | Phosphor wifi disabled |
-| `unlock` | `lock-open` | Phosphor: `lock-open` (confirmed via iconbolt) |
-| `slash` / `no` | `prohibit` | Phosphor's prohibition/not-allowed icon |
-| `terminal` | `terminal-window` | Phosphor's terminal icon |
-| `stop-circle` | `stop` | Phosphor uses `stop` for a filled square stop |
+| Feature | Why Expected | Notes |
+|---------|--------------|-------|
+| Sticky column headers (do not scroll vertically) | Users must always know which column they are reading | Headers in a separate non-scrolling composable above LazyColumn content |
+| Click header to sort (asc → desc → none cycle) | Universal in every grid from Excel to web data tables | Visual sort indicator (caret up/down) in header; only one column sorted at a time in v2.0 |
+| Sort direction indicator | Users cannot understand which column is active sort without it | Show directional AeroIcon in header cell; dim/hide on unsorted columns |
+| Single row selection (click to select, click again or click empty = deselect) | Minimum for any read-only table used in desktop apps | Highlight selected row with theme selection color |
+| Multi-row selection via Ctrl+click and Shift+click | Expected in any desktop table — WPF DataGrid, JavaFX TableView, Qt QTreeView all support this | Ctrl+click toggles individual rows; Shift+click selects a contiguous range |
+| Virtualized row rendering (LazyColumn) | Required for tables with 100+ rows — non-virtualized table hangs or janks | LazyColumn is the correct primitive; all rows are same height (fixed-height rows simplify measurement) |
+| Horizontal scroll when columns exceed viewport width | Column-rich tables are common in desktop apps | Shared horizontal ScrollState across header row and data rows — critical correctness requirement |
+| Resizable columns (drag splitter between header cells) | Expected in professional desktop grids (WPF, Qt, Swing) | Drag handle overlaid on header divider; columns have min width constraint (e.g., 40dp) |
+| Empty state slot | Table with no data must show something; blank rectangle is confusing | Caller-provided `emptyContent: @Composable () -> Unit` slot |
+| Loading state slot | Data may arrive asynchronously; spinner placeholder expected | Caller-provided `loadingContent` slot or simple progress bar |
 
-### 2.1 Editor Controls
+### Differentiators (for this library context)
 
-| Phosphor Name (kebab) | Kotlin Identifier | Purpose |
-|----------------------|-------------------|---------|
-| `pencil-simple` | `PencilSimple` | Edit / pencil (primary edit action) |
-| `floppy-disk` | `FloppyDisk` | Save file |
-| `copy` | `Copy` | Copy to clipboard |
-| `scissors` | `Scissors` | Cut |
-| `clipboard` | `Clipboard` | Paste / clipboard |
-| `arrow-counter-clockwise` | `ArrowCounterClockwise` | Undo |
-| `arrow-clockwise` | `ArrowClockwise` | Redo / refresh |
-| `trash` | `Trash` | Delete to trash (standard) |
-| `trash-simple` | `TrashSimple` | Delete (simpler minimal form) |
-| `broom` | `Broom` | Clear / clean action |
+| Feature | Value Proposition | Notes |
+|---------|-------------------|-------|
+| Aero-styled row selection highlight (glass tint) | Stays on-brand with Aero aesthetic | Semi-transparent selection layer using `glassSurface` modifier tint |
+| Column min-width enforcement during resize | Prevents columns collapsing to 0 and hiding data — common footgun in naive implementations | Enforce minimum 40dp per column during drag |
+| Stable sort (original order preserved within equal keys) | Professional apps expect stable sort | Use Kotlin's `sortedWith` which is stable |
+| Caller controls data — no internal data model | Library does not own the data source; caller passes `List<T>` | Simpler API; caller handles filtering, fetching, pagination |
 
-### 2.2 File Operations
+### Anti-Features (explicitly exclude)
 
-| Phosphor Name (kebab) | Kotlin Identifier | Purpose |
-|----------------------|-------------------|---------|
-| `file` | `File` | Generic file |
-| `file-text` | `FileText` | Text / document file |
-| `files` | `Files` | Multiple files / copy-file concept |
-| `folder` | `Folder` | Closed folder (also Required §1.1) |
-| `folder-open` | `FolderOpen` | Open folder |
-| `folder-plus` | `FolderPlus` | New folder |
-| `download` | `Download` | Download to device |
-| `upload` | `Upload` | Upload from device |
-| `paperclip` | `Paperclip` | Attach file |
-| `archive` | `Archive` | Archive / compress |
-| `printer` | `Printer` | Print |
+| Anti-Feature | Why It's a Footgun | What to Do Instead |
+|-------------|--------------------|--------------------|
+| Cell editing / inline edit mode | Massively increases API surface, focus management complexity, and commit/cancel logic — out of scope in v2.0 per locked decisions | Read-only render; caller overlays an editor if needed |
+| Column reordering (drag to rearrange) | Drag-column-reorder + drag-column-resize simultaneously is a major UX and hit-test complexity trap | Resize only in v2.0 |
+| Built-in filtering UI (filter row or column filter popup) | Filtering UX varies wildly per use case; baking it in forces choices the caller should make | Caller filters `List<T>` before passing; table is pure display |
+| Multi-column sort (Shift+click header) | Sorting by multiple columns is confusing when there is no visual priority ranking; single-column sort covers 95% of cases | Single-column sort only |
+| Frozen/pinned columns | Complex layout: frozen columns require separate composables with synchronized scroll state — double the complexity of resizing | Not in v2.0 |
+| Pagination controls | Pagination is app-level logic; embedding it couples the table to an opinionated navigation pattern | Caller adds pagination above/below the table |
+| Auto-resize columns on double-click header divider | Requires measuring all cell text widths — expensive and complex | Manual drag resize only |
 
-### 2.3 Navigation & Application Shell
+### Dependencies on existing components
 
-| Phosphor Name (kebab) | Kotlin Identifier | Purpose |
-|----------------------|-------------------|---------|
-| `house` | `House` | Home / dashboard (NOTE: `house` not `home`) |
-| `list` | `List` | Menu / list view / hamburger |
-| `dots-three` | `DotsThree` | More actions (horizontal) |
-| `dots-three-vertical` | `DotsThreeVertical` | More actions (vertical) |
-| `arrow-left` | `ArrowLeft` | Back / previous |
-| `arrow-right` | `ArrowRight` | Forward / next |
-| `arrow-up` | `ArrowUp` | Up |
-| `arrow-down` | `ArrowDown` | Down |
-| `arrow-square-out` | `ArrowSquareOut` | External link / open in new window |
-| `arrow-bend-up-left` | `ArrowBendUpLeft` | Back / undo direction |
-| `sign-in` | `SignIn` | Login / sign in |
-| `sign-out` | `SignOut` | Logout / sign out |
-
-### 2.4 Status & Feedback
-
-| Phosphor Name (kebab) | Kotlin Identifier | Purpose |
-|----------------------|-------------------|---------|
-| `bell` | `Bell` | Notifications |
-| `bell-slash` | `BellSlash` | Mute notifications |
-| `calendar` | `Calendar` | Calendar / date picker trigger |
-| `calendar-blank` | `CalendarBlank` | Empty calendar |
-| `clock` | `Clock` | Time / clock |
-| `lock` | `Lock` | Locked / secure |
-| `lock-open` | `LockOpen` | Unlocked |
-| `shield` | `Shield` | Security / protection |
-| `shield-warning` | `ShieldWarning` | Security warning |
-| `warning-circle` | `WarningCircle` | Mild warning (circle) |
-| `warning-diamond` | `WarningDiamond` | Warning (diamond shape) |
-| `warning-octagon` | `WarningOctagon` | Critical / stop-sign warning |
-| `spinner` | `Spinner` | Loading indicator |
-| `flag` | `Flag` | Flag / mark item |
-
-### 2.5 Communication
-
-| Phosphor Name (kebab) | Kotlin Identifier | Purpose |
-|----------------------|-------------------|---------|
-| `envelope` | `Envelope` | Email (NOTE: `envelope` not `mail`) |
-| `chat-circle` | `ChatCircle` | Chat message (round bubble) |
-| `chat-circle-text` | `ChatCircleText` | Chat with lines (text content) |
-| `phone` | `Phone` | Phone call |
-| `paper-plane` | `PaperPlane` | Send message (NOTE: `paper-plane` not `send`) |
-
-### 2.6 Media & Audio/Video
-
-| Phosphor Name (kebab) | Kotlin Identifier | Purpose |
-|----------------------|-------------------|---------|
-| `play` | `Play` | Play media |
-| `pause` | `Pause` | Pause media |
-| `stop` | `Stop` | Stop media |
-| `skip-back` | `SkipBack` | Previous track |
-| `skip-forward` | `SkipForward` | Next track |
-| `fast-forward` | `FastForward` | Fast-forward |
-| `rewind` | `Rewind` | Rewind |
-| `speaker-high` | `SpeakerHigh` | Volume high (NOTE: `speaker-high` not `volume`) |
-| `speaker-low` | `SpeakerLow` | Volume low |
-| `speaker-x` | `SpeakerX` | Mute (NOTE: `speaker-x` not `volume-x`) |
-| `music-note` | `MusicNote` | Music / audio track |
-| `music-notes` | `MusicNotes` | Multiple notes / playlist |
-| `video-camera` | `VideoCamera` | Video |
-| `image` | `Image` | Image / photo |
-| `camera` | `Camera` | Camera |
-| `microphone` | `Microphone` | Microphone (NOTE: `microphone` not `mic`) |
-| `microphone-slash` | `MicrophoneSlash` | Muted mic (NOTE: `microphone-slash` not `mic-off`) |
-
-### 2.7 System & Devices
-
-| Phosphor Name (kebab) | Kotlin Identifier | Purpose |
-|----------------------|-------------------|---------|
-| `gear` | `Gear` | Settings / gear (NOTE: `gear` not `settings`) |
-| `sliders` | `Sliders` | Adjust / parameters (horizontal sliders) |
-| `sliders-horizontal` | `SlidersHorizontal` | Horizontal sliders variant |
-| `funnel` | `Funnel` | Filter (NOTE: `funnel` not `filter`) |
-| `arrows-down-up` | `ArrowsDownUp` | Sort ascending/descending |
-| `magnifying-glass-plus` | `MagnifyingGlassPlus` | Zoom in |
-| `magnifying-glass-minus` | `MagnifyingGlassMinus` | Zoom out |
-| `frame-corners` | `FrameCorners` | Full-screen / maximize panel (also Required §1.1) |
-| `monitor` | `Monitor` | Display / screen |
-| `desktop-tower` | `DesktopTower` | Desktop computer |
-| `hard-drive` | `HardDrive` | Hard drive / storage |
-| `database` | `Database` | Database |
-| `cloud` | `Cloud` | Cloud |
-| `cloud-arrow-down` | `CloudArrowDown` | Download from cloud |
-| `cloud-arrow-up` | `CloudArrowUp` | Upload to cloud |
-| `wifi-high` | `WifiHigh` | Wi-Fi connected full signal (NOTE: `wifi-high`) |
-| `wifi-slash` | `WifiSlash` | Wi-Fi disconnected (NOTE: `wifi-slash`) |
-| `bluetooth` | `Bluetooth` | Bluetooth |
-| `battery-full` | `BatteryFull` | Battery full |
-| `battery-low` | `BatteryLow` | Battery low |
-| `battery-empty` | `BatteryEmpty` | Battery empty |
-| `power` | `Power` | Power on/off |
-| `lightning` | `Lightning` | Power / lightning bolt / charge |
-| `lightbulb` | `Lightbulb` | Idea / lightbulb |
-
-### 2.8 Developer / Tools
-
-| Phosphor Name (kebab) | Kotlin Identifier | Purpose |
-|----------------------|-------------------|---------|
-| `wrench` | `Wrench` | Tool / wrench |
-| `gear-six` | `GearSix` | Settings alternate (6-point gear) |
-| `code` | `Code` | Code / source |
-| `terminal-window` | `TerminalWindow` | Terminal / CLI |
-| `bug` | `Bug` | Bug / debug |
-| `cpu` | `Cpu` | CPU / processor |
-| `link` | `Link` | Hyperlink |
-| `link-simple` | `LinkSimple` | Simplified link icon |
-| `key` | `Key` | API key / password key |
-| `hash` | `Hash` | Hash / ID |
-| `globe` | `Globe` | Globe / web |
-
-### 2.9 User & Identity
-
-| Phosphor Name (kebab) | Kotlin Identifier | Purpose |
-|----------------------|-------------------|---------|
-| `user` | `User` | Single user |
-| `user-circle` | `UserCircle` | User with circle frame |
-| `users` | `Users` | Multiple users / group |
-| `user-plus` | `UserPlus` | Add user |
-| `user-minus` | `UserMinus` | Remove user |
-| `user-check` | `UserCheck` | Verified / approved user |
-
-### 2.10 Actions & UI Controls
-
-| Phosphor Name (kebab) | Kotlin Identifier | Purpose |
-|----------------------|-------------------|---------|
-| `heart` | `Heart` | Favorite / like |
-| `star` | `Star` | Star / rate |
-| `bookmark-simple` | `BookmarkSimple` | Bookmark / save for later |
-| `share-network` | `ShareNetwork` | Share |
-| `eye` | `Eye` | Visibility (also Required §1.1) |
-| `eye-slash` | `EyeSlash` | Hidden / masked (also Required §1.1) |
-| `prohibit` | `Prohibit` | Forbidden / not allowed (NOTE: `prohibit` not `slash`) |
-| `plus` | `Plus` | Add / create |
-| `plus-circle` | `PlusCircle` | Add (circled) |
-| `minus-circle` | `MinusCircle` | Remove (circled) |
-| `arrow-up-right` | `ArrowUpRight` | Open / navigate up-right |
-| `sort-ascending` | `SortAscending` | Sort A-Z |
-| `sort-descending` | `SortDescending` | Sort Z-A |
-| `map-pin` | `MapPin` | Location / pin |
+- `AeroScrollArea` + `AeroScrollBar` — both scroll axes
+- `AeroIcons` — sort carets, column resize cursor hint
+- `AeroDivider` — extended for drag-resizable column splitter
+- Theme tokens — selection highlight color, header background
 
 ---
 
-## Part 3: Complete v1.1 Icon List (Master Reference — 138 icons)
+## 2. AeroTreeView
 
-Authoritative list of all AeroIcons for v1.1. Phosphor kebab-case → Kotlin PascalCase.
+**Complexity: MEDIUM**
 
-**Mapping rule:** kebab-case → PascalCase; hyphens removed, each segment capitalized.
-- `caret-down` → `CaretDown`
-- `magnifying-glass` → `MagnifyingGlass`
-- `eye-slash` → `EyeSlash`
-- `arrow-counter-clockwise` → `ArrowCounterClockwise`
-- `x` → `X` (single-letter stays as-is)
+### Table Stakes
 
-| # | Phosphor (kebab-case) | Kotlin `AeroIcons.*` | Category | Required |
-|---|----------------------|---------------------|----------|----------|
-| 1 | `archive` | `Archive` | Files | |
-| 2 | `arrow-bend-up-left` | `ArrowBendUpLeft` | Navigation | |
-| 3 | `arrow-clockwise` | `ArrowClockwise` | Editor | |
-| 4 | `arrow-counter-clockwise` | `ArrowCounterClockwise` | Editor | |
-| 5 | `arrow-down` | `ArrowDown` | Navigation | |
-| 6 | `arrow-left` | `ArrowLeft` | Navigation | |
-| 7 | `arrow-right` | `ArrowRight` | Navigation | |
-| 8 | `arrow-square-out` | `ArrowSquareOut` | Navigation | |
-| 9 | `arrow-up` | `ArrowUp` | Navigation | |
-| 10 | `arrow-up-right` | `ArrowUpRight` | Actions | |
-| 11 | `arrows-down-up` | `ArrowsDownUp` | System | |
-| 12 | `battery-empty` | `BatteryEmpty` | System | |
-| 13 | `battery-full` | `BatteryFull` | System | |
-| 14 | `battery-low` | `BatteryLow` | System | |
-| 15 | `bell` | `Bell` | Status | |
-| 16 | `bell-slash` | `BellSlash` | Status | |
-| 17 | `bluetooth` | `Bluetooth` | System | |
-| 18 | `bookmark-simple` | `BookmarkSimple` | Actions | |
-| 19 | `broom` | `Broom` | Editor | |
-| 20 | `bug` | `Bug` | Dev | |
-| 21 | `calendar` | `Calendar` | Status | |
-| 22 | `calendar-blank` | `CalendarBlank` | Status | |
-| 23 | `camera` | `Camera` | Media | |
-| 24 | `caret-down` | `CaretDown` | Navigation | YES |
-| 25 | `caret-left` | `CaretLeft` | Navigation | |
-| 26 | `caret-right` | `CaretRight` | Navigation | YES |
-| 27 | `caret-up` | `CaretUp` | Navigation | YES |
-| 28 | `chat-circle` | `ChatCircle` | Communication | |
-| 29 | `chat-circle-text` | `ChatCircleText` | Communication | |
-| 30 | `check` | `Check` | Actions | YES |
-| 31 | `check-circle` | `CheckCircle` | Status | YES |
-| 32 | `clipboard` | `Clipboard` | Editor | |
-| 33 | `clock` | `Clock` | Status | |
-| 34 | `cloud` | `Cloud` | System | |
-| 35 | `cloud-arrow-down` | `CloudArrowDown` | System | |
-| 36 | `cloud-arrow-up` | `CloudArrowUp` | System | |
-| 37 | `code` | `Code` | Dev | |
-| 38 | `copy` | `Copy` | Editor | |
-| 39 | `cpu` | `Cpu` | Dev | |
-| 40 | `database` | `Database` | System | |
-| 41 | `desktop-tower` | `DesktopTower` | System | |
-| 42 | `dots-three` | `DotsThree` | Navigation | |
-| 43 | `dots-three-vertical` | `DotsThreeVertical` | Navigation | |
-| 44 | `download` | `Download` | Files | |
-| 45 | `envelope` | `Envelope` | Communication | |
-| 46 | `eye` | `Eye` | Actions | YES |
-| 47 | `eye-slash` | `EyeSlash` | Actions | YES |
-| 48 | `fast-forward` | `FastForward` | Media | |
-| 49 | `file` | `File` | Files | |
-| 50 | `file-text` | `FileText` | Files | |
-| 51 | `files` | `Files` | Files | |
-| 52 | `flag` | `Flag` | Status | |
-| 53 | `floppy-disk` | `FloppyDisk` | Editor | |
-| 54 | `folder` | `Folder` | Files | YES |
-| 55 | `folder-open` | `FolderOpen` | Files | |
-| 56 | `folder-plus` | `FolderPlus` | Files | |
-| 57 | `frame-corners` | `FrameCorners` | Navigation | YES (restore) |
-| 58 | `funnel` | `Funnel` | System | |
-| 59 | `gear` | `Gear` | System | |
-| 60 | `gear-six` | `GearSix` | System | |
-| 61 | `globe` | `Globe` | Dev | |
-| 62 | `hard-drive` | `HardDrive` | System | |
-| 63 | `hash` | `Hash` | Dev | |
-| 64 | `heart` | `Heart` | Actions | |
-| 65 | `house` | `House` | Navigation | |
-| 66 | `image` | `Image` | Media | |
-| 67 | `info` | `Info` | Status | YES |
-| 68 | `key` | `Key` | Dev | |
-| 69 | `lightning` | `Lightning` | System | |
-| 70 | `lightbulb` | `Lightbulb` | System | |
-| 71 | `link` | `Link` | Dev | |
-| 72 | `link-simple` | `LinkSimple` | Dev | |
-| 73 | `list` | `List` | Navigation | |
-| 74 | `lock` | `Lock` | Status | |
-| 75 | `lock-open` | `LockOpen` | Status | |
-| 76 | `magnifying-glass` | `MagnifyingGlass` | Actions | YES |
-| 77 | `magnifying-glass-minus` | `MagnifyingGlassMinus` | System | |
-| 78 | `magnifying-glass-plus` | `MagnifyingGlassPlus` | System | |
-| 79 | `map-pin` | `MapPin` | Actions | |
-| 80 | `microphone` | `Microphone` | Media | |
-| 81 | `microphone-slash` | `MicrophoneSlash` | Media | |
-| 82 | `minus` | `Minus` | Actions | YES |
-| 83 | `minus-circle` | `MinusCircle` | Actions | |
-| 84 | `monitor` | `Monitor` | System | |
-| 85 | `music-note` | `MusicNote` | Media | |
-| 86 | `music-notes` | `MusicNotes` | Media | |
-| 87 | `paperclip` | `Paperclip` | Files | |
-| 88 | `paper-plane` | `PaperPlane` | Communication | |
-| 89 | `pause` | `Pause` | Media | |
-| 90 | `pencil-simple` | `PencilSimple` | Editor | |
-| 91 | `phone` | `Phone` | Communication | |
-| 92 | `play` | `Play` | Media | |
-| 93 | `plus` | `Plus` | Actions | |
-| 94 | `plus-circle` | `PlusCircle` | Actions | |
-| 95 | `power` | `Power` | System | |
-| 96 | `printer` | `Printer` | Files | |
-| 97 | `prohibit` | `Prohibit` | Actions | |
-| 98 | `question` | `Question` | Status | YES |
-| 99 | `rewind` | `Rewind` | Media | |
-| 100 | `scissors` | `Scissors` | Editor | |
-| 101 | `share-network` | `ShareNetwork` | Actions | |
-| 102 | `shield` | `Shield` | Status | |
-| 103 | `shield-warning` | `ShieldWarning` | Status | |
-| 104 | `sign-in` | `SignIn` | Navigation | |
-| 105 | `sign-out` | `SignOut` | Navigation | |
-| 106 | `skip-back` | `SkipBack` | Media | |
-| 107 | `skip-forward` | `SkipForward` | Media | |
-| 108 | `sliders` | `Sliders` | System | |
-| 109 | `sliders-horizontal` | `SlidersHorizontal` | System | |
-| 110 | `sort-ascending` | `SortAscending` | Actions | |
-| 111 | `sort-descending` | `SortDescending` | Actions | |
-| 112 | `speaker-high` | `SpeakerHigh` | Media | |
-| 113 | `speaker-low` | `SpeakerLow` | Media | |
-| 114 | `speaker-x` | `SpeakerX` | Media | |
-| 115 | `spinner` | `Spinner` | Status | |
-| 116 | `square` | `Square` | Navigation | YES (maximize) |
-| 117 | `star` | `Star` | Actions | |
-| 118 | `stop` | `Stop` | Media | |
-| 119 | `terminal-window` | `TerminalWindow` | Dev | |
-| 120 | `trash` | `Trash` | Editor | |
-| 121 | `trash-simple` | `TrashSimple` | Editor | |
-| 122 | `upload` | `Upload` | Files | |
-| 123 | `user` | `User` | Identity | |
-| 124 | `user-check` | `UserCheck` | Identity | |
-| 125 | `user-circle` | `UserCircle` | Identity | |
-| 126 | `user-minus` | `UserMinus` | Identity | |
-| 127 | `user-plus` | `UserPlus` | Identity | |
-| 128 | `users` | `Users` | Identity | |
-| 129 | `video-camera` | `VideoCamera` | Media | |
-| 130 | `warning` | `Warning` | Status | YES |
-| 131 | `warning-circle` | `WarningCircle` | Status | |
-| 132 | `warning-diamond` | `WarningDiamond` | Status | |
-| 133 | `warning-octagon` | `WarningOctagon` | Status | |
-| 134 | `wifi-high` | `WifiHigh` | System | |
-| 135 | `wifi-slash` | `WifiSlash` | System | |
-| 136 | `wrench` | `Wrench` | Dev | |
-| 137 | `x` | `X` | Actions | YES |
-| 138 | `x-circle` | `XCircle` | Actions/Status | YES |
+| Feature | Why Expected | Notes |
+|---------|--------------|-------|
+| Expand/collapse nodes by clicking the toggle icon | Core interaction in every tree (Windows Explorer, VS Code file tree, JavaFX TreeView) | Toggle icon (caret/arrow) rotates on expand |
+| Indentation per depth level | Required to show hierarchy visually | Fixed indent step (e.g., 16dp per level); configurable via parameter |
+| Lazy children loading via `onExpand` callback | Expected for trees backed by async data sources (filesystem, network API) | `onExpand(node) -> Unit` fires when a node is expanded for the first time; caller calls back with children |
+| Loading indicator per node | When `onExpand` is async, node must show that children are being fetched | Spinner or skeleton row under expanding node |
+| Optional node icon slot | Most trees show file/folder icons or domain icons | `leadingIcon: @Composable (() -> Unit)?` per node |
+| Node selection (single click selects) | Tree selection drives detail panel in master-detail layouts | Selected node highlighted; `onSelect(node)` callback |
+| Collapse all descendants when parent collapses | Collapsing a parent should hide all its children recursively | State management: expanded-node set, not tree node state |
 
-**Total: 138 icons** (17 required for migration + 121 standard). Within the 120–150 target.
+### Differentiators
 
-**Required icons (15 unique, covering all text-glyph and Material Icons replacements):**
-`X, CaretDown, CaretUp, CaretRight, Check, Minus, Square, FrameCorners, MagnifyingGlass,
-Eye, EyeSlash, Folder, Info, Warning, XCircle, Question, CheckCircle`
+| Feature | Value Proposition | Notes |
+|---------|-------------------|-------|
+| Error state per node | If `onExpand` throws or returns empty after a delay, show error inline | `onError` slot or error-state per node; prevents silent failures |
+| Expandable node distinguishable from leaf | Users need to know which nodes have children before expanding | `hasChildren: Boolean` or `childCount: Int?` parameter; render toggle only when `hasChildren = true` |
+
+### Anti-Features
+
+| Anti-Feature | Why It's a Footgun | What to Do Instead |
+|-------------|--------------------|--------------------|
+| Drag-and-drop node reordering | Requires hit-testing between nodes, scroll-while-drag, and complex tree model mutations — locked out in v2.0 | Locked: caller manages reordering externally |
+| Checkbox multi-select with tri-state (partial parent) | Tri-state checkbox logic (all/some/none children selected) is significant complexity — WPF does it wrong in half its implementations | Single-node selection only in v2.0; multi-select deferred |
+| Inline rename / edit node label | Same footgun as DataTable cell editing — out of scope | Read-only labels |
+| Auto-expand to search result | Requires traversal + programmatic expand — add only if consumer demand surfaces | Not in v2.0 |
+
+### Dependencies on existing components
+
+- `AeroScrollArea` + `AeroScrollBar` — vertical scroll for deep trees
+- `AeroIcons` — expand caret, loading spinner, optional node icons
+- `AnimatedVisibility` (Compose) — animate expand/collapse of children
+- Theme tokens — selected node highlight, indent line color (optional decorative line)
 
 ---
 
-## Part 4: Naming Convention Decision
+## 3. Date/Time Picker Group
 
-### Decision: Keep Phosphor Names (kebab-case → PascalCase), Flat Namespace
+**Shared Primitive:** Calendar grid — a month view with day cells, prev/next month buttons, and a month+year header. Used by AeroDatePicker, AeroDateRangePicker, and AeroDateTimePicker. Build once as an internal `CalendarGrid` composable.
 
-**Format:** `AeroIcons.IconName`
-
-Examples:
-```kotlin
-AeroIcons.CaretDown        // ← caret-down-regular.svg   (NOT ChevronDown)
-AeroIcons.MagnifyingGlass  // ← magnifying-glass-regular.svg  (NOT Search)
-AeroIcons.EyeSlash         // ← eye-slash-regular.svg  (NOT EyeOff)
-AeroIcons.House            // ← house-regular.svg  (NOT Home)
-AeroIcons.Funnel           // ← funnel-regular.svg  (NOT Filter)
-AeroIcons.Gear             // ← gear-regular.svg  (NOT Settings)
-AeroIcons.PaperPlane       // ← paper-plane-regular.svg  (NOT Send)
-AeroIcons.Envelope         // ← envelope-regular.svg  (NOT Mail)
-AeroIcons.X                // ← x-regular.svg  (NOT Close)
-```
-
-### Rationale
-
-**Keep Phosphor names (no renaming to industry conventions):**
-Developers look up icons on phosphoricons.com using Phosphor names. Renaming creates an invisible
-mapping layer: when a developer searches `phosphoricons.com` for "home" they find `house`; if we
-call it `Home` they must know the renaming happened. Keeping Phosphor names means the identifier
-in code is a direct 1:1 match with the source asset name — zero lookup friction.
-
-**Why flat (not grouped by category):**
-At ~138 icons, grouping adds friction without benefit. Grouped namespaces
-(`AeroIcons.Navigation.CaretDown`) require knowing the category before finding the icon. Material
-Icons uses flat-by-style (`Icons.Outlined.CaretDown`). The PhosphorIcon-compose Kotlin library
-uses `PhIcons.Regular.CaretDownRegular`. A flat `AeroIcons.CaretDown` is simpler and consistent
-with what Material Icons consumers already know. Grouping pays off at 500+ icons.
-
-**Why PascalCase:**
-Kotlin idiomatic for `val` in `object`. Phosphor's kebab-case (`caret-down`) cannot be a Kotlin
-identifier. PascalCase matches Material Icons convention (`Icons.Outlined.CheckCircle`).
-
-**Why `AeroIcons.` prefix:**
-Library namespace is `Aero*`. Using `AeroIcons` is consistent with `AeroButton`, `AeroTextField`.
-Avoids name collision with `Icons` (Material) in consuming projects.
-
-**Number-suffix convention:**
-When Phosphor uses numeric suffixes (`gear-six` → `GearSix`), the number is written as a word in
-PascalCase since it follows a hyphen. Single-letter names like `x` become `X`.
-
-### KDoc naming-convention note (to include in `AeroIcons.kt`)
-
-```kotlin
-/**
- * Typed [ImageVector] constants — Phosphor Icons Regular weight, ported to Compose.
- *
- * **Naming:** Phosphor kebab-case names are mapped 1-to-1 to PascalCase Kotlin identifiers.
- * Look up icons at phosphoricons.com using the source name; the Kotlin name follows directly.
- *
- * Examples:
- * - phosphoricons.com "caret-down" → `AeroIcons.CaretDown`
- * - phosphoricons.com "magnifying-glass" → `AeroIcons.MagnifyingGlass`
- * - phosphoricons.com "house" → `AeroIcons.House`  (Phosphor uses `house`, not `home`)
- * - phosphoricons.com "funnel" → `AeroIcons.Funnel`  (Phosphor uses `funnel`, not `filter`)
- * - phosphoricons.com "gear" → `AeroIcons.Gear`  (Phosphor uses `gear`, not `settings`)
- *
- * Source: Phosphor Icons Regular, MIT license. ViewBox 256×256, stroke-width 16.
- */
-public object AeroIcons {
-    public val CaretDown: ImageVector get() = loadCaretDown()
-    // …
-}
-```
-
-### Kotlin Implementation Pattern
-
-```kotlin
-// AeroIcons.kt — top-level object in :library
-public object AeroIcons {
-    public val X: ImageVector              get() = loadX()
-    public val CaretDown: ImageVector      get() = loadCaretDown()
-    public val CaretUp: ImageVector        get() = loadCaretUp()
-    public val CaretRight: ImageVector     get() = loadCaretRight()
-    public val CaretLeft: ImageVector      get() = loadCaretLeft()
-    public val Check: ImageVector          get() = loadCheck()
-    public val CheckCircle: ImageVector    get() = loadCheckCircle()
-    public val Minus: ImageVector          get() = loadMinus()
-    public val Square: ImageVector         get() = loadSquare()
-    public val FrameCorners: ImageVector   get() = loadFrameCorners()
-    public val MagnifyingGlass: ImageVector get() = loadMagnifyingGlass()
-    public val Eye: ImageVector            get() = loadEye()
-    public val EyeSlash: ImageVector       get() = loadEyeSlash()
-    public val Folder: ImageVector         get() = loadFolder()
-    public val Info: ImageVector           get() = loadInfo()
-    public val Warning: ImageVector        get() = loadWarning()
-    public val XCircle: ImageVector        get() = loadXCircle()
-    public val Question: ImageVector       get() = loadQuestion()
-    // … 121 more
-}
-```
-
-Each icon lives in a private `load*()` function in its own file under `icons/` package. Lazy `get()`
-ensures only accessed icons are constructed — identical to Material Icons' lazy backing field pattern.
+**Shared Primitive:** Popup anchor — open on trigger click, Escape closes, click-outside closes. Reuse AeroPopover dismiss contract.
 
 ---
 
-## Part 5: Migration Mapping (Per-Component Recipe)
+### 3a. AeroDatePicker
 
-Exact per-file changes, using Phosphor names throughout.
+**Complexity: MEDIUM**
 
-### AeroCheckbox.kt (`selection/AeroCheckbox.kt`)
-- Line 97: `Text("✓", ...)` → `Icon(AeroIcons.Check, contentDescription = null, tint = colors.onPrimary, modifier = Modifier.size(12.dp))`
-- Line 98: `Text("–", ...)` → `Icon(AeroIcons.Minus, contentDescription = null, tint = colors.onPrimary, modifier = Modifier.size(12.dp))`
+#### Table Stakes
 
-### AeroDropdown.kt (`dropdown/AeroDropdown.kt`)
-- Line 108: `Text("▼", ...)` → `Icon(AeroIcons.CaretDown, contentDescription = null, tint = colors.labelText, modifier = Modifier.size(12.dp))`
+| Feature | Why Expected | Notes |
+|---------|--------------|-------|
+| Popup calendar opens on trigger click | Universal date picker pattern (WPF DatePicker, Qt QDateEdit, MUI DatePicker) | Popup anchored below trigger field |
+| Month grid: 7-column day grid, days of week header | Standard calendar layout | Mon–Sun header row; 5–6 week rows per month |
+| Prev/next month navigation (chevron buttons) | Required to navigate to target month | AeroIcons.CaretLeft / CaretRight |
+| Today highlight | Orientation marker — users need to know where "now" is | Ring/border on today cell, not fill (fill = selected) |
+| Selected day highlight | Shows currently picked date | Filled circle or rounded rect using theme accent |
+| Click day to select and close popup | Primary interaction | `onDateSelected(LocalDate)` callback; popup closes on selection |
+| Escape closes without selection | Standard popup dismiss | Return focus to trigger |
+| Display selected date in trigger field | Feedback of current value | Formatted date string (e.g., "YYYY-MM-DD" or locale-aware) |
+| Null/no-selection state | Date fields start empty before user picks | Trigger shows placeholder; `value: LocalDate?` |
+| Year navigation (click year label → year picker or prev/next arrows) | Jumping years by clicking next-month 24 times is a known UX pain point | Year picker row or fast-scroll; simple prev/next year arrows are acceptable minimum |
 
-### AeroNumberSpinner.kt (`input/AeroNumberSpinner.kt`)
-- Line 129: `Text("▲", ...)` → `Icon(AeroIcons.CaretUp, contentDescription = null, tint = colors.onSurface, modifier = Modifier.size(10.dp))`
-- Line 141: `Text("▼", ...)` → `Icon(AeroIcons.CaretDown, contentDescription = null, tint = colors.onSurface, modifier = Modifier.size(10.dp))`
+#### Differentiators
 
-### AeroTitleBar.kt (`navigation/AeroTitleBar.kt`)
-- Line 107 (minimize call): `glyph = "─"` → replace TitleBarButton to accept `ImageVector`; use `AeroIcons.Minus`
-- Line 113 (maximize/restore): `glyph = if (maximized) "❒" else "□"` → `if (maximized) AeroIcons.FrameCorners else AeroIcons.Square`
-- Line 125 (close): `glyph = "✕"` → `AeroIcons.X`
-- Internal: `TitleBarButton` composable signature changes from `glyph: String` + `Text(glyph)` to `icon: ImageVector` + `Icon(icon, ...)`
+| Feature | Value Proposition | Notes |
+|---------|-------------------|-------|
+| `disabledDates: Set<LocalDate>` or `disableBefore`/`disableAfter` | Blocks invalid date selection at the picker level | Grayed-out day cells, not clickable |
+| Aero-glass popup surface | On-brand with library aesthetic | Use `glassSurface` modifier on popup container |
 
-### AeroToastHost.kt (`overlay/AeroToastHost.kt`)
-- Line 92: `Text("✕", ...)` inside AeroIconButton → `Icon(AeroIcons.X, contentDescription = "Dismiss", tint = colors.onSurface)`
+#### Anti-Features
 
-### AeroNotificationBanner.kt (`overlay/AeroNotificationBanner.kt`)
-- Line 64: `Text("✕", ...)` inside AeroIconButton → `Icon(AeroIcons.X, contentDescription = "Dismiss", tint = colors.onSurface)`
+| Anti-Feature | Why It's a Footgun | What to Do Instead |
+|-------------|--------------------|--------------------|
+| Inline (always-visible) calendar mode | Requires layout space reserved permanently; use case niche for desktop; locked out in v2.0 | Popup only |
+| Free-text typed date in trigger field | Parsing arbitrary user input requires locale-aware parsing + validation state + error feedback — substantial complexity | Display-only trigger (or read-only AeroTextField); manual entry deferred |
+| Week numbers in calendar | Adds visual clutter; niche use (project management tools only) | Out |
+| Multiple calendars in single-date picker | Confusing for single date selection | Only for DateRangePicker |
 
-### AeroContextMenu.kt (`overlay/AeroContextMenu.kt`)
-- Line 183: `Text("▶", ...)` → `Icon(AeroIcons.CaretRight, contentDescription = null, tint = colors.labelText, modifier = Modifier.size(12.dp))`
+#### Dependencies on existing components
 
-### AeroSearchField.kt (`input/AeroSearchField.kt`)
-- Remove `SearchIcon()` composable (lines 81–111) entirely
-- Replace `SearchIcon()` call (line 61 area) with `Icon(AeroIcons.MagnifyingGlass, contentDescription = "Search", tint = AeroTheme.colors.labelText, modifier = Modifier.size(14.dp))`
-- Line 121: `Text("x", ...)` in ClearButton → `Icon(AeroIcons.X, contentDescription = "Clear", tint = AeroTheme.colors.labelText, modifier = Modifier.size(12.dp))`
-
-### AeroPasswordField.kt (`input/AeroPasswordField.kt`)
-- Remove `EyeOpenIcon()` composable (lines 136–164) entirely
-- Remove `EyeClosedIcon()` composable (lines 171–205) entirely
-- Line 121–122: replace `if (visible) EyeOpenIcon(...) else EyeClosedIcon(...)` with `Icon(if (visible) AeroIcons.Eye else AeroIcons.EyeSlash, contentDescription = if (visible) "Hide password" else "Show password", tint = colors.labelText, modifier = Modifier.size(14.dp))`
-
-### AeroAlertKind.kt (`overlay/AeroAlertKind.kt`)
-- Remove all `import androidx.compose.material.icons.*` lines
-- Change `icon` property to use `AeroIcons.*`:
-  - `Info` → `AeroIcons.Info`
-  - `Warning` → `AeroIcons.Warning`
-  - `Error` → `AeroIcons.XCircle`
-  - `Question` → `AeroIcons.Question`
-
-### AeroBannerKind.kt (`overlay/AeroBannerKind.kt`)
-- Remove all `import androidx.compose.material.icons.*` lines
-- Change `icon` property to use `AeroIcons.*`:
-  - `Info` → `AeroIcons.Info`
-  - `Warning` → `AeroIcons.Warning`
-  - `Error` → `AeroIcons.XCircle`
-  - `Success` → `AeroIcons.CheckCircle`
-
-### build.gradle.kts (`:library`)
-- After all migrations complete: remove `implementation(compose.materialIconsExtended)` line.
+- `AeroPopover` (or popup anchor logic) — positioning + dismiss
+- `AeroIconButton` — prev/next month/year buttons
+- `AeroIcons` — CaretLeft, CaretRight
+- `AeroTextField` (display-only trigger) or custom trigger composable
+- Theme tokens — accent for selected day, today ring color
 
 ---
 
-## Feature Landscape
+### 3b. AeroTimePicker
 
-### Table Stakes (v1.1 Must Have)
+**Complexity: SMALL**
 
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| All 15 required migration icons in `AeroIcons` | Cannot remove `materialIconsExtended` without them | LOW | Direct SVG-path port from Phosphor Regular |
-| `AeroIcons` Kotlin object with typed `ImageVector` constants | Compile-time safety, IDE autocomplete | LOW | Same pattern as `object Icons` in Material |
-| Flat `AeroIcons.IconName` access | Discoverable via IDE at ~138 icons | LOW | No category grouping needed at this scale |
-| PascalCase naming mirroring Phosphor source | Kotlin idiomatic; 1-to-1 with phosphoricons.com | LOW | kebab → PascalCase conversion rule |
-| All icons 256×256 viewBox, stroke-width 16, rounded caps/joins | Visual consistency | LOW | Port Phosphor Regular spec faithfully |
-| Migration of all 10 components off text glyphs | Every component uses `AeroIcons` | MEDIUM | Per-component `Icon()` replacement |
-| Showcase `IconsSection` with grid + search | Developers must browse the set visually | MEDIUM | `AeroSearchField` + `LazyVerticalGrid` |
-| Removal of `compose.materialIconsExtended` from `:library` | Reduces JAR size; explicit v1.1 goal | LOW | After AeroAlertKind + AeroBannerKind migrated |
+#### Table Stakes
 
-### Differentiators (v1.1 Value-Adds)
+| Feature | Why Expected | Notes |
+|---------|--------------|-------|
+| Hours + minutes selection | Minimum time precision for desktop apps | Two-column layout (HH : MM) |
+| 24-hour mode by default | Desktop apps (especially non-US) use 24h; 12h is secondary | Parameter: `use24Hour: Boolean = true` |
+| Spinner/scroll wheels OR +/- buttons per unit | Both are common in desktop apps (Qt QTimeEdit uses up/down spin; mobile uses drum rolls) | For desktop: up/down arrow buttons (+/-) on each column; simpler than drum-scroll |
+| Display selected time in trigger field | Feedback | Formatted HH:MM string |
+| Popup opens on trigger click, Escape/click-outside closes | Standard popup pattern | Same as DatePicker |
+| Null/no-selection state | Time fields start empty | `value: LocalTime?` |
 
-| Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| Phosphor Regular aesthetic matches Aero visual style | Rounded stroke, no harsh fills — aligns with glassmorphism and Win7-toolbar-glyph | LOW | Zero design work; Phosphor Regular is already correct aesthetic |
-| ~138 icons covers 95% of desktop app needs | Consumer does not need a second icon dependency | LOW | Selection driven by desktop UI pattern analysis |
-| MIT-licensed source | No attribution overhead for library consumers | LOW | Phosphor is MIT — port paths directly |
-| Single-file `AeroIcons` object | One import, one dependency | LOW | All in `:library` JAR |
-| 1-to-1 name traceability to phosphoricons.com | Developer look-up is frictionless | LOW | No renaming layer to maintain |
+#### Differentiators
 
-### Anti-Features (Explicitly NOT in v1.1)
+| Feature | Value Proposition | Notes |
+|---------|-------------------|-------|
+| Keyboard increment/decrement in popup (Up/Down arrows) | Desktop power users expect keyboard input | Arrow keys increment/decrement focused unit |
+| 12h AM/PM toggle | Needed for en-US apps | `use24Hour = false` shows AM/PM toggle |
 
-| Anti-Feature | Why Requested | Why Excluded | Alternative |
-|--------------|--------------|--------------|-------------|
-| Multiple weights (Thin/Light/Bold/Fill/Duotone) | Phosphor-style flexibility | Doubles/triples icon count; all existing components need only Regular; complicates API | Regular only in v1.1; add `AeroIcons.Filled.*` in v2 if consumer demand exists |
-| Filled / duotone variants | Richer visual expression | Filled contradicts "soft outline" Aero aesthetic; out of scope per PROJECT.md | Port filled variants in v2 |
-| Brand/social logos (GitHub, Slack, Discord, etc.) | Common request | Trademark compliance burden; irrelevant to generic UI library | Not part of Phosphor Regular's intended use; explicitly excluded |
-| Currency-specific icons (bitcoin, dollar-sign, euro) | Completeness | Too narrow for v1.1; Phosphor has `currency-*` variants but they serve specialized financial UI | Add on-demand when a specific consumer needs them |
-| Renamed icons (e.g. `Home` instead of `House`) | Match Feather/Material naming convention | Creates invisible mapping: devs search phosphoricons.com and find `house`, not `home` | Keep Phosphor names; document in KDoc |
-| Custom user icon registration (`AeroIcons.register(...)`) | Plugin extensibility | Overcomplicates API; consumers pass any `ImageVector` to `Icon()` directly | Consumer uses `Icon(myVector)` — no registration API needed |
-| Icons in separate `:icons` Gradle module | Modular delivery | Over-engineers for v1.1; decided to keep in `:library` per PROJECT.md | Separate module in v2 if JAR size matters |
-| Multi-weight numeric suffix in identifier (`CaretDownRegular`) | Explicit weight in name | Only one weight in v1.1 — suffix is noise; if/when Bold is added, add `AeroIcons.Bold.*` sub-object | `AeroIcons.CaretDown` (no weight suffix for default Regular) |
+#### Anti-Features
 
-**Explicitly excluded Phosphor icons (not in the 138-icon list):**
-- Brand/logo icons: all `*-logo` variants (amazon-logo, android-logo, apple-logo, etc.)
-- Currency: `currency-*`, `bitcoin`, `coins`, `money`
-- Weather: `cloud-rain`, `cloud-snow`, `cloud-lightning`, `sun`, `moon`, `thermometer`, `wind`
-- Medical: `first-aid`, `heartbeat`, `stethoscope`, `pill`, `syringe`
-- Food/beverage: `coffee`, `fork-knife`, `wine`, `beer`
-- Highly specific transport: `airplane`, `train`, `bus`, `bicycle`, `boat`
-- Emoji-face icons: `smiley`, `smiley-wink`, `smiley-sad`, `skull`
-- Decorative/geometric: `star-four`, `hexagon`, `octagon`, `diamond` (keep `warning-diamond` as status icon)
-- Duplicate arrows: `arrow-fat-*` variants (keep only `arrow-*` base names)
-- Text-editor formatting: `text-aa`, `text-align-*`, `bold`, `italic`, `underline` (text editor toolbar not in scope)
+| Anti-Feature | Why It's a Footgun | What to Do Instead |
+|-------------|--------------------|--------------------|
+| Drum-roll (momentum) scroll for hours/minutes | Feels wrong on desktop with mouse; is a mobile pattern | Use +/- buttons; no inertia scroll |
+| Analog clock face | Analog clock selection is hard to use with a mouse for precision; works on touch only | +/- button columns |
+| Seconds field by default | Seconds are rarely needed in desktop business apps | `showSeconds: Boolean = false`; off by default |
+
+#### Dependencies on existing components
+
+- `AeroPopover` / popup anchor
+- `AeroIconButton` — up/down increment buttons
+- `AeroIcons` — CaretUp, CaretDown
+- Theme tokens
 
 ---
 
-## Feature Dependencies
+### 3c. AeroDateTimePicker
+
+**Complexity: MEDIUM** (composition, not novel implementation)
+
+**Architecture note:** This is a composition of the DatePicker calendar grid and the TimePicker +/- controls in a single popup. Do NOT duplicate — import internal `CalendarGrid` and time-unit columns.
+
+#### Table Stakes
+
+| Feature | Why Expected | Notes |
+|---------|--------------|-------|
+| All table stakes of DatePicker | See 3a | Calendar grid in popup |
+| All table stakes of TimePicker | See 3b | Time units in same popup, below or beside calendar |
+| Date and time displayed in single trigger field | One field, one value (`LocalDateTime`) | "YYYY-MM-DD HH:MM" formatted |
+| Confirm / Apply button | Combined date+time requires explicit commit (user may set date first, then time; shouldn't fire on every change) | "Apply" button in popup footer closes and emits `onDateTimeSelected(LocalDateTime)` |
+| Cancel button | User should be able to open picker, browse, and dismiss without committing | Escape or Cancel button reverts to previous value |
+
+#### Anti-Features
+
+| Anti-Feature | Why It's a Footgun | What to Do Instead |
+|-------------|--------------------|--------------------|
+| Auto-close on date selection (before time is set) | DateTimePicker must stay open until both date and time are set; auto-close fires onChange prematurely | Explicit Apply button; popup stays open until confirmed |
+| Separate popup for date and separate for time | Requires two trigger fields and two popups — confusing | Single popup combining both |
+
+---
+
+### 3d. AeroDateRangePicker
+
+**Complexity: LARGE**
+
+#### Table Stakes
+
+| Feature | Why Expected | Notes |
+|---------|--------------|-------|
+| Dual calendar (two months side-by-side) | Industry standard for range picking (daterangepicker.com, MUI X DateRangePicker, Ant Design) | Left calendar = start month; right = next month by default |
+| Click start date, then click end date | Two-click selection flow | First click sets `startDate`, second click sets `endDate` and closes; or use Apply button |
+| Range highlight (all days between start and end) | Visual confirmation of the selected range | Fill or tint on cells between start and end; hover preview shows tentative range |
+| Hover preview of range before second click | Expected in modern range pickers | As user hovers after first click, highlight tentative range up to hover position |
+| Prev/next month navigation advances both calendars together | Otherwise dual calendars can end up showing same month | Left calendar next-month → both advance by one |
+| Independent navigation possible (unlinked calendars option) | Power users may want to navigate left and right calendar independently | `linkedCalendars: Boolean = true` default; when false each navigates independently |
+| Start date must be <= end date (constraint enforced) | Selecting end before start is a footgun | After first click, disable all dates before selected start on right calendar |
+| Confirm / Cancel buttons | Range selection requires explicit commit | Apply + Cancel buttons in popup footer |
+| Display range in trigger field(s) | Two fields (Start / End) or one combined field | Two separate `AeroTextField` triggers OR a single "Start → End" display field |
+| Null start / null end states | Range starts with no selection | Both fields empty; display placeholder "YYYY-MM-DD" |
+
+#### Differentiators
+
+| Feature | Value Proposition | Notes |
+|---------|-------------------|-------|
+| `disabledDates` and `disableBefore`/`disableAfter` | Essential for booking systems (no past dates, no blocked dates) | Same API as DatePicker; grayed-out cells |
+| Predefined range shortcuts (Today, Last 7 Days, This Month) | Reduces clicks for common ranges | Caller-provided via `shortcuts: List<RangeShortcut>` slot — keeps library generic |
+
+#### Anti-Features
+
+| Anti-Feature | Why It's a Footgun | What to Do Instead |
+|-------------|--------------------|--------------------|
+| Single calendar for range picking | Requires awkward "first click = start, second click in same month = end" with no visual separation of months | Dual calendar always |
+| Auto-swap start/end if user picks end before start | Silently reordering breaks user mental model; user thinks they selected the wrong range | Block end date selection before start date; force start-first flow |
+| Free text range entry in fields | Two-field text parsing with date validation and range coherence checking is complex | Display-only trigger fields |
+
+#### Dependencies on existing components
+
+- Calendar grid primitive (shared with DatePicker)
+- `AeroPopover` / popup anchor
+- `AeroTextField` (display-only triggers for start/end)
+- `AeroButton` — Apply, Cancel
+- `AeroIconButton` — prev/next month
+- Theme tokens — range fill color, range edge accent
+
+---
+
+## 4. AeroColorPicker
+
+**Complexity: LARGE**
+
+### Table Stakes
+
+| Feature | Why Expected | Notes |
+|---------|--------------|-------|
+| HSV saturation-value square (2D gradient field) | Standard color picker pattern (Windows Color Picker, Photoshop, Figma, Electron apps) | X axis = saturation 0→100%; Y axis = value 100→0% (white top-left, black bottom-right, pure hue top-right) |
+| Hue strip (vertical or horizontal rainbow gradient) | Selects the base hue; HSV square updates to reflect chosen hue | Vertical strip recommended (more thumb precision); slider thumb on strip |
+| RGB sliders (R, G, B each 0–255) | Users who work with RGB values must be able to enter them precisely | Three sliders with numeric readouts; any slider change updates HSV square and hex |
+| HEX text input | Standard — every designer and developer uses hex codes | `AeroTextField` accepting "#RRGGBB"; update HSV + RGB on commit (Enter or Tab) |
+| Color preview swatch | Users need to see the current selected color | A filled rectangle showing the current color; split old/new is a differentiator |
+| Predefined swatches palette | Quick access to brand colors or common values | Caller-provided `swatches: List<Color>`; render as clickable squares |
+| Bidirectional sync: any input updates all others | HSV ↔ RGB ↔ HEX must stay consistent on every change | Canonical internal representation is HSV float; convert to RGB/HEX for display |
+| Optional alpha channel (opacity) | Some use cases (UI backgrounds, overlays) need alpha | `showAlpha: Boolean = false` by default; shows alpha strip + alpha hex digit |
+
+### Differentiators
+
+| Feature | Value Proposition | Notes |
+|---------|-------------------|-------|
+| Split preview (old color / new color) | Designer UX standard: compare new to original before confirming | Show previous value in left half of preview swatch |
+| Aero glass container around the picker | On-brand | `glassSurface` on popup/panel container |
+| HEX input accepts 3-char shorthand (#RGB → #RRGGBB) | Power-user convenience | Normalize on commit |
+
+### Anti-Features
+
+| Anti-Feature | Why It's a Footgun | What to Do Instead |
+|-------------|--------------------|--------------------|
+| Eyedropper (screen color pick) | Requires platform-specific APIs (AWT Robot on JVM) that are unreliable and have permission issues on macOS/Linux; locked out in v2.0 | Out of scope; document as future v2.x |
+| CMYK or LAB sliders | Niche color models add complexity without covering common desktop app use cases | RGB + HEX covers the target audience |
+| Free-form HSV numeric inputs (editable) | HSV values are not intuitive to type; users use them for selection, not entry | HSV square and hue strip are always gesture-controlled; only RGB + HEX have text inputs |
+| Opacity slider shown by default | Most components that embed a color picker don't need alpha (solid colors) | `showAlpha = false` default; caller opts in |
+| HSV ↔ RGB round-trip drift | Floating-point HSV → RGB → HSV introduces drift on repeated edits (e.g., pure red drifts to R=254) | Maintain canonical HSV float internally; only convert for display, not for round-trips |
+
+### Implementation Note: HSV ↔ RGB math
+
+HSV → RGB: standard Hue-to-sector formula. RGB → HSV: `V = max(R,G,B)`, `S = (V - min) / V`, `H = sector formula`. Use `Float` precision throughout. Do not convert back from RGB to HSV when the user edits RGB sliders — instead update HSV directly from the RGB values to avoid drift. This is a known pitfall cited in STATE.md.
+
+### Dependencies on existing components
+
+- `AeroSlider` (compose/extend) — hue strip, R/G/B sliders, alpha strip
+- `AeroTextField` — HEX input, RGB numeric inputs
+- `AeroIcons` — copy hex button (optional)
+- `glassSurface` modifier — popup container
+- Theme tokens — border colors for swatch cells
+
+---
+
+## 5. AeroRangeSlider
+
+**Complexity: SMALL** (composition over AeroSlider)
+
+### Table Stakes
+
+| Feature | Why Expected | Notes |
+|---------|--------------|-------|
+| Two thumbs on a shared track (min thumb + max thumb) | Core definition of a range slider; all frameworks (WPF RangeSlider, MUI Slider range, Chakra RangeSlider) have this | `value: ClosedFloatingPointRange<Float>`, `onValueChange(ClosedFloatingPointRange<Float>)` |
+| Track segment between thumbs filled / highlighted | Visual indication of the selected range | Fill color between min and max thumb; unfilled on outer segments |
+| Min thumb cannot cross max thumb (constraint enforced) | Universal constraint — min value must always be <= max value | Clamp: when dragging min thumb, cap at max thumb position minus `stepSize`; vice versa |
+| Click track to move nearest thumb | When user clicks on the track, the closest thumb moves to that position | Standard behavior from WPF, Chakra, MUI |
+| `valueRange` (min/max of the full slider) | Callers set the full range (e.g., 0f..100f, 0f..1000f) | Parameter `valueRange: ClosedFloatingPointRange<Float>` |
+| `steps` parameter (discrete steps) | Same as AeroSlider — caller can lock to discrete values | Optional; 0 = continuous |
+| Keyboard on each thumb (arrow keys when focused) | Desktop usability requirement | Tab to switch focus between thumbs; arrow keys adjust focused thumb |
+
+### Differentiators
+
+| Feature | Value Proposition | Notes |
+|---------|-------------------|-------|
+| Composition over AeroSlider internals | Code reuse — no duplication of track drawing, theme, or accessibility wiring | Extend AeroSlider or extract shared `SliderTrack` internal composable |
+| Labels on min/max thumb showing current value | Useful in data filter scenarios | `showLabels: Boolean = false` optional tooltip above each thumb |
+
+### Anti-Features
+
+| Anti-Feature | Why It's a Footgun | What to Do Instead |
+|-------------|--------------------|--------------------|
+| Thumbs allowed to cross (swap semantics) | Swapping min/max thumbs on cross is counterintuitive — some implementations do it silently and users are confused | Hard clamp: min never >= max; thumbs bounce off each other |
+| Equal value disallowed (min == max) | Some ranges legitimately collapse to a point (e.g., filter with single exact value) | Allow min == max by default; caller can set `minGap` if they need separation |
+| Independent track segments per thumb (not a unified track) | Looks wrong visually; users expect one track | Single track composable with two overlay thumbs |
+
+### Dependencies on existing components
+
+- `AeroSlider` — extend or share `SliderTrack` internal
+- Theme tokens — thumb color, fill color, track color
+
+---
+
+## 6. AeroAccordion
+
+**Complexity: SMALL**
+
+### Table Stakes
+
+| Feature | Why Expected | Notes |
+|---------|--------------|-------|
+| Clickable header that expands/collapses section body | Core accordion behavior (Bootstrap Accordion, MUI Accordion, WinUI Expander) | Header row with label + expand icon; body revealed below |
+| Expand icon rotates on state change | Visual feedback that the action succeeded | 90° or 180° rotation (CaretRight → CaretDown); animated |
+| `mode = single` — only one section open at a time | FAQ use case; sidebar settings panels | Opening a new section collapses the currently open one |
+| `mode = multi` — multiple sections open simultaneously | Dashboard use case; settings pages where sections are independent | No auto-collapse |
+| Animated expand/collapse (height transition) | Jarring instant show/hide is considered broken in 2025 | AnimatedVisibility or height animation; share animation curve |
+| Caller-provided section content (slot) | Accordion is a layout shell; content is arbitrary | `content: @Composable () -> Unit` per section |
+| Caller-provided header content (slot or string) | Headers may include icons, badges, custom layouts | `header: @Composable () -> Unit` or `title: String` + optional `leadingIcon` |
+| Disabled section state | Some sections may not be interactive based on app state | `enabled: Boolean = true` per section; grayed header, no click response |
+
+### Differentiators
+
+| Feature | Value Proposition | Notes |
+|---------|-------------------|-------|
+| `initiallyExpanded` per section | Sections can start open | `defaultExpanded: Boolean = false` per section |
+| Controlled vs uncontrolled state | Caller can manage expand state externally or let accordion manage internally | `expanded: Boolean?` + `onExpandedChange` for controlled; internal state for uncontrolled |
+
+### Anti-Features
+
+| Anti-Feature | Why It's a Footgun | What to Do Instead |
+|-------------|--------------------|--------------------|
+| "Expand all" / "Collapse all" buttons baked into the component | Tempting but adds opinionated UI chrome that clashes with caller layouts; NN/g notes it confuses screen readers | Expose state control API so caller can implement Expand All externally |
+| Nested accordions with shared single-mode state | Single-mode across nested accordions is impossible to reason about (which level owns the state?) | Nested accordions each have independent state; document this explicitly |
+| No animation (instant show/hide) | Feels broken in 2025 — every major framework animates accordion | Mandatory animation |
+
+### Dependencies on existing components
+
+- `AeroIcons` — CaretDown or ChevronDown for expand indicator
+- `AeroDivider` — optional separator between sections
+- `AnimatedVisibility` (Compose built-in)
+- Theme tokens — header background, border color
+
+---
+
+## 7. AeroSplitPane
+
+**Complexity: MEDIUM**
+
+### Table Stakes
+
+| Feature | Why Expected | Notes |
+|---------|--------------|-------|
+| Two panes with a draggable divider | Core behavior — JSplitPane (Java Swing), WPF GridSplitter, Qt QSplitter | Divider position is the only mutable state |
+| `orientation = horizontal` (left \| right panes) | Standard side-by-side layout | Left pane + divider + right pane |
+| `orientation = vertical` (top \| bottom panes) | Standard top/bottom layout | Top pane + divider + bottom pane |
+| Drag divider to resize panes | Primary interaction | Mouse press + drag on divider; divider moves, panes resize proportionally |
+| Minimum size constraint per pane | Prevents panes collapsing to 0 — Java Swing uses component min-size; WPF uses `MinWidth` on columns | `minSize: Dp = 60.dp` per pane; divider snaps/bounces at min |
+| Visual hover affordance on divider | Cursor changes to resize cursor; divider widens slightly on hover | Resize cursor on divider hit area; larger hit area than visual width |
+| N-pane via nesting | Caller composes `AeroSplitPane` inside another `AeroSplitPane`'s pane slot | Public API stays 2-pane; nesting is caller responsibility |
+| Controlled divider position | Caller can set initial divider position | `initialDividerFraction: Float = 0.5f` (0..1 range) |
+
+### Differentiators
+
+| Feature | Value Proposition | Notes |
+|---------|-------------------|-------|
+| Collapse pane via double-click divider | Power-user shortcut to minimize a pane; common in IDEs (IntelliJ, VS Code) | Optional `collapseOnDoubleClick: Boolean = false` |
+| Divider position `onDividerChange` callback | Caller can persist divider position across sessions | `onDividerFractionChange: (Float) -> Unit` |
+
+### Anti-Features
+
+| Anti-Feature | Why It's a Footgun | What to Do Instead |
+|-------------|--------------------|--------------------|
+| Divider with no visible handle when at rest | 1px divider line with no hover expansion is nearly impossible to hit with a mouse — documented WPF/Swing antipattern | Large invisible hit area (e.g., 8dp) centered on a 1dp visible line |
+| Recursive/tree API for N-pane | Complex API surface and layout measurement problems | 2-pane public API + nesting is the correct abstraction |
+| Fixed pixel size divider position (not fraction) | Fixed px breaks on window resize | Store as fraction (0..1); compute px at layout time |
+| Pane collapses to 0 silently | Data in the pane becomes inaccessible — documented Swing antipattern | Enforce min-size; divider bounces at constraint |
+| Per-pane drag-to-resize per-pane width (locked out) | Locked in v2.0 locked decisions — OUT | Fixed-width via fraction |
+
+### Dependencies on existing components
+
+- `AeroDivider` — extended with drag handle behavior
+- Theme tokens — divider color, hover tint
+
+---
+
+## 8. AeroSidebar
+
+**Complexity: MEDIUM**
+
+### Table Stakes
+
+| Feature | Why Expected | Notes |
+|---------|--------------|-------|
+| `expanded` mode: icon + label per item | Standard sidebar with text labels (VS Code sidebar expanded, Slack sidebar) | Width ~240dp; icon + label in each row |
+| `collapsed` mode: icon only per item | Collapsed rail (VS Code activity bar, Android Navigation Rail) | Width ~56dp; icon centered |
+| Tooltip on hover in collapsed mode | Users don't know what unlabeled icons mean — tooltip is mandatory for collapsed | Show item label as tooltip on icon hover; use existing AeroTooltip |
+| `hidden` mode: sidebar not rendered / zero width | Full-screen focus mode; drawer replaces it when hidden | `mode = hidden` removes sidebar from layout entirely (not just visibility) |
+| Mode toggle button (to switch expanded↔collapsed) | Standard UX — hamburger or chevron button at top or bottom of sidebar | Caller controls mode via `mode` parameter; library provides internal toggle button optionally |
+| Item selection highlight | Active/selected nav item must be visually distinct | Selected item gets accent background or glass highlight |
+| Scroll for overflow items | Sidebars with many items need vertical scroll | `AeroScrollArea` wrapping item list |
+| Separator / section header support | Group related nav items (e.g., "Main" / "Settings") | `AeroSidebar.Separator` and `AeroSidebar.Header` child composables |
+| Persistent (not overlay) mechanic | Sidebar pushes content to the right; does not overlay it — this is the key distinction from AeroDrawer | Content area shrinks/grows as sidebar mode changes |
+
+### Differentiators
+
+| Feature | Value Proposition | Notes |
+|---------|-------------------|-------|
+| Animated mode transition (width animation) | Smooth expand/collapse instead of instant reflow | `animateContentSize()` or explicit width tween |
+| Bottom-anchored items (e.g., Settings, Profile) | Common sidebar pattern (VS Code has gear icon at bottom) | `stickyBottom` slot composable |
+
+### Anti-Features
+
+| Anti-Feature | Why It's a Footgun | What to Do Instead |
+|-------------|--------------------|--------------------|
+| Drag-to-resize sidebar width | Locked out in v2.0; fixed widths for expanded/collapsed modes | Parameter `expandedWidth: Dp = 240.dp` if caller needs different fixed width |
+| Sidebar as overlay (covers content) | That is `AeroDrawer` — these are distinct components with different mechanics; conflating them creates confusion | Keep separate: AeroSidebar = persistent push; AeroDrawer = overlay slide |
+| Items defined via data model (not composable slots) | Forces caller into library's data model; any icon or label variation requires workarounds | Caller passes `content: @Composable ColumnScope.() -> Unit` composable slot for items |
+| Auto-collapse to hidden on small window width | Responsive behavior based on window width adds complexity and is unpredictable for library consumers | Caller controls mode; expose `mode` as a parameter driven by caller state |
+
+### Dependencies on existing components
+
+- `AeroTooltip` — labels in collapsed mode
+- `AeroScrollArea` + `AeroScrollBar` — overflow item list
+- `AeroIcons` — toggle icons (PanelLeft, PanelRight or similar)
+- `AeroDivider` — section separators
+- Theme tokens — selected item highlight, sidebar background
+
+---
+
+## 9. AeroStepperWizard
+
+**Complexity: MEDIUM**
+
+### Table Stakes
+
+| Feature | Why Expected | Notes |
+|---------|--------------|-------|
+| Visual step indicator (step bar at top or side) | Users need progress orientation — "Step 2 of 5" or visual node strip | Horizontal node strip: circles with step numbers connected by lines |
+| Step labels below/beside each node | Numbers alone are insufficient — users need to know what each step is | `title: String` per step |
+| Current step highlight | Active step clearly distinguished from past/future | Accent color on active node; filled circle for completed, outlined for future |
+| Completed step indicator | Users need to know which steps are done | Checkmark icon or filled node for completed steps |
+| Next / Back navigation buttons | Primary navigation | "Next" (disabled if validation fails), "Back" (always enabled unless on step 1), "Finish" on last step |
+| Per-step `onValidate: () -> Boolean` callback | Blocks "Next" if validation returns false | Caller returns false → Next button stays disabled or shows error; caller returns true → advance |
+| Per-step arbitrary content slot | Wizard steps contain arbitrary forms or content | `content: @Composable () -> Unit` per step |
+| Linear progression only | Steps 1→2→3→...→N; no skipping forward | Clicking a future step node does nothing or is disabled |
+| Back navigation always allowed | Blocking back navigation is a documented major UX anti-pattern (users need to fix earlier step data) | Back always available; previous step's content preserved |
+
+### Differentiators
+
+| Feature | Value Proposition | Notes |
+|---------|-------------------|-------|
+| `onStepChange(from: Int, to: Int)` callback | Caller can react to any step transition | Useful for analytics, save-on-step-change |
+| Step completion status exposed externally | Caller may want to show a summary panel based on step states | `stepStates: List<StepState>` observable |
+| Async validation support | `onValidate` may need to call an API | `onValidate: suspend () -> Boolean`; show loading state on Next button during async check |
+
+### Anti-Features
+
+| Anti-Feature | Why It's a Footgun | What to Do Instead |
+|-------------|--------------------|--------------------|
+| Blocking Back navigation | Users constantly need to go back and fix earlier steps — blocking back is the #1 wizard UX complaint per NN/g research | Back is always enabled |
+| Showing all validation errors only on the last step | Users cannot fix errors until the end, then must scroll back — cited as a top frustration in wizard UX research | Validate per-step at "Next" click; surface errors immediately |
+| Branching (non-linear) steps | Locked out in v2.0; branching logic belongs in the application, not the component | Caller manages conditional content within a step instead of branching the step graph |
+| Auto-advance to next step on completion | Surprising behavior that disorients users | Always require explicit "Next" button click |
+| Step count visible but step purpose unclear | "Step 3 of 7" with no labels leaves users anxious | Require `title` per step; not optional |
+| Destroying step content on navigation | If a step's form state is lost when user goes Back, they must re-enter everything — this is the v2.0 footgun to avoid | Preserve composable state across step navigation; do not re-compose from scratch on Back |
+
+### Dependencies on existing components
+
+- `AeroIcons` — Check (completed step), warning/error indicator
+- `AeroDivider` — connecting lines between step nodes
+- `AeroButton` — Next, Back, Finish
+- Theme tokens — active step accent, completed step color, future step muted color
+
+---
+
+## Component Complexity Summary
+
+| Component | Complexity | Primary Reason |
+|-----------|------------|----------------|
+| AeroDataTable | LARGE | Dual-axis scroll + virtualization + column resize + selection — Compose layout pitfalls (see STATE.md) |
+| AeroTreeView | MEDIUM | Lazy load contract + recursive expand state + animated children |
+| AeroDatePicker | MEDIUM | Calendar grid primitive + popup + date math |
+| AeroTimePicker | SMALL | +/- spin columns; no novel layout |
+| AeroDateTimePicker | MEDIUM | Composition of calendar + time; explicit Apply/Cancel required |
+| AeroDateRangePicker | LARGE | Dual calendar + hover preview + range constraint + Apply/Cancel |
+| AeroColorPicker | LARGE | HSV 2D drag + hue drag + bidirectional sync + multi-input layout + HSV↔RGB math correctness |
+| AeroRangeSlider | SMALL | Composition over AeroSlider; two-thumb constraint math |
+| AeroAccordion | SMALL | Animated expand/collapse + single/multi mode state |
+| AeroSplitPane | MEDIUM | Drag divider + min-size constraint + fraction-based state |
+| AeroSidebar | MEDIUM | Three-mode width animation + tooltip in collapsed + persistent push mechanic |
+| AeroStepperWizard | MEDIUM | Per-step validation contract + state preservation across navigation |
+
+**Load suggestion for phase planning:**
+- Group SMALL items together (RangeSlider, TimePicker, Accordion) → one phase
+- MEDIUM items can be paired (DatePicker+DateTimePicker, TreeView+Accordion, Sidebar+SplitPane, StepperWizard+DateTimePicker)
+- LARGE items need dedicated phases or generous time: DataTable, DateRangePicker, ColorPicker
+
+---
+
+## Feature Dependencies (cross-component)
 
 ```
-AeroIcons object (all 138 ImageVector constants)
-    └──required by──> All migrated components
-    └──required by──> IconsSection in showcase
+CalendarGrid (internal primitive)
+    ├──used by──> AeroDatePicker
+    ├──used by──> AeroDateTimePicker (+ TimePicker columns)
+    └──used by──> AeroDateRangePicker (× 2 instances)
 
-Migration — Text Glyphs (→ AeroIcons)
-    └──requires──> AeroIcons object (15 required icons available)
-    └──affects──> AeroCheckbox       (Check, Minus)
-    └──affects──> AeroDropdown       (CaretDown)
-    └──affects──> AeroNumberSpinner  (CaretUp, CaretDown)
-    └──affects──> AeroTitleBar       (Minus, Square, FrameCorners, X)
-    └──affects──> AeroToastHost      (X)
-    └──affects──> AeroNotificationBanner (X)
-    └──affects──> AeroContextMenu    (CaretRight)
-    └──affects──> AeroSearchField    (MagnifyingGlass, X)
-    └──affects──> AeroPasswordField  (Eye, EyeSlash)
+AeroSlider (existing v1.x)
+    ├──extended by──> AeroRangeSlider (two thumbs)
+    └──extended by──> AeroColorPicker (hue strip, alpha strip, RGB sliders)
 
-Migration — Material Icons (→ AeroIcons)
-    └──requires──> AeroIcons object (Info, Warning, XCircle, Question, CheckCircle)
-    └──affects──> AeroAlertKind      (Info, Warning, XCircle, Question)
-    └──affects──> AeroBannerKind     (Info, Warning, XCircle, CheckCircle)
-    └──enables──> removal of compose.materialIconsExtended from :library
+AeroTextField (existing v1.x)
+    └──used by──> AeroColorPicker (HEX input, RGB inputs)
 
-compose.materialIconsExtended removal
-    └──requires──> AeroAlertKind migration complete
-    └──requires──> AeroBannerKind migration complete
-    └──requires──> grep confirm: zero Icons.* references remain in :library
+AeroPopover / popup anchor (existing v1.x)
+    ├──used by──> AeroDatePicker
+    ├──used by──> AeroTimePicker
+    ├──used by──> AeroDateTimePicker
+    ├──used by──> AeroDateRangePicker
+    └──used by──> AeroColorPicker (when used as popup variant)
 
-IconsSection in showcase
-    └──requires──> AeroIcons object (all 138)
-    └──requires──> AeroSearchField (for live icon name filter)
-    └──uses──> LazyVerticalGrid layout
+AeroScrollArea + AeroScrollBar (existing v1.x)
+    ├──used by──> AeroDataTable (both axes)
+    ├──used by──> AeroTreeView (vertical)
+    └──used by──> AeroSidebar (item overflow)
+
+AeroTooltip (existing v1.x)
+    └──used by──> AeroSidebar (icon labels in collapsed mode)
+
+AnimatedVisibility / expand animation
+    ├──used by──> AeroAccordion (section body)
+    ├──used by──> AeroTreeView (node children)
+    └──used by──> AeroSidebar (mode transition width)
+
+Expand/collapse arrow icon (animated rotation)
+    ├──used by──> AeroAccordion (section header caret)
+    └──used by──> AeroTreeView (node toggle caret)
 ```
 
-### Dependency Notes
-
-- **AeroIcons object must compile before any component migration:** Every component touches `AeroIcons.*`. Build order: `AeroIcons.kt` + all `icons/*.kt` → component migrations.
-- **Component migrations are independent of each other:** Once `AeroIcons` compiles, any component can be migrated in any order. No cross-component ordering constraint within the migration step.
-- **`materialIconsExtended` removal is the final step:** Remove the Gradle line only after all `Icons.Outlined.*` imports are gone from every file in `:library`. Run a grep to confirm before removing.
-- **IconsSection does not block component migration:** Showcase can be updated in parallel.
-
----
-
-## MVP Definition
-
-### v1.1 Launch With
-
-- [ ] `AeroIcons` object — 138 typed `ImageVector` constants, flat namespace, lazy `get()`
-- [ ] All 10 component migrations (AeroCheckbox, AeroDropdown, AeroNumberSpinner, AeroTitleBar, AeroToastHost, AeroNotificationBanner, AeroContextMenu, AeroSearchField, AeroPasswordField — text glyphs + Canvas drawings)
-- [ ] `AeroAlertKind` migration — off `Icons.Outlined.*`, onto `AeroIcons.*`
-- [ ] `AeroBannerKind` migration — off `Icons.Outlined.*`, onto `AeroIcons.*`
-- [ ] `compose.materialIconsExtended` removed from `:library` build
-- [ ] `IconsSection` in showcase — `LazyVerticalGrid` of all 138 icons with name labels, `AeroSearchField` live filter
-
-### Deferred to v1.2 or Later
-
-- [ ] Filled icon variants (`AeroIcons.Filled.*`) — only if consumer demand arises post-launch
-- [ ] Additional niche icons beyond the 138 — add on-demand from consumer requests
-- [ ] Separate `:icons` Gradle module — only if JAR size becomes a measurable concern
-- [ ] Bold/Light weight variants — only if aesthetic need is identified
-
-### Anti-Features (Explicitly Never in v1.x)
-
-- Brand/social logos — trademark and maintenance burden
-- Multi-weight suffix in identifier names — wait until a second weight exists
-- Custom icon registration API — consumers use `ImageVector` directly
-
----
-
-## Feature Prioritization Matrix
-
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| 15 required migration icons | HIGH | LOW | P1 |
-| All component text-glyph migrations | HIGH | MEDIUM | P1 |
-| Material Icons replacements (AeroAlertKind/BannerKind) | HIGH | LOW | P1 |
-| Full 138-icon set | MEDIUM | MEDIUM | P1 |
-| `materialIconsExtended` removal | MEDIUM | LOW | P1 (after migration) |
-| IconsSection in showcase | MEDIUM | MEDIUM | P1 |
-| Filled/bold icon variants | LOW | HIGH | P3 |
-| Separate `:icons` module | LOW | MEDIUM | P3 |
+**Build order implication:** CalendarGrid primitive must exist before DatePicker, DateTimePicker, DateRangePicker are started. AeroSlider extension must be stable before ColorPicker and RangeSlider are started.
 
 ---
 
 ## Sources
 
-- [dev778g-me/PhosphorIcon-compose — Kotlin Compose Multiplatform port, confirms PascalCase names including CaretDown, MagnifyingGlass, EyeSlash, SpeakerHigh, DotsThreeVertical, GearSix, TerminalWindow, FolderOpen, PaperPlane, ChatCircle, Envelope, WarningOctagon, Prohibit, FloppyDisk, PencilSimple, BookmarkSimple, TrashSimple, Funnel](https://github.com/dev778g-me/PhosphorIcon-compose) — HIGH confidence (official Kotlin port)
-- [phosphor-icons/core — source SVG repository, file naming `{name}-regular.svg`, 1300+ icons](https://github.com/phosphor-icons/core) — HIGH confidence (official source)
-- [iconbolt.com phosphor-regular listings — confirms arrow-square-out, lock-simple-open, dots-three-circle-vertical names](https://www.iconbolt.com/iconsets/phosphor-regular/arrow-square-out) — MEDIUM confidence (3rd party mirror)
-- [Iconify ph/ collection — confirms wifi-high, wifi-slash, frame-corners, lock-key-open names](https://icon-sets.iconify.design/ph/) — MEDIUM confidence (authoritative icon registry mirror)
-- [Phosphor React package — confirms Question component name, speaker-high/low/x/slash series, battery-full/low/empty/medium names, speaker-slash naming](https://github.com/phosphor-icons/react) — HIGH confidence (official React port)
-- [phosphoricons.com — official icon browser confirming all names](https://phosphoricons.com/) — HIGH confidence
-- [adamglin0/compose-phosphor-icon — secondary Kotlin port, confirms PhosphorIcons namespace structure](https://github.com/adamglin0/compose-phosphor-icon) — MEDIUM confidence
-- [v0.app ph/speaker-slash — confirms speaker-slash name in Phosphor](https://www.v0.app/icon/ph/speaker-slash) — MEDIUM confidence
+- WPF DataGrid behavior and virtualization: Syncfusion WPF DataGrid docs, Microsoft DataGrid guidance (keyboard navigation and selection)
+- JavaFX TableView / TreeView: OpenJFX TreeTableView UX docs, OpenJDK Wiki TreeView UX documentation
+- Qt QTreeView: Qt 6.x QML TreeView docs, Qt Widgets QTreeView class reference
+- Range slider expected behavior: W3C WAI-ARIA Slider (Multi-Thumb) Pattern, Open UI Enhanced Range Input explainer
+- Date picker UX patterns: Nielsen Norman Group "Date-Input Form Fields" article, Smashing Magazine "Designing The Perfect Date And Time Picker" (2017, still the canonical reference), Eleken "Time Picker UX" 2025
+- DateRangePicker patterns: daterangepicker.com docs, MUI X DateRangePicker docs, React Suite DateRangePicker docs
+- Color picker UX: Elastic EUI ColorPicker docs, DHIS2 design system color-picker spec, Telerik Design System ColorPicker overview
+- Accordion UX: Nielsen Norman Group "Accordions on Desktop: When and How to Use", Medium "Multi-expand vs auto-collapse accordions", LogRocket "Designing effective accordion UIs"
+- Sidebar UX: UX Planet "Best UX Practices for Designing a Sidebar", alfdesigngroup.com "Sidebar Design for Web Apps" 2026
+- Stepper/Wizard UX: Telerik "Master UX Processes with Blazor Stepper", MUI React Stepper docs, Lollypop "Beyond the Progress Bar" 2026
+- Split pane: Apple Human Interface Guidelines "Split views", Java Swing JSplitPane tutorial (Oracle), Mantine split-pane implementation notes
+- Data table UX: Pencil & Paper "UX Pattern Analysis: Enterprise Data Tables", UX Planet "Best Practices for Usable Data Tables", AG Grid keyboard interaction docs, MUI X DataGrid sorting docs
 
 ---
-
-*Feature research for: AeroIcons icon set — aero-compose-ui v1.1 milestone (Phosphor Edition)*
-*Researched: 2026-04-29*
-*Replaces: 2026-04-28 version (Feather-based)*
+*Feature research for: aero-compose-ui v2.0 Stateful + Layout (12 components)*
+*Researched: 2026-04-30*

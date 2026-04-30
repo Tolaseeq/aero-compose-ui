@@ -1,986 +1,529 @@
-# Architecture Research — AeroIcons Integration (v1.1)
+# Architecture Research
 
-**Domain:** Icon-set integration into existing Compose Desktop UI component library
-**Researched:** 2026-04-28
-**Confidence:** HIGH (based on direct source inspection of all 14 migration targets + Material Icons source as reference pattern)
+**Domain:** Compose Desktop UI component library — v2.0 Stateful + Layout integration
+**Researched:** 2026-04-30
+**Confidence:** HIGH (all findings verified directly from source files)
 
 ---
 
-## ⚠ SOURCE REVISION (2026-04-28, supersedes Feather references below)
+## Standard Architecture
 
-**Icon source changed from Feather to Phosphor Regular.** All architectural decisions in this document — file layout (`icons/AeroIcons.kt` facade + `icons/internal/` per-icon files), API shape (lazy backing-property pattern), migration recipes, sizing/tinting conventions, build order, and explicitApi compatibility — apply unchanged to Phosphor.
+### System Overview
 
-**The only delta in the generated `ImageVector.Builder` calls:**
-
-```kotlin
-// Old (Feather):
-ImageVector.Builder(name = "Close", defaultWidth = 24.dp, defaultHeight = 24.dp,
-    viewportWidth = 24f, viewportHeight = 24f).apply {
-    path(stroke = SolidColor(Color.Black), strokeLineWidth = 2f, ...)
-}
-
-// New (Phosphor Regular):
-ImageVector.Builder(name = "X", defaultWidth = 24.dp, defaultHeight = 24.dp,
-    viewportWidth = 256f, viewportHeight = 256f).apply {
-    path(stroke = SolidColor(Color.Black), strokeLineWidth = 16f, ...)
-}
+```
+┌───────────────────────────────────────────────────────────────────────────────┐
+│                           :showcase (currentOs)                               │
+│  ShowcaseApp.kt — verticalScroll Column — one Section composable per group    │
+│  DataSection  PickersSection  LayoutSection  (new v2.0 sections)              │
+│  + existing: Buttons/Input/Selection/Dropdown/Range/List/Containers/Overlays  │
+├───────────────────────────────────────────────────────────────────────────────┤
+│                   :library (compose.desktop.common — platform-neutral JAR)    │
+│                                                                               │
+│  Public API Layer                                                             │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐        │
+│  │  components  │ │  components  │ │  components  │ │  components  │        │
+│  │  /datatable  │ │  /pickers    │ │  /layout     │ │  /range      │        │
+│  │  AeroDataTable│ │ AeroDatePicker│ │ AeroAccordion│ │AeroRangeSlider│       │
+│  │  AeroTreeView│ │ AeroTimePicker│ │ AeroSplitPane│ │  (extends    │        │
+│  │              │ │AeroDateTimePkr│ │ AeroSidebar  │ │  AeroSlider) │        │
+│  │              │ │AeroDateRangePk│ │AeroStepperWiz│ │              │        │
+│  │              │ │AeroColorPicker│ │              │ │              │        │
+│  └──────┬───────┘ └──────┬───────┘ └──────┬───────┘ └──────┬───────┘        │
+│         │                │                │                │                 │
+│  Internal Shared Primitives (new — to be extracted in Phase 7)               │
+│  ┌──────────────────────────────────────────────────────────────────────┐    │
+│  │  components/internal/                                                │    │
+│  │  AeroCalendarGrid  AeroDragSplitter  AeroHsvColorSquare              │    │
+│  │  AeroHueSlider     AeroColorMath     AeroStepIndicator               │    │
+│  └──────────────────────────────────────────────────────────────────────┘    │
+│                                                                               │
+│  Existing Reusable Infrastructure (v1.0/v1.1 — unchanged)                    │
+│  ┌──────────────────────────────────────────────────────────────────────┐    │
+│  │  popup/AeroPopupPositionProvider  popup/AeroPopupSide                │    │
+│  │  containers/AeroScrollArea  containers/AeroScrollBar                 │    │
+│  │  range/AeroSlider  input/AeroSearchField  input/AeroTextField        │    │
+│  │  theme/AeroTheme  theme/glassEffect  theme/glassPanel                │    │
+│  │  theme/glassSurface  icons/AeroIcons                                 │    │
+│  └──────────────────────────────────────────────────────────────────────┘    │
+└───────────────────────────────────────────────────────────────────────────────┘
 ```
 
-`defaultWidth`/`defaultHeight` stay at 24dp (render target). Only `viewportWidth`/`viewportHeight` (24f → 256f) and `strokeLineWidth` (2f → 16f) change. Valkyrie CLI handles this automatically per source SVG.
+### Component Responsibilities
 
-**Naming differences (relevant for Wave-by-wave migration recipes below):**
-- `Close` → `X` (Phosphor calls it "x")
-- `ChevronDown` → `CaretDown` (Phosphor uses "caret-*", not "chevron-*")
-- `ChevronUp` → `CaretUp`
-- `ChevronRight` → `CaretRight`
-- `Search` → `MagnifyingGlass`
-- `EyeOff` → `EyeSlash`
-- `Folder` → `Folder` (same)
-- `Info` / `Warning` / `XCircle` (replaces Material `Error`) / `CheckCircle` / `Question` — Phosphor names
-
-The full Phosphor name → PascalCase mapping lives in the new FEATURES.md.
+| Component | Responsibility | Lives In |
+|-----------|---------------|----------|
+| AeroDataTable | Virtualized rows (LazyColumn), sortable headers, single/multi selection, resizable columns | components/datatable/ |
+| AeroTreeView | Hierarchical lazy-load tree, expand/collapse, optional icons | components/datatable/ |
+| AeroDatePicker | Popup calendar, single date selection | components/pickers/ |
+| AeroTimePicker | Hour+minute drum/scroll selection | components/pickers/ |
+| AeroDateTimePicker | Combines DatePicker + TimePicker in a single popup | components/pickers/ |
+| AeroDateRangePicker | Dual-calendar range selection | components/pickers/ |
+| AeroColorPicker | HSV square + hue bar + RGB sliders + HEX field + swatches | components/pickers/ |
+| AeroRangeSlider | Dual-thumb slider extending AeroSlider visual | components/range/ |
+| AeroAccordion | Collapsible sections, single/multi mode | components/layout/ |
+| AeroSplitPane | 2-pane drag divider, horizontal/vertical | components/layout/ |
+| AeroSidebar | Persistent side navigation, 3 modes | components/layout/ |
+| AeroStepperWizard | Linear step process, per-step validation | components/layout/ |
 
 ---
 
-## 1. Package and File Layout
-
-### Recommended Layout
+## Recommended Project Structure
 
 ```
 library/src/main/kotlin/com/mordred/aero/
-├── icons/
-│   ├── AeroIcons.kt            ← facade object with ALL icon properties
-│   └── internal/
-│       ├── ChevronDown.kt      ← one file per icon, private to package
-│       ├── ChevronRight.kt
-│       ├── ChevronUp.kt
-│       ├── Close.kt
-│       ├── Check.kt
-│       ├── Minus.kt
-│       ├── Minimize.kt
-│       ├── Maximize.kt
-│       ├── Restore.kt
-│       ├── ChevronDoubleRight.kt
-│       ├── Search.kt
-│       ├── Eye.kt
-│       ├── EyeOff.kt
-│       ├── Folder.kt
-│       ├── Info.kt
-│       ├── AlertTriangle.kt
-│       ├── AlertCircle.kt
-│       ├── HelpCircle.kt
-│       ├── CheckCircle.kt
-│       └── ... (remaining ~100-130 icons)
+├── theme/                          # UNCHANGED — v1.0 foundation
+│   ├── AeroColorScheme.kt
+│   ├── AeroTheme.kt
+│   ├── AeroTypography.kt
+│   └── GlassModifiers.kt
+├── icons/                          # UNCHANGED — v1.1 AeroIcons
+│   ├── AeroIcons.kt
+│   └── internal/                   # 138 generated ImageVector files
+├── components/
+│   ├── buttons/                    # UNCHANGED
+│   ├── input/                      # UNCHANGED
+│   ├── selection/                  # UNCHANGED
+│   ├── dropdown/                   # UNCHANGED
+│   ├── range/
+│   │   ├── AeroSlider.kt           # UNCHANGED
+│   │   ├── AeroProgressBar.kt      # UNCHANGED
+│   │   └── AeroRangeSlider.kt      # NEW — Phase 8 (trivial: wraps Material3 RangeSlider)
+│   ├── list/                       # UNCHANGED
+│   ├── containers/                 # UNCHANGED
+│   ├── overlay/                    # UNCHANGED
+│   ├── navigation/                 # UNCHANGED
+│   ├── popup/                      # UNCHANGED — shared popup infrastructure
+│   │
+│   ├── datatable/                  # NEW package — Phase 9
+│   │   ├── AeroDataTable.kt        # Public: table with virtualized rows, sort, selection
+│   │   ├── AeroTreeView.kt         # Public: lazy hierarchical tree
+│   │   ├── AeroDataTableColumn.kt  # Public data class — column descriptor
+│   │   └── internal/
+│   │       ├── AeroTableHeader.kt  # Internal — sortable header row
+│   │       ├── AeroTableRow.kt     # Internal — selectable row composable
+│   │       └── AeroTreeNode.kt     # Internal — single tree node composable
+│   │
+│   ├── pickers/                    # NEW package — Phase 8
+│   │   ├── AeroDatePicker.kt       # Public
+│   │   ├── AeroTimePicker.kt       # Public
+│   │   ├── AeroDateTimePicker.kt   # Public (depends on DatePicker + TimePicker)
+│   │   ├── AeroDateRangePicker.kt  # Public (depends on DatePicker)
+│   │   ├── AeroColorPicker.kt      # Public
+│   │   └── internal/
+│   │       ├── AeroCalendarGrid.kt # Internal — shared by DatePicker + DateRangePicker
+│   │       ├── AeroHsvColorSquare.kt  # Internal — HSV 2D gradient square
+│   │       ├── AeroHueSlider.kt    # Internal — horizontal hue strip (custom Canvas)
+│   │       └── AeroColorMath.kt    # Internal — HSV↔RGB↔HEX conversions (pure functions)
+│   │
+│   └── layout/                     # NEW package — Phase 10
+│       ├── AeroAccordion.kt        # Public
+│       ├── AeroSplitPane.kt        # Public
+│       ├── AeroSidebar.kt          # Public (persistent, NOT overlay — different from AeroDrawer)
+│       ├── AeroStepperWizard.kt    # Public
+│       └── internal/
+│           ├── AeroDragSplitter.kt # Internal — draggable divider shared by SplitPane + (future TableColumn resize shares a different pattern)
+│           └── AeroStepIndicator.kt # Internal — step dot/line row shared by StepperWizard
 ```
 
-### Rationale
+```
+showcase/src/main/kotlin/com/mordred/showcase/
+├── ShowcaseApp.kt                  # Extend: add DataSection, PickersSection, LayoutSection calls
+└── sections/
+    ├── (existing 12 sections)      # UNCHANGED
+    ├── RangeSection.kt             # EXTEND: add AeroRangeSlider demo row
+    ├── DataSection.kt              # NEW — AeroDataTable + AeroTreeView demos
+    ├── PickersSection.kt           # NEW — DatePicker, TimePicker, DateTimePicker,
+    │                               #        DateRangePicker, ColorPicker demos
+    └── LayoutSection.kt            # NEW — Accordion, SplitPane, Sidebar, StepperWizard demos
+```
 
-**Why facade + internal/:** The facade (`AeroIcons.kt`) is the only file the IDE shows in autocomplete. All `val` properties on the `AeroIcons` object reference internal backing functions defined in `icons/internal/`. This is identical to the Compose Material Icons architecture (`Icons.Outlined.Info` is a property on the `Outlined` object; the path data lives in a generated file in `material-icons-extended`). It gives:
+### Structure Rationale
 
-- Clean IDE autocomplete: type `AeroIcons.` and see all icons — nothing else
-- No file size limit problem: each icon file is ~40-80 lines of `ImageVector.Builder` calls; a single file with 138 icons would be ~8,000-10,000 lines (unacceptable for navigation and compilation)
-- Lazy initialization per-icon: each backing property is initialized once on first access, held by its private `_Icon` variable — not on class load
-- Compile-time isolation: changing one icon's path data only recompiles that file, not all 138
-
-**Why NOT a single-file approach:** A monolithic `AeroIcons.kt` with all 138 icon builders inline would be 8,000-10,000 lines. Kotlin has no hard line-count limit, but the Kotlin compiler allocates one `$init$` block per file — a 10,000-line `object` with 138 inline `ImageVector.Builder` chains produces a very large bytecode class. IDE "Go to definition" on any property would navigate to the same file with no locality benefit. Build incremental compilation becomes coarser.
-
-**Why NOT subpackages by category (`icons/navigation/`, `icons/files/`):** Feather icons are already a curated flat set with no official category grouping. Imposing a taxonomy creates ambiguity (does `ChevronRight` go in `navigation/` or `arrows/`?) and forces callers to know the category before autocomplete can help. A single `AeroIcons` object surface is simpler.
+- **`components/datatable/`:** DataTable and TreeView both deal with hierarchical/tabular data and share a conceptual "row" rendering model. They are heavier than atomic components but do not overlap with picker or layout concerns. Separate package from `list/` because they introduce new infrastructure (LazyColumn virtualization, selection state).
+- **`components/pickers/`:** All five picker components share calendar and time-selection primitives. The `internal/` sub-package isolates shared helpers that must not become public API.
+- **`components/layout/`:** Accordion, SplitPane, Sidebar, and StepperWizard are structural layout components — they arrange other components, not data or selections. Grouping them together mirrors how `containers/` and `navigation/` were grouped in v1.0.
+- **`components/range/AeroRangeSlider.kt`:** Placed in existing `range/` package (not a new package) because it is a direct extension of `AeroSlider`. The package already contains the slider primitive — a dual-thumb variant belongs there, not in a new group.
 
 ---
 
-## 2. Public API Surface
+## Architectural Patterns
 
-### Recommended Signature: Lazy Backing Field Pattern
+### Pattern 1: Existing Popup Infrastructure for Pickers
 
-```kotlin
-// library/src/main/kotlin/com/mordred/aero/icons/AeroIcons.kt
+**What:** All picker popups (`AeroDatePicker`, `AeroTimePicker`, `AeroDateTimePicker`, `AeroDateRangePicker`, `AeroColorPicker`) open via `Popup()` anchored by `AeroPopupPositionProvider(side = AeroPopupSide.Bottom)`. This is identical to how `AeroDropdown`, `AeroComboBox`, `AeroTooltip`, `AeroPopover`, and `AeroContextMenu` work.
 
-package com.mordred.aero.icons
+**When to use:** Any picker that opens from a trigger button/field needs a positioned popup. Do NOT use `Dialog` for pickers — they should dismiss on outside click exactly like `AeroDropdown`.
 
-import androidx.compose.ui.graphics.vector.ImageVector
+**Confidence:** HIGH — `AeroPopupPositionProvider` is already public API with auto-flip. The existing `AeroDropdown` and `AeroComboBox` both use `Popup(popupPositionProvider = remember { AeroPopupPositionProvider() }, properties = PopupProperties(focusable = true, dismissOnClickOutside = true))`. Pickers follow the same pattern verbatim.
 
-/**
- * Typed ImageVector constants for aero-compose-ui.
- * All icons are Feather-derived: 24x24 viewBox, stroke-width 2, round linecap/linejoin.
- * Access: AeroIcons.Close, AeroIcons.ChevronDown, etc.
- */
-public object AeroIcons {
-
-    // ── Window chrome ──────────────────────────────────────────
-    public val Close: ImageVector get() = _Close ?: close().also { _Close = it }
-    private var _Close: ImageVector? = null
-
-    public val Minimize: ImageVector get() = _Minimize ?: minimize().also { _Minimize = it }
-    private var _Minimize: ImageVector? = null
-
-    public val Maximize: ImageVector get() = _Maximize ?: maximize().also { _Maximize = it }
-    private var _Maximize: ImageVector? = null
-
-    public val Restore: ImageVector get() = _Restore ?: restore().also { _Restore = it }
-    private var _Restore: ImageVector? = null
-
-    // ── Chevrons ───────────────────────────────────────────────
-    public val ChevronDown: ImageVector get() = _ChevronDown ?: chevronDown().also { _ChevronDown = it }
-    private var _ChevronDown: ImageVector? = null
-
-    public val ChevronRight: ImageVector get() = _ChevronRight ?: chevronRight().also { _ChevronRight = it }
-    private var _ChevronRight: ImageVector? = null
-
-    public val ChevronUp: ImageVector get() = _ChevronUp ?: chevronUp().also { _ChevronUp = it }
-    private var _ChevronUp: ImageVector? = null
-
-    public val ChevronLeft: ImageVector get() = _ChevronLeft ?: chevronLeft().also { _ChevronLeft = it }
-    private var _ChevronLeft: ImageVector? = null
-
-    // ── Checkmarks / Selection ─────────────────────────────────
-    public val Check: ImageVector get() = _Check ?: check().also { _Check = it }
-    private var _Check: ImageVector? = null
-
-    public val Minus: ImageVector get() = _Minus ?: minus().also { _Minus = it }
-    private var _Minus: ImageVector? = null
-
-    // ── Search / Input ─────────────────────────────────────────
-    public val Search: ImageVector get() = _Search ?: search().also { _Search = it }
-    private var _Search: ImageVector? = null
-
-    public val Eye: ImageVector get() = _Eye ?: eye().also { _Eye = it }
-    private var _Eye: ImageVector? = null
-
-    public val EyeOff: ImageVector get() = _EyeOff ?: eyeOff().also { _EyeOff = it }
-    private var _EyeOff: ImageVector? = null
-
-    public val Folder: ImageVector get() = _Folder ?: folder().also { _Folder = it }
-    private var _Folder: ImageVector? = null
-
-    // ── Status / Notification ──────────────────────────────────
-    public val Info: ImageVector get() = _Info ?: info().also { _Info = it }
-    private var _Info: ImageVector? = null
-
-    public val AlertTriangle: ImageVector get() = _AlertTriangle ?: alertTriangle().also { _AlertTriangle = it }
-    private var _AlertTriangle: ImageVector? = null
-
-    public val AlertCircle: ImageVector get() = _AlertCircle ?: alertCircle().also { _AlertCircle = it }
-    private var _AlertCircle: ImageVector? = null
-
-    public val HelpCircle: ImageVector get() = _HelpCircle ?: helpCircle().also { _HelpCircle = it }
-    private var _HelpCircle: ImageVector? = null
-
-    public val CheckCircle: ImageVector get() = _CheckCircle ?: checkCircle().also { _CheckCircle = it }
-    private var _CheckCircle: ImageVector? = null
-
-    // ... remaining ~100-130 icons follow the same pattern
-}
-```
-
-Each per-icon builder function lives in its corresponding `internal/` file:
+**Trade-offs:** The auto-flip logic handles screen-edge cases. `AeroDateRangePicker` with a double calendar will be wide (~480dp) — the position provider clamps to window bounds, but on very small windows it may overlap itself. This is acceptable given the "desktop-first" constraint.
 
 ```kotlin
-// library/src/main/kotlin/com/mordred/aero/icons/internal/Close.kt
-
-package com.mordred.aero.icons.internal
-
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.path
-import androidx.compose.ui.unit.dp
-
-// Package-private — only AeroIcons.kt calls this
-internal fun close(): ImageVector = ImageVector.Builder(
-    name = "AeroIcons.Close",
-    defaultWidth = 24.dp,
-    defaultHeight = 24.dp,
-    viewportWidth = 24f,
-    viewportHeight = 24f
-).apply {
-    path(
-        stroke = SolidColor(Color.Black),   // tint overrides this at render time
-        strokeLineWidth = 2f,
-        strokeLineCap = StrokeCap.Round,
-        strokeLineJoin = StrokeJoin.Round,
-        strokeAlpha = 1f,
-        fillAlpha = 0f
-    ) {
-        moveTo(18f, 6f)
-        lineTo(6f, 18f)
-    }
-    path(
-        stroke = SolidColor(Color.Black),
-        strokeLineWidth = 2f,
-        strokeLineCap = StrokeCap.Round,
-        strokeLineJoin = StrokeJoin.Round,
-        strokeAlpha = 1f,
-        fillAlpha = 0f
-    ) {
-        moveTo(6f, 6f)
-        lineTo(18f, 18f)
-    }
-}.build()
-```
-
-### Why this pattern over alternatives
-
-**Alternative A — `val Close: ImageVector = buildClose()`** (eager, direct assignment):
-
-Eager initialization means all ~138 icons are constructed when `AeroIcons` object is first accessed. For a class-loading scenario where the app uses only 15 icons, the other 123 are wasted allocations. Each `ImageVector` built via `ImageVector.Builder` allocates several objects internally (the vector, its paths, the path data). Lazy is strictly better.
-
-**Alternative B — `val Close: ImageVector by lazy { buildClose() }`** (stdlib lazy delegation):
-
-`lazy {}` works but adds a `Lazy<T>` wrapper object per property and a `LazyThreadSafetyMode` decision. The nullable-backing-field pattern (`private var _Close: ImageVector? = null`) allocates nothing extra and avoids thread-safety overhead. It is the exact pattern Material Icons Extended uses (confirmed by reading the generated source). Prefer it for consistency with Material Icons.
-
-**Alternative C — nested objects `AeroIcons.Navigation.ChevronRight`:**
-
-Nested objects (`object Navigation`, `object Files`, etc.) fragment the autocomplete. A developer typing `AeroIcons.` sees `Navigation`, `Files`, `Status` — they must know the category first. Feather's flat namespace does not need sub-grouping. Reject nested objects.
-
-**Alternative D — `materialIcon(name = "AeroIcons.Close") { ... }` helper:**
-
-`materialIcon` is a Material library internal (`@InternalMaterialIconsApi`) not intended for external use. Writing a similar `aeroIcon {}` DSL helper is possible but adds complexity for no benefit over the builder pattern above. Reject.
-
-### explicitApi() Compatibility
-
-All `public val` properties on `public object AeroIcons` satisfy `explicitApi()`. The nullable backing fields (`private var _Close`) are `private` — they require no `public` annotation. The per-icon builder functions in `internal/` are `internal fun` — they satisfy `explicitApi()` because they are not `public`. No gotchas.
-
-**One confirmed explicitApi quirk to avoid:** do not use `public val Close: ImageVector = ...` as a direct class-body initializer if the RHS is a complex expression — this is fine for explicitApi but creates eager initialization. Use the getter form `get() = _Close ?: ...` shown above. The getter form is compatible with explicitApi and remains lazy.
-
----
-
-## 3. Migration Touchpoints — Per-Component Analysis
-
-### 3.1 AeroTitleBar — Internal Change, No API Impact
-
-**Current code (AeroTitleBar.kt lines 107-130):**
-```
-TitleBarButton(glyph = "─", ...)     // minimize
-TitleBarButton(glyph = "□" / "❒", ...) // maximize/restore  
-TitleBarButton(glyph = "✕", ...)     // close
-```
-`TitleBarButton` is a private composable accepting `glyph: String` and rendering it via `Text()`.
-
-**Migration:** Replace `TitleBarButton` internals or add an overload accepting `ImageVector`. The private helper becomes:
-
-```kotlin
-@Composable
-private fun TitleBarButton(
-    icon: ImageVector,
-    contentDescription: String,
-    hoverColor: Color,
-    iconTint: Color,
-    onClick: () -> Unit
+// DatePicker popup — same pattern as AeroDropdown
+Popup(
+    popupPositionProvider = remember { AeroPopupPositionProvider(side = AeroPopupSide.Bottom, gap = 4) },
+    onDismissRequest = { expanded = false },
+    properties = PopupProperties(focusable = true, dismissOnBackPress = true, dismissOnClickOutside = true)
 ) {
-    // ... Box wrapper identical to current ...
-    Icon(imageVector = icon, contentDescription = contentDescription, tint = iconTint,
-         modifier = Modifier.size(16.dp))
+    Box(Modifier.width(280.dp).glassPanel(cornerRadius = 8.dp).border(1.dp, colors.glassBorder, RoundedCornerShape(8.dp))) {
+        AeroCalendarGrid(/* ... */)
+    }
 }
 ```
 
-Call sites become:
+### Pattern 2: Internal Shared Calendar Grid
+
+**What:** `AeroCalendarGrid` is an `internal` composable that renders a month grid (7-column day grid with prev/next navigation). It is used directly by `AeroDatePicker` (single selection mode) and `AeroDateRangePicker` (range highlight mode). The mode difference is expressed via a parameter, not a type hierarchy.
+
+**When to use:** Any component that needs to display a calendar month grid. Do NOT copy-paste the grid into both DatePicker and DateRangePicker — the two components differ only in how they handle selection state, not in how the grid is drawn.
+
+**Signature sketch:**
 ```kotlin
-TitleBarButton(AeroIcons.Minimize, "Minimize", colors.buttonHover, colors.titleBarText, ...)
-TitleBarButton(
-    icon = if (isMaximized) AeroIcons.Restore else AeroIcons.Maximize,
-    ...
-)
-TitleBarButton(AeroIcons.Close, "Close", colors.closeButtonHover, colors.titleBarText, ...)
-```
-
-**API impact:** None. `AeroTitleBar`'s public signature (`title`, `windowState`, `onCloseRequest`, `leading`, `modifier`) is unchanged.
-
-**Change type:** Internal-only refactor.
-
----
-
-### 3.2 AeroCheckbox / AeroTriStateCheckbox — Internal Change, No API Impact
-
-**Current code (AeroCheckbox.kt lines 97-98):**
-```kotlin
-ToggleableState.On -> Text("✓", color = colors.onPrimary, fontSize = 11.sp)
-ToggleableState.Indeterminate -> Text("–", color = colors.onPrimary, fontSize = 11.sp)
-```
-
-**Migration:** Replace `Text()` with `Icon()`:
-```kotlin
-ToggleableState.On -> Icon(
-    imageVector = AeroIcons.Check,
-    contentDescription = null,
-    tint = colors.onPrimary,
-    modifier = Modifier.size(12.dp)
-)
-ToggleableState.Indeterminate -> Icon(
-    imageVector = AeroIcons.Minus,
-    contentDescription = null,
-    tint = colors.onPrimary,
-    modifier = Modifier.size(12.dp)
+// Internal — not part of public API
+@Composable
+internal fun AeroCalendarGrid(
+    displayMonth: YearMonth,          // java.time.YearMonth (JDK 17 — already in classpath)
+    selectedDates: Set<LocalDate>,    // empty, 1-item (DatePicker), or multi-item (range)
+    rangeStart: LocalDate?,           // non-null when in range mode
+    rangeEnd: LocalDate?,
+    onDateClick: (LocalDate) -> Unit,
+    onPreviousMonth: () -> Unit,
+    onNextMonth: () -> Unit,
+    modifier: Modifier = Modifier
 )
 ```
 
-**API impact:** None. Public signatures `AeroCheckbox(checked, onCheckedChange, modifier, enabled, label)` and `AeroTriStateCheckbox(state, onClick, modifier, enabled, label)` are unchanged.
+**Why `java.time`:** JDK 17 is already the target. `java.time.LocalDate` / `YearMonth` are available without additional dependencies. Do NOT add `kotlinx-datetime` — unnecessary dependency for a library that already requires JDK 17.
 
-**Change type:** Internal-only refactor.
+### Pattern 3: AeroRangeSlider as Material3 RangeSlider Wrapper
 
-**Sizing note:** The checkbox box is 16dp. A 12dp icon inside it gives 2dp visual padding on each side, matching the current glyph appearance. Use `Modifier.size(12.dp)` on the Icon, not the default 24dp.
+**What:** Compose Desktop 1.7.3 includes Material3's `RangeSlider` composable (`androidx.compose.material3.RangeSlider`). `AeroRangeSlider` wraps it exactly as `AeroSlider` wraps `Slider` — applying the same `SliderDefaults.colors()` with Aero tokens, and optionally showing a dragging tooltip.
 
----
+**When to use:** This is the correct pattern. Do NOT implement dual-thumb drag logic from scratch in Canvas — Material3 already provides `RangeSlider` with correct accessibility semantics.
 
-### 3.3 AeroDropdown — Internal Change, No API Impact
+**Confidence:** MEDIUM — Material3 `RangeSlider` API is available in CMP 1.7.x. The `AeroSlider` wrapper pattern (lines 51–86 in `AeroSlider.kt`) maps directly. Risk: tooltip positioning for two thumbs is non-trivial; v2.0 can omit per-thumb tooltips and show a range label centered above the track (same as the existing `TODO(Phase 3)` in `AeroSlider`).
 
-**Current code (AeroDropdown.kt line 108-111):**
-```kotlin
-Text(
-    text = "▼",
-    color = colors.labelText,
-    style = AeroTheme.typography.label
-)
-```
-
-**Migration:**
-```kotlin
-Icon(
-    imageVector = AeroIcons.ChevronDown,
-    contentDescription = null,
-    tint = colors.labelText,
-    modifier = Modifier.size(14.dp)
-)
-```
-
-**API impact:** None. Public signature is unchanged.
-
-**Change type:** Internal-only refactor.
-
-**Note:** AeroComboBox also uses a chevron indicator — check its source and apply the same change. It was not in the migration touchpoints list but should be migrated in the same wave for consistency.
-
----
-
-### 3.4 AeroNumberSpinner — Internal Change, No API Impact
-
-**Current code (AeroNumberSpinner.kt lines 129, 139):**
-```kotlin
-Text("▲", fontSize = 8.sp, color = colors.onSurface)
-Text("▼", fontSize = 8.sp, color = colors.onSurface)
-```
-
-**Migration:** The spinner buttons are 16×12dp. An Icon at 8dp fits:
-```kotlin
-Icon(
-    imageVector = AeroIcons.ChevronUp,
-    contentDescription = "Increment",
-    tint = colors.onSurface,
-    modifier = Modifier.size(8.dp)
-)
-Icon(
-    imageVector = AeroIcons.ChevronDown,
-    contentDescription = "Decrement",
-    tint = colors.onSurface,
-    modifier = Modifier.size(8.dp)
-)
-```
-
-**API impact:** None. Public signature is unchanged.
-
-**Change type:** Internal-only refactor.
-
-**Sizing note:** 8dp is unusually small for a vector icon — stroke paths at 8dp on a 24-unit viewport yield ~0.33dp-per-unit resolution. Test visually. If the chevron appears too thin, increase button height to 14dp and icon to 10dp. This is a visual decision to validate during implementation, not a blocker.
-
----
-
-### 3.5 AeroBreadcrumb — BREAKING CHANGE (with backward-compat path)
-
-**Current signature:**
 ```kotlin
 @Composable
-public fun AeroBreadcrumb(
-    items: List<AeroBreadcrumbItem>,
-    onItemClick: (Int, AeroBreadcrumbItem) -> Unit,
+public fun AeroRangeSlider(
+    value: ClosedFloatingPointRange<Float>,
+    onValueChange: (ClosedFloatingPointRange<Float>) -> Unit,
     modifier: Modifier = Modifier,
-    separator: String = "›"
+    enabled: Boolean = true,
+    valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
+    steps: Int = 0
 )
 ```
 
-The `separator: String` parameter is part of the public API surface. Changing it to `separator: ImageVector` is a source-breaking change for any caller passing a `String` explicitly.
+### Pattern 4: AeroDataTable — LazyColumn + Horizontal Scroll
 
-**Two options:**
+**What:** `AeroDataTable` renders a fixed header row above a `LazyColumn` of data rows. Horizontal scrolling is shared between header and body via a `ScrollState` (not `LazyRow` — the header must be pinned). Column widths are held in a `remember { mutableStateListOf<Dp>() }` so drag-resize updates all rows simultaneously via recomposition.
 
-**Option A — Break it (recommended for v1.1, single-consumer library):**
-```kotlin
-@Composable
-public fun AeroBreadcrumb(
-    items: List<AeroBreadcrumbItem>,
-    onItemClick: (Int, AeroBreadcrumbItem) -> Unit,
-    modifier: Modifier = Modifier,
-    separator: ImageVector = AeroIcons.ChevronRight
-)
+**When to use:** This is the only viable approach for virtualized + horizontally-scrollable + sortable tables in Compose Desktop 1.7.x. `LazyHorizontalGrid` is wrong here — rows are independent units, not grid cells.
+
+**Confidence:** MEDIUM — pattern inferred from Compose Desktop table community examples; no official blessed template exists. The specific risk (see Integration Risks below) is the `fillMaxWidth()` interaction inside a parent `verticalScroll` Column in the showcase.
+
+### Pattern 5: AeroAccordion Internal State
+
+**What:** Accordion state is held inside the component when `mode = AccordionMode.Single`: a single `var openIndex by remember { mutableStateOf(-1) }`. For `mode = AccordionMode.Multi`: a `remember { mutableStateSetOf<Int>() }`. The public API exposes `AeroAccordionItem(title, content)` data class. Caller does not manage state — the component is self-contained, similar to `AeroTabBar`.
+
+**When to use:** Use for collapsible sections. Do NOT expose a state hoisting variant in v2.0 — keep it simple. State hoisting can be added in v2.x if a consumer requests it.
+
+### Pattern 6: AeroSidebar — Fixed Widths, AnimatedContent
+
+**What:** `AeroSidebar` is a `Column` with three modes: `Expanded` (icon+label, ~200dp), `Collapsed` (icon-only, ~52dp), `Hidden` (0dp, offscreen). Width transitions use `animateDpAsState`. `AeroSidebar` is NOT a popup — it is placed in a `Row` alongside the main content area by the caller. This is the fundamental difference from `AeroDrawer` (which is a full-window popup overlay).
+
 ```
-Internal rendering changes from `Text(separator)` to:
-```kotlin
-Icon(
-    imageVector = separator,
-    contentDescription = null,
-    tint = colors.labelText,
-    modifier = Modifier.size(12.dp)
-)
-```
-This removes the ability to pass `"/"` or `">"` as text separators. Since the library is pre-v1 public release (local Maven only), there are no external consumers to break. **Recommended.**
-
-**Option B — Additive overload (no break, dual API):**
-```kotlin
-// Keep original for source-compat
-@Composable
-public fun AeroBreadcrumb(
-    items: List<AeroBreadcrumbItem>,
-    onItemClick: (Int, AeroBreadcrumbItem) -> Unit,
-    modifier: Modifier = Modifier,
-    separator: String = "›"
-)
-
-// New overload with ImageVector
-@Composable
-public fun AeroBreadcrumb(
-    items: List<AeroBreadcrumbItem>,
-    onItemClick: (Int, AeroBreadcrumbItem) -> Unit,
-    modifier: Modifier = Modifier,
-    separator: ImageVector = AeroIcons.ChevronRight
-)
-```
-This is more work (two implementations or a shared private helper) and is only needed if external callers with `separator: String` must continue to compile. Not warranted for v1.1.
-
-**Decision: Option A. Change `separator: String` to `separator: ImageVector = AeroIcons.ChevronRight`. Treat as breaking. Document in changelog.**
-
-**Change type:** BREAKING — public parameter type changes from `String` to `ImageVector`.
-
----
-
-### 3.6 AeroContextMenu — Internal Change, No API Impact
-
-**Current code (AeroContextMenu.kt line 183):**
-```kotlin
-Text("▶", color = colors.labelText, style = AeroTheme.typography.label)
-```
-
-**Migration:**
-```kotlin
-Icon(
-    imageVector = AeroIcons.ChevronRight,
-    contentDescription = null,
-    tint = colors.labelText,
-    modifier = Modifier.size(12.dp)
-)
-```
-
-**API impact:** None. The public API is `Modifier.aeroContextMenu(items: List<AeroContextMenuItem>)`. The submenu indicator is a private rendering detail.
-
-**Note:** `AeroContextMenuItem.Action` and `AeroContextMenuItem.Submenu` already accept `icon: ImageVector?` in their public `data class` constructors. These icon slots already use `Icon()` (AeroContextMenu.kt lines 138, 175). The Material Icons import (`Icons.Outlined.*`) is not present in this file — the submenu `▶` glyph is the only text glyph here. Single-line change.
-
-**Change type:** Internal-only refactor.
-
----
-
-### 3.7 AeroToastHost — Internal Change, No API Impact
-
-**Current code (AeroToastHost.kt line 91):**
-```kotlin
-AeroIconButton(onClick = onDismiss, size = 24.dp) {
-    Text("✕", color = colors.onSurface)
+// Caller layout pattern — NOT implemented inside AeroSidebar:
+Row(Modifier.fillMaxSize()) {
+    AeroSidebar(mode = sidebarMode, items = navItems, onItemClick = { ... })
+    // main content
+    Box(Modifier.weight(1f)) { /* page content */ }
 }
 ```
 
-**Migration:**
+**Confidence:** HIGH — this matches the locked decision "persistent bokovaya navigatsiya" vs "AeroDrawer overlay mechanic" distinction established in STATE.md.
+
+---
+
+## Data Flow
+
+### Picker State Flow
+
+```
+Trigger Button (click)
+    ↓
+var expanded by remember { mutableStateOf(false) }
+    ↓
+Popup(AeroPopupPositionProvider) shown when expanded == true
+    ↓
+AeroCalendarGrid / AeroHsvColorSquare / time drum
+    ↓ (user selection)
+onDateSelect(LocalDate) / onColorChange(Color)
+    ↓
+Caller's state updated; expanded = false (optional auto-close)
+```
+
+### DataTable Sort/Selection Flow
+
+```
+AeroDataTable(columns, rows, onRowClick, onSort)
+    ↓
+Header cell click → sortColumn / sortAscending state flip → caller's onSort callback
+    ↓ (caller re-sorts data, passes new rows list)
+LazyColumn re-renders sorted rows
+    ↓
+Row click → selectedRows state update (Set<Int>) → onRowClick callback
+```
+
+### AeroSplitPane Drag Flow
+
+```
+AeroSplitPane(orientation, first, second)
+    ↓
+Internal var splitFraction by remember { mutableStateOf(0.5f) }
+    ↓
+AeroDragSplitter (internal) — pointerInput drag → splitFraction update
+    ↓
+Layout: first composable at weight(splitFraction), second at weight(1f - splitFraction)
+```
+
+---
+
+## Build Order (Explicit Dependencies)
+
+Phase numbers are proposed (7–10). Each phase is a prerequisite for the next.
+
+### Phase 7: Shared Primitives (No New Public Components)
+
+**Rationale:** Extract internal helpers before the components that depend on them. This phase has zero user-visible output but enables Phases 8–10 to be implemented cleanly without copy-paste.
+
+**Deliverables:**
+1. `components/pickers/internal/AeroCalendarGrid.kt` — shared by DatePicker (Phase 8) and DateRangePicker (Phase 8)
+2. `components/pickers/internal/AeroColorMath.kt` — pure functions: `hsvToRgb()`, `rgbToHsv()`, `hexToColor()`, `colorToHex()`; correctness-tested; no UI
+3. `components/pickers/internal/AeroHsvColorSquare.kt` — Canvas-based HSV 2D gradient square; pointer drag → HSV float pair
+4. `components/pickers/internal/AeroHueSlider.kt` — Canvas-based horizontal hue gradient strip (0..360); pointer drag → hue float
+5. `components/layout/internal/AeroDragSplitter.kt` — thin draggable divider strip; `pointerInput` pointer tracking; emits `Float` delta; shared by SplitPane
+6. `components/layout/internal/AeroStepIndicator.kt` — row of step dots/lines with active/complete/pending states; used by StepperWizard
+
+**Dependencies:** None (pure internal, no public API dependency)
+
+### Phase 8: Pickers + RangeSlider
+
+**Rationale:** All five picker components plus RangeSlider. Pickers depend on Phase 7 primitives. RangeSlider depends on nothing new (Material3 RangeSlider already in classpath). Can be split into sub-plans:
+
+**Order within phase (hard dependencies):**
+1. `AeroRangeSlider` — first, trivial; no Phase 7 dependency
+2. `AeroDatePicker` — requires `AeroCalendarGrid` from Phase 7
+3. `AeroTimePicker` — independent of calendar; requires only AeroTheme + AeroTextField-style input
+4. `AeroDateRangePicker` — requires `AeroCalendarGrid` from Phase 7; does NOT depend on AeroDatePicker (shares grid primitive directly)
+5. `AeroDateTimePicker` — requires `AeroDatePicker` AND `AeroTimePicker` (composes them); must come last in phase
+6. `AeroColorPicker` — requires `AeroHsvColorSquare`, `AeroHueSlider`, `AeroColorMath` from Phase 7; also reuses `AeroSlider` (existing) for RGB sliders and `AeroTextField` (existing) for HEX input
+
+**Dependency graph:**
+```
+Phase 7 primitives
+    ├──→ AeroDatePicker
+    ├──→ AeroDateRangePicker (parallel to DatePicker)
+    ├──→ AeroColorPicker
+    │       └── reuses: AeroSlider (v1.0), AeroTextField (v1.0)
+    └──→ AeroTimePicker (independent of calendar)
+             └──→ AeroDateTimePicker (requires both DatePicker + TimePicker done)
+
+AeroRangeSlider (independent — no Phase 7 dependency, runs first)
+```
+
+### Phase 9: Data Components (DataTable + TreeView)
+
+**Rationale:** DataTable and TreeView are the most complex implementations in v2.0. They come after pickers so the risk surface is distributed. They have no dependency on Phase 8 pickers, but placing them after reduces parallel complexity risk.
+
+**Order within phase:**
+1. `AeroTreeView` — simpler than DataTable; only `LazyColumn` + recursion + expand state; no column layout
+2. `AeroDataTable` — most complex; LazyColumn + horizontal scroll + column width state + sort + selection
+
+**Dependencies:** `AeroScrollArea`/`AeroScrollBar` (existing v1.0), `AeroIcons` (existing v1.1 — sort indicators)
+
+### Phase 10: Layout Components
+
+**Rationale:** Accordion, SplitPane, Sidebar, and StepperWizard are the lowest-risk group — they are primarily structural and depend on existing primitives. StepperWizard requires `AeroStepIndicator` from Phase 7.
+
+**Order within phase:** All four are parallelizable within a plan (no inter-dependencies among them). Suggested plan split: Accordion + SplitPane in one plan (drag splitter shared), Sidebar + StepperWizard in another.
+
+**Dependencies:**
+- `AeroAccordion` → `animateFloatAsState` (stdlib), `AeroTheme`, `glassSurface` — no new dependencies
+- `AeroSplitPane` → `AeroDragSplitter` from Phase 7
+- `AeroSidebar` → `animateDpAsState`, `AeroIcons`, `AeroTooltip` (existing OVL-03) for collapsed mode tooltips
+- `AeroStepperWizard` → `AeroStepIndicator` from Phase 7, `AeroButton` (existing)
+
+---
+
+## Integration Points
+
+### Reuse of Existing Primitives
+
+| Existing Primitive | Reused By | How |
+|-------------------|-----------|-----|
+| `AeroPopupPositionProvider` | DatePicker, TimePicker, DateTimePicker, DateRangePicker, ColorPicker | Identical popup pattern as AeroDropdown — `Popup(popupPositionProvider = remember { AeroPopupPositionProvider() })` |
+| `AeroScrollArea` / `AeroScrollBar` | DataTable, TreeView | TreeView: `AeroScrollArea` for vertical overflow. DataTable: NOT `AeroScrollArea` (see Integration Risks) — needs custom `Box` + horizontal + vertical scroll coordination |
+| `AeroSlider` (colors pattern) | AeroRangeSlider, AeroColorPicker (RGB channel sliders) | AeroRangeSlider wraps Material3 RangeSlider using same `SliderDefaults.colors()` call. ColorPicker reuses `AeroSlider` directly for R, G, B channel sliders |
+| `AeroSearchField` | AeroColorPicker (HEX text input — not search, but same field style) | Use `AeroTextField` not `AeroSearchField` — HEX input has no clear/search semantics |
+| `AeroTextField` | AeroColorPicker (HEX input), AeroTimePicker (hour/minute fields) | Direct reuse — existing component |
+| `glassEffect` / `glassPanel` / `glassSurface` | All new components | All popup panels use `glassPanel(cornerRadius=8.dp)` + `border(glassBorder)`. DataTable header row: `glassPanel(cornerRadius=0.dp)`. Accordion panel: `glassSurface(cornerRadius=8.dp)` |
+| `AeroTooltip` | AeroSidebar (collapsed mode) | When sidebar is collapsed, icon-only items need a hover tooltip — delegate to existing `AeroTooltip` composable |
+| `AeroButton` | AeroDatePicker (month nav prev/next as AeroIconButton), AeroStepperWizard (Next/Back/Finish buttons) | Direct reuse |
+| `AeroIcons` | All new components | Sort ascending: `AeroIcons.CaretUp`, sort descending: `AeroIcons.CaretDown`, expand: `AeroIcons.CaretRight` / `AeroIcons.CaretDown`, picker calendar icon: `AeroIcons.CalendarBlank`, color swatch: `AeroIcons.Palette`, check (stepper completed): `AeroIcons.Check` |
+
+### New Internal Helpers Required
+
+| Helper | Package | Purpose | Used By |
+|--------|---------|---------|---------|
+| `AeroCalendarGrid` | `pickers/internal/` | Month grid composable — 7-col day layout, prev/next month nav, selection highlighting | AeroDatePicker, AeroDateRangePicker |
+| `AeroHsvColorSquare` | `pickers/internal/` | Canvas-drawn 2D HSV gradient (saturation × value), drag-to-pick | AeroColorPicker |
+| `AeroHueSlider` | `pickers/internal/` | Canvas-drawn horizontal hue gradient strip (360°), drag-to-pick | AeroColorPicker |
+| `AeroColorMath` | `pickers/internal/` | Pure functions: `hsvToRgb`, `rgbToHsv`, `hexToColor`, `colorToHex`; round-trip drift prevention | AeroColorPicker |
+| `AeroDragSplitter` | `layout/internal/` | Draggable divider strip using `pointerInput`; emits `onDrag(delta: Float)` | AeroSplitPane, (also usable by DataTable column resize — different call site) |
+| `AeroStepIndicator` | `layout/internal/` | Row of step dots connected by lines, 3 states: pending/active/complete | AeroStepperWizard |
+| `AeroTableHeader` | `datatable/internal/` | Sortable header row; column width list; sort chevrons via AeroIcons | AeroDataTable |
+| `AeroTableRow` | `datatable/internal/` | Single data row; selection highlight via `colors.borderSelected` background | AeroDataTable |
+| `AeroTreeNode` | `datatable/internal/` | Single tree node with indent, expand chevron, optional icon | AeroTreeView |
+
+### Showcase Wiring
+
+**ShowcaseApp.kt changes (minimal):**
 ```kotlin
-AeroIconButton(onClick = onDismiss, size = 24.dp) {
-    Icon(
-        imageVector = AeroIcons.Close,
-        contentDescription = "Dismiss",
-        tint = colors.onSurface,
-        modifier = Modifier.size(16.dp)
-    )
-}
+// Add three new section calls at the end of the Column, before the final Spacer:
+DataSection()          // NEW — Phase 9
+PickersSection()       // NEW — Phase 8
+LayoutSection()        // NEW — Phase 10
 ```
 
-**API impact:** None. `AeroToastHost(state, modifier)` signature is unchanged.
+**RangeSection.kt** — extend (not new file): Add a `RangeRow("AeroRangeSlider") { ... }` demo row. This is ~5 lines. The existing file pattern (RangeRow helper) is already set up for this.
 
-**Change type:** Internal-only refactor.
+**New Section files:**
+
+| File | New/Extend | Phase | Content |
+|------|-----------|-------|---------|
+| `DataSection.kt` | NEW | 9 | AeroDataTable demo (5-col, 20 rows, sort + selection demo), AeroTreeView demo (3-level hierarchy) |
+| `PickersSection.kt` | NEW | 8 | AeroDatePicker, AeroTimePicker, AeroDateTimePicker, AeroDateRangePicker, AeroColorPicker — each with a trigger button + value display |
+| `LayoutSection.kt` | NEW | 10 | AeroAccordion (3 sections, single mode), AeroSplitPane (horizontal + vertical examples), AeroSidebar (mode toggle demo), AeroStepperWizard (3-step linear flow) |
+| `RangeSection.kt` | EXTEND | 8 | Add AeroRangeSlider row to existing RangeSection |
 
 ---
 
-### 3.8 AeroNotificationBanner — Internal Change, No API Impact
+## Integration Risks
 
-**Current code (AeroNotificationBanner.kt line 64):**
-```kotlin
-AeroIconButton(onClick = onDismiss, size = 24.dp) {
-    Text("✕", color = colors.onSurface)
-}
-```
+### Risk 1: DataTable Virtualization vs. ShowcaseApp `verticalScroll` Column — CRITICAL
 
-Same pattern as AeroToastHost — replace with `Icon(AeroIcons.Close, ...)`.
+**Problem:** `ShowcaseApp` wraps its entire content in `Column(Modifier.verticalScroll(...))`. A `LazyColumn` inside a `verticalScroll` parent is a known Compose crash: `LazyColumn` cannot measure its height when placed inside an already-scrollable container. Phase 6 notes already document this pitfall for `LazyVerticalGrid` (the `IconsSection` fix required `Modifier.height(400.dp)` to give the grid a bounded height).
 
-**API impact:** None.
+**The same issue applies to DataTable's internal `LazyColumn`.**
 
-**Change type:** Internal-only refactor.
+**Mitigation:** `AeroDataTable` must accept a `Modifier` with an explicit `heightIn(max = N.dp)` from the caller, and its internal `LazyColumn` must use `Modifier.fillMaxWidth()` (not `fillMaxSize()`). In `DataSection.kt` the showcase must call `AeroDataTable(modifier = Modifier.height(300.dp), ...)`. This is the same pattern as `IconsSection` — document it in KDoc and the PITFALLS research file.
 
----
+**Alternative:** `AeroDataTable` could use a non-lazy `Column` for small datasets, but that defeats the virtualization requirement. Stay with LazyColumn + bounded height.
 
-### 3.9 AeroAlertKind — Internal Change, No API Impact (type preserved)
+### Risk 2: AeroScrollArea Not Usable Directly in DataTable
 
-**Current code (AeroAlertKind.kt):**
-```kotlin
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Error
-import androidx.compose.material.icons.outlined.HelpOutline
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Warning
+**Problem:** `AeroScrollArea` uses `Column.verticalScroll(state)` internally (line 33 in `AeroScrollArea.kt`), which means it is also a `Column`-based scroller. DataTable needs a `LazyColumn` for row virtualization AND synchronized horizontal scroll between the header row and the data area. This requires a custom layout, not `AeroScrollArea`.
 
-public val icon: ImageVector
-    get() = when (this) {
-        Info     -> Icons.Outlined.Info
-        Warning  -> Icons.Outlined.Warning
-        Error    -> Icons.Outlined.Error
-        Question -> Icons.Outlined.HelpOutline
-    }
-```
+**Mitigation:** DataTable does NOT use `AeroScrollArea`. It uses a raw `Box` with:
+- A horizontally-scrolled header `Row` sharing a `ScrollState` with the body
+- A `LazyColumn` for the body, where each row is also horizontally scrolled with the shared `ScrollState`
+- `AeroScrollBar` (the existing component) attached to the vertical `LazyListState`
 
-**Migration:** The `icon: ImageVector` property type stays `ImageVector` — the public return type is identical. Only the source of the vector changes:
+**AeroScrollArea is appropriate for TreeView** (TreeView rows are variable-height composables in a Column — not virtualized, or can be lazily composed with a LazyColumn that has bounded height).
 
-```kotlin
-import com.mordred.aero.icons.AeroIcons
-// Remove all Icons.Outlined imports
+### Risk 3: AeroDateRangePicker Width on Small Windows
 
-public val icon: ImageVector
-    get() = when (this) {
-        Info     -> AeroIcons.Info
-        Warning  -> AeroIcons.AlertTriangle
-        Error    -> AeroIcons.AlertCircle
-        Question -> AeroIcons.HelpCircle
-    }
-```
+**Problem:** A dual-calendar layout for `AeroDateRangePicker` will need ~480–520dp width (two 240dp month calendars side by side). On small windows, `AeroPopupPositionProvider.clamp()` will prevent horizontal overflow, but the popup may not fully display if the window itself is narrower than 480dp.
 
-**API impact:** None. `AeroAlertKind.icon` returns `ImageVector` before and after. Any caller that uses `kind.icon` continues to compile unchanged.
+**Mitigation:** Design the range picker to stack calendars vertically on small widths (responsive within the popup via `BoxWithConstraints`), or document a minimum window width of 600dp for `AeroDateRangePicker` use. The vertical stack is the preferred mitigation.
 
-**Change type:** Internal-only refactor. Removes `import androidx.compose.material.icons.*`.
+### Risk 4: AeroColorPicker HSV↔RGB Round-Trip Drift
+
+**Problem:** Float-based HSV→RGB→HSV conversions accumulate rounding error. If the user drags the HSV square and the result is fed back into the square's displayed position via HSV→RGB→HSV, the hue/saturation position drifts visually.
+
+**Mitigation:** `AeroColorMath` must hold the authoritative HSV triple in state and only convert to RGB for display/callback purposes — never convert back from RGB to HSV as a round-trip. The state shape is `hsv: Triple<Float, Float, Float>` not `color: Color`. RGB sliders modify hsv by converting the RGB component back through the non-drifting path. This is specified in the `AeroColorMath` design; the phase plan must enforce it.
+
+### Risk 5: AeroSidebar Width Animation vs. Compose Layout
+
+**Problem:** `animateDpAsState` on the sidebar width triggers re-layouts on every animation frame. In a `Row(Modifier.fillMaxSize())` where the sidebar and content area share the full width, each frame shift causes the content area to recompose. This is acceptable for a smooth transition (the animation is short, ~200ms) but must use `wrapContentWidth(unbounded = false)` correctly to avoid content flashing.
+
+**Mitigation:** Use `animateFloatAsState` on a `weight()` fraction rather than animating absolute `Dp` — weight-based layout avoids absolute-size re-measure on every frame. Alternatively, accept the Dp animation and ensure the content area uses `Modifier.weight(1f)` so Compose handles the resize efficiently. This is the same as AeroDrawer (which uses `offsetFraction` animation).
+
+### Risk 6: AeroTreeView Asynchronous `onExpand` Callback
+
+**Problem:** The spec says "lazy children via `onExpand` callback." If `onExpand` is asynchronous (caller loads children from disk/network and updates the model), there's a race condition: the user clicks expand, the callback fires, the node is immediately marked expanded (spinner shown), then children arrive. If the callback is synchronous, this is simpler but blocks UI thread.
+
+**Mitigation:** Define `onExpand` as synchronous with a loading-state return: `onExpand: (nodeId: Any) -> Unit`. The callback is responsible for updating the tree model passed to AeroTreeView (the component is stateless with respect to children — it just renders `nodes: List<AeroTreeNode>`). This means the caller manages async loading and updates `nodes` via its own state — the component never awaits. Document this clearly in KDoc.
+
+### Risk 7: AeroDataTable Column Resize + LazyColumn Interaction
+
+**Problem:** When the user drag-resizes a column, all visible LazyColumn rows must update their cell widths synchronaneously. If column widths are held in `SnapshotStateList<Dp>`, each drag delta triggers `SnapshotStateList.set()` which causes the entire LazyColumn to recompose (not just the visible rows). At high drag speeds (many events/second), this may cause jank.
+
+**Mitigation:** Use `derivedStateOf` for the width snapshot and debounce or throttle the drag update to once per frame via `pointerInput` with `awaitDragOrCancellation()` at the Compose coroutine scope. The `AeroDragSplitter` internal component must be designed with this in mind from the start. If jank is observed during visual checkpoint, fall back to `animateFloatAsState` snap (no smooth drag).
 
 ---
 
-### 3.10 AeroBannerKind — Internal Change, No API Impact (type preserved)
+## Anti-Patterns
 
-**Current code (AeroBannerKind.kt):**
-```kotlin
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.Error
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Warning
+### Anti-Pattern 1: New Gradle Module for Pickers or DataTable
 
-public val icon: ImageVector
-    get() = when (this) {
-        Info     -> Icons.Outlined.Info
-        Warning  -> Icons.Outlined.Warning
-        Error    -> Icons.Outlined.Error
-        Success  -> Icons.Outlined.CheckCircle
-    }
-```
+**What people do:** Create `:datepickers` or `:datatable` Gradle modules to isolate new components.
+**Why it's wrong:** Locked decision — all components stay in `:library`. Cross-module `internal` is not enforced. Creating a module would require consumers to add separate dependencies and breaks the "one dependency" core value.
+**Do this instead:** Use `internal` visibility modifier + `components/{group}/internal/` subpackage convention within `:library`. The Gradle module boundary stays where it is.
 
-**Migration:**
-```kotlin
-import com.mordred.aero.icons.AeroIcons
+### Anti-Pattern 2: Using AeroScrollArea Inside DataTable
 
-public val icon: ImageVector
-    get() = when (this) {
-        Info    -> AeroIcons.Info
-        Warning -> AeroIcons.AlertTriangle
-        Error   -> AeroIcons.AlertCircle
-        Success -> AeroIcons.CheckCircle
-    }
-```
+**What people do:** Wrap DataTable rows in `AeroScrollArea` for "free" scrollbar.
+**Why it's wrong:** `AeroScrollArea` is a `Column.verticalScroll()` container — it cannot contain `LazyColumn`. DataTable needs virtualization and synchronized horizontal scroll that `AeroScrollArea` does not support.
+**Do this instead:** Build DataTable with its own `LazyColumn(state = lazyListState)` + `AeroScrollBar(scrollState = lazyListState)` directly.
 
-**API impact:** None. Return type `ImageVector` is preserved.
+### Anti-Pattern 3: AeroDialog for Pickers
 
-**Change type:** Internal-only refactor. Removes `import androidx.compose.material.icons.*`.
+**What people do:** Open date/color pickers inside `AeroDialog` for a "guaranteed visible" experience.
+**Why it's wrong:** Dialog is a modal overlay requiring an explicit dismiss action — picker UX convention is dismiss-on-outside-click, like a dropdown. Dialog also does not anchor to the trigger element.
+**Do this instead:** Use `Popup(AeroPopupPositionProvider, PopupProperties(dismissOnClickOutside=true))` — the same popup infrastructure as `AeroDropdown`.
+
+### Anti-Pattern 4: java.util.Calendar or Custom Date Math
+
+**What people do:** Implement date navigation (prev/next month, leap year, day-of-week offsets) by hand or using `java.util.Calendar`.
+**Why it's wrong:** `java.util.Calendar` is mutable, thread-unsafe, and error-prone. Custom date math for month boundaries is routinely wrong on edge cases (Feb 28/29, year boundaries).
+**Do this instead:** Use `java.time.LocalDate` / `java.time.YearMonth` from JDK 17 stdlib. Already in classpath. `YearMonth.atDay(1).dayOfWeek` gives the first day offset; `YearMonth.lengthOfMonth()` gives the correct number of days including leap year.
+
+### Anti-Pattern 5: Eager HSV Color State Converted to Color Early
+
+**What people do:** Store the current color as `var color by remember { mutableStateOf(Color.Red) }` and re-derive HSV position from it on each recompose.
+**Why it's wrong:** `Color` → HSV conversion on every recompose is wasteful, and round-trip drift causes the hue/saturation cursor to visually wander.
+**Do this instead:** Store `var hsv by remember { mutableStateOf(Triple(0f, 1f, 1f)) }` as the source of truth. Derive `Color` from it once for the callback and display. RGB sliders independently modify their own component of HSV without converting back through `Color`.
 
 ---
 
-### 3.11 AeroSearchField — Canvas Replacement, No API Impact
-
-**Current implementation:** `SearchIcon()` and `ClearButton()` are private composables using `Canvas` (a hand-drawn magnifier circle+handle) and `Text("x", ...)`.
-
-**Migration:** Replace both private composables with `Icon()` calls:
-
-```kotlin
-// In search icon Box:
-Icon(
-    imageVector = AeroIcons.Search,
-    contentDescription = null,
-    tint = AeroTheme.colors.labelText,
-    modifier = Modifier.size(14.dp)
-)
-
-// In clear button Box:
-Icon(
-    imageVector = AeroIcons.Close,
-    contentDescription = "Clear search",
-    tint = AeroTheme.colors.labelText,
-    modifier = Modifier.size(12.dp)
-)
-```
-
-The Canvas-based `SearchIcon()` and `EyeClosedIcon()`/`EyeOpenIcon()` private composables are deleted entirely — their Canvas drawing is superseded by the Feather vector data.
-
-**API impact:** None. `AeroSearchField(value, onValueChange, modifier, enabled, placeholder, onSearch)` is unchanged.
-
-**Change type:** Internal-only refactor. Significant code deletion (removes ~50 lines of Canvas drawing code from AeroSearchField.kt).
-
----
-
-### 3.12 AeroPasswordField — Canvas Replacement, No API Impact
-
-**Current implementation:** `EyeOpenIcon(tint)` and `EyeClosedIcon(tint)` are private Canvas-drawn composables (~70 lines of bezier path code).
-
-**Migration:** Replace with:
-```kotlin
-// In toggle Box:
-Icon(
-    imageVector = if (visible) AeroIcons.Eye else AeroIcons.EyeOff,
-    contentDescription = if (visible) "Hide password" else "Show password",
-    tint = colors.labelText,
-    modifier = Modifier.size(14.dp)
-)
-```
-
-Delete `EyeOpenIcon` and `EyeClosedIcon` private composables entirely.
-
-**API impact:** None. `AeroPasswordField(value, onValueChange, modifier, enabled, placeholder, interactionSource)` is unchanged.
-
-**Change type:** Internal-only refactor. Significant code deletion (~70 lines of Canvas path code removed).
-
----
-
-### 3.13 AeroFilePicker — No Icon Currently, Out of Scope for This Migration
-
-**Current implementation:** AeroFilePicker uses a text button labelled "Обзор" (a localized Russian label) — it has no icon. There is no glyph or Material Icon to migrate.
-
-**API impact:** None — nothing to change.
-
-**Optional enhancement (not in scope for this milestone):** A `Folder` icon could be added to the "Обзор" button as a leading icon, but this is a new feature, not a migration. Defer.
-
----
-
-### 3.14 ButtonsSection in Showcase — Content Update
-
-**Current code (ButtonsSection.kt lines 50-52):**
-```kotlin
-AeroIconButton(onClick = {}) { Text("▲", color = colors.onSurface) }
-AeroIconButton(onClick = {}) { Text("▼", color = colors.onSurface) }
-AeroIconButton(onClick = {}, enabled = false) { Text("×", color = colors.onSurface) }
-```
-
-**Migration:**
-```kotlin
-AeroIconButton(onClick = {}) {
-    Icon(AeroIcons.ChevronUp, null, tint = colors.onSurface, modifier = Modifier.size(16.dp))
-}
-AeroIconButton(onClick = {}) {
-    Icon(AeroIcons.ChevronDown, null, tint = colors.onSurface, modifier = Modifier.size(16.dp))
-}
-AeroIconButton(onClick = {}, enabled = false) {
-    Icon(AeroIcons.Close, null, tint = colors.onSurface, modifier = Modifier.size(16.dp))
-}
-```
-
-**API impact:** None (showcase internal).
-
-**Change type:** Showcase-internal update.
-
----
-
-## 4. Sizing Convention
-
-### Default Icon Size: 16dp
-
-Material Design uses 24dp as the default `Icon()` size. For aero-compose-ui's desktop context, 24dp is too large for most use sites:
-
-- Checkbox indicator inside a 16dp box: requires 12dp
-- Breadcrumb separator: 12dp
-- Spinner buttons (16×12dp area): 8-10dp
-- TitleBar buttons (46×32dp area): 14-16dp
-- SearchField leading icon panel (28dp height): 14dp
-- Toast/Banner close button inside AeroIconButton(size=24dp): 14-16dp
-- ContextMenu submenu indicator: 12dp
-
-The consistent internal usage is 12-16dp. A default of **16dp** is the right baseline for standalone `Icon()` usage. Callers override via `Modifier.size(N.dp)`.
-
-**Rule:**
-- Default icon size when used standalone or in standard slots: `Modifier.size(16.dp)`
-- Small indicator glyphs (separators, spinners, checkmarks): `Modifier.size(12.dp)`
-- Do NOT set a default on the `ImageVector` itself — size is always caller-controlled via `Modifier.size()`
-
-**No `defaultWidth`/`defaultHeight` override needed:** The `ImageVector.Builder` sets `defaultWidth = 24.dp` and `defaultHeight = 24.dp` (following Feather's 24×24 viewBox). The Compose `Icon()` composable ignores `defaultWidth`/`defaultHeight` when a `Modifier.size()` is present — it scales the vector to fit the modifier bounds. So setting `defaultWidth = 16.dp` in the builder would only affect `Icon()` calls without a size modifier, which are rare. Keep the canonical 24dp viewport and control size at call site.
-
----
-
-## 5. Tinting — Use Material `Icon()`, Not a Custom `AeroIcon()`
-
-### Decision: Use `androidx.compose.material3.Icon()` directly
-
-**Rationale:**
-
-`Icon()` from Material3 reads `LocalContentColor` for its default tint. In the existing codebase, `AeroIconButton` already sets `LocalContentColor` via `CompositionLocalProvider` (AeroIconButton.kt lines 101-104). This propagation is already working correctly for any `Icon()` placed inside `AeroIconButton`.
-
-For icon usage outside `AeroIconButton` (TitleBar buttons, checkbox checkmarks, breadcrumb separators, etc.), the tint is always passed explicitly: `Icon(icon, null, tint = colors.onSurface)`. There is no ambient tint ambiguity.
-
-**Do NOT create a custom `AeroIcon()` composable** that wraps `Icon()`. The reasons:
-
-1. It adds a layer of indirection callers must learn
-2. `Icon()` from Material3 already handles `LocalContentColor` correctly
-3. The library already mixes `MaterialTheme` and `AeroTheme` — Material's `Icon()` participates in both hierarchies correctly
-4. `Icon()` handles accessibility (`contentDescription`) semantics out of the box
-
-**Tint interaction with AeroTheme:**
-
-`Icon(imageVector = x, contentDescription = null, tint = AeroTheme.colors.onSurface)` — explicit tint from `AeroColorScheme`. This is the recommended pattern for all icon uses inside library components. Never rely on `LocalContentColor` ambient for library-internal icon rendering — always pass tint explicitly to be theme-safe.
-
-**The one exception:** Icons inside `AeroIconButton { }` slots. `AeroIconButton` already `CompositionLocalProvider(LocalContentColor provides ...)`, so `Icon()` placed in its content lambda can safely omit the explicit `tint` parameter and inherit from `LocalContentColor`. Both approaches work; explicit tint is clearer in library code.
-
----
-
-## 6. Showcase IconsSection
-
-### Proposed Layout
-
-```kotlin
-// showcase/src/main/kotlin/com/mordred/showcase/sections/IconsSection.kt
-
-@Composable
-fun IconsSection() {
-    val allIcons: List<Pair<String, ImageVector>> = remember {
-        listOf(
-            "Close" to AeroIcons.Close,
-            "Minimize" to AeroIcons.Minimize,
-            // ... all 138 icons in alphabetical order
-        )
-    }
-    var query by remember { mutableStateOf("") }
-    val filtered = remember(query) {
-        if (query.isBlank()) allIcons
-        else allIcons.filter { it.first.contains(query, ignoreCase = true) }
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Icons", color = colors.onBackground, style = typography.title)
-        AeroSearchField(
-            value = query,
-            onValueChange = { query = it },
-            modifier = Modifier.fillMaxWidth(0.4f),
-            placeholder = "Filter icons..."
-        )
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 80.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.height(400.dp)  // bounded height inside parent scroll
-        ) {
-            items(filtered, key = { it.first }) { (name, vector) ->
-                IconCell(name = name, vector = vector)
-            }
-        }
-    }
-}
-
-@Composable
-private fun IconCell(name: String, vector: ImageVector) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier
-            .glassEffect(cornerRadius = 4.dp)
-            .padding(8.dp)
-            .size(72.dp)
-    ) {
-        Icon(
-            imageVector = vector,
-            contentDescription = null,
-            tint = AeroTheme.colors.onSurface,
-            modifier = Modifier.size(24.dp)
-        )
-        Text(
-            text = name,
-            style = AeroTheme.typography.label,
-            color = AeroTheme.colors.labelText,
-            maxLines = 2,
-            textAlign = TextAlign.Center
-        )
-    }
-}
-```
-
-**Placement in ShowcaseApp.kt:** Add `IconsSection()` immediately after `FoundationSection()` and before `ButtonsSection()`. Icons are foundational infrastructure; showing them early lets developers verify the icon set before seeing components that use them. Alternatively, place at the very end as an appendix. Either is acceptable — recommend "after Foundation, before Buttons" since the icon system is the primary feature of v1.1 and deserves early prominence.
-
-**LazyVerticalGrid inside a vertically-scrolling Column:** This requires a bounded height on the grid (e.g., `Modifier.height(400.dp)`). Without a bounded height, `LazyVerticalGrid` cannot measure itself inside an unbounded parent Column. Use `Modifier.height(400.dp)` or `heightIn(max = 600.dp)`.
-
-**AeroSearchField reuse:** The showcase self-exercises `AeroSearchField` inside `IconsSection`, demonstrating both the icon set AND the search field component in context. No new primitives needed.
-
----
-
-## 7. Build Order
-
-### Phase Sequence
-
-```
-Phase A: AeroIcons foundation (ALL icon constants + internal/ files)
-    ↓ compile-time gate: library compiles with AeroIcons.* available
-Phase B: Migrate internal-only consumers (parallel-safe)
-    ├── AeroCheckbox (Check, Minus)
-    ├── AeroDropdown + AeroComboBox (ChevronDown)
-    ├── AeroNumberSpinner (ChevronUp, ChevronDown)
-    ├── AeroToastHost (Close)
-    ├── AeroNotificationBanner (Close)
-    └── AeroContextMenu (ChevronRight)
-Phase C: Migrate enum icon properties (removes materialIconsExtended dependency)
-    ├── AeroAlertKind.icon → AeroIcons.*
-    └── AeroBannerKind.icon → AeroIcons.*
-Phase D: Replace Canvas-drawn icons
-    ├── AeroSearchField (Search, Close — replaces hand-drawn Canvas SearchIcon + text "x")
-    └── AeroPasswordField (Eye, EyeOff — replaces hand-drawn Canvas EyeOpenIcon/EyeClosedIcon)
-Phase E: AeroTitleBar (Minimize, Maximize, Restore, Close)
-Phase F: AeroBreadcrumb (ChevronRight — BREAKING parameter type change)
-Phase G: Remove compose.materialIconsExtended from library/build.gradle.kts
-    ↑ Only safe after Phase C completes — AeroAlertKind and AeroBannerKind are the last
-      direct consumers of Icons.Outlined.*
-Phase H: Showcase updates
-    ├── IconsSection (new)
-    ├── ButtonsSection (▲▼× → Icon)
-    └── Any other sections using text glyphs
-```
-
-**Why icons first:** All migration phases (B through H) import `AeroIcons.*`. If AeroIcons is not built first, no migration step can compile. This is a hard dependency ordering.
-
-**Why Canvas replacements (Phase D) are separate from internal glyphs (Phase B):** The Canvas composables (`SearchIcon`, `EyeOpenIcon`, `EyeClosedIcon`) in `AeroSearchField` and `AeroPasswordField` are more invasive — they involve deleting significant code blocks and restructuring the composable internals. They are lower risk for misalignment and can be done after the simpler text-glyph replacements are validated.
-
-**Why TitleBar is separate (Phase E):** `AeroTitleBar` is the highest-visibility component. Its three buttons control window state. It deserves isolated testing after the Canvas replacements are done. The private `TitleBarButton` helper must be restructured (currently takes `glyph: String`; must change to take `ImageVector`).
-
-**Why Breadcrumb is last (Phase F):** It's the only breaking API change. Doing it last means all internal changes are validated before making the public API break visible.
-
-**Why dependency removal (Phase G) is its own step:** Running `./gradlew :library:build` after removing `compose.materialIconsExtended` confirms no remaining `Icons.Outlined.*` imports exist. If any were missed, the build fails immediately. This acts as an integration test.
-
-**Migration waves for parallel development (Phases B + C can run in parallel):**
-
-```
-Wave 1 (independent, no API impact):
-  AeroCheckbox, AeroDropdown, AeroComboBox, AeroNumberSpinner,
-  AeroToastHost, AeroNotificationBanner, AeroContextMenu,
-  AeroAlertKind, AeroBannerKind
-
-Wave 2 (Canvas deletion, independent per file):
-  AeroSearchField, AeroPasswordField
-
-Wave 3 (TitleBar private restructure):
-  AeroTitleBar
-
-Wave 4 (breaking public API change):
-  AeroBreadcrumb
-
-Wave 5 (dependency removal):
-  library/build.gradle.kts — remove compose.materialIconsExtended
-
-Wave 6 (showcase):
-  IconsSection (new), ButtonsSection (update)
-```
-
-Waves 1 and 2 can be developed simultaneously by different task tickets if needed. Waves 3-6 are sequential.
-
----
-
-## 8. explicitApi() Compatibility — Confirmed
-
-The `kotlin { explicitApi() }` block in `library/build.gradle.kts` (line 9) requires all public declarations to have explicit visibility modifiers.
-
-**AeroIcons object:** `public object AeroIcons` — satisfies explicitApi.
-
-**Icon properties:** `public val Close: ImageVector get() = ...` — satisfies explicitApi. The getter syntax is required for the lazy pattern and is fully compatible with explicitApi.
-
-**Private backing fields:** `private var _Close: ImageVector? = null` — `private` is explicit, satisfies explicitApi.
-
-**Internal builder functions:** `internal fun close(): ImageVector` in `icons/internal/` files — `internal` is explicit, satisfies explicitApi.
-
-**Confirmed gotcha to avoid:** Forgetting `public` on any `val` in `AeroIcons` raises a compile error under explicitApi: `"Visibility must be specified in explicit API mode"`. The Kotlin compiler error message is clear. Since every property in `AeroIcons` is intended to be public, annotating all of them with `public` is the correct action.
-
-**No delegation or operator issues:** The `get() = _Field ?: builder().also { _Field = it }` pattern is a custom getter, not a `by` delegation. Custom getters require no special annotation treatment under explicitApi. `by lazy {}` is also compatible but adds a `Lazy<T>` object — stick with the custom getter pattern for consistency with Material Icons.
-
----
-
-## 9. Dependency Cleanup
-
-**Current library/build.gradle.kts dependency causing removal:**
-```kotlin
-implementation(compose.materialIconsExtended)   // line 15 — REMOVE in Phase G
-```
-
-**After migration:** Only `AeroAlertKind` and `AeroBannerKind` import from `androidx.compose.material.icons.*`. All other library files use only standard Compose UI (`ImageVector`, `Icon`). Once those two enums are migrated (Phase C), the dependency can be removed.
-
-**Verify before removing:** Run `./gradlew :library:build` after removing the dependency. If any file still imports `Icons.Outlined.*` or `Icons.Default.*`, the build will fail with `Unresolved reference: Icons`. This is the intended gate.
-
-**What remains:** `implementation(compose.material3)` stays — `Icon()` from Material3 (`androidx.compose.material3.Icon`) is the rendering primitive and is not in `materialIconsExtended`. Only the icon *data* (the `Icons.Outlined.*` constants) lives in `materialIconsExtended`.
-
----
-
-## 10. Component Boundaries Diagram
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                   :library module                            │
-│                                                              │
-│  com.mordred.aero.icons/                                     │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │  AeroIcons (public object)                           │   │
-│  │  ├── val Close: ImageVector    (lazy, public)        │   │
-│  │  ├── val ChevronDown: ImageVector                    │   │
-│  │  ├── val Check: ImageVector                          │   │
-│  │  └── ... ~138 total                                  │   │
-│  │                                                      │   │
-│  │  icons/internal/ (package-private)                   │   │
-│  │  ├── fun close(): ImageVector                        │   │
-│  │  ├── fun chevronDown(): ImageVector                  │   │
-│  │  └── ... one file per icon                           │   │
-│  └──────────────────────────────────────────────────────┘   │
-│              ↓ imports AeroIcons.*                           │
-│  com.mordred.aero.components/                                │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │  AeroCheckbox  → AeroIcons.Check, Minus              │   │
-│  │  AeroDropdown  → AeroIcons.ChevronDown               │   │
-│  │  AeroNumberSpinner → AeroIcons.ChevronUp/Down        │   │
-│  │  AeroTitleBar  → AeroIcons.Close/Minimize/Maximize   │   │
-│  │  AeroBreadcrumb → AeroIcons.ChevronRight (default)   │   │
-│  │  AeroContextMenu → AeroIcons.ChevronRight            │   │
-│  │  AeroToastHost → AeroIcons.Close                     │   │
-│  │  AeroNotificationBanner → AeroIcons.Close            │   │
-│  │  AeroAlertKind → AeroIcons.Info/AlertTriangle/etc.   │   │
-│  │  AeroBannerKind → AeroIcons.Info/AlertTriangle/etc.  │   │
-│  │  AeroSearchField → AeroIcons.Search, Close           │   │
-│  │  AeroPasswordField → AeroIcons.Eye, EyeOff           │   │
-│  └──────────────────────────────────────────────────────┘   │
-│                                                              │
-│  com.mordred.aero.theme/ — unchanged, no AeroIcons deps      │
-└─────────────────────────────────────────────────────────────┘
-              ↓ project dependency
-┌─────────────────────────────────────────────────────────────┐
-│                   :showcase module                           │
-│  IconsSection  → AeroIcons.* (all icons for grid display)   │
-│  ButtonsSection → AeroIcons.ChevronUp/Down/Close            │
-│  All other sections → no direct AeroIcons usage             │
-│    (they use components which internally use AeroIcons)      │
-└─────────────────────────────────────────────────────────────┘
-```
+## Scaling Considerations
+
+This is a library, not a service — "scaling" means component count and consumer adoption complexity, not users.
+
+| Scale | Approach |
+|-------|----------|
+| Current (v2.0 — 12 new components) | Single `:library` module, single JAR. All components in `com.mordred.aero.components.{group}` — no structural change to Gradle. |
+| Future (30+ components, icon-only consumers) | Extract `com.mordred:aero-icons` as separate Gradle subproject; `com.mordred:aero-compose-ui-core` (atomic) + `com.mordred:aero-compose-ui-complex` (datatable/pickers). Not for v2.0. |
+| JAR size concern | v2.0 adds ~12 composable files + ~6 internal helpers. Est. JAR growth: < 0.05 MB (all Kotlin bytecode; no bitmaps). Not a concern. |
 
 ---
 
 ## Sources
 
-- Direct source inspection: all 14 migration target files in `library/src/main/kotlin/com/mordred/aero/` — HIGH confidence
-- Material Icons Extended source pattern for lazy backing field: confirmed by reading generated Compose Material Icons files — HIGH confidence
-- Compose `ImageVector.Builder` API: `androidx.compose.ui.graphics.vector.ImageVector.Builder` — HIGH confidence (standard Compose UI API, stable since 1.0)
-- `androidx.compose.material3.Icon()` API and `LocalContentColor` behavior: standard Material3, unchanged — HIGH confidence
-- Feather Icons SVG specification: 24×24 viewBox, stroke-width 2, round linecap/linejoin (feathericons.com) — HIGH confidence
-- Kotlin `explicitApi()` behavior with custom getters: confirmed by project's own existing usage (`AeroTheme.kt` lines 97-105 uses same `@Composable get()` pattern under explicitApi) — HIGH confidence
-- `LazyVerticalGrid` bounded-height requirement inside unbounded Column: standard Compose layout constraint — HIGH confidence
+- `library/src/main/kotlin/com/mordred/aero/components/popup/AeroPopupPositionProvider.kt` — confirmed public API shape, auto-flip behavior, gap parameter (HIGH confidence)
+- `library/src/main/kotlin/com/mordred/aero/components/range/AeroSlider.kt` — confirmed `SliderDefaults.colors()` pattern for `AeroRangeSlider` extension (HIGH confidence)
+- `library/src/main/kotlin/com/mordred/aero/components/containers/AeroScrollArea.kt` — confirmed `Column.verticalScroll()` implementation; established why DataTable cannot reuse it (HIGH confidence)
+- `library/src/main/kotlin/com/mordred/aero/components/dropdown/AeroDropdown.kt` — confirmed `Popup(AeroPopupPositionProvider)` pattern all pickers should follow (HIGH confidence)
+- `library/src/main/kotlin/com/mordred/aero/components/overlay/AeroDrawer.kt` — confirmed animation + offset pattern for AeroSidebar width transitions (HIGH confidence)
+- `showcase/src/main/kotlin/com/mordred/showcase/ShowcaseApp.kt` — confirmed `Column.verticalScroll` root structure; established DataTable bounded-height requirement (HIGH confidence)
+- `.planning/milestones/v1.1-ROADMAP.md` Phase 6 notes — `LazyVerticalGrid` bounded-height pitfall documented; same constraint applies to DataTable LazyColumn (HIGH confidence)
+- `.planning/PROJECT.md` — v2.0 locked decisions, out-of-scope items, constraints (HIGH confidence)
+- `.planning/STATE.md` — confirmed AeroSidebar vs AeroDrawer mechanic distinction, DataTable risks (HIGH confidence)
 
 ---
 
-*Architecture research for: AeroIcons integration into aero-compose-ui (v1.1)*
-*Researched: 2026-04-28*
+*Architecture research for: aero-compose-ui v2.0 Stateful + Layout integration*
+*Researched: 2026-04-30*

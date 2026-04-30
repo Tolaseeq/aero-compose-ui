@@ -1,209 +1,219 @@
 # Project Research Summary
 
-**Project:** aero-compose-ui -- v1.1 Icon System
-**Domain:** Compose Desktop UI component library -- typed icon set introduction (Phosphor Regular)
-**Researched:** 2026-04-29
+**Project:** aero-compose-ui — v2.0 Stateful + Layout
+**Domain:** Compose Desktop UI component library (Windows Aero / glassmorphism visual style)
+**Researched:** 2026-04-30
 **Confidence:** HIGH
 
 ## Executive Summary
 
-v1.1 replaces every text-glyph icon and all compose.materialIconsExtended usage with a unified typed vector icon set derived from Phosphor Icons Regular weight. Phosphor was chosen over Feather because its softer rounded stroke at 256-unit viewBox more closely matches the Win7-toolbar-glyph aesthetic that defines aero-compose-ui's visual identity. Valkyrie CLI 1.1.1 batch-converts selected Phosphor SVGs to Kotlin ImageVector builders, producing one .kt file per icon under com.mordred.aero.icons.internal/, with a public AeroIcons facade object exposing all 138 typed constants via lazy backing properties. No new runtime dependencies are added; compose.materialIconsExtended is removed.
+v2.0 adds **12 new components** (8 complex stateful + 4 advanced layout) to a mature Compose Desktop library. Research across stack, features, architecture, and pitfalls converged on a clear story: this milestone is mostly **hand-rolled work over existing primitives**, with exactly **one new dependency** (`kotlinx-datetime:0.6.2` for the four date/time pickers) and a small set of **shared internal helpers** that must be built first to avoid per-component duplication.
 
-The 138-icon set covers all existing component migration requirements (17 required icons) plus a standard desktop UI vocabulary. Icons are named verbatim after their Phosphor source names in PascalCase -- CaretDown not ChevronDown, MagnifyingGlass not Search, Gear not Settings, House not Home, Funnel not Filter -- ensuring frictionless 1-to-1 lookup against phosphoricons.com. The set lives inside :library (not a separate Gradle module), preserving single-artifact delivery.
+The dominant risk is not "too much new tech" — it's **silent-failure layout/state bugs** specific to Compose Desktop. Two pitfalls (PITFALL-01: `LazyColumn` inside `AeroScrollArea` kills DataTable virtualization; PITFALL-03: Desktop `touchSlop = 18dp` silently breaks all `detectDragGestures` for Canvas drags affecting ColorPicker, RangeSlider, DataTable column resize) are showstoppers that compile and run but produce fundamentally wrong behavior. Three components are **LARGE** by feature scope (DataTable, DateRangePicker, ColorPicker) and deserve dedicated phases; the other nine cluster naturally into shared-primitive phases.
 
-The primary risks are mechanical rather than conceptual: lazy initialization must be enforced from the start (eager val at 138 icons causes a measurable startup spike); compose.materialIconsExtended removal requires purging 4 files (2 source + 2 test) before the Gradle line is touched; AeroNumberSpinner's 16x12dp buttons are too small for Icon() at the Phosphor stroke weight -- at 10dp render the stroke is 0.47dp sub-pixel -- and require a Canvas or oversized-button solution; tint must always be passed explicitly because Icon()'s default LocalContentColor is not set by AeroTheme.
-
----
+The recommended approach: **Phase 7 builds the five shared internal primitives** (CalendarGrid, ColorMath, HsvSquare+HueSlider, DragSplitter, StepIndicator) as the foundation. **Phases 8–10 then build the public components** in dependency order, with the three LARGE components getting isolated phases and the SMALL/MEDIUM ones grouped. The single visual checkpoint at the end of v2.0 must include a 16-item "looks done but isn't" checklist (drag response, three-theme contrast, disabled state, `transparent=true` grep gate) to catch the silent failures.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The existing stack (Kotlin 2.1.21, CMP 1.7.3, Gradle 8.14.3, JDK 17) requires zero changes for v1.1. The only build-file modification is removal of implementation(compose.materialIconsExtended) from library/build.gradle.kts -- done last, after all migration is verified.
+The library is already on a stable Kotlin/Compose Desktop foundation (Kotlin 2.1.21, CMP 1.7.3, JDK 17, Material 3 wrapper). v2.0 does NOT change this. **Only one new dependency is needed**, and it is for the date/time picker family. Everything else — color math, split pane drag, calendar grid, virtualization wiring — is hand-rolled using primitives already present in Compose Desktop or in the existing aero-compose-ui codebase.
 
-**Tooling:**
-- **Valkyrie CLI 1.1.1** (ComposeGears/Valkyrie) -- batch SVG-to-ImageVector; --output-format BackingProperty; run once offline, commit output
-- **Phosphor Icons Regular** (github.com/phosphor-icons/core, MIT) -- SVGs at raw/regular/*.svg; viewBox 256x256, stroke-width 16, stroke-linecap round
+**Core technologies:**
+- **`org.jetbrains.kotlinx:kotlinx-datetime:0.6.2`** (NEW) — `LocalDate` / `LocalTime` / `LocalDateTime` as the public picker API types and for month arithmetic. v0.6.2 is the last stable release before the 0.7.0 breaking renames; safe with Kotlin 2.1.21 per Kotlin's backward-compat policy.
+- **`androidx.compose.foundation.lazy.LazyColumn` + `rememberScrollbarAdapter(LazyListState)`** (existing) — DataTable virtualization. Header is a plain `Row` outside the LazyColumn sharing the same `ScrollState` (NOT `stickyHeader` — JetBrains bugs #3016, #2940).
+- **`Color.hsv(hue, sat, val, alpha)`** (existing in `compose.ui.graphics`) — ColorPicker forward conversion. Inverse (Color → HSV) is ~20 lines of math, hand-rolled.
+- **`awaitPointerEventScope` + manual loop** (existing in `androidx.compose.ui.input.pointer`) — replaces `detectDragGestures` for ALL drag interactions on Desktop (touchSlop 18dp issue, JetBrains/compose-jb #343).
+- **`Popup` + `LazyVerticalGrid` (7-column)** (existing) — calendar grid for all 4 date/time pickers. Material3 `DatePicker` is NOT viable (Android-only internals; community-confirmed crashes on Compose Desktop).
 
-**Generated builder constants (Phosphor -- override Feather values in STACK.md body):**
-- defaultWidth = 24.dp, defaultHeight = 24.dp (render target, unchanged)
-- viewportWidth = 256f, viewportHeight = 256f (Feather was 24f)
-- strokeLineWidth = 16f (Valkyrie handles this automatically based on the source SVG stroke-width attribute)
+Explicitly NOT added: `components-splitpane-desktop` (no stable 1.7.x; hand-roll ~80 lines), color-picker libraries (Android-only or wrong visual contract), Material3 `DatePicker` (crashes).
+
+Full stack details: `.planning/research/STACK.md`
 
 ### Expected Features
 
-**Must have (table stakes -- v1.1 launch blockers):**
-- AeroIcons object with 138 typed ImageVector constants, flat namespace, lazy backing property, explicitApi() compatible
-- All 17 required migration icons present before any component touch
-- All 10 component text-glyph migrations: AeroCheckbox, AeroDropdown, AeroNumberSpinner, AeroTitleBar, AeroToastHost, AeroNotificationBanner, AeroContextMenu, AeroSearchField, AeroPasswordField, plus AeroAlertKind/AeroBannerKind off Icons.Outlined.*
-- compose.materialIconsExtended removed from :library/build.gradle.kts
-- IconsSection in showcase -- LazyVerticalGrid of all 138 icons with name labels, AeroSearchField live filter
+Anti-features matter more than features here — every component has 1-2 footguns that produce real bugs if naively included. The features themselves are well-understood across WPF/JavaFX/Qt/Flutter/MUI X (HIGH consensus).
 
-**Critical naming table (Phosphor deviates from industry conventions):**
+**Must have (table stakes per locked v2.0 scope):**
+- DataTable: sortable headers, single/multi row selection (Ctrl/Shift), virtualized rows, resizable columns
+- TreeView: lazy children via `onExpand`, expand/collapse, optional icons
+- Date/time pickers: popup-based UI for all 4 (DatePicker, TimePicker, DateTimePicker, DateRangePicker)
+- ColorPicker: HSV square + hue + RGB sliders + HEX input + swatches
+- RangeSlider: dual-thumb (composition over AeroSlider)
+- Accordion: `mode = single | multi`
+- SplitPane: 2-pane public API + N-pane via nesting
+- Sidebar: expanded / collapsed-icons / hidden modes
+- StepperWizard: linear with per-step `onValidate`
 
-| Use | Not |
-|-----|-----|
-| AeroIcons.CaretDown | ChevronDown |
-| AeroIcons.MagnifyingGlass | Search |
-| AeroIcons.Gear | Settings |
-| AeroIcons.House | Home |
-| AeroIcons.Funnel | Filter |
-| AeroIcons.EyeSlash | EyeOff |
-| AeroIcons.X | Close |
-| AeroIcons.Warning | AlertTriangle |
-| AeroIcons.XCircle | Error / AlertCircle |
-| AeroIcons.Question | HelpCircle / HelpOutline |
-| AeroIcons.Envelope | Mail |
-| AeroIcons.PaperPlane | Send |
+**Critical anti-features (hard-exclude, will produce bugs if included):**
+- DataTable: cell editing, column reordering, filtering UI (API surface explosion)
+- DateTimePicker: auto-close on date selection before time is set (premature `onChange` fire)
+- DateRangePicker: auto-swap start/end when user picks end before start (breaks user mental model)
+- ColorPicker: round-tripping HSV→RGB→HSV on each edit (color drift bug)
+- StepperWizard: destroying step composable state on Back navigation (forces form re-entry)
+- SplitPane: 1dp divider with no invisible hit area (impossible to grab)
 
-Full 138-icon master list: FEATURES.md section 3 (Required column marks the 17 migration-blocking icons).
+**Already deferred (out of scope, per PROJECT.md):**
+- Inline-mode date/time pickers — only popup
+- DataTable cell editing, column reorder, filtering UI
+- TreeView drag-and-drop
+- ColorPicker eyedropper
+- StepperWizard branching
+- AeroSidebar drag-to-resize width
 
-**Defer to v1.2+:** Filled/Bold/Duotone variants; separate :icons Gradle module; custom icon registration API; brand/currency/weather/medical icons.
+**Complexity ratings (drives phase load balancing):**
+- **LARGE (3):** AeroDataTable, AeroDateRangePicker, AeroColorPicker — each deserves an isolated or near-isolated phase
+- **MEDIUM (5):** AeroDatePicker, AeroDateTimePicker, AeroTreeView, AeroSidebar, AeroStepperWizard, AeroSplitPane
+- **SMALL (3):** AeroRangeSlider, AeroTimePicker, AeroAccordion — bundle with larger items
+
+Full feature breakdown per component: `.planning/research/FEATURES.md`
+
 ### Architecture Approach
 
-The architecture follows the Material Icons Extended pattern exactly: a public object AeroIcons facade exposes 138 constants as public val Name: ImageVector get() lazy properties backed by private var _Name: ImageVector? = null; per-icon ImageVector.Builder calls live in internal fun functions inside icons/internal/ (one file per icon). compose.material3.Icon() is used at all call sites -- no custom AeroIcon() wrapper. Tint is always passed explicitly; LocalContentColor is never relied upon inside library code.
+Four new packages under `com.mordred.aero.components` + one extension to existing `range/`. No new Gradle modules — everything stays in `:library` per locked v2.0 decision. The critical insight: **five shared internal helpers must be extracted first** to prevent per-component duplication and inconsistency.
 
-**Major components:**
-1. **icons/AeroIcons.kt** -- public facade, 138 lazy-property constants, KDoc with naming guide and phosphoricons.com lookup instructions
-2. **icons/internal/*.kt** -- one file per icon; internal fun loadX(): ImageVector with viewportWidth=256f, viewportHeight=256f, strokeLineWidth=16f
-3. **Migrated library components** -- Text(glyph) / Canvas drawing / Icons.Outlined.* replaced with Icon(AeroIcons.Name, tint=colors.X, modifier=Modifier.size(Ndp))
-4. **IconsSection.kt (showcase)** -- LazyVerticalGrid(GridCells.Adaptive(80.dp)), bounded Modifier.height(400.dp), AeroSearchField filter
+**New packages:**
+1. `components/range/` (extension) — `AeroRangeSlider.kt` joins existing AeroSlider here
+2. `components/pickers/` (NEW) — All 4 date/time pickers + ColorPicker + `internal/` for shared helpers
+3. `components/datatable/` (NEW) — AeroDataTable + AeroTreeView + `internal/` for header/row/node composables
+4. `components/layout/` (NEW) — AeroAccordion + AeroSplitPane + AeroSidebar + AeroStepperWizard + `internal/`
 
-**API decision locked:** AeroBreadcrumb.separator stays as a String parameter in v1.1 -- intentional. Only the internal submenu indicator in AeroContextMenu is migrated to Icon(AeroIcons.CaretRight).
+**Shared internal primitives (Phase 7 — no public output, unlocks Phases 8–10):**
+1. **`AeroCalendarGrid`** — month grid with prev/next nav; used by DatePicker + DateRangePicker; DateTimePicker reuses via composition
+2. **`AeroColorMath`** — pure HSV↔RGB↔HEX functions; HSV-first state to prevent drift; unit-testable
+3. **`AeroHsvColorSquare` + `AeroHueSlider`** — Canvas-based color selection primitives for ColorPicker (use `awaitPointerEventScope`, NOT `detectDragGestures`)
+4. **`AeroDragSplitter`** — draggable divider used by SplitPane and DataTable column resize; built on `awaitPointerEventScope`
+5. **`AeroStepIndicator`** — step dot/line row used by StepperWizard
+6. **`AeroCalendarPositionProvider`** — calendar popups exceed trigger width; cannot reuse `AeroDropdownPopup` width-locking pattern
+
+**Reuse from v1.0/v1.1:**
+- `AeroPopupPositionProvider` (popup placement for DatePicker/TimePicker triggers, but NOT for the calendar popup width itself)
+- `AeroSlider` color pattern (RangeSlider wraps Material3 RangeSlider with same `SliderDefaults.colors()`)
+- `AeroScrollBar` + raw `LazyListState` (DataTable virtualization — **NOT `AeroScrollArea`**, see PITFALL-01)
+- `AeroTooltip` (Sidebar collapsed-mode icon labels)
+- `AeroTextField` (ColorPicker HEX input + TimePicker hour/minute fields)
+- `glassPanel(cornerRadius=8.dp)` + `border(glassBorder)` (all popup panels)
+
+**Showcase wiring:**
+- 3 new Section files: `DataSection.kt`, `PickersSection.kt`, `LayoutSection.kt`
+- 1 row added to existing `RangeSection.kt` for AeroRangeSlider
+- `ShowcaseApp.kt` adds 3 calls (`DataSection()`, `PickersSection()`, `LayoutSection()`) — no structural changes to existing sections
+
+Full architecture: `.planning/research/ARCHITECTURE.md`
 
 ### Critical Pitfalls
 
-1. **Eager ImageVector initialization** -- every constant must use the lazy backing pattern (get() = _X ?: loadX().also { _X = it }). Never eager val. Verify after writing first 5 icons before batch-generating the rest. (PITFALLS.md section 1)
+15 named pitfalls + 2 Win11-specific are documented in PITFALLS.md. The two showstoppers are silent failures (compiles and runs, behavior is wrong); the rest are scoped to specific phases.
 
-2. **materialIconsExtended removal requires 4-file purge including tests** -- AeroAlertKindTest.kt and AeroBannerKindTest.kt import Icons.Outlined.* in assertions. Grep library/src/ before touching the Gradle line; must return zero results. (PITFALLS.md sections 2, 4)
+1. **PITFALL-01: `LazyColumn` inside `AeroScrollArea` kills DataTable virtualization.** Wrapping `LazyColumn` in `verticalScroll` (which AeroScrollArea uses) gives infinite vertical constraints → all rows render eagerly → no virtualization. Same root cause family as the v1.0 AeroDropdown popup-offset regression. **Prevention:** DataTable must use raw `LazyListState + AeroScrollBar` directly, NOT AeroScrollArea. Document the exclusion in DataTable KDoc and the `internal/` README.
 
-3. **AeroNumberSpinner buttons too small for Phosphor stroke** -- at 10dp render, stroke = 10*(12/256) = 0.47dp sub-pixel. Raise button to 14dp+ with Modifier.size(12.dp), or Canvas-draw the chevrons. (PITFALLS.md section 8)
+2. **PITFALL-03: Compose Desktop `touchSlop = 18dp` breaks all `detectDragGestures` for Canvas drags.** Mouse movement between events is 1–3px, always below the 18dp threshold; `detectDragGestures` callback never fires. Affects AeroColorPicker HSV square, AeroRangeSlider dual thumbs, AeroDataTable column resize. Confirmed upstream JetBrains/compose-jb #343. **Prevention:** Use `awaitPointerEventScope` + manual loop. Establish the pattern as a shared utility (`AeroDragSplitter` and similar) in Phase 7 — never let an executor "discover" this mid-phase.
 
-4. **Tint discipline -- always explicit** -- Icon()'s default tint is LocalContentColor, which AeroTheme does not set. Every Icon() in :library must pass tint=colors.X explicitly. Verify in all three themes. (PITFALLS.md section 5)
+3. **PITFALL-02: Calendar popup width vs trigger width mismatch.** `AeroDropdownPopup` locks width to `anchorWidth`. A 300dp calendar popup on a 240dp trigger field will mispositon; AeroDateRangePicker at ~560dp is acute. **Prevention:** Write `AeroCalendarPositionProvider` as the FIRST artifact in the pickers phase — all 4 picker components depend on it.
 
-5. **Phosphor naming confusion** -- AeroIcons.Close does not exist; the name is AeroIcons.X. Document in KDoc with full naming table. (PITFALLS.md Phosphor revision point 3)
+4. **PITFALL-04: DataTable selection stored as `Set<Int>` indices becomes stale after sort.** Row 5 before sort is not row 5 after sort; selection silently jumps. **Prevention:** Use `Set<RowKey>` with caller-supplied `key: (T) -> Any`. This is an API design decision — must be locked at planning time, not discovered after API ships (would be a breaking change).
 
-6. **SVG conversion verification** -- spot-check 5 icons after Valkyrie batch: viewportWidth=256f (not 24f), strokeLineWidth=16f (not 2f), fill=Color.Transparent. Grep for viewportWidth=24f in icons/internal/ -- must return nothing. (PITFALLS.md section 9)
+5. **PITFALL-05: TreeView `onExpand` re-fires when node scrolls out and back in** (LazyColumn composable disposal). Lazy callback gets called multiple times for the same node, potentially causing duplicate fetches. **Prevention:** `childrenLoaded: Boolean` lives in a `SnapshotStateMap` above the LazyColumn, NOT in the node's composable.
 
-7. **Easy-to-miss clear button glyph** -- AeroSearchField line 121 uses a plain lowercase-x text character, not a Unicode glyph. Add a dedicated grep for this pattern to the migration checklist. (PITFALLS.md section 16)
----
+Plus: HSV round-trip drift (PITFALL — ColorPicker), AeroDateRangePicker dual-calendar layout density on small windows, cross-theme contrast on date-picker disabled cells, accordion state ownership traps, sidebar tooltip flicker on collapse animation, Win11 `transparent=true` rule extends to `DialogWindow` for any picker that uses Dialog instead of Popup.
+
+Full pitfall list with phase mapping + 16-item "looks done but isn't" checklist: `.planning/research/PITFALLS.md`
 
 ## Implications for Roadmap
 
-v1.0 completed through Phase 3. v1.1 continues numbering from Phase 4.
+The four researchers converged on a 4-phase structure for v2.0. Phase numbering continues from v1.1 (last phase was 6).
 
-### Phase 4: AeroIcons Foundation
+### Phase 7: Shared Internal Primitives
 
-**Rationale:** Hard build-order gate -- all 138 component migrations and the showcase require AeroIcons.* to compile. Nothing else in v1.1 can proceed until this exists and is verified.
+**Rationale:** Five primitives (CalendarGrid, ColorMath helpers, HsvSquare+HueSlider, DragSplitter, StepIndicator) + one position provider (AeroCalendarPositionProvider) are dependencies for ≥2 downstream components each. Building them per-component duplicates work, guarantees inconsistency, and burns time when (not if) the touchSlop / popup-width / HSV-drift pitfalls re-surface in each component.
+**Delivers:** No public components shipped. New `internal/` files in `components/pickers/`, `components/datatable/`, `components/layout/`. Unit tests for `AeroColorMath` (HSV↔RGB round-trip stability).
+**Addresses:** Architecture extraction discipline; pre-emptively defuses PITFALL-02 (popup width), PITFALL-03 (touchSlop), HSV drift.
+**Avoids:** Per-component drag-pattern divergence; per-component calendar-grid divergence; HSV round-trip drift.
 
-**Delivers:**
-- icons/AeroIcons.kt -- 138 lazy properties, KDoc with naming convention and phosphoricons.com lookup
-- icons/internal/*.kt -- 138 ImageVector.Builder files generated via Valkyrie CLI from Phosphor Regular SVGs
-- Phosphor SVG source pinned and committed to tools/phosphor-svgs/regular/
-- Spot-check of 5 representative icons (viewportWidth=256f, strokeLineWidth=16f, fill=Transparent, strokeLineCap=Round) before batch-generating the rest
-- explicitApi() first-compile verified on initial 5 icons
-- KDoc: naming convention table, recommended size range 16-32dp, tint requirement, phosphoricons.com URL
+### Phase 8: Pickers (Date / Time / Color)
 
-**Avoids:** eager init (Pitfall 1), SVG conversion artifacts (Pitfall 9), explicitApi() surprises (Pitfall 11), file hygiene (Pitfall 12)
+**Rationale:** All five picker components (DatePicker, TimePicker, DateTimePicker, DateRangePicker, ColorPicker) plus RangeSlider depend on Phase 7 primitives. Date pickers also need `kotlinx-datetime:0.6.2` (the only new dep). RangeSlider is trivial (composition over AeroSlider) and can ride along with TimePicker (also SMALL) for phase load balancing.
+**Delivers:** AeroRangeSlider, AeroTimePicker, AeroDatePicker, AeroDateTimePicker, AeroDateRangePicker, AeroColorPicker. Build order: RangeSlider → DatePicker (validates CalendarGrid) → TimePicker → DateTimePicker (composition) + DateRangePicker (LARGE) + ColorPicker (LARGE).
+**Uses:** `kotlinx-datetime:0.6.2` (Stack); CalendarGrid, ColorMath, HsvSquare+HueSlider, AeroCalendarPositionProvider (Phase 7); existing `AeroSlider`, `AeroTextField`, `AeroPopupPositionProvider`, `glassPanel`, `AeroIcons.{CaretLeft,CaretRight}`.
+**Implements:** `components/pickers/` package; RangeSlider added to existing `components/range/`.
 
-**Research flag:** No research-phase needed. Material Icons pattern and Valkyrie CLI are HIGH-confidence verified.
+### Phase 9: Data (DataTable + TreeView)
 
----
+**Rationale:** AeroDataTable is the LARGEST component in v2.0 — virtualization + selection + sort + resize is enough work for a dedicated phase. AeroTreeView shares the LazyColumn + lazy-loading pattern but is MEDIUM complexity; pairing it lets one phase own the "lazily-rendered hierarchical/tabular data" mental model. Both depend on `AeroDragSplitter` (Phase 7) and on the raw `LazyListState + AeroScrollBar` integration (NOT AeroScrollArea — PITFALL-01).
+**Delivers:** AeroDataTable, AeroTreeView. DataTable selection-by-key API locked in plan-01 (PITFALL-04).
+**Uses:** `LazyColumn`, `LazyListState`, `rememberScrollbarAdapter`, `AeroScrollBar`, `AeroDragSplitter` (Phase 7). NOT `AeroScrollArea`.
+**Implements:** `components/datatable/` package.
 
-### Phase 5: Component Migrations + Dependency Removal
+### Phase 10: Layout (Accordion + SplitPane + Sidebar + StepperWizard)
 
-**Rationale:** Once AeroIcons compiles, all migrations are unblocked. materialIconsExtended removal can only happen after every consumer -- including test files -- is migrated. This phase ends with a passing build and verified JAR size reduction.
+**Rationale:** The four advanced layout components are all MEDIUM/SMALL with no LARGE outliers. They share a "structural composable that owns child layout" pattern. SplitPane uses `AeroDragSplitter` (Phase 7); StepperWizard uses `AeroStepIndicator` (Phase 7); Accordion and Sidebar are mostly state + transitions over existing primitives.
+**Delivers:** AeroAccordion (single + multi modes), AeroSplitPane (2-pane + nesting docs), AeroSidebar (expanded/collapsed/hidden), AeroStepperWizard (linear + per-step onValidate).
+**Uses:** AeroDragSplitter, AeroStepIndicator (Phase 7); AeroTooltip (Sidebar collapsed mode); existing animation primitives; glass modifiers.
+**Implements:** `components/layout/` package.
 
-**Delivers:**
-- 10 text-glyph component migrations (exact file/line locations in FEATURES.md section 5 and ARCHITECTURE.md section 3)
-- AeroAlertKind and AeroBannerKind migrated to AeroIcons.*
-- AeroAlertKindTest and AeroBannerKindTest rewritten to assert AeroIcons.* by name
-- compose.materialIconsExtended removed; ./gradlew :library:dependencies | grep materialIcons returns nothing
-- Full glyph grep passes zero hits in library source (including separate lowercase-x clear-button check)
-- JAR size before/after documented
+### Phase 11: Showcase Sections + v2.0 Visual Sign-off
 
-**Wave ordering within phase:**
-1. Wave 1 (parallel): AeroCheckbox, AeroDropdown, AeroNumberSpinner, AeroToastHost, AeroNotificationBanner, AeroContextMenu, AeroAlertKind, AeroBannerKind
-2. Wave 2 (parallel): AeroSearchField, AeroPasswordField (Canvas composables deleted)
-3. Wave 3: AeroTitleBar (private TitleBarButton restructured from glyph: String to icon: ImageVector)
-4. Wave 4: test file rewrites (AeroAlertKindTest, AeroBannerKindTest)
-5. Wave 5: remove materialIconsExtended + verify
-
-**Avoids:** 4-file purge missed (Pitfalls 2+4), AeroNumberSpinner stroke too thin (Pitfall 8), tint omitted (Pitfall 5), ContextMenu submenu glyph missed (Pitfall 14), JAR size not verified (Pitfall 13)
-
-**Research flag:** No research-phase needed. All 14 migration touchpoints inventoried with exact file/line references.
----
-
-### Phase 6: Showcase IconsSection
-
-**Rationale:** Showcase is the visual sign-off checkpoint for the entire v1.1 milestone. Sequenced last so it exercises the final verified icon set and serves as the three-theme visual validation gate.
-
-**Delivers:**
-- showcase/sections/IconsSection.kt -- LazyVerticalGrid(GridCells.Adaptive(80.dp)), bounded Modifier.height(400.dp), AeroSearchField live name filter, explicit tint=AeroTheme.colors.onSurface
-- ButtonsSection.kt glyph demos updated to Icon(AeroIcons.CaretUp/CaretDown/X)
-- IconsSection registered in ShowcaseApp.kt (after FoundationSection)
-- Three-theme visual checkpoint: AeroBlue, AeroDark, Classic -- all 138 icons visible with correct tint
-- AeroNumberSpinner disabled-state visual checkpoint in AeroDark
-
-**Avoids:** LazyVerticalGrid unbounded height crash (ARCHITECTURE.md section 6), tint invisible in dark themes (Pitfall 5), stroke too faint at small sizes (Pitfall 15)
-
-**Research flag:** No research-phase needed. Standard Compose patterns throughout.
-
----
+**Rationale:** v1.1 demonstrated the value of treating the visual checkpoint as a first-class plan with its own SUMMARY.md (Phase 6 P03 — "three-theme visual sign-off"). v2.0 has 12 components and a 16-item "looks done but isn't" checklist — it deserves a dedicated phase, not a tail-end plan in Phase 10.
+**Delivers:** `DataSection.kt`, `PickersSection.kt`, `LayoutSection.kt` wired into `ShowcaseApp.kt`; `RangeSection.kt` extended with RangeSlider row. Three-theme visual sign-off (AeroBlue / AeroDark / Classic) with the 16-item checklist from PITFALLS.md as the formal milestone gate.
+**Avoids:** Silent layout failures slipping past code-only verification (PITFALL-01, PITFALL-03, cross-theme contrast traps).
 
 ### Phase Ordering Rationale
 
-- Phase 4 to 5 to 6 is a hard dependency chain: foundation must compile before migration, migration must complete (including test files) before dependency removal, showcase is the final visual sign-off
-- Migrations within Phase 5 are mostly parallel (Wave 1) with four sequential gates: Canvas deletion after glyph replacements; TitleBar isolated for higher complexity; test rewrites before dep removal; dep removal before showcase sign-off
-- AeroBreadcrumb.separator is intentionally excluded from migration -- locked decision, not an oversight
+- **Phase 7 first because primitives.** Five components (DataTable, ColorPicker, RangeSlider, SplitPane, DateRangePicker) need shared drag/calendar/color helpers. Building them in a foundation phase prevents drift and pre-empts the silent-failure pitfalls (touchSlop, popup width, HSV drift).
+- **Phase 8 (Pickers) second because new dependency.** `kotlinx-datetime:0.6.2` adds in this phase. All 5 pickers plus the SMALL RangeSlider land here. Build order inside the phase: RangeSlider → DatePicker → TimePicker → composition pickers (DateTimePicker, DateRangePicker) → ColorPicker.
+- **Phase 9 (Data) isolated because LARGE.** DataTable is the heaviest single component. Pairing only with TreeView (which shares LazyColumn patterns) avoids overload.
+- **Phase 10 (Layout) is naturally cohesive.** Accordion + SplitPane + Sidebar + StepperWizard all share the "structural composable" mental model and have no LARGE outlier.
+- **Phase 11 (Showcase + sign-off) mirrors v1.1's successful visual-checkpoint-as-plan convention.** With 12 new components + 16-item silent-failure checklist, it cannot be a tail plan in Phase 10.
 
 ### Research Flags
 
-- **Phase 4:** No additional research needed
-- **Phase 5:** No additional research needed
-- **Phase 6:** No additional research needed
+Phases likely needing deeper research during planning (`gsd-phase-researcher` recommended):
+- **Phase 7:** Shared `awaitPointerEventScope` drag pattern + HSV math correctness need careful design upfront. Touchscreen vs mouse semantics on Compose Desktop need confirmation.
+- **Phase 8:** `kotlinx-datetime:0.6.2` ↔ Kotlin 2.1.21 compile validation at first use; calendar popup density on AeroDateRangePicker (dual-month layout) needs visual mockup before implementation.
+- **Phase 9:** `LazyColumn` + horizontal scroll + measured columns triple-constraint (PITFALL-01 family); confirm `rememberScrollbarAdapter(LazyListState)` API surface in CMP 1.7.3.
 
-All three phases use well-documented patterns with HIGH-confidence verified specifics.
-
----
+Phases with standard patterns (skip phase research):
+- **Phase 10:** Layout components are well-understood patterns; existing aero-compose-ui conventions (animation, glass, tooltip) cover everything needed.
+- **Phase 11:** Showcase wiring follows v1.0/v1.1 pattern verbatim.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Versions locked in libs.versions.toml; Valkyrie CLI 1.1.1 confirmed active Feb 2026; Phosphor MIT license confirmed |
-| Features | HIGH | 138 icons cross-referenced against official Phosphor React port and Kotlin port; all PascalCase names verified against phosphoricons.com |
-| Architecture | HIGH | Direct codebase inspection of all 14 migration targets; exact file/line locations confirmed |
-| Pitfalls | HIGH | Sourced from direct code inspection; AeroNumberSpinner size math computed; Phosphor stroke scaling recalculated for 256-unit viewBox |
+| Stack | HIGH | `kotlinx-datetime` 0.6.2 verified on Maven Central; SplitPane absence verified; Compose built-ins verified in CMP 1.7.3. One MEDIUM: exact `kotlinx-datetime:0.6.2` ↔ Kotlin 2.1.21 compatibility inferred from policy, validate at first compile. |
+| Features | HIGH | Cross-verified across WPF, JavaFX, Qt, Flutter, MUI X, AG Grid, W3C ARIA, NN/g — strong consensus on table stakes and anti-features. |
+| Architecture | HIGH | All findings derived from direct source inspection of existing `AeroScrollArea.kt`, `AeroDropdownPopup.kt`, `AeroPopupPositionProvider.kt`, `AeroSlider.kt`. |
+| Pitfalls | HIGH | All 15+2 pitfalls grounded in either source code, confirmed upstream issues (#343, #3016, #2940, #3757), or token-level color math from `AeroColorScheme.kt`. |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **AeroNumberSpinner size decision:** Research confirms the sub-pixel stroke problem at 10dp but defers implementation choice (Canvas draw vs button height increase) to Phase 5 execution. Implementer must test visually.
-- **Phosphor SVG commit hash:** The exact commit to pin from phosphor-icons/core is resolved at conversion time. Record in tools/phosphor-svgs/.pin or a README alongside the SVGs.
-- **frame-corners and square visual weight:** These two title-bar icons must be spot-checked after Valkyrie conversion to confirm acceptable appearance against AeroTitleBar's glassmorphic background.
-- **AeroBreadcrumb separator:** Confirmed intentionally left as String -- document in Phase 5 plan so it is not accidentally changed during migration sweep.
-
----
+- **`kotlinx-datetime:0.6.2` ↔ Kotlin 2.1.21 first-compile validation** — should be a Phase 8 plan-01 acceptance criterion. If it fails, fallback is `kotlinx-datetime:0.7.1-0.6.x-compat` (documented upgrade path).
+- **AeroDateRangePicker minimum popup width** — research estimates ~560dp for dual-month layout; needs a visual mockup at Phase 8 design time before implementing the layout. Mitigation strategy: `BoxWithConstraints` to fall back to vertical stack on narrow windows.
+- **`rememberScrollbarAdapter(LazyListState)` API verification** — HIGH probability available since CMP 1.4; validate at Phase 9 plan-01.
+- **Whether upstream `touchSlop` issue #343 was silently fixed in CMP 1.7.x** — 1-minute drag test at Phase 7 plan-01 confirms which path to take.
+- **Compose Desktop `LazyColumn` + horizontal scroll triple-constraint behavior** — needs a Phase 9 spike to validate the "header Row + body LazyColumn share same horizontal ScrollState" pattern before committing to it.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- github.com/phosphor-icons/core -- SVG source repository, file naming, viewBox 256x256 spec, stroke-width 16 spec
-- github.com/phosphor-icons/react -- confirms Question, SpeakerHigh/Low/X, BatteryFull/Low/Empty names
-- github.com/dev778g-me/PhosphorIcon-compose -- official Kotlin/CMP port; all 138 PascalCase names confirmed
-- github.com/ComposeGears/Valkyrie (cli-1.1.1, Feb 2026) -- batch conversion tool; BackingProperty output format
-- Direct codebase inspection -- all 14 migration target files in :library; AeroAlertKindTest.kt; AeroBannerKindTest.kt; library/build.gradle.kts line 15; ButtonsSection.kt lines 50-52
-- Material Icons Extended source -- lazy backing-field pattern reference
-- phosphoricons.com -- official icon browser, name verification
+- Existing aero-compose-ui source: `library/src/main/kotlin/com/mordred/aero/components/{containers/AeroScrollArea.kt, popup/AeroDropdownPopup.kt, popup/AeroPopupPositionProvider.kt, range/AeroSlider.kt, theme/AeroColorScheme.kt, theme/GlassModifiers.kt}`
+- JetBrains/compose-jb tracker: #343 (touchSlop), #3016 + #2940 (stickyHeader), #3757 (Win11 transparent crash)
+- Maven Central: `kotlinx-datetime` 0.6.2 (latest stable pre-0.7.0)
+- W3C ARIA APG: tree, dialog, slider patterns
+- Compose Desktop official docs (LazyColumn, Popup, awaitPointerEventScope)
 
 ### Secondary (MEDIUM confidence)
-- iconbolt.com/iconsets/phosphor-regular/* -- cross-reference for arrow-square-out, lock-open
-- icon-sets.iconify.design/ph/ -- cross-reference for wifi-high, wifi-slash, frame-corners
-- github.com/adamglin0/compose-phosphor-icon -- secondary Kotlin port namespace confirmation
-- github.com/rafaeltonholo/svg-to-compose (v2.2.0) -- fallback conversion tool if Valkyrie has issues
+- WPF, JavaFX, Qt Widgets/QML feature comparisons (cross-framework table-stakes consensus)
+- MUI X / AG Grid / react-datepicker GitHub issue trackers (anti-features sourcing)
+- Kotlin Slack #compose-desktop community confirmation: Material3 `DatePicker` crashes on Desktop
+- NN/g UX research on date picker patterns
+
+### Tertiary (LOW confidence)
+- Exact `AeroDateRangePicker` min width estimate (~560dp) — extrapolated from dp/cell ratios, validate with mockup
+- `kotlinx-datetime:0.6.2` ↔ Kotlin 2.1.21 compile compat inferred from Kotlin's backward-compat policy, no explicit incompatibility found
 
 ---
-*Research completed: 2026-04-29*
+*Research completed: 2026-04-30*
 *Ready for roadmap: yes*
