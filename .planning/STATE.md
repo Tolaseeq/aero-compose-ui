@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Stateful + Layout
-status: defining_requirements
-stopped_at: v2.0 milestone started — defining requirements
-last_updated: "2026-04-30T13:30:00.000Z"
-last_activity: "2026-04-30 — Milestone v2.0 Stateful + Layout started: 12 components scoped (CMPLX + ADVL); ready for requirements + roadmap"
+status: roadmap_created
+stopped_at: Phase 7 — TBD (roadmap created, ready to plan)
+last_updated: "2026-04-30T14:00:00.000Z"
+last_activity: "2026-04-30 — v2.0 roadmap created: 5 phases (7–11), 27/27 requirements mapped, ready for /gsd:plan-phase 7"
 progress:
-  total_phases: null
-  completed_phases: null
+  total_phases: 5
+  completed_phases: 0
   total_plans: null
-  completed_plans: null
-  percent: null
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -21,14 +21,18 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-30 — v2.0 Current Milestone section added)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, typed `AeroIcons`, and a showcase — no manual style work or icon-pack hunting required.
-**Current focus:** v2.0 Stateful + Layout — defining requirements (12 components: CMPLX + ADVL).
+**Current focus:** v2.0 Stateful + Layout — roadmap created, ready to plan Phase 7 (Shared Internal Primitives).
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-04-30 — Milestone v2.0 started, scope confirmed (full 12-component set, all maximalist scopes locked)
+Phase: 7 — Shared Internal Primitives
+Plan: TBD (not yet planned)
+Status: Roadmap created, ready to plan
+Last activity: 2026-04-30 — v2.0 ROADMAP.md created (5 phases, 27/27 requirements mapped); STATE.md updated
+
+```
+v2.0 Progress: [          ] 0% (0/5 phases, 0/TBD plans)
+```
 
 ## Shipped Milestones
 
@@ -53,6 +57,18 @@ See `.planning/MILESTONES.md` for accomplishments and `.planning/milestones/v1.1
 - Inline-mode date/time pickers, DataTable cell editing, TreeView drag-drop, ColorPicker eyedropper, StepperWizard branching, Sidebar drag-resize → all OUT of scope (deferred to v2.x or beyond)
 - AeroDropdown popup-offset regression (v1.0 carry-over) → NOT in v2.0 scope; separate gap-closure or future milestone
 
+## v2.0 Roadmap Summary (2026-04-30)
+
+| Phase | Name | Goal | Requirements | Complexity |
+|-------|------|------|--------------|------------|
+| 7 | Shared Internal Primitives | Internal foundation for Phases 8–10 (CalendarGrid, ColorMath, HsvSquare+HueSlider, AeroDragSplitter, StepIndicator, AeroCalendarPositionProvider) | Enabling (no owned REQs) | — |
+| 8 | Pickers | 6 picker/slider components (RangeSlider + 4 date/time pickers + ColorPicker) | PICK-01..08 (8) | LARGE×2 + MEDIUM×2 + SMALL×2 |
+| 9 | Data | AeroDataTable + AeroTreeView | DATA-01..06 (6) | LARGE×1 + MEDIUM×1 |
+| 10 | Layout | AeroAccordion + AeroSplitPane + AeroSidebar + AeroStepperWizard | LAYO-01..09 (9) | MEDIUM×3 + SMALL×1 |
+| 11 | Showcase + Sign-off | DataSection + PickersSection + LayoutSection + 16-item checklist gate | SHW-07..10 (4) | — |
+
+**Coverage:** 27/27 v2.0 requirements mapped (PICK 8, DATA 6, LAYO 9, SHW 4)
+
 ## Performance Metrics
 
 **v1.0:** 26 plans, ~3 days, average ~7–25 min per plan.
@@ -66,30 +82,38 @@ See `.planning/MILESTONES.md` for accomplishments and `.planning/milestones/v1.1
 
 Full decision log in PROJECT.md "Key Decisions" table. Active decisions affecting all future milestones:
 
-- `undecorated=true` BEZ `transparent=true` — Win11 EXCEPTION_ACCESS_VIOLATION rule (locked since Phase 1)
+- `undecorated=true` BEZ `transparent=true` — Win11 EXCEPTION_ACCESS_VIOLATION rule (locked since Phase 1); extends to ALL Popup/Dialog in v2.0 (W11-01)
 - Glass effect in single `drawBehind` block — performance baseline
 - `:library` uses `compose.desktop.common`, `:showcase` uses `currentOs`
 - AeroIcons name verbatim from Phosphor — locked v1.1
 - `Icon()` from material3 used directly; tint always explicit — locked v1.1
 - Generated `.kt` files committed to `src/main/`, NOT regenerated at build time
 - AeroBreadcrumb `separator: String` intentionally NOT migrated to `ImageVector`
+- **v2.0 new:** `detectDragGestures` is banned for Canvas-based drag on Compose Desktop — use `awaitPointerEventScope` + manual loop (PITFALL-03, touchSlop=18dp)
+- **v2.0 new:** `AeroScrollArea` is banned inside DataTable / TreeView — use raw `LazyListState + AeroScrollBar` (PITFALL-01)
+- **v2.0 new:** DataTable selection API is `Set<RowKey>` + `key: (T) -> Any`, NOT `Set<Int>` indices (PITFALL-04)
+- **v2.0 new:** ColorPicker internal state is HSV float tuple only; RGB and HEX are derived views (PITFALL-15)
+- **v2.0 new:** `AeroCalendarPositionProvider` (new, Phase 7) replaces `AeroDropdownPopup` for all date picker popups (PITFALL-02)
+- **v2.0 new:** `kotlinx-datetime:0.6.2` added in Phase 8 as the only new dependency
 
 ### Pending Todos
 
 - Gap-close: AeroDropdown popup offset regression — explicitly OUT of v2.0 scope; can be picked up as a one-off after v2.0 ships, or scheduled into a v2.x milestone
+- Phase 7 research: upstream `touchSlop` issue #343 may have been silently fixed in CMP 1.7.x — 1-minute drag test at Phase 7 plan-01 confirms which path to take
+- Phase 8 research: `kotlinx-datetime:0.6.2` ↔ Kotlin 2.1.21 first-compile validation — Phase 8 plan-01 acceptance criterion; fallback is `0.7.1-0.6.x-compat`
+- Phase 9 research: `rememberScrollbarAdapter(LazyListState)` API surface verification in CMP 1.7.3
 
 ### Blockers/Concerns
 
 - Win11 `undecorated+transparent` crash retest in CMP 1.10.3 — inherited from v1.0; revisit if/when CMP version bump is on the table
-- v2.0 risks (to be addressed in research / planning):
-  - DataTable virtualization with column resizing has known Compose layout pitfalls (LazyColumn + horizontal scroll + measured columns)
-  - DateTimePicker / DateRangePicker layout density on small windows
-  - ColorPicker HSV ↔ RGB conversion math correctness (avoid drift on round-trips)
-  - TreeView lazy callback contract (race conditions if callback returns asynchronously)
+- v2.0 risks (see ROADMAP.md Phase notes and PITFALLS.md for full detail):
+  - PITFALL-01 (silent showstopper): LazyColumn inside AeroScrollArea destroys DataTable virtualization
+  - PITFALL-03 (silent showstopper): `detectDragGestures` touchSlop=18dp silently breaks ColorPicker HSV drag, RangeSlider thumbs, DataTable column resize — resolved by Phase 7 shared `awaitPointerEventScope` utility
+  - PITFALL-04: DataTable selection-by-index becomes stale after sort — API design must lock `Set<RowKey>` in Phase 9 plan-01
 
 ## Session Continuity
 
-Last session: 2026-04-30 (milestone v2.0 scoping)
-Stopped at: PROJECT.md updated with v2.0 Current Milestone section; STATE.md set to defining-requirements
+Last session: 2026-04-30 (v2.0 roadmap creation)
+Stopped at: ROADMAP.md written (Phases 7–11); STATE.md updated; REQUIREMENTS.md traceability filled
 Resume file: None
-Next action: Continue `/gsd:new-milestone` workflow → research decision → REQUIREMENTS.md → ROADMAP.md
+Next action: `/gsd:plan-phase 7` — Shared Internal Primitives

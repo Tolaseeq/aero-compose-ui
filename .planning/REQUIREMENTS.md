@@ -100,43 +100,44 @@ Milestone v2.0 — Stateful + Layout. 12 новых компонентов (8 co
 
 ## Traceability
 
-Updated: 2026-04-30 (v2.0 requirements defined; phase mapping pending roadmapper)
+Updated: 2026-04-30 (v2.0 roadmap created — phase mapping complete)
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | TBD | Pending |
-| DATA-02 | TBD | Pending |
-| DATA-03 | TBD | Pending |
-| DATA-04 | TBD | Pending |
-| DATA-05 | TBD | Pending |
-| DATA-06 | TBD | Pending |
-| PICK-01 | TBD | Pending |
-| PICK-02 | TBD | Pending |
-| PICK-03 | TBD | Pending |
-| PICK-04 | TBD | Pending |
-| PICK-05 | TBD | Pending |
-| PICK-06 | TBD | Pending |
-| PICK-07 | TBD | Pending |
-| PICK-08 | TBD | Pending |
-| LAYO-01 | TBD | Pending |
-| LAYO-02 | TBD | Pending |
-| LAYO-03 | TBD | Pending |
-| LAYO-04 | TBD | Pending |
-| LAYO-05 | TBD | Pending |
-| LAYO-06 | TBD | Pending |
-| LAYO-07 | TBD | Pending |
-| LAYO-08 | TBD | Pending |
-| LAYO-09 | TBD | Pending |
-| SHW-07 | TBD | Pending |
-| SHW-08 | TBD | Pending |
-| SHW-09 | TBD | Pending |
-| SHW-10 | TBD | Pending |
+| DATA-01 | Phase 9 | Pending |
+| DATA-02 | Phase 9 | Pending |
+| DATA-03 | Phase 9 | Pending |
+| DATA-04 | Phase 9 | Pending |
+| DATA-05 | Phase 9 | Pending |
+| DATA-06 | Phase 9 | Pending |
+| PICK-01 | Phase 8 | Pending |
+| PICK-02 | Phase 8 | Pending |
+| PICK-03 | Phase 8 | Pending |
+| PICK-04 | Phase 8 | Pending |
+| PICK-05 | Phase 8 | Pending |
+| PICK-06 | Phase 8 | Pending |
+| PICK-07 | Phase 8 | Pending |
+| PICK-08 | Phase 8 | Pending |
+| LAYO-01 | Phase 10 | Pending |
+| LAYO-02 | Phase 10 | Pending |
+| LAYO-03 | Phase 10 | Pending |
+| LAYO-04 | Phase 10 | Pending |
+| LAYO-05 | Phase 10 | Pending |
+| LAYO-06 | Phase 10 | Pending |
+| LAYO-07 | Phase 10 | Pending |
+| LAYO-08 | Phase 10 | Pending |
+| LAYO-09 | Phase 10 | Pending |
+| SHW-07 | Phase 11 | Pending |
+| SHW-08 | Phase 11 | Pending |
+| SHW-09 | Phase 11 | Pending |
+| SHW-10 | Phase 11 | Pending |
 
 **Coverage:**
 - v2.0 requirements: 27 total
-- Mapped to phases: 0 (roadmapper to fill)
-- Unmapped: 27 ⚠️ (initial state — roadmapper writes `Phase X` and flips Status to `Pending` per phase)
+- Mapped to phases: 27 (Phase 8: 8, Phase 9: 6, Phase 10: 9, Phase 11: 4)
+- Unmapped: 0
+- Phase 7 is an enabling phase — no public requirements owned; unlocks all downstream phases
 
 ---
 *Requirements defined: 2026-04-30 (v2.0 Stateful + Layout)*
-*Last updated: 2026-04-30 — initial v2.0 requirements; phase mapping pending /gsd:new-milestone Step 10 roadmap creation*
+*Last updated: 2026-04-30 — phase mapping complete (ROADMAP.md Phases 7–11 created)*
