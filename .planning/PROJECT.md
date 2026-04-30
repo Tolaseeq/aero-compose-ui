@@ -2,44 +2,42 @@
 
 ## What This Is
 
-Библиотека UI-компонентов для Compose Desktop, выдержанная в визуальном стиле Windows Aero (Windows 7): стеклянные градиентные поверхности, полупрозрачные панели, анимации и кастомная оконная хромка. Публикуется как Maven/JAR-артефакт (`com.mordred:aero-compose-ui`), подключается через Gradle. Содержит ~50 компонентов и три встроенные темы с поддержкой кастомизации цветов.
+Библиотека UI-компонентов для Compose Desktop, выдержанная в визуальном стиле Windows Aero (Windows 7): стеклянные градиентные поверхности, полупрозрачные панели, анимации и кастомная оконная хромка. Публикуется как Maven/JAR-артефакт (`com.mordred:aero-compose-ui`), подключается через Gradle. Содержит ~50 компонентов, типизированный набор из 138 векторных иконок `AeroIcons` (порт Phosphor Regular), и три встроенные темы с поддержкой кастомизации цветов.
 
 ## Core Value
 
-Разработчик подключает одну зависимость и получает полный набор Aero-styled компонентов с тремя темами, кастомной шапкой окна и демо-витриной — без необходимости реализовывать стиль самостоятельно.
+Разработчик подключает одну зависимость и получает полный набор Aero-styled компонентов с тремя темами, кастомной шапкой окна, типизированным набором иконок и демо-витриной — без необходимости реализовывать стиль или искать совместимый icon pack самостоятельно.
 
-## Current Milestone: v1.1 Icon System
+## Current State (Shipped: v1.1 Icon System, 2026-04-30)
 
-**Goal:** Полностью убрать текстовые символы-иконки (✕, ▲▼, ›, ▶, ✓ и т.п.) из библиотеки и showcase, ввести единый набор векторных иконок `AeroIcons` в мягком outline-стиле (порт Phosphor Regular, ~120–150 шт.), и заменить им как существующие глифы, так и Material Icons в `AeroAlertKind`/`AeroBannerKind`.
+- **v1.0 MVP** (3 фазы, 53 требования): Foundation + Atomic Components + Composite/Navigation. Все компоненты библиотеки реализованы, три темы работают, showcase демонстрирует всё.
+- **v1.1 Icon System** (3 фазы, 17 требований): 138 векторных иконок `AeroIcons` (порт Phosphor Regular) заменили все текстовые символы и `Icons.Outlined.*`; `compose.materialIconsExtended` удалён из Gradle dependency graph; showcase содержит `IconsSection` с поиском.
 
-**Target features:**
-- `AeroIcons` — типизированные `ImageVector`-константы (`AeroIcons.Close`, `AeroIcons.ChevronDown` и т.д.), порт **Phosphor Regular** (~stroke 1.5px, 256×256 viewBox, rounded caps/joins — мягче и ближе к Win7-glyph-эстетике, чем Feather/Lucide flat-outline)
-- ~120–150 иконок: closed set покрывает все текущие места + общеупотребимые (edit/delete/save/copy/settings/user/home/file/calendar/clock/etc.) + домен-специфичные (bluetooth/wifi/battery/play/pause/print/mail/cloud/database/etc.)
-- Миграция всех компонентов с текстовых глифов на `AeroIcons` (AeroCheckbox, AeroDropdown, AeroComboBox, AeroNumberSpinner, AeroTitleBar, AeroContextMenu, AeroToastHost, AeroNotificationBanner)
-- Замена встроенных Canvas-glyphs в AeroSearchField (лупа, ✕) и AeroPasswordField (eye/eye-off) на `Icon(AeroIcons.*)`
-- Замена `Icons.Outlined.*` на `AeroIcons.*` в `AeroAlertKind` и `AeroBannerKind`; удаление зависимости `compose.materialIconsExtended` из `:library`
-- `IconsSection` в showcase — сетка всех иконок + поиск через `AeroSearchField`
-- Иконки живут в том же модуле `:library` (тот же JAR `com.mordred:aero-compose-ui`)
+**Codebase:** Kotlin / Compose Desktop 1.7.3, Kotlin 2.1.21, Gradle 8.14.3, JDK 17. Library JAR ≈ 0.96 MB (thin); compileClasspath shed ~36 MB после удаления `materialIconsExtended`.
 
 ## Requirements
 
 ### Validated
 
-<!-- Shipped in v1.0 (53 requirements). See REQUIREMENTS.md for full list. -->
+<!-- All shipped through v1.1. See archived REQUIREMENTS at .planning/milestones/v1.0-REQUIREMENTS.md (informal, captured in v1.1 archive snapshot) and .planning/milestones/v1.1-REQUIREMENTS.md. -->
 
-- ✓ **Foundation** (10): AeroTheme, AeroColorScheme, 3 темы, glass modifiers, AeroTypography, explicitApi — Phase 1
-- ✓ **Buttons + Inputs + Selection + Dropdowns + Range + Lists** (21): BTN/INP/SEL/DRP/RNG/LST — Phase 2
-- ✓ **Containers + Overlays + Navigation** (19): CNT/OVL/NAV — Phase 3
-- ✓ **Showcase** (3): SHW-01..03 — Phases 1–3 (рос параллельно)
+**v1.0 (53):**
+- ✓ **Foundation** (10): AeroTheme, AeroColorScheme, 3 темы, glass modifiers, AeroTypography, explicitApi — Phase 1 — v1.0
+- ✓ **Buttons + Inputs + Selection + Dropdowns + Range + Lists** (21): BTN/INP/SEL/DRP/RNG/LST — Phase 2 — v1.0
+- ✓ **Containers + Overlays + Navigation** (19): CNT/OVL/NAV — Phase 3 — v1.0
+- ✓ **Showcase** (3): SHW-01..03 — Phases 1–3 (рос параллельно) — v1.0
+
+**v1.1 (17):**
+- ✓ **AeroIcons Foundation** (3): ICN-01..03 — 138 Phosphor Regular ImageVector constants, lazy backing-property, KDoc, explicitApi — Phase 4 — v1.1
+- ✓ **Component Migration** (11): MIG-01..11 — все текстовые глифы и Material Icons заменены на `AeroIcons.*` в 11 компонентах — Phase 5 — v1.1
+- ✓ **Dependency Cleanup** (3): CLN-01..03 — `compose.materialIconsExtended` удалён, тесты переписаны, grep-gate чист — Phase 5 — v1.1
+- ✓ **Showcase IconsSection** (3): SHW-04..06 — `LazyVerticalGrid` всех 138 иконок + поиск; ButtonsSection migrated; three-theme visual sign-off — Phase 6 — v1.1
 
 ### Active
 
-<!-- v1.1 scope — see REQUIREMENTS.md for full list with REQ-IDs. -->
+<!-- No milestone in flight. Use /gsd:new-milestone to define v1.2/v2.0 scope. -->
 
-- [ ] **Icon system** — порт Feather в AeroIcons (~120–150 ImageVector-констант, regular weight)
-- [ ] **Migration** — замена всех текстовых глифов и Material Icons-вызовов на AeroIcons
-- [ ] **Dependency cleanup** — удалить `compose.materialIconsExtended` из `:library`
-- [ ] **Showcase IconsSection** — сетка + поиск
+- (none — awaiting next milestone definition)
 
 ### Out of Scope
 
@@ -47,40 +45,55 @@
 - Web-версия — не планируется
 - Публикация в Maven Central — только локальный Maven для начала
 - Встроенная поддержка локализации (i18n) — на усмотрение разработчика-потребителя
-- Несколько весов иконок (Phosphor-style thin/light/bold/fill) — только regular в v1.1
-- Filled / duotone варианты — только outline (stroke-based) в v1.1
+- Несколько весов иконок (Phosphor-style thin/light/bold/fill) — только regular в v1.1; пересмотр возможен в v2.x при появлении консьюмер-запроса
+- Filled / duotone варианты иконок — только outline (stroke-based)
 - Кастомные пользовательские иконки через AeroIcons API — пользователь использует обычный `ImageVector` напрямую
-- Иконки в отдельном Gradle-модуле — всё в `:library` для v1.1 (отделение возможно позже)
+- Иконки в отдельном Gradle-модуле — всё в `:library` для v1.x (отделение возможно в v2.0+)
+- Настоящий DWM Aero blur через JNI/WinAPI — симуляция через градиенты визуально достаточна
+- WCAG-совместимость гарантии — цвета Aero-тем не оптимизированы под контрастность
+- Aero Snap на кастомном окне — `WindowDraggableArea` не передаёт HTCAPTION OS, известное ограничение
 
 ## Context
 
-- **Исходная программа:** `C:\1A_WORK\lastver_131\mordred` — Compose Desktop приложение управления сеансами связи со спутниками. Уже содержит рабочие реализации AeroTitleBar, CompactTextField, MordredButton, MordredChip и системы тем. Визуальный стиль и цветовые схемы берутся именно оттуда.
-- **Glass-эффекты:** В mordred реализованы через `GlassModifiers.kt` — три модификатора (`glassEffect`, `glassPanel`, `glassSurface`) с градиентами, полупрозрачностью и рамками. Логика переносится в библиотеку.
+- **Исходная программа:** `C:\1A_WORK\lastver_131\mordred` — Compose Desktop приложение управления сеансами связи со спутниками. Содержит рабочие реализации AeroTitleBar, CompactTextField, MordredButton, MordredChip и системы тем — визуальный стиль и цветовые схемы взяты оттуда.
+- **Glass-эффекты:** Реализованы в едином `drawBehind`-блоке (`GlassModifiers.kt`) — три модификатора (`glassEffect`, `glassPanel`, `glassSurface`) с градиентами, полупрозрачностью и рамками; перенесены и переработаны в `:library`.
+- **Иконки:** Vendored Phosphor Regular SVGs в `tools/phosphor-svgs/regular/` с `.pin` файлом, фиксирующим upstream SHA. Конвертация через Valkyrie CLI 1.1.1 (`--output-format BackingProperty`); сгенерированные `.kt` коммитятся в `src/main/`, build-time generation НЕ используется.
 - **Анимации:** Каждая анимация (hover, раскрытие, переходы) утверждается пользователем отдельно перед реализацией.
 - **Обсуждение компонентов:** Форма, логика и параметры каждого компонента или группы компонентов обсуждаются с пользователем перед реализацией.
+- **Известный регресс v1.0:** AeroDropdown popup offset — root cause в `AeroScrollArea` (`Column.fillMaxSize()` форсит 320dp при `heightIn(max=320.dp)`); запланирован gap-closure без блокировки следующих milestone.
 
 ## Constraints
 
-- **Tech stack:** Kotlin + Compose Desktop (Multiplatform), Gradle Kotlin DSL, JDK 17
-- **Зависимости:** Material 3 как основа, кастомный стиль поверх — не заменять Material полностью, а оборачивать/расширять
+- **Tech stack:** Kotlin 2.1.21 + Compose Desktop 1.7.3, Gradle Kotlin DSL 8.14.3, JDK 17
+- **Зависимости:** Material 3 как основа, кастомный стиль поверх — не заменять Material полностью, а оборачивать/расширять. `compose.materialIconsExtended` НЕ используется (удалён в v1.1).
 - **Совместимость:** Compose Desktop (Windows primary, Linux/macOS secondary)
-- **Именование:** Все компоненты с префиксом `Aero` (AeroButton, AeroTextField и т.д.)
+- **Именование:** Все компоненты с префиксом `Aero` (AeroButton, AeroTextField и т.д.); иконки следуют Phosphor verbatim (`AeroIcons.X`, `AeroIcons.CaretDown`)
 - **Распространение:** Maven/JAR артефакт — `com.mordred:aero-compose-ui`
+- **Window chrome:** `undecorated=true` БЕЗ `transparent=true` — Win11 EXCEPTION_ACCESS_VIOLATION (issue #3757); glass-эффект симулируется внутри окна через градиент
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Prefix `Aero` для всех компонентов | Избегает конфликтов с Material3 именами в проектах-потребителях | — Pending |
-| Material3 как основа (не замена) | Переиспользует accessibility, семантику, state management | — Pending |
-| Три темы из mordred как дефолтные | Уже отработаны визуально в реальном проекте | — Pending |
-| Отдельный showcase-модуль | Позволяет проверять компоненты между фазами без внешнего проекта | — Pending |
-| Каждая анимация утверждается отдельно | Контроль над визуальной сложностью и производительностью | — Pending |
-| AeroIcons как порт Phosphor Regular (stroke ~1.5, 256×256 viewBox) | MIT, мягкий скруглённый outline — ближе к Win7-toolbar-glyph, чем плоский Feather; rounded caps/joins ложатся на Aero-эстетику | — Pending |
-| Один вес (Regular), без filled / glass-treatment | Filled-варианты противоречат «мягкий outline без gloss»; glass-обвязка вокруг каждой иконки — отдельный AeroIconButton-уровень, не уровень иконки | — Pending |
-| Типизированные константы AeroIcons.* (не name-based lookup) | Compile-time safety, IDE autocomplete, привычно после Material Icons | — Pending |
-| materialIconsExtended удаляется из :library | «Единый набор векторных иконок» — Material визуально не Aero; снижает вес JAR | — Pending |
-| Иконки в :library, не в отдельном :icons | Меньше Gradle-сложности для v1.1; разделение возможно в v2.0+ если появится консьюмер | — Pending |
+| Prefix `Aero` для всех компонентов | Избегает конфликтов с Material3 именами в проектах-потребителях | ✓ Good — нет конфликтов наблюдалось через v1.0/v1.1 |
+| Material3 как основа (не замена) | Переиспользует accessibility, семантику, state management | ✓ Good — `Icon()` из material3 используется напрямую без обёртки |
+| Три темы из mordred как дефолтные | Уже отработаны визуально в реальном проекте | ✓ Good — три visual checkpoints прошли без правок цветов |
+| Отдельный showcase-модуль | Позволяет проверять компоненты между фазами без внешнего проекта | ✓ Good — каждый visual checkpoint v1.0/v1.1 опирался на showcase |
+| Каждая анимация утверждается отдельно | Контроль над визуальной сложностью и производительностью | ✓ Good — анимации согласованы пофазно |
+| `undecorated=true` БЕЗ `transparent=true` | Win11 EXCEPTION_ACCESS_VIOLATION (issue #3757); glass через gradient | ✓ Good — нет крашей в v1.0/v1.1; правило закреплено в трёх source-of-truth точках |
+| Glass effect в одном `drawBehind` | Избегает overdraw и iGPU performance collapse | ✓ Good — стабильно на v1.0/v1.1 |
+| `:library` использует `compose.desktop.common`, `:showcase` — `currentOs` | Platform-neutral JAR для библиотеки, native binary для приложения | ✓ Good |
+| AeroIcons как порт Phosphor Regular (stroke ~1.5, 256×256 viewBox) | MIT, мягкий скруглённый outline ближе к Win7-toolbar-glyph; rounded caps/joins ложатся на Aero-эстетику | ✓ Good — three-theme visual sign-off PASSED v1.1 |
+| Один вес (Regular), без filled / glass-treatment иконок | Filled противоречит «мягкий outline без gloss»; glass-обвязка — отдельный AeroIconButton-уровень | ✓ Good — нет запросов на filled через v1.1 |
+| Типизированные константы `AeroIcons.*` (не name-based lookup) | Compile-time safety, IDE autocomplete, привычно после Material Icons | ✓ Good — autocomplete работает, нет typo-багов |
+| `materialIconsExtended` удалён из `:library` | «Единый набор векторных иконок» — Material визуально не Aero; снижает classpath на ~36 MB | ✓ Good — JAR неизменен (был classpath-only); compileClasspath чище |
+| Иконки в `:library`, не в отдельном `:icons` модуле | Меньше Gradle-сложности для v1.1; разделение возможно в v2.0+ если появится консьюмер | ✓ Good для v1.1; ⚠️ Revisit если консьюмерам понадобится icon-only зависимость |
+| Phosphor naming verbatim (`X` не `Close`, `CaretDown` не `ChevronDown`) | Совместимость с phosphoricons.com lookup; нет «двойных имён» при апгрейдах | ✓ Good — KDoc naming-table документирует map |
+| Lazy backing-property pattern для всех 138 констант | Eager `val` при таком масштабе вызывает измеримый startup spike | ✓ Good — нет startup-регрессии замечено |
+| Generated `.kt` коммитятся в `src/main/` (Valkyrie не вызывается на build) | Воспроизводимость, ревьюабельность, нет build-time зависимости от CLI | ✓ Good — Phase 4/5 миграции опирались на статичные файлы |
+| Phase 5 wave ordering (миграции → TitleBar → тесты → dep removal) | Test-rewrites должны предшествовать удалению `materialIconsExtended` (CLN-01 gates CLN-02) | ✓ Good — нет broken-build промежуточных коммитов |
+| AeroBreadcrumb `separator: String` НЕ мигрирован | Единственный intentional text-rendered glyph; в v1.1 не оверфит миграцию | ✓ Good — locked-decision, не пересматривался |
+| `Icon()` из material3 напрямую, без `AeroIcon()` wrapper | Меньше поверхности API; tint всегда явно передаётся в library-коде | ✓ Good — все 11 миграций следуют паттерну единообразно |
 
 ---
-*Last updated: 2026-04-28 after starting milestone v1.1 Icon System*
+*Last updated: 2026-04-30 after v1.1 Icon System milestone*
