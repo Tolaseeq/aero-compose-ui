@@ -1,0 +1,142 @@
+# Requirements: aero-compose-ui
+
+**Defined:** 2026-04-30 (v2.0 Stateful + Layout milestone)
+**Core Value:** Разработчик подключает одну зависимость и получает полный набор Aero-styled компонентов с тремя темами, кастомной шапкой окна, типизированным набором иконок и showcase-витриной — без необходимости реализовывать стиль или искать совместимый icon pack самостоятельно.
+
+> **Predecessor archives:** v1.0 (53 requirements) and v1.1 (17 requirements) — see `.planning/milestones/v1.1-REQUIREMENTS.md` for full ship-time snapshot of both.
+
+## v2.0 Requirements
+
+Milestone v2.0 — Stateful + Layout. 12 новых компонентов (8 complex stateful + 4 advanced layout), один новый dependency (`kotlinx-datetime:0.6.2`). Подробности — в `.planning/research/SUMMARY.md` и `.planning/PROJECT.md` Current Milestone section.
+
+### Data — Table + Tree (DATA)
+
+- [ ] **DATA-01**: `AeroDataTable<T>` рендерит данные в табличной форме с заголовками колонок и виртуализацией строк (LazyColumn под капотом); тысячи строк работают без fps-просадки на типичной desktop-машине
+- [ ] **DATA-02**: Клик по заголовку колонки сортирует строки по возрастанию/убыванию (трёхпозиционно: asc → desc → none); направление визуально индицируется иконкой (`AeroIcons.{CaretUp,CaretDown}`); индикация только на активной колонке
+- [ ] **DATA-03**: `AeroDataTable` поддерживает `selectionMode = none | single | multi`; multi-режим обрабатывает Ctrl-click (toggle одной строки) и Shift-click (range от последней выделенной); selection хранится через `Set<RowKey>` с caller-supplied `key: (T) -> Any` (НЕ `Set<Int>` индексов — устаревает после сортировки)
+- [ ] **DATA-04**: Каждая колонка имеет настраиваемую ширину: фиксированную в `dp` или weight-based (заполнение оставшегося пространства); пользователь может перетаскивать разделитель между заголовками для регулировки ширины (drag-resize); minimum width предотвращает схлопывание в 0dp
+- [ ] **DATA-05**: `AeroTreeView<T>` рендерит иерархическое дерево с раскрытием/свёрткой узлов; раскрытый узел показывает children, свёрнутый — нет; индикатор раскрытия (`AeroIcons.{CaretRight,CaretDown}`) перед каждым узлом с детьми
+- [ ] **DATA-06**: `AeroTreeView` поддерживает lazy children loading через `onExpand: (T) -> Unit` callback; callback вызывается ровно один раз на узел при первом раскрытии (`childrenLoaded` хранится в `SnapshotStateMap` выше LazyColumn — не пересоздаётся при scroll-out / scroll-back)
+
+### Pickers — Date / Time / Color / Range (PICK)
+
+- [ ] **PICK-01**: `AeroDatePicker` — поле + кнопка-триггер открывают popup-календарь (месячная сетка 7 колонок); пользователь кликает день → callback с `kotlinx.datetime.LocalDate`; кнопки prev/next month навигируют по месяцам; current month и selected day визуально подсвечены
+- [ ] **PICK-02**: `AeroDateRangePicker` — popup с двумя календарями рядом (start month + end month); пользователь выбирает start кликом, затем end кликом (либо в том же, либо в следующем календаре); промежуточные дни визуально подсвечены как range; на узких окнах (`BoxWithConstraints` < ~560dp) календари стекаются вертикально; range НЕ авто-свапается, если end < start (валидация на стороне caller)
+- [ ] **PICK-03**: `AeroTimePicker` — поле часов + поле минут (два `AeroTextField` или `AeroNumberSpinner`-подобных контрола); валидация диапазонов 0-23 / 0-59; callback с `kotlinx.datetime.LocalTime`; опциональный 12h/24h режим (default 24h)
+- [ ] **PICK-04**: `AeroDateTimePicker` — комбинированный picker: календарь сверху + time controls снизу в одном popup; кнопки `Apply` / `Cancel` явно — popup НЕ закрывается автоматически при выборе даты (иначе time не успевает установиться); callback с `kotlinx.datetime.LocalDateTime` только по `Apply`
+- [ ] **PICK-05**: `AeroColorPicker` рендерит HSV-квадрат (sat/value 2D Canvas), вертикальную hue-полосу, RGB sliders (3 × `AeroSlider`), и HEX input field (`AeroTextField` с маской `#RRGGBB[AA]`); все 5 контролов взаимно синхронизированы через единое HSV state-of-truth (предотвращает round-trip drift); каждый контрол при изменении обновляет HSV → остальные через derive
+- [ ] **PICK-06**: `AeroColorPicker` показывает палитру предустановленных swatches (~16 цветов: чистые primary + neutrals); клик на swatch устанавливает цвет; preview-полоса показывает "before / after" (текущее значение vs новое выбранное)
+- [ ] **PICK-07**: `AeroColorPicker` поддерживает альфа-канал через параметр `enableAlpha: Boolean = false`; при `true` добавляется alpha-slider с шахматным фоном для прозрачности и HEX расширяется до `#RRGGBBAA`
+- [ ] **PICK-08**: `AeroRangeSlider` — ползунок с двумя ручками (`startValue`, `endValue`); каждая ручка перетаскивается независимо через `awaitPointerEventScope` (НЕ `detectDragGestures` — touchSlop 18dp ломает Canvas drag на Desktop); range между ручками визуально заполнен primary-цветом; ручки нельзя пересечь (start ≤ end)
+
+### Layout — Accordion / SplitPane / Sidebar / StepperWizard (LAYO)
+
+- [ ] **LAYO-01**: `AeroAccordion` рендерит список сворачиваемых секций; каждая секция — заголовок (clickable) + content (видим/скрыт); раскрытие/свёртка анимировано через `animateContentSize` или `expandVertically`; индикатор состояния (`AeroIcons.{CaretRight,CaretDown}`) в заголовке
+- [ ] **LAYO-02**: `AeroAccordion` поддерживает `mode = single | multi`: в `single` ровно одна секция открыта в момент времени (раскрытие новой свёртывает предыдущую); в `multi` каждая секция независима; default — `multi`
+- [ ] **LAYO-03**: `AeroSplitPane` рендерит две панели (`start`, `end`) разделённые draggable splitter'ом; `orientation = horizontal | vertical`; пользователь тянет splitter для регулировки соотношения; minimum size для каждой панели предотвращает схлопывание
+- [ ] **LAYO-04**: Splitter `AeroSplitPane` имеет невидимый расширенный hit-area (~8-12dp) вокруг 1dp видимой линии — обеспечивает практичный mouse grab; cursor меняется на resize-cursor при hover; реализация через `awaitPointerEventScope` (общий `AeroDragSplitter` primitive)
+- [ ] **LAYO-05**: `AeroSidebar` — persistent (всегда в layout, не overlay); рендерит вертикальный список items с иконкой и опциональным label; режим `expanded` показывает иконку + label + width ~240dp; `collapsed` показывает только иконку + label в `AeroTooltip` при hover + width ~48dp; `hidden` полностью скрывает sidebar
+- [ ] **LAYO-06**: Переключение между режимами `AeroSidebar` анимировано (smooth width transition через `animateDpAsState`); active item подсвечен primary-цветом; selected item callback через `onItemClick: (ItemKey) -> Unit`
+- [ ] **LAYO-07**: `AeroSidebar` items описываются через composable slots (НЕ data list) для максимальной гибкости — caller предоставляет `content: @Composable AeroSidebarScope.() -> Unit` где `AeroSidebarScope.item(icon, label, selected, onClick)` доступна как extension
+- [ ] **LAYO-08**: `AeroStepperWizard` рендерит горизонтальный step indicator (точки + соединительные линии + номера/иконки шагов) сверху; current/completed/upcoming шаги визуально различимы через primary/onSurface/disabled цвета
+- [ ] **LAYO-09**: `AeroStepperWizard` показывает content current step ниже indicator + кнопки `Back` / `Next` (на последнем шаге `Next` → `Finish`); каждый шаг определяет `onValidate: () -> Boolean` callback — `Next` блокируется при `false`; composable state шагов сохраняется при Back-навигации (НЕ destroy на dispose)
+
+### Showcase Integration (SHW)
+
+- [ ] **SHW-07**: Showcase содержит секцию `DataSection` со встроенным `AeroDataTable` (~50-200 строк mock-данных, ~5-6 колонок включая mixed types: text, number, date, status badge); демонстрирует sort, multi-selection, column resize в работе
+- [ ] **SHW-08**: Showcase содержит секцию `PickersSection` с экземплярами всех 5 picker-компонентов (DatePicker, TimePicker, DateTimePicker, DateRangePicker, ColorPicker) и `AeroRangeSlider`; каждый picker показывает текущее значение под собой как Text для UAT-проверки callback'ов
+- [ ] **SHW-09**: Showcase содержит секцию `LayoutSection` с примерами `AeroAccordion` (single + multi side-by-side), `AeroSplitPane` (horizontal + vertical), `AeroSidebar` с переключателем mode, `AeroStepperWizard` с 3-4 шагами и валидацией
+- [ ] **SHW-10**: Showcase v2.0 проходит three-theme visual checkpoint (AeroBlue / AeroDark / Classic) с 16-item "looks done but isn't" checklist из `PITFALLS.md` (drag response, disabled state, popup-positioning, cross-theme contrast, `transparent=true` grep gate); чеклист — формальный gate v2.0 milestone sign-off
+
+## v3+ Future Requirements
+
+Отложены — не входят в v2.0 scope, но захвачены для последующего планирования:
+
+### Inline Pickers
+- **PICK-INL-01**: `AeroDatePicker` inline-режим (всегда видимый календарь, без popup-триггера) — для случаев типа "выбор даты в форме" где popup лишний
+
+### DataTable Advanced
+- **DATA-EDIT-01**: `AeroDataTable` cell editing (inline или popup-based)
+- **DATA-REORDER-01**: Drag-to-reorder колонок в `AeroDataTable`
+- **DATA-FILTER-01**: Per-column filter UI в заголовке (text/dropdown/range)
+
+### TreeView Advanced
+- **TREE-DND-01**: Drag-and-drop reordering узлов в `AeroTreeView`
+
+### ColorPicker Extras
+- **COLOR-EYE-01**: Eyedropper (system color pick) в `AeroColorPicker` — требует platform-specific implementation
+
+### StepperWizard Branching
+- **STEP-BR-01**: `AeroStepperWizard` non-linear branching (step возвращает next-step ID вместо линейной последовательности) — IDE-installer-style
+
+### Sidebar Resize
+- **SIDE-RES-01**: Drag-to-resize ширины в `expanded` режиме `AeroSidebar`
+
+### Carry-over from v1.0
+- **DROP-FIX-01**: Fix AeroDropdown popup-offset regression (root cause `AeroScrollArea` `Column.fillMaxSize()` форсит max height) — может стать gap-closure phase в v2.x
+
+## Out of Scope
+
+Явно исключённое — документировано чтобы избежать scope creep.
+
+| Feature | Reason |
+|---------|--------|
+| Android / iOS / Web таргеты | Compose Desktop only — добавление мобильных таргетов меняет архитектуру |
+| Настоящий DWM Aero blur (через JNI/WinAPI) | Требует нативного кода; симуляция через градиенты визуально достаточна |
+| Публикация в Maven Central | Только локальный Maven для v1/v2; Maven Central — отдельный процесс с подписанием |
+| i18n / RTL | На усмотрение разработчика-потребителя |
+| WCAG-совместимость (гарантии) | Цвета Aero-тем не оптимизированы под контрастность |
+| Aero Snap на кастомном окне | `WindowDraggableArea` не передаёт HTCAPTION OS — известное ограничение |
+| Avatar / Rating (звёзды) | Низкий приоритет, пользователь не выбрал |
+| Inline-mode date/time pickers | Только popup в v2.0; inline отложен в v3+ |
+| DataTable cell editing / column reorder / column filter UI | API surface explosion; Read+select+sort+resize достаточно для v2.0 |
+| TreeView drag-and-drop | Selection + lazy expand достаточно для v2.0 |
+| ColorPicker eyedropper | Platform-specific код, выходит за scope hand-rolled v2.0 |
+| StepperWizard branching | Линейный проход покрывает 90% случаев; branching — отдельный milestone если нужен |
+| AeroSidebar drag-to-resize width | Фиксированные ширины 240dp/48dp достаточно; ручная регулировка отложена |
+| Material3 `DatePicker` под капотом | Crashes на Compose Desktop (Android-only internals); все pickers hand-rolled |
+| `compose-jb/components-splitpane-desktop` библиотека | Нет stable 1.7.x релиза; SplitPane hand-rolled (~80 строк) |
+| AeroDropdown popup-offset fix (carry-over из v1.0) | Не в v2.0 scope; может быть отдельный gap-closure phase или v2.x |
+
+## Traceability
+
+Updated: 2026-04-30 (v2.0 requirements defined; phase mapping pending roadmapper)
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| DATA-01 | TBD | Pending |
+| DATA-02 | TBD | Pending |
+| DATA-03 | TBD | Pending |
+| DATA-04 | TBD | Pending |
+| DATA-05 | TBD | Pending |
+| DATA-06 | TBD | Pending |
+| PICK-01 | TBD | Pending |
+| PICK-02 | TBD | Pending |
+| PICK-03 | TBD | Pending |
+| PICK-04 | TBD | Pending |
+| PICK-05 | TBD | Pending |
+| PICK-06 | TBD | Pending |
+| PICK-07 | TBD | Pending |
+| PICK-08 | TBD | Pending |
+| LAYO-01 | TBD | Pending |
+| LAYO-02 | TBD | Pending |
+| LAYO-03 | TBD | Pending |
+| LAYO-04 | TBD | Pending |
+| LAYO-05 | TBD | Pending |
+| LAYO-06 | TBD | Pending |
+| LAYO-07 | TBD | Pending |
+| LAYO-08 | TBD | Pending |
+| LAYO-09 | TBD | Pending |
+| SHW-07 | TBD | Pending |
+| SHW-08 | TBD | Pending |
+| SHW-09 | TBD | Pending |
+| SHW-10 | TBD | Pending |
+
+**Coverage:**
+- v2.0 requirements: 27 total
+- Mapped to phases: 0 (roadmapper to fill)
+- Unmapped: 27 ⚠️ (initial state — roadmapper writes `Phase X` and flips Status to `Pending` per phase)
+
+---
+*Requirements defined: 2026-04-30 (v2.0 Stateful + Layout)*
+*Last updated: 2026-04-30 — initial v2.0 requirements; phase mapping pending /gsd:new-milestone Step 10 roadmap creation*
