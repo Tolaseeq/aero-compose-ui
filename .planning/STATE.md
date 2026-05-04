@@ -3,14 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Stateful + Layout
 status: planning
-stopped_at: Phase 7 context gathered
-last_updated: "2026-04-30T14:26:43.371Z"
-last_activity: 2026-04-30 — v2.0 ROADMAP.md created (5 phases, 27/27 requirements mapped); STATE.md updated
+stopped_at: Completed 07-01-logic-and-tests-PLAN.md
+last_updated: "2026-05-04T16:08:36.133Z"
+last_activity: 2026-05-04 — Phase 7 plan-01 (logic-and-tests) completed: kotlinx-datetime 0.6.2 wired in, AeroColorMath / AeroCalendarPositionProvider / AeroCalendarGrid landed with 27 unit tests
+
 progress:
   total_phases: 11
   completed_phases: 6
-  total_plans: 28
-  completed_plans: 29
+  total_plans: 30
+  completed_plans: 30
 ---
 
 # Project State
@@ -25,12 +26,12 @@ See: .planning/PROJECT.md (updated 2026-04-30 — v2.0 Current Milestone section
 ## Current Position
 
 Phase: 7 — Shared Internal Primitives
-Plan: TBD (not yet planned)
-Status: Roadmap created, ready to plan
-Last activity: 2026-04-30 — v2.0 ROADMAP.md created (5 phases, 27/27 requirements mapped); STATE.md updated
+Plan: 1 of 2 complete (07-01-logic-and-tests done; 07-02-visuals-and-scratch next)
+Status: In progress
+Last activity: 2026-05-04 — Phase 7 plan-01 (logic-and-tests) completed: kotlinx-datetime 0.6.2 wired in, AeroColorMath / AeroCalendarPositionProvider / AeroCalendarGrid landed with 27 unit tests
 
 ```
-v2.0 Progress: [          ] 0% (0/5 phases, 0/TBD plans)
+v2.0 Progress: [██        ] 20% (0/5 phases, 1/2 plans of phase 7)
 ```
 
 ## Shipped Milestones
@@ -73,7 +74,12 @@ See `.planning/MILESTONES.md` for accomplishments and `.planning/milestones/v1.1
 **v1.0:** 26 plans, ~3 days, average ~7–25 min per plan.
 **v1.1:** 11 plans, single-day push (2026-04-29, ~10 h), 60 commits, 340 files changed, +20,212 / −477 lines.
 
-**v2.0 metrics:** pending (no plans completed yet)
+**v2.0 metrics:**
+
+| Plan | Duration | Tasks | Files | Notes |
+|------|----------|-------|-------|-------|
+| 07-01 logic-and-tests | ~10 min | 4 | 9 | TDD red-green per task; 27 JUnit tests across 3 new test classes; PITFALL-02 / PITFALL-08 / PITFALL-15 defused at utility level |
+
 
 ## Accumulated Context
 
@@ -94,6 +100,10 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - **v2.0 new:** ColorPicker internal state is HSV float tuple only; RGB and HEX are derived views (PITFALL-15)
 - **v2.0 new:** `AeroCalendarPositionProvider` (new, Phase 7) replaces `AeroDropdownPopup` for all date picker popups (PITFALL-02)
 - **v2.0 new:** `kotlinx-datetime:0.6.2` added in Phase 8 as the only new dependency
+- [Phase 07]: Hue convention LOCKED to degrees [0f, 360f] (matches Color.hsv requirePrecondition)
+- [Phase 07]: AeroCalendarPositionProvider first-frame guard uses popupContentSize == IntSize.Zero, NOT >= windowSize
+- [Phase 07]: Width overflow on wide popup right-aligns and never flips Top/Bottom
+- [Phase 07]: Touchslop spike skipped — awaitPointerEventScope manual loop is the locked v2.0 pattern regardless
 
 ### Pending Todos
 
@@ -112,7 +122,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-04-30T14:26:43.365Z
-Stopped at: Phase 7 context gathered
-Resume file: .planning/phases/07-shared-internal-primitives/07-CONTEXT.md
+Last session: 2026-05-04T16:08:36.129Z
+Stopped at: Completed 07-01-logic-and-tests-PLAN.md
+Resume file: None
 Next action: `/gsd:plan-phase 7` — Shared Internal Primitives

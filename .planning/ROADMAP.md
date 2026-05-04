@@ -169,7 +169,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   - PITFALL-15 (HSV drift): `AeroColorMath` must use HSV as single source of truth internally; RGB and HEX are derived views only. Unit tests validate this before Phase 8 ColorPicker work begins.
   - W11-01 (transparent=true): Any overlay in v2.0 uses `Popup(...)`, NOT `Dialog(undecorated=true, transparent=true)`. Rule applies to all phases; pre-flight grep is established here as the pattern.
 **Plans**: 2 plans
-- [ ] 07-01-PLAN.md — Logic + tests: kotlinx-datetime 0.6.2 add, touchslop spike, AeroColorMath + round-trip test, AeroCalendarPositionProvider + 4-scenario test, AeroCalendarGrid + 3-scenario test (green CI gate before any Canvas/drag code)
+- [x] 07-01-PLAN.md — Logic + tests: kotlinx-datetime 0.6.2 add, touchslop spike, AeroColorMath + round-trip test, AeroCalendarPositionProvider + 4-scenario test, AeroCalendarGrid + 3-scenario test (green CI gate before any Canvas/drag code) — completed 2026-05-04, see 07-01-SUMMARY.md
 - [ ] 07-02-PLAN.md — Visuals + scratch: Modifier.aeroDragSplitter, AeroHsvColorSquare, AeroHueSlider, AeroStepIndicator, Phase7ScratchSection wired into ShowcaseApp.kt for SC3+SC4+SC5 eyes-on verification
 
 ### Phase 8: Pickers
