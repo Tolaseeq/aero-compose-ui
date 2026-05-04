@@ -17,6 +17,7 @@ dependencies {
     implementation(compose.runtime)
     implementation(compose.ui)
     implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.datetime)
 
     testImplementation(libs.kotlin.test)
     testImplementation(libs.junit.jupiter)
