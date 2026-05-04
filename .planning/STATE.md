@@ -2,16 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Stateful + Layout
-status: planning
-stopped_at: Completed 07-01-logic-and-tests-PLAN.md
-last_updated: "2026-05-04T16:08:36.133Z"
-last_activity: 2026-05-04 — Phase 7 plan-01 (logic-and-tests) completed: kotlinx-datetime 0.6.2 wired in, AeroColorMath / AeroCalendarPositionProvider / AeroCalendarGrid landed with 27 unit tests
-
+status: executing
+stopped_at: Completed 07-02-visuals-and-scratch-PLAN.md
+last_updated: "2026-05-04T16:24:36.995Z"
+last_activity: "2026-05-04 — Phase 7 plan-02 (visuals-and-scratch) completed: Modifier.aeroDragSplitter, AeroHsvColorSquare, AeroHueSlider, AeroStepIndicator landed; AeroPhase7Scratch wired into showcase via thin Phase7ScratchSection wrapper (preserves locked-internal API for all 6 primitives)"
 progress:
   total_phases: 11
   completed_phases: 6
-  total_plans: 30
-  completed_plans: 30
+  total_plans: 31
+  completed_plans: 31
 ---
 
 # Project State
@@ -26,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-30 — v2.0 Current Milestone section
 ## Current Position
 
 Phase: 7 — Shared Internal Primitives
-Plan: 1 of 2 complete (07-01-logic-and-tests done; 07-02-visuals-and-scratch next)
-Status: In progress
-Last activity: 2026-05-04 — Phase 7 plan-01 (logic-and-tests) completed: kotlinx-datetime 0.6.2 wired in, AeroColorMath / AeroCalendarPositionProvider / AeroCalendarGrid landed with 27 unit tests
+Plan: 2 of 2 complete (07-01-logic-and-tests done; 07-02-visuals-and-scratch done)
+Status: Phase 7 complete — ready for `/gsd:verify-work` then `/gsd:plan-phase 8`
+Last activity: 2026-05-04 — Phase 7 plan-02 (visuals-and-scratch) completed: Modifier.aeroDragSplitter, AeroHsvColorSquare, AeroHueSlider, AeroStepIndicator landed; AeroPhase7Scratch wired into showcase via thin Phase7ScratchSection wrapper (preserves locked-internal API for all 6 primitives)
 
 ```
-v2.0 Progress: [██        ] 20% (0/5 phases, 1/2 plans of phase 7)
+v2.0 Progress: [██        ] 20% (1/5 phases, 2/2 plans of phase 7)
 ```
 
 ## Shipped Milestones
@@ -79,7 +78,7 @@ See `.planning/MILESTONES.md` for accomplishments and `.planning/milestones/v1.1
 | Plan | Duration | Tasks | Files | Notes |
 |------|----------|-------|-------|-------|
 | 07-01 logic-and-tests | ~10 min | 4 | 9 | TDD red-green per task; 27 JUnit tests across 3 new test classes; PITFALL-02 / PITFALL-08 / PITFALL-15 defused at utility level |
-
+| 07-02 visuals-and-scratch | ~10m 33s | 5 | 8 | aeroDragSplitter + HsvColorSquare + HueSlider + StepIndicator landed; AeroPhase7Scratch aggregator in :library + thin Phase7ScratchSection wrapper in :showcase preserves locked-internal API for all 6 primitives; PITFALL-03 mitigation locked at the shared-utility level |
 
 ## Accumulated Context
 
@@ -104,6 +103,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 07]: AeroCalendarPositionProvider first-frame guard uses popupContentSize == IntSize.Zero, NOT >= windowSize
 - [Phase 07]: Width overflow on wide popup right-aligns and never flips Top/Bottom
 - [Phase 07]: Touchslop spike skipped — awaitPointerEventScope manual loop is the locked v2.0 pattern regardless
+- [Phase 07]: [Phase 07] Phase7ScratchSection demo body lives in :library (AeroPhase7Scratch.kt, public, deleted Phase 11) NOT :showcase — Kotlin internal is module-scoped, so the showcase imports a thin public wrapper to keep all 6 Phase 7 primitives internal
+- [Phase 07]: [Phase 07] Modifier.aeroDragSplitter is the locked v2.0 in-content drag pattern: awaitPointerEventScope + manual loop, cursor change keyed to Orientation, change.consume() only on actual delta (release uncconsumed)
 
 ### Pending Todos
 
@@ -122,7 +123,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-05-04T16:08:36.129Z
-Stopped at: Completed 07-01-logic-and-tests-PLAN.md
+Last session: 2026-05-04T16:24:36.989Z
+Stopped at: Completed 07-02-visuals-and-scratch-PLAN.md
 Resume file: None
-Next action: `/gsd:plan-phase 7` — Shared Internal Primitives
+Next action: `/gsd:verify-work` (Phase 7 complete) → `/gsd:plan-phase 8` — Pickers

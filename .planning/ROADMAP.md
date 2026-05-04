@@ -34,7 +34,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ### v2.0 Stateful + Layout (Active)
 
-- [ ] **Phase 7: Shared Internal Primitives** - Internal foundation (CalendarGrid, ColorMath, HsvSquare+HueSlider, AeroDragSplitter, StepIndicator, AeroCalendarPositionProvider) enabling Phases 8–10; no new public API
+- [x] **Phase 7: Shared Internal Primitives** - Internal foundation (CalendarGrid, ColorMath, HsvSquare+HueSlider, AeroDragSplitter, StepIndicator, AeroCalendarPositionProvider) enabling Phases 8–10; no new public API (completed 2026-05-04)
 - [ ] **Phase 8: Pickers** - AeroRangeSlider, AeroDatePicker, AeroTimePicker, AeroDateTimePicker, AeroDateRangePicker, AeroColorPicker; kotlinx-datetime:0.6.2 added
 - [ ] **Phase 9: Data** - AeroDataTable (virtualized, sortable, selectable, resizable columns) + AeroTreeView (lazy expand); components/datatable/ package
 - [ ] **Phase 10: Layout** - AeroAccordion, AeroSplitPane, AeroSidebar, AeroStepperWizard; components/layout/ package
@@ -170,7 +170,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   - W11-01 (transparent=true): Any overlay in v2.0 uses `Popup(...)`, NOT `Dialog(undecorated=true, transparent=true)`. Rule applies to all phases; pre-flight grep is established here as the pattern.
 **Plans**: 2 plans
 - [x] 07-01-PLAN.md — Logic + tests: kotlinx-datetime 0.6.2 add, touchslop spike, AeroColorMath + round-trip test, AeroCalendarPositionProvider + 4-scenario test, AeroCalendarGrid + 3-scenario test (green CI gate before any Canvas/drag code) — completed 2026-05-04, see 07-01-SUMMARY.md
-- [ ] 07-02-PLAN.md — Visuals + scratch: Modifier.aeroDragSplitter, AeroHsvColorSquare, AeroHueSlider, AeroStepIndicator, Phase7ScratchSection wired into ShowcaseApp.kt for SC3+SC4+SC5 eyes-on verification
+- [x] 07-02-PLAN.md — Visuals + scratch: Modifier.aeroDragSplitter, AeroHsvColorSquare, AeroHueSlider, AeroStepIndicator, Phase7ScratchSection wired into ShowcaseApp.kt for SC3+SC4+SC5 eyes-on verification — completed 2026-05-04, see 07-02-SUMMARY.md
 
 ### Phase 8: Pickers
 **Goal**: All six picker components — AeroRangeSlider, AeroDatePicker, AeroTimePicker, AeroDateTimePicker, AeroDateRangePicker, and AeroColorPicker — are publicly available in the library with correct behavior, using Phase 7 primitives and kotlinx-datetime:0.6.2
