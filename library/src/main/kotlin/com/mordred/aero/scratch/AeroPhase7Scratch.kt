@@ -270,24 +270,28 @@ private fun CalendarPopupDemo() {
                 .background(colors.surface),
             contentAlignment = Alignment.CenterEnd,
         ) {
-            AeroButton(
-                text = if (open) "Close calendar" else "Open calendar",
-                onClick = { open = !open },
-                modifier = Modifier.padding(end = 16.dp),
-            )
-            if (open) {
-                Popup(
-                    popupPositionProvider = AeroCalendarPositionProvider(),
-                    onDismissRequest = { open = false },
-                    properties = PopupProperties(focusable = true, dismissOnClickOutside = true),
-                ) {
-                    AeroCard {
-                        AeroCalendarGrid(
-                            displayMonth = displayMonth,
-                            selected = selected,
-                            onDateSelected = { selected = it; open = false },
-                            onMonthChange = { displayMonth = it },
-                        )
+            // The Popup anchors to its parent layout node, so it must wrap ONLY the trigger
+            // button — otherwise anchorBounds becomes the whole 1024dp frame and the popup
+            // left-aligns to the frame's left edge instead of the button.
+            Box(modifier = Modifier.padding(end = 16.dp)) {
+                AeroButton(
+                    text = if (open) "Close calendar" else "Open calendar",
+                    onClick = { open = !open },
+                )
+                if (open) {
+                    Popup(
+                        popupPositionProvider = AeroCalendarPositionProvider(),
+                        onDismissRequest = { open = false },
+                        properties = PopupProperties(focusable = true, dismissOnClickOutside = true),
+                    ) {
+                        AeroCard {
+                            AeroCalendarGrid(
+                                displayMonth = displayMonth,
+                                selected = selected,
+                                onDateSelected = { selected = it; open = false },
+                                onMonthChange = { displayMonth = it },
+                            )
+                        }
                     }
                 }
             }
