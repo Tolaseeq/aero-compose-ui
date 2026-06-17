@@ -11,8 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,6 +27,9 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.mordred.aero.components.`internal`.drag.aeroDragSplitter
 import com.mordred.aero.components.`internal`.popup.AeroCalendarPositionProvider
+import com.mordred.aero.components.buttons.AeroButton
+import com.mordred.aero.components.buttons.AeroOutlinedButton
+import com.mordred.aero.components.containers.AeroCard
 import com.mordred.aero.components.layout.`internal`.stepper.AeroStepIndicator
 import com.mordred.aero.components.pickers.`internal`.calendar.AeroCalendarGrid
 import com.mordred.aero.components.pickers.`internal`.color.AeroHsvColorSquare
@@ -217,28 +219,32 @@ private fun StepIndicatorDemo() {
     val totalSteps = 4
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("AeroStepIndicator (toggle theme to verify all 3)", color = colors.onBackground, style = typography.bodyMedium)
-        Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-            AeroStepIndicator(
-                currentStep = currentStep,
-                totalSteps = totalSteps,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(
-                onClick = { if (currentStep > 0) currentStep-- },
-                enabled = currentStep > 0,
-            ) { Text("Prev") }
-            Button(
-                onClick = { if (currentStep < totalSteps - 1) currentStep++ },
-                enabled = currentStep < totalSteps - 1,
-            ) { Text("Next") }
-            Text(
-                text = "step ${currentStep + 1} / $totalSteps",
-                color = colors.labelText,
-                style = typography.label,
-                modifier = Modifier.padding(start = 8.dp),
-            )
+        AeroCard(modifier = Modifier.wrapContentWidth()) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                AeroStepIndicator(
+                    currentStep = currentStep,
+                    totalSteps = totalSteps,
+                    modifier = Modifier.width(320.dp),
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    AeroOutlinedButton(
+                        text = "Prev",
+                        onClick = { if (currentStep > 0) currentStep-- },
+                        enabled = currentStep > 0,
+                    )
+                    AeroButton(
+                        text = "Next",
+                        onClick = { if (currentStep < totalSteps - 1) currentStep++ },
+                        enabled = currentStep < totalSteps - 1,
+                    )
+                    Text(
+                        text = "step ${currentStep + 1} / $totalSteps",
+                        color = colors.labelText,
+                        style = typography.label,
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
+            }
         }
     }
 }
@@ -264,23 +270,18 @@ private fun CalendarPopupDemo() {
                 .background(colors.surface),
             contentAlignment = Alignment.CenterEnd,
         ) {
-            Button(
+            AeroButton(
+                text = if (open) "Close calendar" else "Open calendar",
                 onClick = { open = !open },
                 modifier = Modifier.padding(end = 16.dp),
-            ) {
-                Text(if (open) "Close calendar" else "Open calendar")
-            }
+            )
             if (open) {
                 Popup(
                     popupPositionProvider = AeroCalendarPositionProvider(),
                     onDismissRequest = { open = false },
                     properties = PopupProperties(focusable = true, dismissOnClickOutside = true),
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .background(colors.panelBackground)
-                            .padding(8.dp),
-                    ) {
+                    AeroCard {
                         AeroCalendarGrid(
                             displayMonth = displayMonth,
                             selected = selected,
