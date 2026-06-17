@@ -168,9 +168,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   - PITFALL-02 (calendar popup width): `AeroCalendarPositionProvider` must be the first artifact — all 4 date/time pickers depend on it. Do NOT reuse `AeroDropdownPopup` (width-locked to anchor width).
   - PITFALL-15 (HSV drift): `AeroColorMath` must use HSV as single source of truth internally; RGB and HEX are derived views only. Unit tests validate this before Phase 8 ColorPicker work begins.
   - W11-01 (transparent=true): Any overlay in v2.0 uses `Popup(...)`, NOT `Dialog(undecorated=true, transparent=true)`. Rule applies to all phases; pre-flight grep is established here as the pattern.
-**Plans**: 2 plans
+**Plans**: 3 plans (2 complete + 1 gap-closure)
 - [x] 07-01-PLAN.md — Logic + tests: kotlinx-datetime 0.6.2 add, touchslop spike, AeroColorMath + round-trip test, AeroCalendarPositionProvider + 4-scenario test, AeroCalendarGrid + 3-scenario test (green CI gate before any Canvas/drag code) — completed 2026-05-04, see 07-01-SUMMARY.md
 - [x] 07-02-PLAN.md — Visuals + scratch: Modifier.aeroDragSplitter, AeroHsvColorSquare, AeroHueSlider, AeroStepIndicator, Phase7ScratchSection wired into ShowcaseApp.kt for SC3+SC4+SC5 eyes-on verification — completed 2026-05-04, see 07-02-SUMMARY.md
+- [ ] 07-03-gap-closure-PLAN.md — Gap closure (UAT 2026-05-04): fix AeroCalendarGrid header stretching past day grid (gap-01, BLOCKING); glass-wrap StepIndicator + calendar-popup scratch demos (gaps 02/03); swap raw Material Buttons to AeroButton/AeroOutlinedButton at intrinsic width (gap-04)
 
 ### Phase 8: Pickers
 **Goal**: All six picker components — AeroRangeSlider, AeroDatePicker, AeroTimePicker, AeroDateTimePicker, AeroDateRangePicker, and AeroColorPicker — are publicly available in the library with correct behavior, using Phase 7 primitives and kotlinx-datetime:0.6.2
