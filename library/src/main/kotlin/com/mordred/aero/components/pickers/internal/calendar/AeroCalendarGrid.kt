@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -62,11 +64,11 @@ internal fun AeroCalendarGrid(
     val firstDow = (firstOfMonth.dayOfWeek.isoDayNumber - 1) // ISO: Mon=1..Sun=7 -> 0..6
     val daysInMonth = daysInMonth(displayMonth)
 
-    Column(modifier = modifier.padding(8.dp)) {
+    Column(modifier = modifier.wrapContentWidth().padding(8.dp)) {
 
         // --- Header row: prev / month-year label / next ---
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            modifier = Modifier.width(252.dp).padding(vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
