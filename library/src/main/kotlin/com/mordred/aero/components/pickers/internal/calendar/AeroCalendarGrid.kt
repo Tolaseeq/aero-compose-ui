@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -110,7 +109,7 @@ internal fun AeroCalendarGrid(
         Spacer(Modifier.size(4.dp))
 
         // --- Day-of-week header (Mon..Sun, English short) ---
-        Row(modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.width(252.dp)) {
             listOf("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su").forEach { label ->
                 Box(
                     modifier = Modifier.size(36.dp),
@@ -129,7 +128,7 @@ internal fun AeroCalendarGrid(
         // We fill exactly 42 slots: leading prev-month days, this-month days, trailing next-month days.
         var dayCounter = 1
         for (row in 0 until 6) {
-            Row(modifier = Modifier.fillMaxWidth()) {
+            Row(modifier = Modifier.width(252.dp)) {
                 for (col in 0 until 7) {
                     val slotIndex = row * 7 + col
                     val isLeadingBlank = slotIndex < firstDow
