@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Stateful + Layout
-status: executing
-stopped_at: Completed 07-02-visuals-and-scratch-PLAN.md
-last_updated: "2026-05-04T16:24:36.995Z"
+status: verifying
+stopped_at: Completed 07-03-gap-closure-PLAN.md
+last_updated: "2026-06-17T14:17:13.777Z"
 last_activity: "2026-05-04 — Phase 7 plan-02 (visuals-and-scratch) completed: Modifier.aeroDragSplitter, AeroHsvColorSquare, AeroHueSlider, AeroStepIndicator landed; AeroPhase7Scratch wired into showcase via thin Phase7ScratchSection wrapper (preserves locked-internal API for all 6 primitives)"
 progress:
   total_phases: 11
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 31
-  completed_plans: 31
+  completed_plans: 32
 ---
 
 # Project State
@@ -79,6 +79,7 @@ See `.planning/MILESTONES.md` for accomplishments and `.planning/milestones/v1.1
 |------|----------|-------|-------|-------|
 | 07-01 logic-and-tests | ~10 min | 4 | 9 | TDD red-green per task; 27 JUnit tests across 3 new test classes; PITFALL-02 / PITFALL-08 / PITFALL-15 defused at utility level |
 | 07-02 visuals-and-scratch | ~10m 33s | 5 | 8 | aeroDragSplitter + HsvColorSquare + HueSlider + StepIndicator landed; AeroPhase7Scratch aggregator in :library + thin Phase7ScratchSection wrapper in :showcase preserves locked-internal API for all 6 primitives; PITFALL-03 mitigation locked at the shared-utility level |
+| Phase 07-shared-internal-primitives P03 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -105,6 +106,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 07]: Touchslop spike skipped — awaitPointerEventScope manual loop is the locked v2.0 pattern regardless
 - [Phase 07]: [Phase 07] Phase7ScratchSection demo body lives in :library (AeroPhase7Scratch.kt, public, deleted Phase 11) NOT :showcase — Kotlin internal is module-scoped, so the showcase imports a thin public wrapper to keep all 6 Phase 7 primitives internal
 - [Phase 07]: [Phase 07] Modifier.aeroDragSplitter is the locked v2.0 in-content drag pattern: awaitPointerEventScope + manual loop, cursor change keyed to Orientation, change.consume() only on actual delta (release uncconsumed)
+- [Phase 07]: AeroCalendarGrid header Row pinned to Modifier.width(252.dp); outer Column wrapContentWidth — header now matches 7x36dp day-grid width exactly
+- [Phase 07]: Architecture B reconfirmed: AeroCard glass wrappers in scratch demo only — AeroCalendarGrid + AeroStepIndicator remain surface-less; glass is a consumer responsibility
 
 ### Pending Todos
 
@@ -123,7 +126,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-05-04T16:24:36.989Z
-Stopped at: Completed 07-02-visuals-and-scratch-PLAN.md
+Last session: 2026-06-17T14:17:13.772Z
+Stopped at: Completed 07-03-gap-closure-PLAN.md
 Resume file: None
 Next action: `/gsd:verify-work` (Phase 7 complete) → `/gsd:plan-phase 8` — Pickers

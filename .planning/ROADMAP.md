@@ -264,7 +264,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 | 4. AeroIcons Foundation | v1.1 | 2/2 | Complete | 2026-04-29 |
 | 5. Component Migrations + Dep Removal | v1.1 | 5/5 | Complete | 2026-04-29 |
 | 6. Showcase IconsSection | v1.1 | 3/3 | Complete | 2026-04-29 |
-| 7. Shared Internal Primitives | v2.0 | 0/TBD | Not started | - |
+| 7. Shared Internal Primitives | 3/3 | Complete   | 2026-06-17 | - |
 | 8. Pickers | v2.0 | 0/TBD | Not started | - |
 | 9. Data | v2.0 | 0/TBD | Not started | - |
 | 10. Layout | v2.0 | 0/TBD | Not started | - |
