@@ -8,6 +8,7 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import java.awt.Cursor
 
 /**
@@ -34,7 +35,7 @@ import java.awt.Cursor
  * drag delta (`pressed && delta != 0f`). The release event is NOT consumed — parents
  * (e.g. nested SplitPanes) must see the pointer release.
  *
- * @param orientation drag axis selector. Horizontal -> reports `cur.x - prev.x`; Vertical -> `cur.y - prev.y`.
+ * @param orientation drag axis selector. Horizontal -> reports `positionChange().x`; Vertical -> `positionChange().y`.
  * @param onDrag fires on every mouse move with non-zero delta along the orientation axis.
  * @param onDragEnd fires once when `change.pressed` becomes false at the end of a drag sequence.
  * @param enabled when false, no pointer input is attached (consumer can disable at min/max bounds).
@@ -57,8 +58,7 @@ internal fun Modifier.aeroDragSplitter(
         .pointerInput(orientation, enabled) {
             awaitPointerEventScope {
                 while (true) {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    var prev = down.position
+                    awaitFirstDown(requireUnconsumed = false)
                     // Inner loop: process every event until pressed=false.
                     while (true) {
                         val event = awaitPointerEvent()
@@ -67,16 +67,17 @@ internal fun Modifier.aeroDragSplitter(
                             onDragEnd()
                             break
                         }
-                        val cur = change.position
+                        // Single-frame delta: positionChange() is computed within ONE pointer event
+                        // in ONE coordinate frame, so it is immune to the hit-area Box relocating
+                        // between frames (eliminates F3 ghosting and F15 reduced sensitivity).
                         val delta = when (orientation) {
-                            Orientation.Horizontal -> cur.x - prev.x
-                            Orientation.Vertical   -> cur.y - prev.y
+                            Orientation.Horizontal -> change.positionChange().x
+                            Orientation.Vertical   -> change.positionChange().y
                         }
                         if (delta != 0f) {
                             onDrag(delta)
                             change.consume()  // only consume when we actually handled the move
                         }
-                        prev = cur
                     }
                 }
             }
