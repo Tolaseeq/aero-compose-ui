@@ -35,7 +35,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 ### v2.0 Stateful + Layout (Active)
 
 - [x] **Phase 7: Shared Internal Primitives** - Internal foundation (CalendarGrid, ColorMath, HsvSquare+HueSlider, AeroDragSplitter, StepIndicator, AeroCalendarPositionProvider) enabling Phases 8–10; no new public API (completed 2026-05-04)
-- [x] **Phase 8: Pickers** - AeroRangeSlider, AeroDatePicker, AeroTimePicker, AeroDateTimePicker, AeroDateRangePicker, AeroColorPicker; kotlinx-datetime:0.6.2 added (completed 2026-06-18)
+- [x] **Phase 8: Pickers** - AeroRangeSlider, AeroDatePicker, AeroTimePicker, AeroDateTimePicker, AeroDateRangePicker, AeroColorPicker; kotlinx-datetime:0.6.2 added
+ (completed 2026-06-18)
 - [ ] **Phase 9: Data** - AeroDataTable (virtualized, sortable, selectable, resizable columns) + AeroTreeView (lazy expand); components/datatable/ package
 - [ ] **Phase 10: Layout** - AeroAccordion, AeroSplitPane, AeroSidebar, AeroStepperWizard; components/layout/ package
 - [ ] **Phase 11: Showcase + v2.0 Visual Sign-off** - DataSection, PickersSection, LayoutSection wired into ShowcaseApp; RangeSection extended; 16-item silent-failure checklist as milestone gate
@@ -217,7 +218,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   - PITFALL-05 (TreeView lazy callback repeat): `childrenLoaded: Boolean` lives in `SnapshotStateMap<NodeKey, NodeState>` at tree level, NOT inside node composables. LazyColumn item disposal cannot reset it.
   - PITFALL-10 (selection vs hover token): DataTable selected rows use `colors.borderSelected.copy(alpha = 0.15f)`, NOT `colors.primary.copy(alpha = 0.2f)`. Four-state color scheme (normal / hover / selected / selected+hover) locked in plan-01 design.
   - Horizontal scroll: header `Row` and data `LazyColumn` share one `ScrollState` — they scroll horizontally together. Do NOT use `stickyHeader` (JetBrains bugs #3016, #2940).
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 09-01-PLAN.md — Foundation: AeroScrollBar(LazyListState) overload + public column/table types + pure sort/selection/column-width logic with JUnit tests (locks PITFALL-04) [wave 1]
+- [ ] 09-02-PLAN.md — AeroDataTable (DATA-01..04): virtualized LazyColumn + AeroScrollBar, glass header with 3-position sort + aeroDragSplitter resize, four-state Ctrl/Shift selection [wave 2]
+- [ ] 09-03-PLAN.md — AeroTreeView (DATA-05..06): pure flattenTree + NodeState guard (JUnit) then function-model lazy tree with SnapshotStateMap once-only onExpand [wave 2]
 
 ### Phase 10: Layout
 **Goal**: AeroAccordion, AeroSplitPane, AeroSidebar, and AeroStepperWizard are publicly available in the library — the accordion coordinates single/multi open state correctly, the split pane resizes both panes without collapse, the sidebar animates between three modes with tooltip labels in collapsed state, and the wizard advances only when per-step validation passes while preserving state on Back
