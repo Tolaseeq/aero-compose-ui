@@ -5,6 +5,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
 
 /**
  * PICK-02: locks the sealed-state transition behind AeroDateRangePicker via the pure
@@ -67,5 +68,34 @@ class AeroDateRangePickerTest {
 
         assertEquals(1, emitted.size, "onRangeSelect must fire exactly once per completed range")
         assertEquals(d1 to d10, emitted.single())
+    }
+
+    // F14: same-month range selection — both endpoints in the SAME calendar month must commit.
+
+    private val d7june = LocalDate(2025, 6, 7)
+    private val d17june = LocalDate(2025, 6, 17)
+
+    @Test
+    fun sameMonthForwardOrderCommitsOnce() {
+        // (Idle -> SelectingEnd(07.06)) + (SelectingEnd(07.06) -> 17.06) must yield Selected(07,17).
+        val (nextStart, commitStart) = nextRangeState(AeroDateRangeState.Idle, d7june)
+        assertNull(commitStart, "start click in same month must NOT emit (PITFALL-06)")
+        assertEquals(AeroDateRangeState.SelectingEnd(d7june), nextStart)
+
+        val (nextEnd, commitEnd) = nextRangeState(nextStart, d17june)
+        assertNotNull(commitEnd, "end click in same month must commit a range (F14)")
+        assertEquals(d7june to d17june, commitEnd, "same-month range must be ordered 07.06->17.06")
+        assertEquals(AeroDateRangeState.Selected(d7june, d17june), nextEnd)
+    }
+
+    @Test
+    fun sameMonthReverseOrderCommitsOrderedRange() {
+        // Clicking 17.06 first then 07.06 must still yield an ordered start<=end range (F14).
+        val (nextStart, _) = nextRangeState(AeroDateRangeState.Idle, d17june)
+        val (nextEnd, commitEnd) = nextRangeState(nextStart, d7june)
+
+        assertNotNull(commitEnd, "reverse same-month end click must commit a range (F14)")
+        assertEquals(d7june to d17june, commitEnd, "reverse-order same-month range must reorder to start<=end")
+        assertEquals(AeroDateRangeState.Selected(d7june, d17june), nextEnd)
     }
 }
