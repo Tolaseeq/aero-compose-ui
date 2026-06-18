@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Stateful + Layout
 status: in_progress
-stopped_at: Completed 08-04-PLAN.md
-last_updated: "2026-06-18T10:16:02.933Z"
-last_activity: "2026-06-18 — Phase 8 plan-04 completed: public AeroDateTimePicker (PICK-04) — one popup hosting AeroCalendarGrid above a TimeFields spinner row plus a Cancel/Apply commit gate. Day clicks and time edits mutate pending state only (remember(expanded)-keyed); onValueChange(LocalDateTime) fires ONLY on Apply via combineDateTime, the sole onValueChange( call site (grep=1). Composes the Phase 7 grid + plan-03 TimeFields directly (no embedded pickers); reuses dateIsDisabled; Popup not Dialog, no transparency flag. 3 unit tests + compileKotlin green."
+stopped_at: Completed 08-05-PLAN.md
+last_updated: "2026-06-18T10:22:43.388Z"
+last_activity: "2026-06-18 — Phase 8 plan-05 completed: public AeroDateRangePicker (PICK-02) — dual-month popup that stacks vertically below 560dp (NEW-PICK-03), range highlight via additive AeroCalendarGrid rangeStart/rangeEnd params (primary@0.15f intermediate, primary endpoints — PITFALL-09 extension), and a sealed AeroDateRangeState machine whose pure nextRangeState transition makes onRangeSelect fire exactly once per completed range and never on a partial start click (PITFALL-06). 5 unit tests + compileKotlin green; existing DatePicker/DateTimePicker/CalendarGrid tests unaffected (additive change)."
 progress:
   total_phases: 11
   completed_phases: 7
   total_plans: 38
-  completed_plans: 38
+  completed_plans: 39
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-30 — v2.0 Current Milestone section
 ## Current Position
 
 Phase: 8 — Pickers
-Plan: 08-04 (AeroDateTimePicker) complete — see Performance Metrics for per-plan progress
-Status: 08-04 (AeroDateTimePicker / PICK-04) complete — calendar+time single popup with Apply/Cancel commit gate landed (4/6 plans of phase 8 done)
-Last activity: 2026-06-18 — Phase 8 plan-04 completed: public AeroDateTimePicker (PICK-04) — one popup hosting AeroCalendarGrid above a TimeFields spinner row plus a Cancel/Apply commit gate. Day clicks and time edits mutate pending state only (remember(expanded)-keyed); onValueChange(LocalDateTime) fires ONLY on Apply via combineDateTime, the sole onValueChange( call site (grep=1). Composes the Phase 7 grid + plan-03 TimeFields directly (no embedded pickers); reuses dateIsDisabled; Popup not Dialog, no transparency flag. 3 unit tests + compileKotlin green.
+Plan: 08-05 (AeroDateRangePicker) complete — see Performance Metrics for per-plan progress
+Status: 08-05 (AeroDateRangePicker / PICK-02) complete — dual-month range popup with responsive stacking + sealed-state single-callback machine landed (5/6 plans of phase 8 done)
+Last activity: 2026-06-18 — Phase 8 plan-05 completed: public AeroDateRangePicker (PICK-02) — dual-month popup that stacks vertically below 560dp (NEW-PICK-03), range highlight via additive AeroCalendarGrid rangeStart/rangeEnd params (primary@0.15f intermediate, primary endpoints — PITFALL-09 extension), and a sealed AeroDateRangeState machine whose pure nextRangeState transition makes onRangeSelect fire exactly once per completed range and never on a partial start click (PITFALL-06). 5 unit tests + compileKotlin green; existing DatePicker/DateTimePicker/CalendarGrid tests unaffected (additive change).
 
 ```
-v2.0 Progress: [███       ] 28% (1/5 phases, 4/6 plans of phase 8)
+v2.0 Progress: [███       ] 29% (1/5 phases, 5/6 plans of phase 8)
 ```
 
 ## Shipped Milestones
@@ -85,6 +85,7 @@ See `.planning/MILESTONES.md` for accomplishments and `.planning/milestones/v1.1
 | Phase 08 P06 | 5min | 3 tasks | 4 files |
 | Phase 08 P03 | 6min | 3 tasks | 3 files |
 | Phase 08 P04 | 2min | 2 tasks | 2 files |
+| Phase 08-pickers P05 | 3min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -122,6 +123,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 08]: [Phase 08] AeroTimePicker is 24-hour only — no use12Hour/AM-PM parameter (descoped per user decision), enforced by a zero-match grep gate
 - [Phase 08]: [Phase 08] TimeFields (internal spinner row) + assembleTime (pure clamp/assemble helper) are the reuse seam consumed by AeroDateTimePicker (plan 04); TimePicker emits LocalTime on every spinner change with no Apply gate
 - [Phase 08]: [Phase 08] AeroDateTimePicker (PICK-04) composes AeroCalendarGrid + TimeFields directly with a pending-state Apply/Cancel commit gate; the only onValueChange( call site is the Apply onClick (combineDateTime) — day clicks and time edits never close or emit (NEW-PICK-02)
+- [Phase 08-pickers]: [Phase 08] AeroCalendarGrid range params are additive (rangeStart/rangeEnd: LocalDate? = null after selected); intermediate cells render primary@0.15f, endpoints primary (PITFALL-09 extension, AeroDark-readable); DatePicker/DateTimePicker callers and Phase 7 grid tests unaffected
+- [Phase 08-pickers]: [Phase 08] AeroDateRangePicker (PICK-02) uses sealed AeroDateRangeState + pure nextRangeState((state,clicked) -> (next, commit?)); the non-null commit is the SOLE guard around the single onRangeSelect( call, so it fires exactly once per completed range and never on a start-only click (PITFALL-06, unit-tested without Compose); stacking threshold locked at maxWidth < 560.dp (NEW-PICK-03); leftMonth drives both months, rightMonth = leftMonth + 1
 
 ### Pending Todos
 
@@ -140,7 +143,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-18T10:16:02.930Z
-Stopped at: Completed 08-04-PLAN.md
+Last session: 2026-06-18T10:22:43.385Z
+Stopped at: Completed 08-05-PLAN.md
 Resume file: None
 Next action: `/gsd:verify-work` (Phase 7 complete) → `/gsd:plan-phase 8` — Pickers
