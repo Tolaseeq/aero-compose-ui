@@ -97,7 +97,7 @@ internal fun nextRangeState(
  * @param endValue the committed range end, or `null` for none.
  * @param onRangeSelect fires with the ordered `(start, end)` ONLY when a range is completed.
  * @param modifier applied to the trigger.
- * @param formatter renders each endpoint in the trigger field (default ISO).
+ * @param formatter renders each endpoint in the trigger field (default DD.MM.YYYY).
  * @param placeholder shown when no range is set.
  * @param clearable when `true` and a range is set, shows an X button that calls [onClear].
  * @param onClear invoked by the clear button.
@@ -112,7 +112,7 @@ public fun AeroDateRangePicker(
     endValue: LocalDate?,
     onRangeSelect: (start: LocalDate, end: LocalDate) -> Unit,
     modifier: Modifier = Modifier,
-    formatter: (LocalDate) -> String = { it.toString() },
+    formatter: (LocalDate) -> String = { formatAeroDate(it) },
     placeholder: String = "Select range",
     clearable: Boolean = false,
     onClear: (() -> Unit)? = null,

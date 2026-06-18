@@ -46,7 +46,7 @@ import kotlinx.datetime.toLocalDateTime
  * @param value the currently selected date, or `null` for none.
  * @param onValueChange fires with the [LocalDate] the user clicks.
  * @param modifier applied to the trigger.
- * @param formatter renders [value] in the trigger field (default ISO `yyyy-MM-dd`).
+ * @param formatter renders [value] in the trigger field (default DD.MM.YYYY).
  * @param placeholder shown when [value] is `null`.
  * @param clearable when `true` and a value is set, shows an X button that calls [onClear].
  * @param onClear invoked by the clear button.
@@ -60,7 +60,7 @@ public fun AeroDatePicker(
     value: LocalDate?,
     onValueChange: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
-    formatter: (LocalDate) -> String = { it.toString() },
+    formatter: (LocalDate) -> String = { formatAeroDate(it) },
     placeholder: String = "Select date",
     clearable: Boolean = false,
     onClear: (() -> Unit)? = null,
@@ -140,6 +140,14 @@ public fun AeroDatePicker(
         }
     }
 }
+
+/**
+ * Full-date display helper (F6 default). Formats a [LocalDate] as DD.MM.YYYY (e.g. 07.06.2025).
+ * All three date pickers use this as their default [formatter] — calendar navigation headers
+ * (month-name + year) are unaffected.
+ */
+internal fun formatAeroDate(date: LocalDate): String =
+    "%02d.%02d.%04d".format(date.dayOfMonth, date.monthNumber, date.year)
 
 /**
  * Composes the date-availability constraints for [AeroDatePicker]. A date is disabled when it
