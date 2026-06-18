@@ -167,11 +167,14 @@ public fun AeroAccordion(
                 onToggle = onToggle,
             )
 
-            // 1dp borderDefault divider between sections (not after the last)
+            // 1dp borderDefault divider between sections (not after the last).
+            // F11: padding(horizontal = 8.dp) insets the divider to sit within the rounded
+            // section background's straight edge (matches 8.dp cornerRadius of glassPanel).
             if (index < sections.lastIndex) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
                         .height(1.dp)
                         .background(AeroTheme.colors.borderDefault)
                 )
