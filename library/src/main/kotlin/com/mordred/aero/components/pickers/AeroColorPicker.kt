@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -153,11 +154,14 @@ public fun AeroColorPicker(
 
     Column(
         modifier = modifier
+            .width(280.dp)
             .glassPanel(cornerRadius = 8.dp)
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         // 1. HSV square + hue strip.
+        // F12: AeroHsvColorSquare sized to 220dp so the 24dp hue slider fits in 280dp panel
+        // (220 + 8 spacedBy + 24 hue + 12+12 outer padding = 276dp, fits within 280dp column).
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             AeroHsvColorSquare(
                 hue = hue,
@@ -166,6 +170,7 @@ public fun AeroColorPicker(
                 onSatValChange = { s, v ->
                     if (enabled) { saturation = s; brightness = v }
                 },
+                modifier = Modifier.size(220.dp),
             )
             AeroHueSlider(
                 hue = hue,
@@ -173,10 +178,16 @@ public fun AeroColorPicker(
             )
         }
 
-        // 2. Before / after preview bar.
-        Row(modifier = Modifier.height(24.dp)) {
-            Box(Modifier.weight(1f).height(24.dp).background(beforeColor))
-            Box(Modifier.weight(1f).height(24.dp).background(currentColor))
+        // 2. Before / after preview bar — labelled Original/Current (F10).
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.weight(1f)) {
+                Text("Original", color = AeroTheme.colors.labelText, style = AeroTheme.typography.label)
+                Box(Modifier.fillMaxWidth().height(20.dp).background(beforeColor))
+            }
+            Column(Modifier.weight(1f)) {
+                Text("Current", color = AeroTheme.colors.labelText, style = AeroTheme.typography.label)
+                Box(Modifier.fillMaxWidth().height(20.dp).background(currentColor))
+            }
         }
 
         // 3. R / G / B sliders driven by the derived currentColor (each valueRange = 0f..255f).
