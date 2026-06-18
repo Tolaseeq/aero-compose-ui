@@ -48,8 +48,8 @@ import com.mordred.aero.theme.AeroTheme
  * ## Scroll (PITFALL-01)
  *
  * `AeroTreeView` owns its own `LazyColumn` + `AeroScrollBar(lazyListState)`. Do **NOT**
- * wrap it in `AeroScrollArea` — that would give the inner `LazyColumn` an unbounded height
- * constraint and destroy virtualization.
+ * wrap it in the scroll-area container — that would give the inner `LazyColumn` an unbounded
+ * height constraint and destroy virtualization.
  *
  * ## Selection
  *
