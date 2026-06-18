@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Stateful + Layout
 status: verifying
-stopped_at: Completed 07-03-gap-closure-PLAN.md
-last_updated: "2026-06-17T14:40:06.673Z"
+stopped_at: Phase 8 context gathered
+last_updated: "2026-06-18T09:18:59.560Z"
 last_activity: "2026-05-04 — Phase 7 plan-02 (visuals-and-scratch) completed: Modifier.aeroDragSplitter, AeroHsvColorSquare, AeroHueSlider, AeroStepIndicator landed; AeroPhase7Scratch wired into showcase via thin Phase7ScratchSection wrapper (preserves locked-internal API for all 6 primitives)"
 progress:
   total_phases: 11
@@ -126,7 +126,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-17T14:17:13.772Z
-Stopped at: Completed 07-03-gap-closure-PLAN.md
-Resume file: None
+Last session: 2026-06-18T09:18:59.557Z
+Stopped at: Phase 8 context gathered
+Resume file: .planning/phases/08-pickers/08-CONTEXT.md
 Next action: `/gsd:verify-work` (Phase 7 complete) → `/gsd:plan-phase 8` — Pickers
