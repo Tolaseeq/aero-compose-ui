@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Stateful + Layout
 status: completed
-stopped_at: Completed 11-03-PLAN.md (LayoutSection)
-last_updated: "2026-06-18T16:04:01.311Z"
+stopped_at: Completed 11-04-PLAN.md (ShowcaseApp wiring + scratch deletion)
+last_updated: "2026-06-18T16:07:27.445Z"
 last_activity: "2026-06-18 — Phase 8 plan-05 completed: public AeroDateRangePicker (PICK-02) — dual-month popup that stacks vertically below 560dp (NEW-PICK-03), range highlight via additive AeroCalendarGrid rangeStart/rangeEnd params (primary@0.15f intermediate, primary endpoints — PITFALL-09 extension), and a sealed AeroDateRangeState machine whose pure nextRangeState transition makes onRangeSelect fire exactly once per completed range and never on a partial start click (PITFALL-06). 5 unit tests + compileKotlin green; existing DatePicker/DateTimePicker/CalendarGrid tests unaffected (additive change)."
 progress:
   total_phases: 11
   completed_phases: 10
   total_plans: 49
-  completed_plans: 48
+  completed_plans: 49
 ---
 
 # Project State
@@ -96,6 +96,7 @@ See `.planning/MILESTONES.md` for accomplishments and `.planning/milestones/v1.1
 | Phase 11 P01 | 3min | 2 tasks | 3 files |
 | Phase 11 P02 | 4min | 2 tasks | 2 files |
 | Phase 11-showcase-v2-0-visual-sign-off P03 | 2min | 2 tasks | 1 files |
+| Phase 11-showcase-v2-0-visual-sign-off P04 | 1min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -149,6 +150,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 11]: kotlinx-datetime added as direct :showcase dependency (Rule 3 auto-fix — DataSection.kt pre-existing blocker; transitive from :library was insufficient for direct source use)
 - [Phase 11]: DataSection.kt written as complete file combining Task 1+2 in single Write; LayoutSection.kt pre-existing compile errors deferred to plan 11-03 scope
 - [Phase 11]: AeroButton param is text: String (not a content lambda), package is buttons plural — confirmed from source during compile fix
+- [Phase 11]: Phase7ScratchSection call removed and three new section calls added in-place (after NavigationSection, before Spacer); scratch wrapper and aggregator deleted without breaking any other module dependency
 
 ### Pending Todos
 
@@ -167,7 +169,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-18T16:04:01.302Z
-Stopped at: Completed 11-03-PLAN.md (LayoutSection)
+Last session: 2026-06-18T16:07:27.440Z
+Stopped at: Completed 11-04-PLAN.md (ShowcaseApp wiring + scratch deletion)
 Resume file: None
 Next action: `/gsd:verify-work` (Phase 7 complete) → `/gsd:plan-phase 8` — Pickers
