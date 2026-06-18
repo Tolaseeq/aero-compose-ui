@@ -113,35 +113,41 @@ fun LayoutSection() {
         }
 
         // ── AeroStepperWizard — 3 steps, step 1 onValidate gate ─────────────
+        // F-WIZARD: wizard is surface-less and uses weight(1f, fill=false) for the active step.
+        // A weight(1f) child needs a bounded max-height on its parent Column; without it the
+        // step content area collapses to 0dp and the AeroTextField has no hit-testable area.
+        // Fix: wrap in Box(height(200.dp)) so the wizard Column receives a finite max-height.
         var wizardName by remember { mutableStateOf("") }
         var wizardOptIn by remember { mutableStateOf(false) }
         Text("AeroStepperWizard", color = colors.labelText, style = typography.bodyMedium)
         AeroCard(modifier = Modifier.fillMaxWidth()) {
-            AeroStepperWizard(
-                steps = listOf(
-                    AeroWizardStep(
-                        label = "Identifier",
-                        content = {
-                            AeroTextField(value = wizardName, onValueChange = { wizardName = it }, placeholder = "Session name")
-                        },
-                        canProceed = wizardName.isNotBlank(),
-                        onValidate = { wizardName.isNotBlank() }
+            Box(Modifier.fillMaxWidth().height(200.dp)) {
+                AeroStepperWizard(
+                    steps = listOf(
+                        AeroWizardStep(
+                            label = "Identifier",
+                            content = {
+                                AeroTextField(value = wizardName, onValueChange = { wizardName = it }, placeholder = "Session name")
+                            },
+                            canProceed = wizardName.isNotBlank(),
+                            onValidate = { wizardName.isNotBlank() }
+                        ),
+                        AeroWizardStep(
+                            label = "Options",
+                            content = {
+                                AeroCheckbox(checked = wizardOptIn, onCheckedChange = { wizardOptIn = it }, label = "Enable notifications")
+                            }
+                        ),
+                        AeroWizardStep(
+                            label = "Summary",
+                            content = {
+                                Text("Name: $wizardName · Opt-in: $wizardOptIn", color = colors.onSurface)
+                            }
+                        )
                     ),
-                    AeroWizardStep(
-                        label = "Options",
-                        content = {
-                            AeroCheckbox(checked = wizardOptIn, onCheckedChange = { wizardOptIn = it }, label = "Enable notifications")
-                        }
-                    ),
-                    AeroWizardStep(
-                        label = "Summary",
-                        content = {
-                            Text("Name: $wizardName · Opt-in: $wizardOptIn", color = colors.onSurface)
-                        }
-                    )
-                ),
-                onFinish = {}
-            )
+                    onFinish = {}
+                )
+            }
         }
     }
 }
