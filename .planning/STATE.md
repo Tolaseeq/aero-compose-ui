@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Stateful + Layout
 status: completed
-stopped_at: Completed 11-09-PLAN.md (F12+F10+F11 ColorPicker+Accordion gap-closure)
-last_updated: "2026-06-18T17:36:15.457Z"
+stopped_at: Completed 11-07-PLAN.md (F2/F4/F5/F-RESIZE DataTable+TreeView bug fixes)
+last_updated: "2026-06-18T17:36:56.514Z"
 last_activity: "2026-06-18 — Phase 8 plan-05 completed: public AeroDateRangePicker (PICK-02) — dual-month popup that stacks vertically below 560dp (NEW-PICK-03), range highlight via additive AeroCalendarGrid rangeStart/rangeEnd params (primary@0.15f intermediate, primary endpoints — PITFALL-09 extension), and a sealed AeroDateRangeState machine whose pure nextRangeState transition makes onRangeSelect fire exactly once per completed range and never on a partial start click (PITFALL-06). 5 unit tests + compileKotlin green; existing DatePicker/DateTimePicker/CalendarGrid tests unaffected (additive change)."
 progress:
   total_phases: 11
   completed_phases: 10
   total_plans: 55
-  completed_plans: 51
+  completed_plans: 52
 ---
 
 # Project State
@@ -98,6 +98,8 @@ See `.planning/MILESTONES.md` for accomplishments and `.planning/milestones/v1.1
 | Phase 11-showcase-v2-0-visual-sign-off P03 | 2min | 2 tasks | 1 files |
 | Phase 11-showcase-v2-0-visual-sign-off P04 | 1min | 2 tasks | 3 files |
 | Phase 11 P09 | 3min | 3 tasks | 3 files |
+| Phase 11-showcase-v2-0-visual-sign-off P07 | 3min | 3 tasks | 4 files |
+| Phase 11-showcase-v2-0-visual-sign-off P08 | 3min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -155,6 +157,11 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 11]: AeroHsvColorSquare sized to 220dp so 24dp hue slider fits in 280dp bounded panel (F12 fix)
 - [Phase 11]: Popup AeroColorPicker wrapped in Box to prevent full-window stretch; 280.dp panel width is the W11-02 glass surface (F10 fix)
 - [Phase 11]: Accordion divider inset 8dp horizontal matching glassPanel cornerRadius to avoid overflowing rounded bg (F11 fix)
+- [Phase 11]: F4: clickable moved to outer cell Box in AeroTableHeader; resize splitter at CenterEnd on its own inner Box — sort and resize targets do not interfere
+- [Phase 11]: F5: AeroTreeNode row-level clickable calls onExpandClick() when isExpandable — safe because it routes through toggleNode() PITFALL-05 once-only guard in AeroTreeView
+- [Phase 11]: F-RESIZE: coerceIn(minDp, maxDp) where maxDp = availableDp - othersMinDp; left over-shrink for Name column deferred to 11-10 showcase config (larger minWidth)
+- [Phase 11-showcase-v2-0-visual-sign-off]: formatAeroDate in AeroDatePicker.kt as package-internal helper used by all three date pickers for DD.MM.YYYY default (F6)
+- [Phase 11-showcase-v2-0-visual-sign-off]: F14 required no state-machine changes: nextRangeState already committed same-month ranges; both calendar grids route onDateSelected=onDayClick; fix was verification + tests only
 
 ### Pending Todos
 
@@ -173,7 +180,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-18T17:36:15.452Z
-Stopped at: Completed 11-09-PLAN.md (F12+F10+F11 ColorPicker+Accordion gap-closure)
+Last session: 2026-06-18T17:36:44.439Z
+Stopped at: Completed 11-07-PLAN.md (F2/F4/F5/F-RESIZE DataTable+TreeView bug fixes)
 Resume file: None
 Next action: `/gsd:plan-phase 11 --gaps` — create gap-closure plans for the 16 defects (gap plans may edit component source)
