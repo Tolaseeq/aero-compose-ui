@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Stateful + Layout
 status: completed
-stopped_at: Phase 11 gap-closure context gathered (4 areas + F7 decided; 10 clear bugs queued)
-last_updated: "2026-06-18T17:05:56.322Z"
+stopped_at: Completed 11-09-PLAN.md (F12+F10+F11 ColorPicker+Accordion gap-closure)
+last_updated: "2026-06-18T17:36:15.457Z"
 last_activity: "2026-06-18 — Phase 8 plan-05 completed: public AeroDateRangePicker (PICK-02) — dual-month popup that stacks vertically below 560dp (NEW-PICK-03), range highlight via additive AeroCalendarGrid rangeStart/rangeEnd params (primary@0.15f intermediate, primary endpoints — PITFALL-09 extension), and a sealed AeroDateRangeState machine whose pure nextRangeState transition makes onRangeSelect fire exactly once per completed range and never on a partial start click (PITFALL-06). 5 unit tests + compileKotlin green; existing DatePicker/DateTimePicker/CalendarGrid tests unaffected (additive change)."
 progress:
   total_phases: 11
   completed_phases: 10
-  total_plans: 49
-  completed_plans: 49
+  total_plans: 55
+  completed_plans: 51
 ---
 
 # Project State
@@ -97,6 +97,7 @@ See `.planning/MILESTONES.md` for accomplishments and `.planning/milestones/v1.1
 | Phase 11 P02 | 4min | 2 tasks | 2 files |
 | Phase 11-showcase-v2-0-visual-sign-off P03 | 2min | 2 tasks | 1 files |
 | Phase 11-showcase-v2-0-visual-sign-off P04 | 1min | 2 tasks | 3 files |
+| Phase 11 P09 | 3min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -151,6 +152,9 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 11]: DataSection.kt written as complete file combining Task 1+2 in single Write; LayoutSection.kt pre-existing compile errors deferred to plan 11-03 scope
 - [Phase 11]: AeroButton param is text: String (not a content lambda), package is buttons plural — confirmed from source during compile fix
 - [Phase 11]: Phase7ScratchSection call removed and three new section calls added in-place (after NavigationSection, before Spacer); scratch wrapper and aggregator deleted without breaking any other module dependency
+- [Phase 11]: AeroHsvColorSquare sized to 220dp so 24dp hue slider fits in 280dp bounded panel (F12 fix)
+- [Phase 11]: Popup AeroColorPicker wrapped in Box to prevent full-window stretch; 280.dp panel width is the W11-02 glass surface (F10 fix)
+- [Phase 11]: Accordion divider inset 8dp horizontal matching glassPanel cornerRadius to avoid overflowing rounded bg (F11 fix)
 
 ### Pending Todos
 
@@ -169,7 +173,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-18T17:05:56.316Z
-Stopped at: Phase 11 gap-closure context gathered (4 areas + F7 decided; 10 clear bugs queued)
-Resume file: .planning/phases/11-showcase-v2-0-visual-sign-off/11-CONTEXT.md
+Last session: 2026-06-18T17:36:15.452Z
+Stopped at: Completed 11-09-PLAN.md (F12+F10+F11 ColorPicker+Accordion gap-closure)
+Resume file: None
 Next action: `/gsd:plan-phase 11 --gaps` — create gap-closure plans for the 16 defects (gap plans may edit component source)
