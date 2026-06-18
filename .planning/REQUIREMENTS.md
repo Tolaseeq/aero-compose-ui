@@ -12,9 +12,9 @@ Milestone v2.0 — Stateful + Layout. 12 новых компонентов (8 co
 ### Data — Table + Tree (DATA)
 
 - [ ] **DATA-01**: `AeroDataTable<T>` рендерит данные в табличной форме с заголовками колонок и виртуализацией строк (LazyColumn под капотом); тысячи строк работают без fps-просадки на типичной desktop-машине
-- [ ] **DATA-02**: Клик по заголовку колонки сортирует строки по возрастанию/убыванию (трёхпозиционно: asc → desc → none); направление визуально индицируется иконкой (`AeroIcons.{CaretUp,CaretDown}`); индикация только на активной колонке
-- [ ] **DATA-03**: `AeroDataTable` поддерживает `selectionMode = none | single | multi`; multi-режим обрабатывает Ctrl-click (toggle одной строки) и Shift-click (range от последней выделенной); selection хранится через `Set<RowKey>` с caller-supplied `key: (T) -> Any` (НЕ `Set<Int>` индексов — устаревает после сортировки)
-- [ ] **DATA-04**: Каждая колонка имеет настраиваемую ширину: фиксированную в `dp` или weight-based (заполнение оставшегося пространства); пользователь может перетаскивать разделитель между заголовками для регулировки ширины (drag-resize); minimum width предотвращает схлопывание в 0dp
+- [x] **DATA-02**: Клик по заголовку колонки сортирует строки по возрастанию/убыванию (трёхпозиционно: asc → desc → none); направление визуально индицируется иконкой (`AeroIcons.{CaretUp,CaretDown}`); индикация только на активной колонке
+- [x] **DATA-03**: `AeroDataTable` поддерживает `selectionMode = none | single | multi`; multi-режим обрабатывает Ctrl-click (toggle одной строки) и Shift-click (range от последней выделенной); selection хранится через `Set<RowKey>` с caller-supplied `key: (T) -> Any` (НЕ `Set<Int>` индексов — устаревает после сортировки)
+- [x] **DATA-04**: Каждая колонка имеет настраиваемую ширину: фиксированную в `dp` или weight-based (заполнение оставшегося пространства); пользователь может перетаскивать разделитель между заголовками для регулировки ширины (drag-resize); minimum width предотвращает схлопывание в 0dp
 - [ ] **DATA-05**: `AeroTreeView<T>` рендерит иерархическое дерево с раскрытием/свёрткой узлов; раскрытый узел показывает children, свёрнутый — нет; индикатор раскрытия (`AeroIcons.{CaretRight,CaretDown}`) перед каждым узлом с детьми
 - [ ] **DATA-06**: `AeroTreeView` поддерживает lazy children loading через `onExpand: (T) -> Unit` callback; callback вызывается ровно один раз на узел при первом раскрытии (`childrenLoaded` хранится в `SnapshotStateMap` выше LazyColumn — не пересоздаётся при scroll-out / scroll-back)
 
@@ -105,9 +105,9 @@ Updated: 2026-04-30 (v2.0 roadmap created — phase mapping complete)
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | DATA-01 | Phase 9 | Pending |
-| DATA-02 | Phase 9 | Pending |
-| DATA-03 | Phase 9 | Pending |
-| DATA-04 | Phase 9 | Pending |
+| DATA-02 | Phase 9 | Complete |
+| DATA-03 | Phase 9 | Complete |
+| DATA-04 | Phase 9 | Complete |
 | DATA-05 | Phase 9 | Pending |
 | DATA-06 | Phase 9 | Pending |
 | PICK-01 | Phase 8 | Complete |
