@@ -64,6 +64,7 @@ fun DataSection() {
             AeroTableColumn<SatSession>(
                 header = "Name",
                 width = AeroColumnWidth.Weight(2f),
+                minWidth = 120.dp,
                 sortKey = { it.name },
                 cell = { s -> Text(s.name, color = colors.onSurface) }
             ),
@@ -78,7 +79,7 @@ fun DataSection() {
                 header = "AOS Date",
                 width = AeroColumnWidth.Fixed(120.dp),
                 sortKey = { it.aosDate },
-                cell = { s -> Text(s.aosDate.toString(), color = colors.onSurface) }
+                cell = { s -> Text("%02d.%02d.%04d".format(s.aosDate.dayOfMonth, s.aosDate.monthNumber, s.aosDate.year), color = colors.onSurface) }
             ),
             AeroTableColumn<SatSession>(
                 header = "Duration min",
