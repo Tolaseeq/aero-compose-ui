@@ -63,7 +63,7 @@ Grouped by component. Severity: 🔴 bug · 🟠 UX defect · 🟣 design change
 - **F8** 🔴 Every picker trigger `TextField` stretches to full window width, which squeezes the value-preview Text (to the right of the field) into a vertical column. Triggers should be compact / intrinsic width with the preview beside them.
 
 ### TimePicker
-- **F7** 🟣 Need seconds support (HH:MM:SS). Current `AeroTimePicker` is minutes-only (seconds were descoped in Phase 8). **Decision needed** — re-open scope to add seconds.
+- **F7** 🟣 Need seconds support (HH:MM:SS). Current `AeroTimePicker` is minutes-only (seconds were descoped in Phase 8). **DECISION 2026-06-18:** add an optional `showSeconds: Boolean = false` param to `AeroTimePicker` (and propagate to `AeroDateTimePicker`); default `false` to preserve the existing HH:MM API. Showcase demo enables it.
 
 ### ColorPicker
 - **F10** 🟣 Give it the same glass background + rounded-corner Aero styling as the other pickers; stop stretching it full-width. Clarify the left half of the top swatch row (it stays the default colour regardless of selection — purpose unclear / unlabeled).
