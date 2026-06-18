@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.onClick
 import androidx.compose.runtime.Composable
@@ -27,6 +28,7 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.input.pointer.isCtrlPressed
 import androidx.compose.ui.input.pointer.isShiftPressed
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.mordred.aero.components.datatable.AeroTableColumn
 import com.mordred.aero.components.datatable.SelectionMode
 import com.mordred.aero.theme.AeroTheme
@@ -115,7 +117,8 @@ internal fun <T> AeroTableRow(
             Box(
                 modifier = Modifier
                     .width(columnWidthsDp[i])
-                    .height(rowHeight),
+                    .height(rowHeight)
+                    .padding(horizontal = 8.dp),
                 contentAlignment = alignmentFrom(col.alignment),
             ) {
                 col.cell(item)

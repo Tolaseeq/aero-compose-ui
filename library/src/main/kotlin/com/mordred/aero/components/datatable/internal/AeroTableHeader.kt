@@ -84,19 +84,19 @@ internal fun <T> AeroTableHeader(
             Box(
                 modifier = Modifier
                     .width(columnWidthsDp[i])
-                    .fillMaxHeight(),
+                    .fillMaxHeight()
+                    .then(
+                        if (col.sortKey != null)
+                            Modifier.clickable { onSortClick(i) }
+                        else
+                            Modifier
+                    ),
             ) {
                 // Label + optional sort caret
                 Row(
                     modifier = Modifier
                         .fillMaxHeight()
-                        .padding(horizontal = 8.dp)
-                        .then(
-                            if (col.sortKey != null)
-                                Modifier.clickable { onSortClick(i) }
-                            else
-                                Modifier
-                        ),
+                        .padding(horizontal = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
