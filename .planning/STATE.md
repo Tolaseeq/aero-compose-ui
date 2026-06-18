@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Stateful + Layout
-status: completed
-stopped_at: "Phase 11 plan 11-11 complete: v2.0 sign-off gate PASSED — all 48 cells PASS, SHW-10 satisfied"
-last_updated: "2026-06-18T18:15:13.770Z"
-last_activity: "2026-06-18 — Phase 8 plan-05 completed: public AeroDateRangePicker (PICK-02) — dual-month popup that stacks vertically below 560dp (NEW-PICK-03), range highlight via additive AeroCalendarGrid rangeStart/rangeEnd params (primary@0.15f intermediate, primary endpoints — PITFALL-09 extension), and a sealed AeroDateRangeState machine whose pure nextRangeState transition makes onRangeSelect fire exactly once per completed range and never on a partial start click (PITFALL-06). 5 unit tests + compileKotlin green; existing DatePicker/DateTimePicker/CalendarGrid tests unaffected (additive change)."
+status: shipped
+stopped_at: "v2.0 milestone shipped 2026-06-18 — archived, tagged, requirements reset. Awaiting /gsd:new-milestone."
+last_updated: "2026-06-18T18:24:19.957Z"
+last_activity: "2026-06-18 — v2.0 Stateful + Layout milestone completed via /gsd:complete-milestone: ROADMAP/REQUIREMENTS/AUDIT archived to milestones/, PROJECT.md evolved (27 reqs → Validated), RETROSPECTIVE updated, REQUIREMENTS.md reset, git tagged v2.0."
 progress:
   total_phases: 11
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 55
   completed_plans: 55
 ---
@@ -17,20 +17,20 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-30 — v2.0 Current Milestone section added)
+See: .planning/PROJECT.md (updated 2026-06-18 — full v2.0 milestone-completion evolution review)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, typed `AeroIcons`, and a showcase — no manual style work or icon-pack hunting required.
-**Current focus:** v2.0 Stateful + Layout — roadmap created, ready to plan Phase 7 (Shared Internal Primitives).
+**Current focus:** Between milestones — v2.0 shipped. Next milestone not yet defined; run `/gsd:new-milestone` to scope it.
 
 ## Current Position
 
-Phase: 8 — Pickers
-Plan: 08-05 (AeroDateRangePicker) complete — see Performance Metrics for per-plan progress
-Status: 08-05 (AeroDateRangePicker / PICK-02) complete — dual-month range popup with responsive stacking + sealed-state single-callback machine landed (5/6 plans of phase 8 done)
-Last activity: 2026-06-18 — Phase 8 plan-05 completed: public AeroDateRangePicker (PICK-02) — dual-month popup that stacks vertically below 560dp (NEW-PICK-03), range highlight via additive AeroCalendarGrid rangeStart/rangeEnd params (primary@0.15f intermediate, primary endpoints — PITFALL-09 extension), and a sealed AeroDateRangeState machine whose pure nextRangeState transition makes onRangeSelect fire exactly once per completed range and never on a partial start click (PITFALL-06). 5 unit tests + compileKotlin green; existing DatePicker/DateTimePicker/CalendarGrid tests unaffected (additive change).
+Phase: — (no active milestone)
+Plan: —
+Status: v2.0 Stateful + Layout SHIPPED 2026-06-18 — all 5 phases (7–11), 27 plans, 27/27 requirements; milestone audit PASSED; archived to `.planning/milestones/v2.0-*`; git tag `v2.0`.
+Last activity: 2026-06-18 — `/gsd:complete-milestone v2.0` ran: archives created, PROJECT.md/ROADMAP.md/RETROSPECTIVE.md updated, REQUIREMENTS.md reset, milestone committed + tagged.
 
 ```
-v2.0 Progress: [███       ] 29% (1/5 phases, 5/6 plans of phase 8)
+v2.0 Progress: [██████████] 100% (5/5 phases, 27/27 plans) — SHIPPED
 ```
 
 ## Shipped Milestones

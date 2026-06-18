@@ -1,5 +1,43 @@
 # Milestones
 
+## v2.0 Stateful + Layout (Shipped: 2026-06-18)
+
+**Phases:** 7–11 (5 phases) | **Plans:** 27 (Phase 7: 3, Phase 8: 6, Phase 9: 3, Phase 10: 4, Phase 11: 11) | **Requirements:** 27/27 (PICK-01..08, DATA-01..06, LAYO-01..09, SHW-07..10)
+
+**Timeline:** 2026-04-30 → 2026-06-18 (~49 days elapsed, concentrated execution)
+**Git range:** `2a4eaae` (feat 07-01) → `4d902cb` (HEAD) — 145 commits, 47 `feat`
+**Diff:** 152 files changed, +27,406 / −2,285
+**Audit:** ✅ PASSED — 27/27 requirements (3-source cross-referenced), 0 integration blockers, E2E showcase compiles + wires end-to-end (`.planning/milestones/v2.0-MILESTONE-AUDIT.md`)
+
+**Delivered:** 12 new stateful + layout components (8 complex stateful, 4 advanced layout) added on top of an internal-primitives foundation, no breaking changes to the v1.x public API. `kotlinx-datetime:0.6.2` is the only new dependency. The showcase gained DataSection, PickersSection, and LayoutSection, and passed the 16-item × 3-theme "looks done but isn't" silent-failure checklist (48 cells) as the formal milestone sign-off gate.
+
+**Key accomplishments:**
+1. **Shared internal primitives (Phase 7)** — `AeroCalendarGrid`, `AeroColorMath` (HSV single-source-of-truth, round-trip drift-free), `AeroHsvColorSquare` + `AeroHueSlider`, `Modifier.aeroDragSplitter`, `AeroStepIndicator`, and `AeroCalendarPositionProvider` built and tested (27 JUnit tests) so Phases 8–10 share one drag pattern, one calendar renderer, and one color-math layer with no per-component duplication.
+2. **Pickers (Phase 8)** — Six public components: `AeroRangeSlider`, `AeroDatePicker`, `AeroTimePicker`, `AeroDateTimePicker`, `AeroDateRangePicker`, `AeroColorPicker`. PITFALL-03 (touchSlop drag), PITFALL-06 (partial-range leak via sealed state machine), PITFALL-15 (HSV drift), and PITFALL-02/08 (popup clipping/first-frame jump) all defused; `kotlinx-datetime:0.6.2` added.
+3. **Data (Phase 9)** — `AeroDataTable` (virtualized LazyColumn, 3-position column sort, `Set<RowKey>` Ctrl/Shift multi-selection surviving sort, drag-resize columns with min-width clamp) and `AeroTreeView` (once-only lazy `onExpand` via `SnapshotStateMap` above LazyColumn). PITFALL-01/04/05 resolved.
+4. **Layout (Phase 10)** — `AeroAccordion` (single/multi, lifted state), `AeroSplitPane` (clamped divider, 8dp hit-area), `AeroSidebar` (3-mode `animateDpAsState`, scope DSL, collapsed tooltips), `AeroStepperWizard` (`onValidate` commit-gate on click only, Back-navigation preserves composable state). PITFALL-11/12/13/14 resolved.
+5. **Showcase + v2.0 visual sign-off (Phase 11)** — DataSection / PickersSection / LayoutSection wired into ShowcaseApp, RangeSection extended; Phase 7 scratch files deleted cleanly. The 16-item × 3-theme checklist FAILED first pass (16 defects), all closed across gap-plans 11-06…11-11, then re-verified — all 48 cells PASS (SHW-10 gate satisfied).
+
+**Locked v2.0 decisions (carried forward):**
+- `detectDragGestures` banned for Canvas-based drag on Compose Desktop — use `awaitPointerEventScope` + manual loop (PITFALL-03, touchSlop=18dp); `Modifier.aeroDragSplitter` is the shared utility
+- `AeroScrollArea` banned inside DataTable / TreeView — raw `LazyListState + AeroScrollBar` (PITFALL-01)
+- DataTable selection API is `Set<RowKey>` + caller `key: (T) -> Any`, never `Set<Int>` indices (PITFALL-04)
+- ColorPicker internal state is HSV float tuple only; RGB and HEX are derived views (PITFALL-15)
+- `AeroCalendarPositionProvider` (Phase 7) replaces `AeroDropdownPopup` for all date-picker popups (PITFALL-02)
+- All v2.0 overlays use `Popup(...)`, never `Dialog(transparent=true)` (W11-01, grep-gated)
+- `kotlinx-datetime:0.6.2` is the only new dependency
+
+**Issues deferred to follow-up (tech debt — all documentation hygiene or advisory, no deferred functional work):**
+- SUMMARY frontmatter `requirements-completed` gaps: PICK-03, DATA-05/06, LAYO-03/04/08/09 absent from plan SUMMARYs (all verified SATISFIED in phase VERIFICATIONs)
+- Phase 8 verification filed as `08-VERIFICATION-REPORT.md`, not the glob-standard `08-VERIFICATION.md`
+- `kotlinx-datetime` declared `implementation` not `api` — picker public signatures expose `kotlinx.datetime.*`; transitive type would leak for a PUBLISHED library; address at publish/POM step
+- Cosmetic: duplicate import (`AeroAccordion.kt:21,24`), stale KDoc reference to deleted scratch section (`AeroStepIndicator.kt:45`)
+- LAYO-06 API deviation: per-item `onClick:()->Unit` in `AeroSidebarScope.item()` instead of sidebar-level `onItemClick:(ItemKey)->Unit` — intentional, strictly more flexible
+- Nyquist: Phases 7, 8, 11 not formally `nyquist_compliant` (substantial JUnit coverage exists — 27 + 65 tests; formal validation contract not completed) — optional `/gsd:validate-phase 7|8|11`
+- Carry-over: AeroDropdown popup-offset regression (v1.0) — explicitly OUT of v2.0 scope; future gap-closure or v2.x
+
+---
+
 ## v1.1 Icon System (Shipped: 2026-04-30)
 
 **Phases:** 4–6 (3 phases) | **Plans:** 11 (Phase 4: 2, Phase 5: 6, Phase 6: 3) | **Requirements:** 17/17 (ICN-01..03, MIG-01..11, CLN-01..03, SHW-04..06)

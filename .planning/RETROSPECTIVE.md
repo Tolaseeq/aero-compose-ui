@@ -48,6 +48,53 @@
 
 ---
 
+## Milestone: v2.0 — Stateful + Layout
+
+**Shipped:** 2026-06-18
+**Phases:** 5 (7–11) | **Plans:** 27 | **Sessions:** concentrated execution; git range `2a4eaae`→`4d902cb` (145 commits, 47 `feat`), 152 files changed (+27,406 / −2,285)
+
+### What Was Built
+- **Internal foundation (Phase 7):** `AeroCalendarGrid`, `AeroColorMath`, `AeroHsvColorSquare` + `AeroHueSlider`, `Modifier.aeroDragSplitter`, `AeroStepIndicator`, `AeroCalendarPositionProvider` — shared primitives behind 27 JUnit tests, no public API.
+- **Pickers (Phase 8):** `AeroRangeSlider`, `AeroDatePicker`, `AeroTimePicker`, `AeroDateTimePicker`, `AeroDateRangePicker`, `AeroColorPicker`; `kotlinx-datetime:0.6.2` added.
+- **Data (Phase 9):** `AeroDataTable` (virtualized LazyColumn, 3-position sort, `Set<RowKey>` Ctrl/Shift selection, drag-resize columns) + `AeroTreeView` (once-only lazy `onExpand` via `SnapshotStateMap`).
+- **Layout (Phase 10):** `AeroAccordion` (single/multi), `AeroSplitPane` (clamped, 8dp hit-area), `AeroSidebar` (3-mode animated DSL), `AeroStepperWizard` (commit-gate validation, Back-state preserved).
+- **Showcase + sign-off (Phase 11):** DataSection / PickersSection / LayoutSection wired in, RangeSection extended; 16-item × 3-theme silent-failure checklist (48 cells) as the formal milestone gate.
+
+### What Worked
+- **Enabling-phase-first (Phase 7).** Building every cross-cutting primitive (calendar, color math, drag, step indicator, popup positioner) once, gated by 27 green unit tests *before* any public component, meant Phases 8/9/10 never re-invented drag logic or color math with divergent bugs. The audit confirmed zero local re-implementations — every Phase 7 primitive is imported and called by its intended consumer.
+- **Pure-logic-then-Compose.** Stateful behavior was extracted into pure functions and sealed state machines unit-tested without the Compose runtime: `nextRangeState` (range commit gate), `toggleNode` (once-only expand guard), `resolveColumnWidths`, `assembleTime`, `thumbToDrawFirst`. The hardest correctness pitfalls (PITFALL-06 partial-range leak, PITFALL-05 lazy-callback repeat, PITFALL-15 HSV drift) were locked at the pure-function layer.
+- **Front-loaded PITFALLS.md catalog.** Risks were enumerated at planning time with explicit resolutions per pitfall (touchSlop, calendar popup width, HSV drift, selection-by-index, LazyColumn virtualization). Phase notes carried the resolution into each plan, so executors never rediscovered a known trap mid-phase.
+- **16-item × 3-theme silent-failure checklist as a hard gate.** It earned its keep: the first pass FAILED with 16 real defects in components that compiled and "looked done." A checklist tied to specific failure modes (drag-on-first-pixel, AeroDark disabled-cell contrast, selection-survives-sort) caught what code review could not.
+- **Grep-gates for banned APIs.** `transparent = true`, `AeroScrollArea`-inside-table, `detectDragGestures`, `stickyHeader` each had a zero-match grep gate per plan — mechanical, fast, and impossible to forget.
+- **Hybrid controlled/uncontrolled state** (`onExpandedChange`/`onSortChange` null = uncontrolled internal state, non-null = controlled pure renderer) reused across `AeroDataTable` and `AeroAccordion` — one pattern, two components.
+
+### What Was Inefficient
+- **All visual verification deferred to Phase 11 → 16-defect batch.** Phases 8/9/10 shipped on compile + unit tests; the first eyes-on pass at sign-off surfaced 16 defects at once, requiring six gap-closure plans (11-06…11-11) and a full re-verification. Many (cell padding, full-cell header sort target, whole-row tree toggle, compact triggers, wizard bounded height) are per-component visual issues that a targeted checkpoint at the end of each component phase would have caught incrementally instead of as an end-of-milestone debug surge.
+- **The shared `aeroDragSplitter` delta bug (F3/F15) was found late.** Root cause — accumulated delta is unstable when the hit-area Box relocates between frames — wasn't exposed until the showcase exercised real drag. Fixing it once (`positionChange()` single-frame intra-event delta) corrected all consumers, but a Phase 7 drag *integration* smoke test (not just a drag-start smoke test) would have found it before three components depended on the broken behavior.
+- **Documentation hygiene drift across phases.** Seven requirements (PICK-03, DATA-05/06, LAYO-03/04/08/09) were missing from their SUMMARY `requirements-completed` frontmatter; Phase 8 verification was filed as the glob-invisible `08-VERIFICATION-REPORT.md`; Phase 10 VERIFICATION sat at `human_needed`. None were coverage gaps (all verified satisfied), but the audit had to manually cross-reference three sources to prove it.
+- **Nyquist validation contract incomplete for Phases 7, 8, 11** despite heavy JUnit coverage (27 + 65 tests) — the formal `nyquist_compliant` flag was never set, leaving the milestone audit at `partial` on that axis.
+
+### Patterns Established
+- **Enabling-phase-first** — when 2+ components need the same non-trivial mechanic (drag, calendar, color math), build it as an internal-only phase gated by unit tests before any public work.
+- **Pure-function + sealed-state-machine core, Compose as a thin renderer** — make the correctness-critical logic testable without a Compose runtime; the state machine's single commit point is the only callback call site.
+- **Silent-failure checklist as the milestone sign-off gate** — a fixed list of "looks done but isn't" failure modes, verified eyes-on per theme, with FAIL blocking sign-off.
+- **Zero-match grep-gates per plan** for every banned API/anti-pattern (`transparent=true`, `AeroScrollArea` in tables, `detectDragGestures`, `stickyHeader`).
+- **Hybrid controlled/uncontrolled component API** — `onXChange: ((...) -> Unit)? = null`; null drives internal `mutableStateOf`, non-null makes the component a pure controlled renderer.
+
+### Key Lessons
+1. **Distribute visual verification per component-phase, not all at the showcase phase.** 16 defects at the end is a batch-debug tax; the same checklist applied to each component phase's own mini-showcase would have amortized the cost and isolated root causes earlier.
+2. **Frame-stable drag delta is mandatory when the hit-area can move between frames.** Use `positionChange()` (single-frame intra-event) — accumulated/`positionChanged` deltas drift when the splitter's hit-area Box relocates after a resize (F3/F15 root cause).
+3. **`pointerInput` lambdas capture stale state — wrap mutable reads in `rememberUpdatedState`.** The RangeSlider live-value bug (F9) was a stale captured `value` inside the drag loop.
+4. **Fill SUMMARY `requirements-completed` frontmatter at plan close.** Seven reqs went unrecorded; the milestone audit paid for it in manual cross-referencing. The frontmatter is the machine-readable coverage source — leaving it stale forces a slower human verification path.
+5. **For a published library, `implementation` vs `api` is a real leak, not a convention detail.** Picker public signatures expose `kotlinx.datetime.LocalDate/Time/DateTime`; declared `implementation`, that type leaks transitively at publish. The all-deps-`implementation` repo convention masks it in-repo — must be revisited at the POM/publish step.
+
+### Cost Observations
+- Model mix: opus for planning/research, sonnet for execution (per `model_profile: balanced`); unchanged from v1.1.
+- Plans were small and numerous — 27 plans, most 2–6 min execution per the STATE metrics table; Phase 11 gap-closure (11-06 ~12 min, 11-11 ~15 min) dominated wall-clock.
+- Notable: the cost concentrated in *verification and gap-closure* (Phase 11: 11 plans for what was scoped as showcase wiring) rather than in component implementation, which went smoothly on the Phase 7 foundation.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -56,6 +103,7 @@
 |-----------|----------|--------|------------|
 | v1.0 | ~3 days | 3 (1–3) | Established `:library` + `:showcase` split, Aero theme system, glass modifiers, 50 components, three themes, undecorated-window pattern (without `transparent=true` for Win11 safety) |
 | v1.1 | ~1 day | 3 (4–6) | Established wave-ordered phase execution, spike-then-batch for code generation, vendored upstream pattern (`tools/phosphor-svgs/`), and visual-checkpoint-as-plan convention |
+| v2.0 | concentrated | 5 (7–11) | Established enabling-phase-first for shared primitives, pure-logic-then-Compose (sealed state machines unit-tested without Compose), front-loaded PITFALLS catalog, silent-failure checklist as sign-off gate, grep-gates for banned APIs, hybrid controlled/uncontrolled component API |
 
 ### Cumulative Quality
 
@@ -63,9 +111,11 @@
 |-----------|-----------|-------|--------|-------------------|-------------|
 | v1.0 | ~50 | 0 (text glyphs + Material Icons) | 3 (AeroBlue, AeroDark, Classic) | 8 (Foundation, Buttons, Inputs, Selection, Range, Lists, Containers, Overlays/Nav) | ≈0.96 MB + ~36 MB classpath via `materialIconsExtended` |
 | v1.1 | ~50 (no new components, all migrated) | 138 (`AeroIcons.*`, Phosphor Regular) | 3 (unchanged) | 9 (+ IconsSection) | ≈0.96 MB, classpath shed `materialIconsExtended` |
+| v2.0 | ~62 (+12: 6 pickers, 2 data, 4 layout) | 138 (unchanged) | 3 (unchanged) | 12 (+ DataSection, PickersSection, LayoutSection) | +`kotlinx-datetime:0.6.2` (only new dependency) |
 
 ### Top Lessons (Verified Across Milestones)
 
-1. **Visual checkpoints belong in plans, not afterthoughts.** v1.0 final visual checkpoint (Phase 3 P08) and v1.1 sign-off (Phase 6 P03) both produced clean approval records by being formal plans with their own `SUMMARY.md`. Off-the-cuff "let's just look at it" checkpoints are not auditable later.
-2. **Pre-flight checks catch silent disasters.** Phase 1 doctrine "no `transparent=true`" survives every milestone; v1.1 Phase 5 wave-ordering prevented broken-build commits. Both were enforced via plan-level rules, not afterthought QA.
-3. **Wrap, don't replace, Material3.** v1.0 chose to keep `Icon()` from material3 directly without an `AeroIcon()` wrapper; v1.1 reused that decision verbatim. Less surface area, more interop, no consumer surprises.
+1. **Visual checkpoints belong in plans, not afterthoughts.** v1.0 final visual checkpoint (Phase 3 P08) and v1.1 sign-off (Phase 6 P03) both produced clean approval records by being formal plans with their own `SUMMARY.md`. Off-the-cuff "let's just look at it" checkpoints are not auditable later. **v2.0 sharpened this:** deferring *all* visual verification to one end-of-milestone phase produced a 16-defect batch — checkpoints should be per-component-phase, not only at the showcase phase.
+2. **Pre-flight checks catch silent disasters.** Phase 1 doctrine "no `transparent=true`" survives every milestone; v1.1 Phase 5 wave-ordering prevented broken-build commits; v2.0 generalized this into per-plan zero-match grep-gates for every banned API and a front-loaded PITFALLS catalog. Both were enforced via plan-level rules, not afterthought QA.
+3. **Wrap, don't replace, Material3.** v1.0 chose to keep `Icon()` from material3 directly without an `AeroIcon()` wrapper; v1.1 reused that decision verbatim; v2.0 layered new stateful components on top without touching the v1.x API surface (no breaking changes). Less surface area, more interop, no consumer surprises.
+4. **Test the correctness-critical logic without the UI runtime.** v1.1 proved generated code via `compileKotlin`; v2.0 extended it — sealed state machines and pure transition functions (range commit, lazy-expand guard, HSV math) unit-tested without Compose caught the hardest pitfalls before any rendering existed.
