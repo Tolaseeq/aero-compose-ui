@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Stateful + Layout
-status: verifying
-stopped_at: Phase 8 context gathered
-last_updated: "2026-06-18T09:18:59.560Z"
-last_activity: "2026-05-04 — Phase 7 plan-02 (visuals-and-scratch) completed: Modifier.aeroDragSplitter, AeroHsvColorSquare, AeroHueSlider, AeroStepIndicator landed; AeroPhase7Scratch wired into showcase via thin Phase7ScratchSection wrapper (preserves locked-internal API for all 6 primitives)"
+status: in-progress
+stopped_at: Completed 08-01-PLAN.md
+last_updated: "2026-06-18T10:00:55.365Z"
+last_activity: "2026-06-18 — Phase 8 plan-01 completed: public AeroRangeSlider landed (custom Canvas + awaitPointerEventScope dual-thumb drag, start<=end clamp, primary inter-thumb fill, last-moved-on-top z-order); 13 state-logic tests green; first new public v2.0 component validates the locked drag pattern (PITFALL-03)"
 progress:
   total_phases: 11
   completed_phases: 7
-  total_plans: 31
-  completed_plans: 32
+  total_plans: 37
+  completed_plans: 33
 ---
 
 # Project State
@@ -24,13 +24,13 @@ See: .planning/PROJECT.md (updated 2026-04-30 — v2.0 Current Milestone section
 
 ## Current Position
 
-Phase: 7 — Shared Internal Primitives
-Plan: 2 of 2 complete (07-01-logic-and-tests done; 07-02-visuals-and-scratch done)
-Status: Phase 7 complete — ready for `/gsd:verify-work` then `/gsd:plan-phase 8`
-Last activity: 2026-05-04 — Phase 7 plan-02 (visuals-and-scratch) completed: Modifier.aeroDragSplitter, AeroHsvColorSquare, AeroHueSlider, AeroStepIndicator landed; AeroPhase7Scratch wired into showcase via thin Phase7ScratchSection wrapper (preserves locked-internal API for all 6 primitives)
+Phase: 8 — Pickers
+Plan: 1 of 6 complete (08-01-range-slider done)
+Status: 08-01 (AeroRangeSlider / PICK-08) complete — 5 picker plans remaining in phase
+Last activity: 2026-06-18 — Phase 8 plan-01 completed: public AeroRangeSlider landed (custom Canvas + awaitPointerEventScope dual-thumb drag, start<=end clamp, primary inter-thumb fill, last-moved-on-top z-order); 13 state-logic tests green; first new public v2.0 component validates the locked drag pattern (PITFALL-03)
 
 ```
-v2.0 Progress: [██        ] 20% (1/5 phases, 2/2 plans of phase 7)
+v2.0 Progress: [███       ] 26% (1/5 phases, 1/6 plans of phase 8)
 ```
 
 ## Shipped Milestones
@@ -80,6 +80,7 @@ See `.planning/MILESTONES.md` for accomplishments and `.planning/milestones/v1.1
 | 07-01 logic-and-tests | ~10 min | 4 | 9 | TDD red-green per task; 27 JUnit tests across 3 new test classes; PITFALL-02 / PITFALL-08 / PITFALL-15 defused at utility level |
 | 07-02 visuals-and-scratch | ~10m 33s | 5 | 8 | aeroDragSplitter + HsvColorSquare + HueSlider + StepIndicator landed; AeroPhase7Scratch aggregator in :library + thin Phase7ScratchSection wrapper in :showcase preserves locked-internal API for all 6 primitives; PITFALL-03 mitigation locked at the shared-utility level |
 | Phase 07-shared-internal-primitives P03 | 3min | 2 tasks | 2 files |
+| Phase 08-pickers P01 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -108,6 +109,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 07]: [Phase 07] Modifier.aeroDragSplitter is the locked v2.0 in-content drag pattern: awaitPointerEventScope + manual loop, cursor change keyed to Orientation, change.consume() only on actual delta (release uncconsumed)
 - [Phase 07]: AeroCalendarGrid header Row pinned to Modifier.width(252.dp); outer Column wrapContentWidth — header now matches 7x36dp day-grid width exactly
 - [Phase 07]: Architecture B reconfirmed: AeroCard glass wrappers in scratch demo only — AeroCalendarGrid + AeroStepIndicator remain surface-less; glass is a consumer responsibility
+- [Phase 08-pickers]: AeroRangeSlider tooltip is an overlaid glassEffect Box positioned by thumb x (AeroSlider pill approach), not in-Canvas text; behind showTooltip, only for the active thumb
+- [Phase 08-pickers]: lastMovedThumb inits to RangeThumb.End so the Start thumb draws on top when both thumbs compress (PITFALL-07); thumbToDrawFirst helper makes z-order unit-testable
 
 ### Pending Todos
 
@@ -126,7 +129,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-18T09:18:59.557Z
-Stopped at: Phase 8 context gathered
-Resume file: .planning/phases/08-pickers/08-CONTEXT.md
+Last session: 2026-06-18T10:00:27.710Z
+Stopped at: Completed 08-01-PLAN.md
+Resume file: None
 Next action: `/gsd:verify-work` (Phase 7 complete) → `/gsd:plan-phase 8` — Pickers

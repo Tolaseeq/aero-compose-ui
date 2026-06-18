@@ -27,7 +27,7 @@ Milestone v2.0 — Stateful + Layout. 12 новых компонентов (8 co
 - [ ] **PICK-05**: `AeroColorPicker` рендерит HSV-квадрат (sat/value 2D Canvas), вертикальную hue-полосу, RGB sliders (3 × `AeroSlider`), и HEX input field (`AeroTextField` с маской `#RRGGBB[AA]`); все 5 контролов взаимно синхронизированы через единое HSV state-of-truth (предотвращает round-trip drift); каждый контрол при изменении обновляет HSV → остальные через derive
 - [ ] **PICK-06**: `AeroColorPicker` показывает палитру предустановленных swatches (~16 цветов: чистые primary + neutrals); клик на swatch устанавливает цвет; preview-полоса показывает "before / after" (текущее значение vs новое выбранное)
 - [ ] **PICK-07**: `AeroColorPicker` поддерживает альфа-канал через параметр `enableAlpha: Boolean = false`; при `true` добавляется alpha-slider с шахматным фоном для прозрачности и HEX расширяется до `#RRGGBBAA`
-- [ ] **PICK-08**: `AeroRangeSlider` — ползунок с двумя ручками (`startValue`, `endValue`); каждая ручка перетаскивается независимо через `awaitPointerEventScope` (НЕ `detectDragGestures` — touchSlop 18dp ломает Canvas drag на Desktop); range между ручками визуально заполнен primary-цветом; ручки нельзя пересечь (start ≤ end)
+- [x] **PICK-08**: `AeroRangeSlider` — ползунок с двумя ручками (`startValue`, `endValue`); каждая ручка перетаскивается независимо через `awaitPointerEventScope` (НЕ `detectDragGestures` — touchSlop 18dp ломает Canvas drag на Desktop); range между ручками визуально заполнен primary-цветом; ручки нельзя пересечь (start ≤ end)
 
 ### Layout — Accordion / SplitPane / Sidebar / StepperWizard (LAYO)
 
@@ -117,7 +117,7 @@ Updated: 2026-04-30 (v2.0 roadmap created — phase mapping complete)
 | PICK-05 | Phase 8 | Pending |
 | PICK-06 | Phase 8 | Pending |
 | PICK-07 | Phase 8 | Pending |
-| PICK-08 | Phase 8 | Pending |
+| PICK-08 | Phase 8 | Complete |
 | LAYO-01 | Phase 10 | Pending |
 | LAYO-02 | Phase 10 | Pending |
 | LAYO-03 | Phase 10 | Pending |
