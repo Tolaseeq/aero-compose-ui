@@ -31,8 +31,8 @@ Milestone v2.0 — Stateful + Layout. 12 новых компонентов (8 co
 
 ### Layout — Accordion / SplitPane / Sidebar / StepperWizard (LAYO)
 
-- [ ] **LAYO-01**: `AeroAccordion` рендерит список сворачиваемых секций; каждая секция — заголовок (clickable) + content (видим/скрыт); раскрытие/свёртка анимировано через `animateContentSize` или `expandVertically`; индикатор состояния (`AeroIcons.{CaretRight,CaretDown}`) в заголовке
-- [ ] **LAYO-02**: `AeroAccordion` поддерживает `mode = single | multi`: в `single` ровно одна секция открыта в момент времени (раскрытие новой свёртывает предыдущую); в `multi` каждая секция независима; default — `multi`
+- [x] **LAYO-01**: `AeroAccordion` рендерит список сворачиваемых секций; каждая секция — заголовок (clickable) + content (видим/скрыт); раскрытие/свёртка анимировано через `animateContentSize` или `expandVertically`; индикатор состояния (`AeroIcons.{CaretRight,CaretDown}`) в заголовке
+- [x] **LAYO-02**: `AeroAccordion` поддерживает `mode = single | multi`: в `single` ровно одна секция открыта в момент времени (раскрытие новой свёртывает предыдущую); в `multi` каждая секция независима; default — `multi`
 - [ ] **LAYO-03**: `AeroSplitPane` рендерит две панели (`start`, `end`) разделённые draggable splitter'ом; `orientation = horizontal | vertical`; пользователь тянет splitter для регулировки соотношения; minimum size для каждой панели предотвращает схлопывание
 - [ ] **LAYO-04**: Splitter `AeroSplitPane` имеет невидимый расширенный hit-area (~8-12dp) вокруг 1dp видимой линии — обеспечивает практичный mouse grab; cursor меняется на resize-cursor при hover; реализация через `awaitPointerEventScope` (общий `AeroDragSplitter` primitive)
 - [ ] **LAYO-05**: `AeroSidebar` — persistent (всегда в layout, не overlay); рендерит вертикальный список items с иконкой и опциональным label; режим `expanded` показывает иконку + label + width ~240dp; `collapsed` показывает только иконку + label в `AeroTooltip` при hover + width ~48dp; `hidden` полностью скрывает sidebar
@@ -118,8 +118,8 @@ Updated: 2026-04-30 (v2.0 roadmap created — phase mapping complete)
 | PICK-06 | Phase 8 | Complete |
 | PICK-07 | Phase 8 | Complete |
 | PICK-08 | Phase 8 | Complete |
-| LAYO-01 | Phase 10 | Pending |
-| LAYO-02 | Phase 10 | Pending |
+| LAYO-01 | Phase 10 | Complete |
+| LAYO-02 | Phase 10 | Complete |
 | LAYO-03 | Phase 10 | Pending |
 | LAYO-04 | Phase 10 | Pending |
 | LAYO-05 | Phase 10 | Pending |

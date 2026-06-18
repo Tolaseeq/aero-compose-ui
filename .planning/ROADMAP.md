@@ -282,5 +282,5 @@ Decimal phases appear between their surrounding integers in numeric order.
 | 7. Shared Internal Primitives | 3/3 | Complete   | 2026-06-17 | - |
 | 8. Pickers | 6/6 | Complete   | 2026-06-18 | - |
 | 9. Data | 3/3 | Complete   | 2026-06-18 | - |
-| 10. Layout | v2.0 | 0/TBD | Not started | - |
+| 10. Layout | 2/4 | In Progress|  | - |
 | 11. Showcase + v2.0 Visual Sign-off | v2.0 | 0/TBD | Not started | - |

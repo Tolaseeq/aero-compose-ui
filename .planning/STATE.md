@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Stateful + Layout
 status: completed
-stopped_at: Phase 10 context gathered
-last_updated: "2026-06-18T13:45:27.129Z"
+stopped_at: Completed 10-03 (AeroSidebar)
+last_updated: "2026-06-18T14:27:05.606Z"
 last_activity: "2026-06-18 — Phase 8 plan-05 completed: public AeroDateRangePicker (PICK-02) — dual-month popup that stacks vertically below 560dp (NEW-PICK-03), range highlight via additive AeroCalendarGrid rangeStart/rangeEnd params (primary@0.15f intermediate, primary endpoints — PITFALL-09 extension), and a sealed AeroDateRangeState machine whose pure nextRangeState transition makes onRangeSelect fire exactly once per completed range and never on a partial start click (PITFALL-06). 5 unit tests + compileKotlin green; existing DatePicker/DateTimePicker/CalendarGrid tests unaffected (additive change)."
 progress:
   total_phases: 11
   completed_phases: 9
-  total_plans: 40
-  completed_plans: 41
+  total_plans: 44
+  completed_plans: 43
 ---
 
 # Project State
@@ -89,6 +89,8 @@ See `.planning/MILESTONES.md` for accomplishments and `.planning/milestones/v1.1
 | Phase 09-data P01 | 4min | 5 tasks | 9 files |
 | Phase 09-data P03 | 5min | 4 tasks | 7 files |
 | Phase 09-data P02 | ~10min | 3 tasks | 4 files |
+| Phase 10-layout P02 | 11 | 2 tasks | 5 files |
+| Phase 10-layout P03 | 11 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -135,6 +137,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 09-03]: SnapshotStateMap<Any, NodeState> above LazyColumn + toggleNode pure guard locks DATA-06/PITFALL-05: onExpand fires exactly once per node on first expand
 - [Phase 09-data]: KDoc strings must not mention forbidden grep-gate tokens (AeroScrollArea, stickyHeader, detectDragGestures) — use paraphrases to avoid false positives in package-level verification checks
 - [Phase 09-data]: [Phase 09-02] AeroIcons extension props in com.mordred.aero.icons.`internal` require explicit named imports; AeroIcons object alone does not expose them
+- [Phase 10-02]: AeroAccordion hybrid ownership: onExpandedChange null = uncontrolled (mutableStateOf Set<Int>); non-null = controlled pure renderer — matches AeroDataTable hybrid-sort pattern
+- [Phase 10-layout]: AeroSidebarMode enum + targetWidthForMode consolidated in AeroSidebarState.kt; SideEffect (not LaunchedEffect) syncs animateDpAsState to state.widthState each frame; AeroSidebarScope constructed fresh each recompose with current mode — PITFALL-11 contract locked
 
 ### Pending Todos
 
@@ -153,7 +157,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-18T13:45:27.122Z
-Stopped at: Phase 10 context gathered
-Resume file: .planning/phases/10-layout/10-CONTEXT.md
+Last session: 2026-06-18T14:27:05.599Z
+Stopped at: Completed 10-03 (AeroSidebar)
+Resume file: None
 Next action: `/gsd:verify-work` (Phase 7 complete) → `/gsd:plan-phase 8` — Pickers
