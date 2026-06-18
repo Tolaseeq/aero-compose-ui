@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Stateful + Layout
-status: completed
-stopped_at: Completed 08-03-PLAN.md (AeroTimePicker)
-last_updated: "2026-06-18T10:12:09.354Z"
-last_activity: "2026-06-18 — Phase 8 plan-03 completed (resumed after a mid-execution reboot): public AeroTimePicker (read-only AeroTextField + Clock AeroIconButton trigger -> anchored Popup hosting hour/minute(/optional second) AeroNumberSpinner row) emits kotlinx.datetime.LocalTime on every spinner change, no Apply gate; 24-hour only (no use12Hour, descope grep-gated); internal TimeFields spinner row + pure assembleTime clamp helper (h 0..23, m/s 0..59, seconds dropped when showSeconds=false) extracted for AeroDateTimePicker (plan 04) reuse; 4 assembleTime unit tests green. Task 1 was pre-committed (18be38f); Task 2 read+compiled+committed; Task 3 written+committed — no work duplicated."
+status: in_progress
+stopped_at: Completed 08-04-PLAN.md
+last_updated: "2026-06-18T10:16:02.933Z"
+last_activity: "2026-06-18 — Phase 8 plan-04 completed: public AeroDateTimePicker (PICK-04) — one popup hosting AeroCalendarGrid above a TimeFields spinner row plus a Cancel/Apply commit gate. Day clicks and time edits mutate pending state only (remember(expanded)-keyed); onValueChange(LocalDateTime) fires ONLY on Apply via combineDateTime, the sole onValueChange( call site (grep=1). Composes the Phase 7 grid + plan-03 TimeFields directly (no embedded pickers); reuses dateIsDisabled; Popup not Dialog, no transparency flag. 3 unit tests + compileKotlin green."
 progress:
   total_phases: 11
   completed_phases: 7
-  total_plans: 37
-  completed_plans: 36
+  total_plans: 38
+  completed_plans: 38
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-30 — v2.0 Current Milestone section
 ## Current Position
 
 Phase: 8 — Pickers
-Plan: 08-03 (AeroTimePicker) complete — see Performance Metrics for per-plan progress
-Status: 08-03 (AeroTimePicker / PICK-03) complete — 24-hour LocalTime picker + reusable TimeFields primitive landed
-Last activity: 2026-06-18 — Phase 8 plan-03 completed (resumed after a mid-execution reboot): public AeroTimePicker (read-only AeroTextField + Clock AeroIconButton trigger -> anchored Popup hosting hour/minute(/optional second) AeroNumberSpinner row) emits kotlinx.datetime.LocalTime on every spinner change, no Apply gate; 24-hour only (no use12Hour, descope grep-gated); internal TimeFields spinner row + pure assembleTime clamp helper (h 0..23, m/s 0..59, seconds dropped when showSeconds=false) extracted for AeroDateTimePicker (plan 04) reuse; 4 assembleTime unit tests green. Task 1 was pre-committed (18be38f); Task 2 read+compiled+committed; Task 3 written+committed — no work duplicated.
+Plan: 08-04 (AeroDateTimePicker) complete — see Performance Metrics for per-plan progress
+Status: 08-04 (AeroDateTimePicker / PICK-04) complete — calendar+time single popup with Apply/Cancel commit gate landed (4/6 plans of phase 8 done)
+Last activity: 2026-06-18 — Phase 8 plan-04 completed: public AeroDateTimePicker (PICK-04) — one popup hosting AeroCalendarGrid above a TimeFields spinner row plus a Cancel/Apply commit gate. Day clicks and time edits mutate pending state only (remember(expanded)-keyed); onValueChange(LocalDateTime) fires ONLY on Apply via combineDateTime, the sole onValueChange( call site (grep=1). Composes the Phase 7 grid + plan-03 TimeFields directly (no embedded pickers); reuses dateIsDisabled; Popup not Dialog, no transparency flag. 3 unit tests + compileKotlin green.
 
 ```
-v2.0 Progress: [███       ] 27% (1/5 phases, 3/6 plans of phase 8)
+v2.0 Progress: [███       ] 28% (1/5 phases, 4/6 plans of phase 8)
 ```
 
 ## Shipped Milestones
@@ -84,6 +84,7 @@ See `.planning/MILESTONES.md` for accomplishments and `.planning/milestones/v1.1
 | Phase 08-pickers P02 | 4min | 3 tasks | 3 files |
 | Phase 08 P06 | 5min | 3 tasks | 4 files |
 | Phase 08 P03 | 6min | 3 tasks | 3 files |
+| Phase 08 P04 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -120,6 +121,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 08]: [Phase 08] safeHsvColor is the only Color.hsv entry point in the picker; coerces hue to [0,360] to avoid the requirePrecondition throw (NEW-PICK-01)
 - [Phase 08]: [Phase 08] AeroTimePicker is 24-hour only — no use12Hour/AM-PM parameter (descoped per user decision), enforced by a zero-match grep gate
 - [Phase 08]: [Phase 08] TimeFields (internal spinner row) + assembleTime (pure clamp/assemble helper) are the reuse seam consumed by AeroDateTimePicker (plan 04); TimePicker emits LocalTime on every spinner change with no Apply gate
+- [Phase 08]: [Phase 08] AeroDateTimePicker (PICK-04) composes AeroCalendarGrid + TimeFields directly with a pending-state Apply/Cancel commit gate; the only onValueChange( call site is the Apply onClick (combineDateTime) — day clicks and time edits never close or emit (NEW-PICK-02)
 
 ### Pending Todos
 
@@ -138,7 +140,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-18T10:11:43.770Z
-Stopped at: Completed 08-03-PLAN.md (AeroTimePicker)
+Last session: 2026-06-18T10:16:02.930Z
+Stopped at: Completed 08-04-PLAN.md
 Resume file: None
 Next action: `/gsd:verify-work` (Phase 7 complete) → `/gsd:plan-phase 8` — Pickers
