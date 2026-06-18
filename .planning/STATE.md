@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Stateful + Layout
 status: completed
-stopped_at: Completed 10-03 (AeroSidebar)
-last_updated: "2026-06-18T14:27:05.606Z"
+stopped_at: Completed 10-01-PLAN.md (AeroSplitPane + SplitClamp)
+last_updated: "2026-06-18T14:27:46.571Z"
 last_activity: "2026-06-18 — Phase 8 plan-05 completed: public AeroDateRangePicker (PICK-02) — dual-month popup that stacks vertically below 560dp (NEW-PICK-03), range highlight via additive AeroCalendarGrid rangeStart/rangeEnd params (primary@0.15f intermediate, primary endpoints — PITFALL-09 extension), and a sealed AeroDateRangeState machine whose pure nextRangeState transition makes onRangeSelect fire exactly once per completed range and never on a partial start click (PITFALL-06). 5 unit tests + compileKotlin green; existing DatePicker/DateTimePicker/CalendarGrid tests unaffected (additive change)."
 progress:
   total_phases: 11
   completed_phases: 9
   total_plans: 44
-  completed_plans: 43
+  completed_plans: 44
 ---
 
 # Project State
@@ -91,6 +91,7 @@ See `.planning/MILESTONES.md` for accomplishments and `.planning/milestones/v1.1
 | Phase 09-data P02 | ~10min | 3 tasks | 4 files |
 | Phase 10-layout P02 | 11 | 2 tasks | 5 files |
 | Phase 10-layout P03 | 11 | 2 tasks | 4 files |
+| Phase 10-layout P01 | 13min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -139,6 +140,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 09-data]: [Phase 09-02] AeroIcons extension props in com.mordred.aero.icons.`internal` require explicit named imports; AeroIcons object alone does not expose them
 - [Phase 10-02]: AeroAccordion hybrid ownership: onExpandedChange null = uncontrolled (mutableStateOf Set<Int>); non-null = controlled pure renderer — matches AeroDataTable hybrid-sort pattern
 - [Phase 10-layout]: AeroSidebarMode enum + targetWidthForMode consolidated in AeroSidebarState.kt; SideEffect (not LaunchedEffect) syncs animateDpAsState to state.widthState each frame; AeroSidebarScope constructed fresh each recompose with current mode — PITFALL-11 contract locked
+- [Phase 10-layout]: BoxWithConstraints used once for measurement; dividerPx state updated only on drag — no SubcomposeLayout per frame (PITFALL research §perf)
+- [Phase 10-layout]: AeroSplitPane keyboard nudge deferred to v2.x per CONTEXT.md Claude's Discretion (focusable+onPreviewKeyEvent integration out of scope)
 
 ### Pending Todos
 
@@ -157,7 +160,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-18T14:27:05.599Z
-Stopped at: Completed 10-03 (AeroSidebar)
+Last session: 2026-06-18T14:27:46.564Z
+Stopped at: Completed 10-01-PLAN.md (AeroSplitPane + SplitClamp)
 Resume file: None
 Next action: `/gsd:verify-work` (Phase 7 complete) → `/gsd:plan-phase 8` — Pickers
