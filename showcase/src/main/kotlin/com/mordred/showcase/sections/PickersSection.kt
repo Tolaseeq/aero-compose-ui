@@ -39,32 +39,99 @@ fun PickersSection() {
     var colorValue by remember { mutableStateOf(Color(0xFF4FC3F7)) }
     var sliderRange by remember { mutableStateOf(0.2f..0.7f) }
 
+    // F13: disabled-date demo bounds — only June 2026 selectable
+    val minD = LocalDate(2026, 6, 1)
+    val maxD = LocalDate(2026, 6, 30)
+    var boundedDate by remember { mutableStateOf<LocalDate?>(null) }
+    var bStart by remember { mutableStateOf<LocalDate?>(null) }
+    var bEnd by remember { mutableStateOf<LocalDate?>(null) }
+
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Pickers", color = colors.onBackground, style = typography.title)
 
+        // F8: compact trigger width (220.dp); F6: DD.MM.YYYY value preview
         RangeRow(label = "AeroDatePicker") {
-            AeroDatePicker(value = dateValue, onValueChange = { dateValue = it })
-            Text(dateValue?.toString() ?: "—", color = colors.labelText, style = typography.bodyMedium)
+            AeroDatePicker(
+                value = dateValue,
+                onValueChange = { dateValue = it },
+                modifier = Modifier.width(220.dp)
+            )
+            Text(
+                text = dateValue?.let { "%02d.%02d.%04d".format(it.dayOfMonth, it.monthNumber, it.year) } ?: "—",
+                color = colors.labelText,
+                style = typography.bodyMedium
+            )
         }
 
+        // F8: compact trigger width (220.dp); F7: showSeconds = true
         RangeRow(label = "AeroTimePicker") {
-            AeroTimePicker(value = timeValue, onValueChange = { timeValue = it })
+            AeroTimePicker(
+                value = timeValue,
+                onValueChange = { timeValue = it },
+                showSeconds = true,
+                modifier = Modifier.width(220.dp)
+            )
             Text(timeValue?.toString() ?: "—", color = colors.labelText, style = typography.bodyMedium)
         }
 
+        // F8: compact trigger width (220.dp); F7: showSeconds = true; F6: value text raw for HH:MM:SS
         RangeRow(label = "AeroDateTimePicker") {
-            AeroDateTimePicker(value = dateTimeValue, onValueChange = { dateTimeValue = it })
+            AeroDateTimePicker(
+                value = dateTimeValue,
+                onValueChange = { dateTimeValue = it },
+                showSeconds = true,
+                modifier = Modifier.width(220.dp)
+            )
             Text(dateTimeValue?.toString() ?: "—", color = colors.labelText, style = typography.bodyMedium)
         }
 
+        // F8: compact trigger width (220.dp); F6: DD.MM.YYYY range value preview
         RangeRow(label = "AeroDateRangePicker") {
             AeroDateRangePicker(
                 startValue = rangeStart,
                 endValue = rangeEnd,
-                onRangeSelect = { start, end -> rangeStart = start; rangeEnd = end }
+                onRangeSelect = { start, end -> rangeStart = start; rangeEnd = end },
+                modifier = Modifier.width(220.dp)
             )
             Text(
-                text = if (rangeStart != null && rangeEnd != null) "$rangeStart → $rangeEnd" else "—",
+                text = if (rangeStart != null && rangeEnd != null)
+                    "${"%02d.%02d.%04d".format(rangeStart!!.dayOfMonth, rangeStart!!.monthNumber, rangeStart!!.year)} → ${"%02d.%02d.%04d".format(rangeEnd!!.dayOfMonth, rangeEnd!!.monthNumber, rangeEnd!!.year)}"
+                else "—",
+                color = colors.labelText,
+                style = typography.bodyMedium
+            )
+        }
+
+        // F13: DatePicker with min/max — only June 2026 selectable; disabled cells visible for AeroDark check (PITFALL-09)
+        RangeRow(label = "DatePicker (min/max)") {
+            AeroDatePicker(
+                value = boundedDate,
+                onValueChange = { boundedDate = it },
+                minDate = minD,
+                maxDate = maxD,
+                modifier = Modifier.width(220.dp)
+            )
+            Text(
+                text = boundedDate?.let { "%02d.%02d.%04d".format(it.dayOfMonth, it.monthNumber, it.year) } ?: "—",
+                color = colors.labelText,
+                style = typography.bodyMedium
+            )
+        }
+
+        // F13: DateRangePicker with min/max — only June 2026 selectable; disabled cells visible for AeroDark check (PITFALL-09)
+        RangeRow(label = "RangePicker (min/max)") {
+            AeroDateRangePicker(
+                startValue = bStart,
+                endValue = bEnd,
+                onRangeSelect = { s, e -> bStart = s; bEnd = e },
+                minDate = minD,
+                maxDate = maxD,
+                modifier = Modifier.width(220.dp)
+            )
+            Text(
+                text = if (bStart != null && bEnd != null)
+                    "${"%02d.%02d.%04d".format(bStart!!.dayOfMonth, bStart!!.monthNumber, bStart!!.year)} → ${"%02d.%02d.%04d".format(bEnd!!.dayOfMonth, bEnd!!.monthNumber, bEnd!!.year)}"
+                else "—",
                 color = colors.labelText,
                 style = typography.bodyMedium
             )
