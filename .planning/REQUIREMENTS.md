@@ -45,7 +45,7 @@ Milestone v2.0 — Stateful + Layout. 12 новых компонентов (8 co
 
 - [x] **SHW-07**: Showcase содержит секцию `DataSection` со встроенным `AeroDataTable` (~50-200 строк mock-данных, ~5-6 колонок включая mixed types: text, number, date, status badge); демонстрирует sort, multi-selection, column resize в работе
 - [x] **SHW-08**: Showcase содержит секцию `PickersSection` с экземплярами всех 5 picker-компонентов (DatePicker, TimePicker, DateTimePicker, DateRangePicker, ColorPicker) и `AeroRangeSlider`; каждый picker показывает текущее значение под собой как Text для UAT-проверки callback'ов
-- [ ] **SHW-09**: Showcase содержит секцию `LayoutSection` с примерами `AeroAccordion` (single + multi side-by-side), `AeroSplitPane` (horizontal + vertical), `AeroSidebar` с переключателем mode, `AeroStepperWizard` с 3-4 шагами и валидацией
+- [x] **SHW-09**: Showcase содержит секцию `LayoutSection` с примерами `AeroAccordion` (single + multi side-by-side), `AeroSplitPane` (horizontal + vertical), `AeroSidebar` с переключателем mode, `AeroStepperWizard` с 3-4 шагами и валидацией
 - [ ] **SHW-10**: Showcase v2.0 проходит three-theme visual checkpoint (AeroBlue / AeroDark / Classic) с 16-item "looks done but isn't" checklist из `PITFALLS.md` (drag response, disabled state, popup-positioning, cross-theme contrast, `transparent=true` grep gate); чеклист — формальный gate v2.0 milestone sign-off
 
 ## v3+ Future Requirements
@@ -129,7 +129,7 @@ Updated: 2026-04-30 (v2.0 roadmap created — phase mapping complete)
 | LAYO-09 | Phase 10 | Complete |
 | SHW-07 | Phase 11 | Complete |
 | SHW-08 | Phase 11 | Complete |
-| SHW-09 | Phase 11 | Pending |
+| SHW-09 | Phase 11 | Complete |
 | SHW-10 | Phase 11 | Pending |
 
 **Coverage:**
