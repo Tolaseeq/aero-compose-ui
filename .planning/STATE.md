@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Stateful + Layout
 status: completed
-stopped_at: Completed 08-06-PLAN.md (AeroColorPicker)
-last_updated: "2026-06-18T10:03:43.619Z"
-last_activity: "2026-06-18 — Phase 8 plan-02 completed: public AeroDatePicker landed (read-only trigger + anchored AeroCalendarGrid popup, day-click -> onValueChange(LocalDate) + close, prev/next month nav, dimmed out-of-range dates, right-aligns instead of clipping near window edge); PickerPopupContainer shared W11-02 popup surface (two-layer bg + glassPanel, no elevation) built here for reuse by 08-03/04/05; 6 dateIsDisabled predicate tests green"
+stopped_at: Completed 08-03-PLAN.md (AeroTimePicker)
+last_updated: "2026-06-18T10:12:09.354Z"
+last_activity: "2026-06-18 — Phase 8 plan-03 completed (resumed after a mid-execution reboot): public AeroTimePicker (read-only AeroTextField + Clock AeroIconButton trigger -> anchored Popup hosting hour/minute(/optional second) AeroNumberSpinner row) emits kotlinx.datetime.LocalTime on every spinner change, no Apply gate; 24-hour only (no use12Hour, descope grep-gated); internal TimeFields spinner row + pure assembleTime clamp helper (h 0..23, m/s 0..59, seconds dropped when showSeconds=false) extracted for AeroDateTimePicker (plan 04) reuse; 4 assembleTime unit tests green. Task 1 was pre-committed (18be38f); Task 2 read+compiled+committed; Task 3 written+committed — no work duplicated."
 progress:
   total_phases: 11
   completed_phases: 7
   total_plans: 37
-  completed_plans: 35
+  completed_plans: 36
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-30 — v2.0 Current Milestone section
 ## Current Position
 
 Phase: 8 — Pickers
-Plan: 08-06 (AeroColorPicker) complete — see Performance Metrics for per-plan progress
-Status: 08-06 (AeroColorPicker / PICK-05/06/07) complete — HSV-truth inline panel + swatch-trigger Popup button landed
-Last activity: 2026-06-18 — Phase 8 plan-06 completed: public AeroColorPicker inline panel (HSV square + hue strip + R/G/B sliders + HEX field + swatch row + optional checkerboard alpha) wired from a single HSV(A) source (PITFALL-15, drift-gate test restores #FF0000); AeroColorPickerButton swatch trigger hosts the panel in an anchored Popup (NEW-PICK-05, no transparent Dialog); safeHsvColor guards every Color.hsv (NEW-PICK-01); DefaultAeroSwatches (16 colors); 11 unit tests green
+Plan: 08-03 (AeroTimePicker) complete — see Performance Metrics for per-plan progress
+Status: 08-03 (AeroTimePicker / PICK-03) complete — 24-hour LocalTime picker + reusable TimeFields primitive landed
+Last activity: 2026-06-18 — Phase 8 plan-03 completed (resumed after a mid-execution reboot): public AeroTimePicker (read-only AeroTextField + Clock AeroIconButton trigger -> anchored Popup hosting hour/minute(/optional second) AeroNumberSpinner row) emits kotlinx.datetime.LocalTime on every spinner change, no Apply gate; 24-hour only (no use12Hour, descope grep-gated); internal TimeFields spinner row + pure assembleTime clamp helper (h 0..23, m/s 0..59, seconds dropped when showSeconds=false) extracted for AeroDateTimePicker (plan 04) reuse; 4 assembleTime unit tests green. Task 1 was pre-committed (18be38f); Task 2 read+compiled+committed; Task 3 written+committed — no work duplicated.
 
 ```
-v2.0 Progress: [███       ] 27% (1/5 phases, 2/6 plans of phase 8)
+v2.0 Progress: [███       ] 27% (1/5 phases, 3/6 plans of phase 8)
 ```
 
 ## Shipped Milestones
@@ -83,6 +83,7 @@ See `.planning/MILESTONES.md` for accomplishments and `.planning/milestones/v1.1
 | Phase 08-pickers P01 | 3min | 2 tasks | 2 files |
 | Phase 08-pickers P02 | 4min | 3 tasks | 3 files |
 | Phase 08 P06 | 5min | 3 tasks | 4 files |
+| Phase 08 P03 | 6min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -117,6 +118,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 08-pickers]: [Phase 08] AeroDatePicker min/max bounds are inclusive; dateIsDisabled extracted as pure internal predicate for unit testability
 - [Phase 08]: [Phase 08] AeroColorPicker HSV(A) floats are the single source of truth; RGB/HEX derived per emit, never stored (PITFALL-15) — drift gate test (sat 1.0->0.5->1.0 restores FF0000) locks it
 - [Phase 08]: [Phase 08] safeHsvColor is the only Color.hsv entry point in the picker; coerces hue to [0,360] to avoid the requirePrecondition throw (NEW-PICK-01)
+- [Phase 08]: [Phase 08] AeroTimePicker is 24-hour only — no use12Hour/AM-PM parameter (descoped per user decision), enforced by a zero-match grep gate
+- [Phase 08]: [Phase 08] TimeFields (internal spinner row) + assembleTime (pure clamp/assemble helper) are the reuse seam consumed by AeroDateTimePicker (plan 04); TimePicker emits LocalTime on every spinner change with no Apply gate
 
 ### Pending Todos
 
@@ -135,7 +138,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-18T10:03:43.615Z
-Stopped at: Completed 08-06-PLAN.md (AeroColorPicker)
+Last session: 2026-06-18T10:11:43.770Z
+Stopped at: Completed 08-03-PLAN.md (AeroTimePicker)
 Resume file: None
 Next action: `/gsd:verify-work` (Phase 7 complete) → `/gsd:plan-phase 8` — Pickers
