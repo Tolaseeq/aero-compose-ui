@@ -27,9 +27,11 @@ import com.mordred.showcase.sections.FoundationSection
 import com.mordred.showcase.sections.IconsSection
 import com.mordred.showcase.sections.InputSection
 import com.mordred.showcase.sections.ListSection
+import com.mordred.showcase.sections.DataSection
+import com.mordred.showcase.sections.LayoutSection
 import com.mordred.showcase.sections.NavigationSection
 import com.mordred.showcase.sections.OverlaysSection
-import com.mordred.showcase.sections.Phase7ScratchSection
+import com.mordred.showcase.sections.PickersSection
 import com.mordred.showcase.sections.RangeSection
 import com.mordred.showcase.sections.SelectionSection
 import com.mordred.showcase.sections.ThemeSwitcher
@@ -93,7 +95,9 @@ fun ShowcaseApp(
                 OverlaysSection(toastState = toastState)
                 NavigationSection()
 
-                Phase7ScratchSection()
+                DataSection()
+                PickersSection()
+                LayoutSection()
 
                 Spacer(Modifier.height(24.dp))
             }
