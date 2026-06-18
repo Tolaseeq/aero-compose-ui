@@ -2,7 +2,7 @@
 phase: 11-showcase-v2-0-visual-sign-off
 date: 2026-06-18
 launch_command: "./gradlew :showcase:run"
-gate_status: FAILED
+gate_status: RE-VERIFYING
 verified_by: human (eyes-on, all three themes)
 ---
 
@@ -13,39 +13,61 @@ verified_by: human (eyes-on, all three themes)
 **Launch command:** `./gradlew :showcase:run`
 **Milestone gate:** Phase 11 is NOT complete until all 48 cells below are PASS.
 
-> **GATE FAILED on human verification 2026-06-18.** Automated grep gates (items 15-16) pass.
-> Eyes-on verification across AeroBlue / AeroDark / Classic surfaced 16 component-level
-> defects + several design-change requests. All defects reproduce theme-independently
-> (they are component bugs, not theme bugs). Full detail in **Findings** below. These route
-> to gap closure — gap plans MAY edit component source (the additive-only constraint applied
-> only to the sign-off plan 11-05 itself).
+> **GATE FAILED on human verification 2026-06-18.** Full detail in **Findings** section (historical record below).
+> Gap-closure plans 11-06 through 11-10 have been executed to address all 16 defects.
+> **RE-VERIFYING 2026-06-18** — automated gates re-run (items 15-16 PASS); items 1-14 awaiting eyes-on re-verification.
 
 ---
 
-## Sign-off Table
+## Re-verification 2026-06-18 (after gap closure plans 11-06 to 11-10)
 
-| # | Checklist Item | AeroBlue | AeroDark | Classic | Result note |
-|---|----------------|----------|----------|---------|-------------|
-| 1 | DataTable virtualization (~10-15 rows, scroll renders new) | PASS | PASS | PASS | OK |
-| 2 | Selection survives sort (SAT-050 keeps highlight) | PASS | PASS | PASS | OK |
-| 3 | Column resize bounds | FAIL | FAIL | FAIL | Right drag unbounded — column leaves screen, table not width-clamped. Left drag over-shrinks "Name" — header label + data unreadable, no usable min width. See **F-RESIZE**. |
-| 4 | TreeView lazy callback fires once | PASS | PASS | PASS | OK |
-| 5 | DatePicker popup right-aligns at ~1024dp | BLOCKED | BLOCKED | BLOCKED | Could not verify — full-width trigger field obscured interaction. See **F8**. |
-| 6 | DateRangePicker partial state shows "—" | PASS | PASS | PASS | OK |
-| 7 | ColorPicker HEX round-trip (no drift) | FAIL | FAIL | FAIL | Saturation control not discoverable; layout unclear. See **F12 / F10**. |
-| 8 | RangeSlider thumbs both reachable on overlap | FAIL | FAIL | FAIL | Moving one thumb resets the other to default. See **F9**. |
-| 9 | Accordion single-mode (A closes when B opens) | PASS | PASS | PASS | Behaviour OK; cosmetic divider issue **F11**. |
-| 10 | SplitPane clamp (panes ≥48dp) | PASS | PASS | PASS | Clamp OK; but ghosting on drag **F3** + reduced drag sensitivity **F15**. |
-| 11 | Sidebar adjacent reflow on toggle | PASS | PASS | PASS | OK |
-| 12 | Wizard validation gate | FAIL | FAIL | FAIL | Back/Next disabled — wizard non-interactive in demo. See **F-WIZARD**. |
-| 13 | AeroDark disabled cells visible (grey) | N/A | BLOCKED | N/A | No disabled dates exist in demo — nothing to verify. See **F13**. |
-| 14 | Desktop drag responds on first pixel | FAIL | FAIL | FAIL | Clear lag / reduced sensitivity vs cursor. See **F15**. |
-| 15 | No `transparent = true` (grep) | PASS | PASS | PASS | Automated — 0 hits, 2026-06-18. |
-| 16 | No `AeroScrollArea` in DataTable pkg (grep) | PASS | PASS | PASS | Automated — 0 hits, 2026-06-18. |
+### Automated Gates (pre-verified)
+
+| Gate | Command | Result | Date |
+|------|---------|--------|------|
+| W11-01 `transparent = true` | `grep -rn "transparent = true" library/.../pickers/ datatable/ layout/ range/ internal/drag/ showcase/sections/Data\|Pickers\|Layout...` | 0 hits — PASS | 2026-06-18 |
+| W11-02 `AeroScrollArea` in datatable | `grep -rn "AeroScrollArea" library/.../datatable/` | 0 hits — PASS | 2026-06-18 |
+
+### Build Gate
+
+| Command | Result | Date |
+|---------|--------|------|
+| `./gradlew :library:test :showcase:compileKotlin` | BUILD SUCCESSFUL — 0 test failures | 2026-06-18 |
 
 ---
 
-## Findings (human UAT, 2026-06-18)
+## Sign-off Table (Re-verification)
+
+> Items 1-14: PENDING eyes-on verification across all three themes.
+> Items 15-16: PASS (automated grep gates, re-run 2026-06-18).
+> Previously-FAIL rows are annotated with the gap plan that fixed them.
+
+| # | Checklist Item | AeroBlue | AeroDark | Classic | Re-test target / Notes |
+|---|----------------|----------|----------|---------|------------------------|
+| 1 | DataTable virtualization (~10-15 rows, scroll renders new) | PENDING | PENDING | PENDING | Was PASS — re-confirm still OK |
+| 2 | Selection survives sort (SAT-050 keeps highlight; AeroDark four-state distinguishable) | PENDING | PENDING | PENDING | Was PASS — re-confirm (PITFALL-10 AeroDark) |
+| 3 | Column resize bounds — right-bound clamped, left stops at readable min (~120dp), no ghosting, 1:1 drag | PENDING | PENDING | PENDING | Fixed by **F-RESIZE** (11-07) + drag root cause (11-06) |
+| 4 | TreeView lazy callback fires once (row-level click expands; no second onExpand on scroll-back) | PENDING | PENDING | PENDING | F5 whole-row toggle (11-07) — must NOT break once-only guard |
+| 5 | DatePicker popup right-aligns at ~1024dp (compact trigger, no clip) | PENDING | PENDING | PENDING | Fixed by **F8** compact trigger (11-10) |
+| 6 | DateRangePicker partial state shows "—" (same-month range works; dismiss mid-range stays "—") | PENDING | PENDING | PENDING | Fixed by **F14** same-month (11-08); PITFALL-06 partial-state guard |
+| 7 | ColorPicker HEX round-trip: hue slider visible, #FF0000 survives sat 100%→50%→100% | PENDING | PENDING | PENDING | Fixed by **F12+F10** (11-09): hue slider discoverable, glass panel |
+| 8 | RangeSlider: both thumbs hold independent values; overlap reachable | PENDING | PENDING | PENDING | Fixed by **F9** (11-06): stale-capture root cause resolved |
+| 9 | Accordion single mode (A closes when B opens); divider fits rounded bg | PENDING | PENDING | PENDING | Behaviour was OK; cosmetic divider fixed by **F11** (11-09) |
+| 10 | SplitPane clamp (panes ≥48dp); no ghosting; 1:1 drag | PENDING | PENDING | PENDING | Fixed by **F3+F15** (11-06): positionChange() delta, no ghosting |
+| 11 | Sidebar adjacent reflow on toggle | PENDING | PENDING | PENDING | Was PASS — re-confirm still OK |
+| 12 | Wizard: type field→Next enables; Next advances; Back returns with value; Next blocked when blank | PENDING | PENDING | PENDING | Fixed by **F-WIZARD** (11-10): bounded Box(height) wrapper |
+| 13 | AeroDark disabled cells visible (grey, not invisible) — DatePicker min/max + RangePicker min/max demos | N/A | PENDING | N/A | Fixed by **F13** (11-10): disabled-date demo added; AeroDark readable |
+| 14 | Desktop drag responds on first pixel: HSV square, RangeSlider thumbs, DataTable column splitter | PENDING | PENDING | PENDING | Fixed by **F15** (11-06): positionChange() root cause; all three drag sites |
+| 15 | No `transparent = true` (grep W11-01) | PASS | PASS | PASS | Automated — 0 hits, re-run 2026-06-18 |
+| 16 | No `AeroScrollArea` in DataTable pkg (grep W11-02) | PASS | PASS | PASS | Automated — 0 hits, re-run 2026-06-18 |
+
+---
+
+## Findings (human UAT, 2026-06-18 — HISTORICAL RECORD)
+
+> These findings are the original FAILED sign-off from 2026-06-18, preserved as historical record.
+> All 16 defects were addressed in gap-closure plans 11-06 through 11-10.
+> Re-verification above confirms whether each fix holds.
 
 Grouped by component. Severity: 🔴 bug · 🟠 UX defect · 🟣 design change / scope decision.
 
@@ -93,12 +115,14 @@ Grouped by component. Severity: 🔴 bug · 🟠 UX defect · 🟣 design change
 ## Notes
 
 - Items 15-16 are automated grep gates (theme-independent), verified 2026-06-18.
-- All FAIL findings reproduce across all three themes — they are component-level, not theme-specific.
-- Per-theme cell granularity was not separately recorded for the failing items because the defects are theme-independent; the same value is shown across the three theme columns.
+- All original FAIL findings reproduced across all three themes — they are component-level, not theme-specific.
+- Gap-closure plans 11-06 (drag root cause F3/F9/F15), 11-07 (DataTable/TreeView F2/F4/F5/F-RESIZE), 11-08 (pickers F6/F14), 11-09 (ColorPicker F12/F10 + Accordion F11), 11-10 (showcase F8/F7/F13/F6/F-WIZARD) were executed to resolve all 16 defects.
+- Item 13 columns: AeroDark is the only theme requiring eyes-on verification; AeroBlue/Classic marked N/A as there is no disabled-state difference to test there.
 
-## Completion Criteria (NOT yet met)
+## Completion Criteria
 
 Phase 11 milestone gate (SHW-10) is satisfied when:
-- [ ] All 48 cells are PASS (or N/A for item 13 AeroBlue/Classic)
+- [ ] All 40 PENDING cells above are filled PASS (13 items x 3 themes + item 13 AeroDark only; AeroBlue/Classic for item 13 are N/A)
 - [x] Automated gates (15, 16) PASS
-- [ ] 16 component defects above resolved and re-verified eyes-on
+- [ ] Frontmatter `gate_status` updated to PASSED
+- [ ] 16 component defects above confirmed resolved eyes-on
