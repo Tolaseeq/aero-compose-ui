@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Stateful + Layout
 status: completed
-stopped_at: Completed 09-01-PLAN.md
-last_updated: "2026-06-18T12:47:06.047Z"
+stopped_at: Completed 09-03-PLAN.md
+last_updated: "2026-06-18T12:55:19.177Z"
 last_activity: "2026-06-18 — Phase 8 plan-05 completed: public AeroDateRangePicker (PICK-02) — dual-month popup that stacks vertically below 560dp (NEW-PICK-03), range highlight via additive AeroCalendarGrid rangeStart/rangeEnd params (primary@0.15f intermediate, primary endpoints — PITFALL-09 extension), and a sealed AeroDateRangeState machine whose pure nextRangeState transition makes onRangeSelect fire exactly once per completed range and never on a partial start click (PITFALL-06). 5 unit tests + compileKotlin green; existing DatePicker/DateTimePicker/CalendarGrid tests unaffected (additive change)."
 progress:
   total_phases: 11
   completed_phases: 8
   total_plans: 40
-  completed_plans: 39
+  completed_plans: 40
 ---
 
 # Project State
@@ -87,6 +87,7 @@ See `.planning/MILESTONES.md` for accomplishments and `.planning/milestones/v1.1
 | Phase 08 P04 | 2min | 2 tasks | 2 files |
 | Phase 08-pickers P05 | 3min | 3 tasks | 3 files |
 | Phase 09-data P01 | 4min | 5 tasks | 9 files |
+| Phase 09-data P03 | 5min | 4 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -129,6 +130,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 09-01]: AeroScrollBar(LazyListState) additive overload (Option A) — keeps existing callers intact, DataTable/TreeView bypass AeroScrollArea PITFALL-01
 - [Phase 09-01]: Selection locked as Set<Any> + caller key fn at type level (PITFALL-04) — zero Set<Int> in datatable package
 - [Phase 09-01]: resolveColumnWidths uses pxPerDp: Float not Compose Density for pure JVM testability
+- [Phase 09-03]: AeroTreeView uses flatten-and-replace pattern: fixed rowHeight items, no AnimatedVisibility, children are separate LazyColumn items
+- [Phase 09-03]: SnapshotStateMap<Any, NodeState> above LazyColumn + toggleNode pure guard locks DATA-06/PITFALL-05: onExpand fires exactly once per node on first expand
 
 ### Pending Todos
 
@@ -147,7 +150,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-18T12:46:56.120Z
-Stopped at: Completed 09-01-PLAN.md
+Last session: 2026-06-18T12:55:19.168Z
+Stopped at: Completed 09-03-PLAN.md
 Resume file: None
 Next action: `/gsd:verify-work` (Phase 7 complete) → `/gsd:plan-phase 8` — Pickers

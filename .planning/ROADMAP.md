@@ -276,6 +276,6 @@ Decimal phases appear between their surrounding integers in numeric order.
 | 6. Showcase IconsSection | v1.1 | 3/3 | Complete | 2026-04-29 |
 | 7. Shared Internal Primitives | 3/3 | Complete   | 2026-06-17 | - |
 | 8. Pickers | 6/6 | Complete   | 2026-06-18 | - |
-| 9. Data | 1/3 | In Progress|  | - |
+| 9. Data | 2/3 | In Progress|  | - |
 | 10. Layout | v2.0 | 0/TBD | Not started | - |
 | 11. Showcase + v2.0 Visual Sign-off | v2.0 | 0/TBD | Not started | - |
