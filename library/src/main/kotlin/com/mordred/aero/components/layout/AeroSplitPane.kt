@@ -6,9 +6,11 @@ import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -21,7 +23,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -83,13 +84,6 @@ public fun AeroSplitPane(
     onSplitChange: ((Float) -> Unit)? = null,
 ) {
     val density = LocalDensity.current
-    // totalPx is measured from the root Box layout; 0f is the safe default before first measure.
-    var totalPx by remember { mutableStateOf(0f) }
-    // Internal divider position in px — kept in px for clamp math (PITFALL-14).
-    // Re-initialized when totalPx changes (window resize preserves the fraction).
-    var dividerPx by remember(totalPx) {
-        mutableStateOf(fractionToPx(initialSplitFraction, totalPx))
-    }
 
     // Map AeroSplitOrientation -> Compose Orientation for aeroDragSplitter
     val composeOrientation = when (orientation) {
@@ -97,39 +91,38 @@ public fun AeroSplitPane(
         AeroSplitOrientation.Vertical   -> Orientation.Vertical
     }
 
-    val onDrag: (Float) -> Unit = { delta ->
-        val minFirstPx = with(density) { minFirstPaneSize.toPx() }
-        val maxPx = totalPx - with(density) { minSecondPaneSize.toPx() }
-        dividerPx = clampDividerPx(dividerPx, delta, minFirstPx, maxPx)
-        onSplitChange?.invoke(pxToFraction(dividerPx, totalPx))
-    }
+    // BoxWithConstraints runs once at composition (not on every drag recomposition).
+    // Drag only updates dividerPx state, which causes an efficient re-layout from stored px.
+    // This pattern avoids SubcomposeLayout overhead on drag frames (PITFALL research §perf).
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val totalPx = if (orientation == AeroSplitOrientation.Horizontal)
+            constraints.maxWidth.toFloat()
+        else
+            constraints.maxHeight.toFloat()
 
-    // Root container — measures total available size for clamp math.
-    // We use onSizeChanged instead of BoxWithConstraints to avoid SubcomposeLayout overhead
-    // on every drag recomposition (PITFALL research: BoxWithConstraints per drag = perf trap).
-    Box(
-        modifier = modifier
-            .onSizeChanged { size ->
-                val newTotal = if (orientation == AeroSplitOrientation.Horizontal)
-                    size.width.toFloat() else size.height.toFloat()
-                if (newTotal != totalPx) {
-                    // Preserve fraction across size changes (window resize)
-                    val fraction = if (totalPx > 0f) pxToFraction(dividerPx, totalPx) else initialSplitFraction
-                    totalPx = newTotal
-                    dividerPx = fractionToPx(fraction, newTotal)
-                }
-            }
-    ) {
+        // Internal state in px for clamp math (PITFALL-14). Reinitialised on totalPx change
+        // (window resize) to preserve the current fraction.
+        var dividerPx by remember(totalPx) {
+            mutableStateOf(fractionToPx(initialSplitFraction, totalPx))
+        }
+
+        val onDrag: (Float) -> Unit = { delta ->
+            val minFirstPx = with(density) { minFirstPaneSize.toPx() }
+            val maxPx = totalPx - with(density) { minSecondPaneSize.toPx() }
+            dividerPx = clampDividerPx(dividerPx, delta, minFirstPx, maxPx)
+            onSplitChange?.invoke(pxToFraction(dividerPx, totalPx))
+        }
+
         if (orientation == AeroSplitOrientation.Horizontal) {
-            Row(modifier = Modifier.matchParentSize()) {
-                // First pane — fixed width derived from dividerPx
+            Row(modifier = Modifier.fillMaxSize()) {
+                // First pane — fixed width derived from dividerPx (NOT weight — weight recalculates both slots on drag)
                 Box(
                     modifier = Modifier
                         .width(with(density) { dividerPx.toDp() })
                         .fillMaxHeight()
                 ) { start() }
 
-                // Divider: 8dp invisible hit-area with centered 1dp visual line + grip nasechki
+                // 8dp hit-area with 1dp Aero visual line + grip nasechki (horizontal orientation)
                 SplitPaneDivider(
                     orientation = composeOrientation,
                     onDrag = onDrag,
@@ -138,19 +131,19 @@ public fun AeroSplitPane(
                     isHorizontal = true,
                 )
 
-                // Second pane — fills remaining space
+                // Second pane — weight(1f) fills remaining width
                 Box(modifier = Modifier.weight(1f).fillMaxHeight()) { end() }
             }
         } else {
-            Column(modifier = Modifier.matchParentSize()) {
-                // First pane — fixed height derived from dividerPx
+            Column(modifier = Modifier.fillMaxSize()) {
+                // First pane — fixed height from dividerPx (NOT weight)
                 Box(
                     modifier = Modifier
                         .height(with(density) { dividerPx.toDp() })
                         .fillMaxWidth()
                 ) { start() }
 
-                // Divider: 8dp invisible hit-area with centered 1dp visual line + grip nasechki
+                // 8dp hit-area with 1dp Aero visual line + grip nasechki (vertical orientation)
                 SplitPaneDivider(
                     orientation = composeOrientation,
                     onDrag = onDrag,
@@ -159,7 +152,7 @@ public fun AeroSplitPane(
                     isHorizontal = false,
                 )
 
-                // Second pane — fills remaining space
+                // Second pane — weight(1f) fills remaining height
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) { end() }
             }
         }
