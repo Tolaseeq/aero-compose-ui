@@ -24,9 +24,9 @@ Milestone v2.0 — Stateful + Layout. 12 новых компонентов (8 co
 - [ ] **PICK-02**: `AeroDateRangePicker` — popup с двумя календарями рядом (start month + end month); пользователь выбирает start кликом, затем end кликом (либо в том же, либо в следующем календаре); промежуточные дни визуально подсвечены как range; на узких окнах (`BoxWithConstraints` < ~560dp) календари стекаются вертикально; range НЕ авто-свапается, если end < start (валидация на стороне caller)
 - [ ] **PICK-03**: `AeroTimePicker` — поле часов + поле минут (два `AeroTextField` или `AeroNumberSpinner`-подобных контрола); валидация диапазонов 0-23 / 0-59; callback с `kotlinx.datetime.LocalTime`; опциональный 12h/24h режим (default 24h)
 - [ ] **PICK-04**: `AeroDateTimePicker` — комбинированный picker: календарь сверху + time controls снизу в одном popup; кнопки `Apply` / `Cancel` явно — popup НЕ закрывается автоматически при выборе даты (иначе time не успевает установиться); callback с `kotlinx.datetime.LocalDateTime` только по `Apply`
-- [ ] **PICK-05**: `AeroColorPicker` рендерит HSV-квадрат (sat/value 2D Canvas), вертикальную hue-полосу, RGB sliders (3 × `AeroSlider`), и HEX input field (`AeroTextField` с маской `#RRGGBB[AA]`); все 5 контролов взаимно синхронизированы через единое HSV state-of-truth (предотвращает round-trip drift); каждый контрол при изменении обновляет HSV → остальные через derive
-- [ ] **PICK-06**: `AeroColorPicker` показывает палитру предустановленных swatches (~16 цветов: чистые primary + neutrals); клик на swatch устанавливает цвет; preview-полоса показывает "before / after" (текущее значение vs новое выбранное)
-- [ ] **PICK-07**: `AeroColorPicker` поддерживает альфа-канал через параметр `enableAlpha: Boolean = false`; при `true` добавляется alpha-slider с шахматным фоном для прозрачности и HEX расширяется до `#RRGGBBAA`
+- [x] **PICK-05**: `AeroColorPicker` рендерит HSV-квадрат (sat/value 2D Canvas), вертикальную hue-полосу, RGB sliders (3 × `AeroSlider`), и HEX input field (`AeroTextField` с маской `#RRGGBB[AA]`); все 5 контролов взаимно синхронизированы через единое HSV state-of-truth (предотвращает round-trip drift); каждый контрол при изменении обновляет HSV → остальные через derive
+- [x] **PICK-06**: `AeroColorPicker` показывает палитру предустановленных swatches (~16 цветов: чистые primary + neutrals); клик на swatch устанавливает цвет; preview-полоса показывает "before / after" (текущее значение vs новое выбранное)
+- [x] **PICK-07**: `AeroColorPicker` поддерживает альфа-канал через параметр `enableAlpha: Boolean = false`; при `true` добавляется alpha-slider с шахматным фоном для прозрачности и HEX расширяется до `#RRGGBBAA`
 - [x] **PICK-08**: `AeroRangeSlider` — ползунок с двумя ручками (`startValue`, `endValue`); каждая ручка перетаскивается независимо через `awaitPointerEventScope` (НЕ `detectDragGestures` — touchSlop 18dp ломает Canvas drag на Desktop); range между ручками визуально заполнен primary-цветом; ручки нельзя пересечь (start ≤ end)
 
 ### Layout — Accordion / SplitPane / Sidebar / StepperWizard (LAYO)
@@ -114,9 +114,9 @@ Updated: 2026-04-30 (v2.0 roadmap created — phase mapping complete)
 | PICK-02 | Phase 8 | Pending |
 | PICK-03 | Phase 8 | Pending |
 | PICK-04 | Phase 8 | Pending |
-| PICK-05 | Phase 8 | Pending |
-| PICK-06 | Phase 8 | Pending |
-| PICK-07 | Phase 8 | Pending |
+| PICK-05 | Phase 8 | Complete |
+| PICK-06 | Phase 8 | Complete |
+| PICK-07 | Phase 8 | Complete |
 | PICK-08 | Phase 8 | Complete |
 | LAYO-01 | Phase 10 | Pending |
 | LAYO-02 | Phase 10 | Pending |

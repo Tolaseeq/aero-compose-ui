@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Stateful + Layout
 status: completed
-stopped_at: Completed 08-02-PLAN.md (AeroDatePicker + PickerPopupContainer)
-last_updated: "2026-06-18T10:01:37.190Z"
-last_activity: "2026-06-18 — Phase 8 plan-01 completed: public AeroRangeSlider landed (custom Canvas + awaitPointerEventScope dual-thumb drag, start<=end clamp, primary inter-thumb fill, last-moved-on-top z-order); 13 state-logic tests green; first new public v2.0 component validates the locked drag pattern (PITFALL-03)"
+stopped_at: Completed 08-06-PLAN.md (AeroColorPicker)
+last_updated: "2026-06-18T10:03:43.619Z"
+last_activity: "2026-06-18 — Phase 8 plan-02 completed: public AeroDatePicker landed (read-only trigger + anchored AeroCalendarGrid popup, day-click -> onValueChange(LocalDate) + close, prev/next month nav, dimmed out-of-range dates, right-aligns instead of clipping near window edge); PickerPopupContainer shared W11-02 popup surface (two-layer bg + glassPanel, no elevation) built here for reuse by 08-03/04/05; 6 dateIsDisabled predicate tests green"
 progress:
   total_phases: 11
   completed_phases: 7
   total_plans: 37
-  completed_plans: 34
+  completed_plans: 35
 ---
 
 # Project State
@@ -25,9 +25,9 @@ See: .planning/PROJECT.md (updated 2026-04-30 — v2.0 Current Milestone section
 ## Current Position
 
 Phase: 8 — Pickers
-Plan: 2 of 6 complete (08-01-range-slider, 08-02-datepicker done)
-Status: 08-02 (AeroDatePicker / PICK-01 + PickerPopupContainer) complete — 4 picker plans remaining in phase
-Last activity: 2026-06-18 — Phase 8 plan-02 completed: public AeroDatePicker landed (read-only trigger + anchored AeroCalendarGrid popup, day-click -> onValueChange(LocalDate) + close, prev/next month nav, dimmed out-of-range dates, right-aligns instead of clipping near window edge); PickerPopupContainer shared W11-02 popup surface (two-layer bg + glassPanel, no elevation) built here for reuse by 08-03/04/05; 6 dateIsDisabled predicate tests green
+Plan: 08-06 (AeroColorPicker) complete — see Performance Metrics for per-plan progress
+Status: 08-06 (AeroColorPicker / PICK-05/06/07) complete — HSV-truth inline panel + swatch-trigger Popup button landed
+Last activity: 2026-06-18 — Phase 8 plan-06 completed: public AeroColorPicker inline panel (HSV square + hue strip + R/G/B sliders + HEX field + swatch row + optional checkerboard alpha) wired from a single HSV(A) source (PITFALL-15, drift-gate test restores #FF0000); AeroColorPickerButton swatch trigger hosts the panel in an anchored Popup (NEW-PICK-05, no transparent Dialog); safeHsvColor guards every Color.hsv (NEW-PICK-01); DefaultAeroSwatches (16 colors); 11 unit tests green
 
 ```
 v2.0 Progress: [███       ] 27% (1/5 phases, 2/6 plans of phase 8)
@@ -82,6 +82,7 @@ See `.planning/MILESTONES.md` for accomplishments and `.planning/milestones/v1.1
 | Phase 07-shared-internal-primitives P03 | 3min | 2 tasks | 2 files |
 | Phase 08-pickers P01 | 3min | 2 tasks | 2 files |
 | Phase 08-pickers P02 | 4min | 3 tasks | 3 files |
+| Phase 08 P06 | 5min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -114,6 +115,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 08-pickers]: lastMovedThumb inits to RangeThumb.End so the Start thumb draws on top when both thumbs compress (PITFALL-07); thumbToDrawFirst helper makes z-order unit-testable
 - [Phase 08-pickers]: [Phase 08] PickerPopupContainer is the single shared W11-02 popup surface (two-layer background + glassPanel, no elevation) for all 4 date/time pickers; cornerRadius locked 8.dp
 - [Phase 08-pickers]: [Phase 08] AeroDatePicker min/max bounds are inclusive; dateIsDisabled extracted as pure internal predicate for unit testability
+- [Phase 08]: [Phase 08] AeroColorPicker HSV(A) floats are the single source of truth; RGB/HEX derived per emit, never stored (PITFALL-15) — drift gate test (sat 1.0->0.5->1.0 restores FF0000) locks it
+- [Phase 08]: [Phase 08] safeHsvColor is the only Color.hsv entry point in the picker; coerces hue to [0,360] to avoid the requirePrecondition throw (NEW-PICK-01)
 
 ### Pending Todos
 
@@ -132,7 +135,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-18T10:01:27.227Z
-Stopped at: Completed 08-02-PLAN.md (AeroDatePicker + PickerPopupContainer)
+Last session: 2026-06-18T10:03:43.615Z
+Stopped at: Completed 08-06-PLAN.md (AeroColorPicker)
 Resume file: None
 Next action: `/gsd:verify-work` (Phase 7 complete) → `/gsd:plan-phase 8` — Pickers
