@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -162,6 +163,11 @@ public fun AeroRangeSlider(
     val colors = AeroTheme.colors
     val density = LocalDensity.current
 
+    // Live-value read inside the drag loop: rememberUpdatedState ensures the lambda captures
+    // the latest committed value on every recomposition, so applyThumbMove always carries the
+    // correct non-dragged endpoint over (fixes F9 other-thumb reset).
+    val currentValue by rememberUpdatedState(value)
+
     var lastMovedThumb by remember { mutableStateOf(RangeThumb.End) }
     var trackWidthPx by remember { mutableStateOf(0f) }
     var activeThumb by remember { mutableStateOf<RangeThumb?>(null) }
@@ -178,9 +184,9 @@ public fun AeroRangeSlider(
                         trackWidthPx = width
                         while (true) {
                             val down = awaitFirstDown(requireUnconsumed = false)
-                            // Pick the nearest thumb to the press point.
-                            val startX = valueToX(value.start, valueRange, width)
-                            val endX = valueToX(value.endInclusive, valueRange, width)
+                            // Pick the nearest thumb to the press point using the LIVE range.
+                            val startX = valueToX(currentValue.start, valueRange, width)
+                            val endX = valueToX(currentValue.endInclusive, valueRange, width)
                             val thumb = if (
                                 abs(down.position.x - startX) <= abs(down.position.x - endX)
                             ) {
@@ -192,7 +198,7 @@ public fun AeroRangeSlider(
                             activeThumb = thumb
                             onValueChange(
                                 applyThumbMove(
-                                    value,
+                                    currentValue,
                                     thumb,
                                     xToValue(down.position.x, valueRange, width),
                                     valueRange,
@@ -206,7 +212,7 @@ public fun AeroRangeSlider(
                                 if (!change.pressed) break
                                 onValueChange(
                                     applyThumbMove(
-                                        value,
+                                        currentValue,
                                         thumb,
                                         xToValue(change.position.x, valueRange, width),
                                         valueRange,

@@ -90,6 +90,27 @@ class AeroRangeSliderTest {
         )
     }
 
+    // === F9 guard: chaining applyThumbMove off an already-moved range ===
+
+    /**
+     * F9 regression guard: after dragging End from 0.7 to 0.9 (so `value = 0.2..0.9`),
+     * a subsequent drag of Start to 0.4 must yield `0.4..0.9` — NOT `0.4..0.7` (the stale
+     * drag-start snapshot). This verifies that `applyThumbMove` chains off the LATEST value.
+     */
+    @Test
+    fun chainedThumbMovePreservesMovedEndEndpoint() {
+        val initial = 0.2f..0.7f
+        // Step 1: drag End from 0.7 → 0.9.
+        val afterEndMove = applyThumbMove(initial, RangeThumb.End, 0.9f, unit, steps = 0)
+        assertEquals(0.2f, afterEndMove.start, 1e-4f)
+        assertEquals(0.9f, afterEndMove.endInclusive, 1e-4f)
+        // Step 2: drag Start to 0.4, using the UPDATED range (0.2..0.9) as `current`.
+        val afterStartMove = applyThumbMove(afterEndMove, RangeThumb.Start, 0.4f, unit, steps = 0)
+        assertEquals(0.4f, afterStartMove.start, 1e-4f)
+        // End must reflect the value from step 1 (0.9), not the original (0.7).
+        assertEquals(0.9f, afterStartMove.endInclusive, 1e-4f)
+    }
+
     // === custom valueRange ===
 
     @Test
