@@ -166,7 +166,67 @@ RangeSection extension (тривиально) → PickersSection (повторя
 
 </deferred>
 
+<gap_closure>
+## Gap Closure — v2.0 Sign-off Defects (2026-06-18)
+
+**Trigger:** Phase 11 sign-off (11-05) FAILED on human UAT — 16 component defects. Full list + severities in `11-SIGNOFF.md`. This section captures the decisions for the `--gaps` planning pass.
+
+**Scope override:** The original Phase 11 boundary was strictly additive (no component-source edits). **Gap plans MAY edit `:library` component source** (per 11-SIGNOFF.md). The v2.0 "no breaking API change" lock still holds — fixes are additive params (defaults may change visible behavior, like F7 `showSeconds`) or internal bug fixes, never breaking signatures.
+
+### Discussed decisions (4 areas + F7)
+
+**F6 — Date format DD.MM.YYYY**
+- Apply DD.MM.YYYY **everywhere a full date is rendered**: picker popups (selected-date display), `AeroDataTable` date cells, and showcase value-Text. The calendar **navigation header** ("Месяц ГГГГ" / month-name + year) stays as-is — it is not a full-date display.
+- Implement via an **optional formatter/`dateFormat` param, default DD.MM.YYYY** (additive; default change is intentional/accepted).
+- **Code reality (verified):** `AeroDatePicker` ALREADY exposes `formatter: (LocalDate) -> String = { it.toString() }` (AeroDatePicker.kt:63). Gap work = change that default to DD.MM.YYYY and add the equivalent param/default to the other date-bearing pickers (`AeroDateTimePicker`, `AeroDateRangePicker`) + the DataTable date column. Planner must verify each picker's current formatter surface.
+
+**F14 — DateRangePicker same-month selection**
+- Keep the **dual-month** view (no single-calendar redesign). Make **both endpoints clickable in either of the two visible months**, including both in the left month (e.g. 07.06–17.06). This relaxes the Phase 8 "leftMonth drives both, rightMonth = leftMonth+1" state machine so a same-month range is selectable.
+- **Stacking threshold (< 560dp vertical stack, NEW-PICK-03) stays unchanged** — no single-month narrow fallback.
+
+**F12 / F10 — ColorPicker**
+- **F12 hue control:** add an **explicit vertical hue slider to the right of the HSV square**. Phase 7 already has a `HueSlider` primitive — investigate why it is not visible / mis-rendered in `AeroColorPicker` and surface it. (Square encodes S/V; hue needs its own discoverable control.)
+- **F10 old/new swatch:** keep the left/right swatch as an **old (original) vs new (current) comparison, but add labels/tooltip** so its purpose is clear.
+- **F10 styling:** give the ColorPicker popup the **same glass background + rounded corners as the other pickers** (W11-02 / `PickerPopupContainer` pattern) and **intrinsic/content width — not full-width**. (Aligns with aero-aesthetic priority.)
+
+**F8 — Picker trigger width**
+- **Verdict: showcase-only fix; `:library` NOT touched for F8.** Investigation showed pickers do not hardcode `fillMaxWidth`; they pass `modifier` through (AeroDatePicker.kt:75), and the width comes from `AeroTextField`'s `BasicTextField` taking parent constraints (decorationBox `Box(Modifier.weight(1f))`, AeroTextField.kt:93) — standard, modifier-controllable text-field behavior, not a component defect. Consumers can already constrain via `Modifier.width(...)`.
+- Fix in `PickersSection`: give triggers a **compact/bounded width** so the **value-preview Text sits to the right** (RangeRow style: label 160dp │ compact trigger │ value Text). This restores the F8-blocked checklist item #5 (DatePicker popup right-align) verifiability too.
+
+**F7 — TimePicker seconds (pre-decided 2026-06-18)**
+- Add optional `showSeconds: Boolean = false` to `AeroTimePicker`; propagate to `AeroDateTimePicker`. Default `false` preserves HH:MM API. Showcase demo enables it (HH:MM:SS).
+
+### Clear bug fixes — route straight to planning (no discussion)
+Severities per 11-SIGNOFF.md. Planner owns approach; min-widths/paddings are Claude's discretion within the fix intent.
+- **F2** 🟠 DataTable adjacent cells merge (`400842026-03-26`) — add explicit horizontal cell padding/separation.
+- **F3** 🔴 Drag "ghosting"/doubling on column splitter AND `AeroSplitPane` divider — same artifact; likely shares root cause with F15.
+- **F4** 🟠 Sort fires only on header **text**; whole header cell must be the click target.
+- **F5** 🟠 TreeView expand fires only on `>` chevron; whole node row must toggle.
+- **F9** 🔴 RangeSlider — dragging one thumb resets the other to default; both thumbs must hold values independently.
+- **F11** 🟠 Accordion inter-section divider longer than the rounded section background; shorten to fit inside rounded bg.
+- **F13** 🟠 Demo has no min/max → no disabled dates to verify checklist item 13; add a DatePicker/DateRangePicker demo **with disabled dates** (also exercises PITFALL-09 AeroDark readability).
+- **F15** 🔴 Reduced drag sensitivity (cursor outpaces thumb) on RangeSlider thumbs, ColorPicker HSV square, DataTable column splitters; likely shared root cause with F3 (drag coordinate mapping / leftover offset).
+- **F-RESIZE** 🔴 Column resize unbounded right (column leaves screen, table not width-clamped) + over-shrinks left ("Name" unreadable); add usable per-column **min width** + a table width bound.
+- **F-WIZARD** 🔴 StepperWizard Back/Next both disabled — wizard non-interactive in demo; investigate validation gate + step-1 field input.
+
+### Cross-cutting note
+F3 + F15 (and possibly the drag side of F-RESIZE) are flagged in 11-SIGNOFF.md as a **likely shared drag root cause** (coordinate mapping / leftover offset in the `awaitPointerEventScope` manual loop). Researcher should investigate them together before splitting into separate fix plans — a single root-cause fix may resolve multiple checklist items.
+
+</gap_closure>
+
+<gap_canonical_refs>
+## Gap Closure — Additional Canonical References
+
+- `.planning/phases/11-showcase-v2-0-visual-sign-off/11-SIGNOFF.md` — **authoritative defect list** (16 findings F2–F-WIZARD with severities + the 16×3 sign-off table). Every gap fix must re-satisfy its checklist row eyes-on across AeroBlue/AeroDark/Classic.
+- `library/src/main/kotlin/com/mordred/aero/components/pickers/AeroDatePicker.kt` — existing `formatter` param (F6 seam), trigger via `AeroTextField` (F8 evidence).
+- `library/src/main/kotlin/com/mordred/aero/components/input/AeroTextField.kt` — `BasicTextField` width behavior (F8 root-cause evidence).
+- `library/src/main/kotlin/com/mordred/aero/components/pickers/AeroColorPicker.kt` + Phase 7 `HueSlider`/`HsvColorSquare` primitives — F12 hue-slider investigation targets.
+- `library/src/main/kotlin/com/mordred/aero/components/pickers/AeroDateRangePicker.kt` — sealed `AeroDateRangeState` / `nextRangeState` (F14 relaxation target; keep single-`onRangeSelect` PITFALL-06 guarantee intact).
+- `.planning/research/PITFALLS.md` §"Looks Done But Isn't" Checklist (the gate); PITFALL-03 (drag `awaitPointerEventScope` pattern — F3/F15/F-RESIZE root cause); PITFALL-09 (disabled-date readability — F13).
+
+</gap_canonical_refs>
+
 ---
 
 *Phase: 11-showcase-v2-0-visual-sign-off*
-*Context gathered: 2026-06-18*
+*Context gathered: 2026-06-18 (gap-closure decisions appended 2026-06-18)*
