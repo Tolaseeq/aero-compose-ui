@@ -2,7 +2,7 @@
 phase: 11-showcase-v2-0-visual-sign-off
 date: 2026-06-18
 launch_command: "./gradlew :showcase:run"
-gate_status: RE-VERIFYING
+gate_status: PASSED
 verified_by: human (eyes-on, all three themes)
 ---
 
@@ -11,11 +11,10 @@ verified_by: human (eyes-on, all three themes)
 **Phase:** 11-showcase-v2-0-visual-sign-off
 **Date:** 2026-06-18
 **Launch command:** `./gradlew :showcase:run`
-**Milestone gate:** Phase 11 is NOT complete until all 48 cells below are PASS.
+**Milestone gate:** Phase 11 complete — all 48 cells PASS.
 
-> **GATE FAILED on human verification 2026-06-18.** Full detail in **Findings** section (historical record below).
-> Gap-closure plans 11-06 through 11-10 have been executed to address all 16 defects.
-> **RE-VERIFYING 2026-06-18** — automated gates re-run (items 15-16 PASS); items 1-14 awaiting eyes-on re-verification.
+> **GATE PASSED 2026-06-18** (re-verification after gap-closure plans 11-06 to 11-10).
+> One additional defect **F-ACCORDION-HOVER** (accordion header hover/press highlight rendered with sharp corners over the rounded glass surface) was found and fixed during sign-off at commit **94a524f** (added `.clip(RoundedCornerShape(8.dp))` before `.clickable` in `AeroAccordion.kt`). After that fix all items passed.
 
 ---
 
@@ -36,30 +35,39 @@ verified_by: human (eyes-on, all three themes)
 
 ---
 
-## Sign-off Table (Re-verification)
+## Sign-off Table (Re-verification — FINAL)
 
-> Items 1-14: PENDING eyes-on verification across all three themes.
+> All 48 cells verified eyes-on across all three themes (AeroBlue / AeroDark / Classic).
 > Items 15-16: PASS (automated grep gates, re-run 2026-06-18).
-> Previously-FAIL rows are annotated with the gap plan that fixed them.
+> Previously-FAIL rows re-tested against their gap-closure fixes.
 
 | # | Checklist Item | AeroBlue | AeroDark | Classic | Re-test target / Notes |
 |---|----------------|----------|----------|---------|------------------------|
-| 1 | DataTable virtualization (~10-15 rows, scroll renders new) | PENDING | PENDING | PENDING | Was PASS — re-confirm still OK |
-| 2 | Selection survives sort (SAT-050 keeps highlight; AeroDark four-state distinguishable) | PENDING | PENDING | PENDING | Was PASS — re-confirm (PITFALL-10 AeroDark) |
-| 3 | Column resize bounds — right-bound clamped, left stops at readable min (~120dp), no ghosting, 1:1 drag | PENDING | PENDING | PENDING | Fixed by **F-RESIZE** (11-07) + drag root cause (11-06) |
-| 4 | TreeView lazy callback fires once (row-level click expands; no second onExpand on scroll-back) | PENDING | PENDING | PENDING | F5 whole-row toggle (11-07) — must NOT break once-only guard |
-| 5 | DatePicker popup right-aligns at ~1024dp (compact trigger, no clip) | PENDING | PENDING | PENDING | Fixed by **F8** compact trigger (11-10) |
-| 6 | DateRangePicker partial state shows "—" (same-month range works; dismiss mid-range stays "—") | PENDING | PENDING | PENDING | Fixed by **F14** same-month (11-08); PITFALL-06 partial-state guard |
-| 7 | ColorPicker HEX round-trip: hue slider visible, #FF0000 survives sat 100%→50%→100% | PENDING | PENDING | PENDING | Fixed by **F12+F10** (11-09): hue slider discoverable, glass panel |
-| 8 | RangeSlider: both thumbs hold independent values; overlap reachable | PENDING | PENDING | PENDING | Fixed by **F9** (11-06): stale-capture root cause resolved |
-| 9 | Accordion single mode (A closes when B opens); divider fits rounded bg | PENDING | PENDING | PENDING | Behaviour was OK; cosmetic divider fixed by **F11** (11-09) |
-| 10 | SplitPane clamp (panes ≥48dp); no ghosting; 1:1 drag | PENDING | PENDING | PENDING | Fixed by **F3+F15** (11-06): positionChange() delta, no ghosting |
-| 11 | Sidebar adjacent reflow on toggle | PENDING | PENDING | PENDING | Was PASS — re-confirm still OK |
-| 12 | Wizard: type field→Next enables; Next advances; Back returns with value; Next blocked when blank | PENDING | PENDING | PENDING | Fixed by **F-WIZARD** (11-10): bounded Box(height) wrapper |
-| 13 | AeroDark disabled cells visible (grey, not invisible) — DatePicker min/max + RangePicker min/max demos | N/A | PENDING | N/A | Fixed by **F13** (11-10): disabled-date demo added; AeroDark readable |
-| 14 | Desktop drag responds on first pixel: HSV square, RangeSlider thumbs, DataTable column splitter | PENDING | PENDING | PENDING | Fixed by **F15** (11-06): positionChange() root cause; all three drag sites |
+| 1 | DataTable virtualization (~10-15 rows, scroll renders new) | PASS | PASS | PASS | Was PASS — re-confirmed still OK |
+| 2 | Selection survives sort (SAT-050 keeps highlight; AeroDark four-state distinguishable) | PASS | PASS | PASS | Was PASS — re-confirmed (PITFALL-10 AeroDark) |
+| 3 | Column resize bounds — right-bound clamped, left stops at readable min (~120dp), no ghosting, 1:1 drag | PASS | PASS | PASS | Fixed by **F-RESIZE** (11-07) + drag root cause (11-06) |
+| 4 | TreeView lazy callback fires once (row-level click expands; no second onExpand on scroll-back) | PASS | PASS | PASS | F5 whole-row toggle (11-07) — once-only guard intact |
+| 5 | DatePicker popup right-aligns at ~1024dp (compact trigger, no clip) | PASS | PASS | PASS | Fixed by **F8** compact trigger (11-10) |
+| 6 | DateRangePicker partial state shows "—" (same-month range works; dismiss mid-range stays "—") | PASS | PASS | PASS | Fixed by **F14** same-month (11-08); PITFALL-06 partial-state guard |
+| 7 | ColorPicker HEX round-trip: hue slider visible, #FF0000 survives sat 100%→50%→100% | PASS | PASS | PASS | Fixed by **F12+F10** (11-09): hue slider discoverable, glass panel |
+| 8 | RangeSlider: both thumbs hold independent values; overlap reachable | PASS | PASS | PASS | Fixed by **F9** (11-06): stale-capture root cause resolved |
+| 9 | Accordion single mode (A closes when B opens); divider fits rounded bg | PASS | PASS | PASS | Behaviour was OK; cosmetic divider fixed by **F11** (11-09); hover clip fixed by **F-ACCORDION-HOVER** (94a524f) |
+| 10 | SplitPane clamp (panes ≥48dp); no ghosting; 1:1 drag | PASS | PASS | PASS | Fixed by **F3+F15** (11-06): positionChange() delta, no ghosting |
+| 11 | Sidebar adjacent reflow on toggle | PASS | PASS | PASS | Was PASS — re-confirmed still OK |
+| 12 | Wizard: type field→Next enables; Next advances; Back returns with value; Next blocked when blank | PASS | PASS | PASS | Fixed by **F-WIZARD** (11-10): bounded Box(height) wrapper |
+| 13 | AeroDark disabled cells visible (grey, not invisible) — DatePicker min/max + RangePicker min/max demos | N/A | PASS | N/A | Fixed by **F13** (11-10): disabled-date demo added; AeroDark readable |
+| 14 | Desktop drag responds on first pixel: HSV square, RangeSlider thumbs, DataTable column splitter | PASS | PASS | PASS | Fixed by **F15** (11-06): positionChange() root cause; all three drag sites |
 | 15 | No `transparent = true` (grep W11-01) | PASS | PASS | PASS | Automated — 0 hits, re-run 2026-06-18 |
 | 16 | No `AeroScrollArea` in DataTable pkg (grep W11-02) | PASS | PASS | PASS | Automated — 0 hits, re-run 2026-06-18 |
+
+---
+
+## In-Sign-off Fix: F-ACCORDION-HOVER
+
+**Defect:** Accordion section-header hover/press highlight rendered with sharp corners over the rounded glass surface.
+**Fix:** Added `.clip(RoundedCornerShape(8.dp))` before `.clickable` in `AeroAccordion.kt`.
+**Commit:** 94a524f
+**Impact:** Item 9 (Accordion) now fully PASS across all three themes.
 
 ---
 
@@ -67,7 +75,7 @@ verified_by: human (eyes-on, all three themes)
 
 > These findings are the original FAILED sign-off from 2026-06-18, preserved as historical record.
 > All 16 defects were addressed in gap-closure plans 11-06 through 11-10.
-> Re-verification above confirms whether each fix holds.
+> Re-verification above confirms every fix held.
 
 Grouped by component. Severity: 🔴 bug · 🟠 UX defect · 🟣 design change / scope decision.
 
@@ -118,11 +126,13 @@ Grouped by component. Severity: 🔴 bug · 🟠 UX defect · 🟣 design change
 - All original FAIL findings reproduced across all three themes — they are component-level, not theme-specific.
 - Gap-closure plans 11-06 (drag root cause F3/F9/F15), 11-07 (DataTable/TreeView F2/F4/F5/F-RESIZE), 11-08 (pickers F6/F14), 11-09 (ColorPicker F12/F10 + Accordion F11), 11-10 (showcase F8/F7/F13/F6/F-WIZARD) were executed to resolve all 16 defects.
 - Item 13 columns: AeroDark is the only theme requiring eyes-on verification; AeroBlue/Classic marked N/A as there is no disabled-state difference to test there.
+- F-ACCORDION-HOVER was found and fixed during sign-off (not in original gap-closure plans); commit 94a524f.
 
 ## Completion Criteria
 
-Phase 11 milestone gate (SHW-10) is satisfied when:
-- [ ] All 40 PENDING cells above are filled PASS (13 items x 3 themes + item 13 AeroDark only; AeroBlue/Classic for item 13 are N/A)
+Phase 11 milestone gate (SHW-10) is satisfied:
+- [x] All 40 previously-PENDING cells filled PASS (13 items x 3 themes + item 13 AeroDark only; AeroBlue/Classic for item 13 are N/A)
 - [x] Automated gates (15, 16) PASS
-- [ ] Frontmatter `gate_status` updated to PASSED
-- [ ] 16 component defects above confirmed resolved eyes-on
+- [x] Frontmatter `gate_status` updated to PASSED
+- [x] 16 component defects above confirmed resolved eyes-on
+- [x] In-sign-off defect F-ACCORDION-HOVER found, fixed (94a524f), and re-verified PASS
