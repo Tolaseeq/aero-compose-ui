@@ -263,12 +263,18 @@ Decimal phases appear between their surrounding integers in numeric order.
   - W11-02 (shadow clipping): Popup depth uses border + glassBorder + two-layer background (existing `AeroDropdownPopup` technique), NOT `Modifier.shadow` — confirmed during visual sign-off.
   - The 16-item checklist from PITFALLS.md is the formal sign-off gate. Do not mark Phase 11 complete without every item checked PASS.
   - Showcase wiring follows v1.0/v1.1 pattern: new Section files added, `ShowcaseApp.kt` receives new calls, no structural changes to existing sections.
-**Plans**: 5 plans
-- [ ] 11-01-PLAN.md — RangeSection +AeroRangeSlider row + PickersSection (5 pickers + RangeSlider, value Text) [wave 1]
-- [ ] 11-02-PLAN.md — DataSection: AeroDataTable (100 rows, 6 mixed cols) + AeroTreeView (logging onExpand), bounded boxes [wave 1]
-- [ ] 11-03-PLAN.md — LayoutSection: Accordion single+multi, SplitPane h+v, Sidebar mode-toggle sibling, StepperWizard 3-step gate [wave 1]
-- [ ] 11-04-PLAN.md — Wire 3 sections into ShowcaseApp.kt + delete Phase 7 scratch files [wave 2]
-- [ ] 11-05-PLAN.md — Sign-off gate: W11-01/W11-02 grep gates + 16-item x 3-theme checklist (11-SIGNOFF.md) [wave 3]
+**Plans**: 11 plans (5 original + 6 gap-closure after sign-off FAILED on 16 defects)
+- [x] 11-01-PLAN.md — RangeSection +AeroRangeSlider row + PickersSection (5 pickers + RangeSlider, value Text) [wave 1]
+- [x] 11-02-PLAN.md — DataSection: AeroDataTable (100 rows, 6 mixed cols) + AeroTreeView (logging onExpand), bounded boxes [wave 1]
+- [x] 11-03-PLAN.md — LayoutSection: Accordion single+multi, SplitPane h+v, Sidebar mode-toggle sibling, StepperWizard 3-step gate [wave 1]
+- [x] 11-04-PLAN.md — Wire 3 sections into ShowcaseApp.kt + delete Phase 7 scratch files [wave 2]
+- [x] 11-05-PLAN.md — Sign-off gate: W11-01/W11-02 grep gates + 16-item x 3-theme checklist — FAILED, 16 defects [wave 3]
+- [ ] 11-06-PLAN.md — GAP: shared drag root cause — aeroDragSplitter frame-stable delta (F3/F15) + RangeSlider live-value (F9) [wave 1]
+- [ ] 11-07-PLAN.md — GAP: DataTable/TreeView — cell padding F2, full-cell header sort F4, whole-row tree toggle F5, resize bound F-RESIZE [wave 1]
+- [ ] 11-08-PLAN.md — GAP: pickers — DD.MM.YYYY default formatter F6, same-month range F14 [wave 1]
+- [ ] 11-09-PLAN.md — GAP: ColorPicker hue slider/glass/width F12+F10, Accordion divider inset F11 [wave 1]
+- [ ] 11-10-PLAN.md — GAP (showcase): compact triggers F8, showSeconds F7, disabled-date demos F13, DD.MM.YYYY F6, wizard interactive F-WIZARD [wave 2]
+- [ ] 11-11-PLAN.md — GAP: re-sign-off — build + grep gates + 16x3 re-verify all 48 cells PASS (SHW-10) [wave 3]
 
 ---
 
