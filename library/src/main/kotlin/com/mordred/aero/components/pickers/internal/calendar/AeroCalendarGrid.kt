@@ -42,14 +42,23 @@ import kotlinx.datetime.plus
  *
  * @param displayMonth any `LocalDate` whose month/year drive the grid (day-of-month is ignored).
  * @param selected the currently selected date, or `null` for none.
+ * @param rangeStart inclusive start of a highlighted range, or `null` (range rendering off).
+ * @param rangeEnd inclusive end of a highlighted range, or `null` (range rendering off).
  * @param onDateSelected fires when the user clicks a day cell.
  * @param onMonthChange fires when the user clicks prev/next month — receives the new displayMonth.
  * @param isDisabled returns `true` for dates that should be non-interactive and dimmed.
+ *
+ * Range highlighting (additive, PICK-02): when both [rangeStart] and [rangeEnd] are non-null,
+ * the two endpoints render at `colors.primary` and the intermediate cells at
+ * `colors.primary.copy(alpha = 0.15f)` (PITFALL-09 extension: readable on AeroDark). Defaults are
+ * `null`, so DatePicker/DateTimePicker callers — which pass no range — are unaffected.
  */
 @Composable
 internal fun AeroCalendarGrid(
     displayMonth: LocalDate,
     selected: LocalDate?,
+    rangeStart: LocalDate? = null,
+    rangeEnd: LocalDate? = null,
     onDateSelected: (LocalDate) -> Unit,
     onMonthChange: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
@@ -141,9 +150,14 @@ internal fun AeroCalendarGrid(
                         val cellDate = LocalDate(displayMonth.year, displayMonth.monthNumber, dayCounter)
                         val disabled = isDisabled(cellDate)
                         val isSelected = (selected != null && selected == cellDate)
+                        val isEndpoint = cellDate == rangeStart || cellDate == rangeEnd
+                        val inRange = rangeStart != null && rangeEnd != null &&
+                            cellDate > rangeStart && cellDate < rangeEnd
                         DayCell(
                             day = dayCounter,
                             isSelected = isSelected,
+                            isInRange = inRange,
+                            isEndpoint = isEndpoint,
                             isDisabled = disabled,
                             onClick = { if (!disabled) onDateSelected(cellDate) },
                         )
@@ -165,17 +179,20 @@ private fun DayCell(
     isSelected: Boolean,
     isDisabled: Boolean,
     onClick: () -> Unit,
+    isInRange: Boolean = false,
+    isEndpoint: Boolean = false,
 ) {
     val colors = AeroTheme.colors
     val typography = AeroTheme.typography
     val bg = when {
-        isSelected -> colors.primary
-        else       -> androidx.compose.ui.graphics.Color.Transparent
+        isSelected || isEndpoint -> colors.primary
+        isInRange                -> colors.primary.copy(alpha = 0.15f)
+        else                     -> androidx.compose.ui.graphics.Color.Transparent
     }
     val fg = when {
-        isDisabled -> colors.labelText
-        isSelected -> colors.onPrimary
-        else       -> colors.onSurface
+        isDisabled               -> colors.labelText
+        isSelected || isEndpoint -> colors.onPrimary
+        else                     -> colors.onSurface
     }
     Box(
         modifier = Modifier
