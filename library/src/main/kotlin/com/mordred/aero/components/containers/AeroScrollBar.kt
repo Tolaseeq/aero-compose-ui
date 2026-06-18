@@ -2,6 +2,7 @@ package com.mordred.aero.components.containers
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.VerticalScrollbar
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -28,6 +29,27 @@ public fun AeroScrollBar(
 ) {
     VerticalScrollbar(
         adapter = rememberScrollbarAdapter(scrollState),
+        modifier = modifier
+    )
+}
+
+/**
+ * Standalone Aero-styled vertical scrollbar bound to a [LazyListState].
+ *
+ * Use this overload with your own `LazyColumn` / `LazyRow` — for example inside
+ * [AeroDataTable] and [AeroTreeView], which own their `LazyColumn` directly and must
+ * NOT be wrapped in [AeroScrollArea] (that would destroy virtualization — PITFALL-01).
+ *
+ * @param lazyListState the [LazyListState] passed to the sibling `LazyColumn(state = ...)`.
+ * @param modifier typically `Modifier.align(Alignment.CenterEnd).fillMaxHeight()`.
+ */
+@Composable
+public fun AeroScrollBar(
+    lazyListState: LazyListState,
+    modifier: Modifier = Modifier
+) {
+    VerticalScrollbar(
+        adapter = rememberScrollbarAdapter(lazyListState),
         modifier = modifier
     )
 }
