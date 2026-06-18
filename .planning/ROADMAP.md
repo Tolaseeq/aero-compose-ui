@@ -37,7 +37,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 7: Shared Internal Primitives** - Internal foundation (CalendarGrid, ColorMath, HsvSquare+HueSlider, AeroDragSplitter, StepIndicator, AeroCalendarPositionProvider) enabling Phases 8–10; no new public API (completed 2026-05-04)
 - [x] **Phase 8: Pickers** - AeroRangeSlider, AeroDatePicker, AeroTimePicker, AeroDateTimePicker, AeroDateRangePicker, AeroColorPicker; kotlinx-datetime:0.6.2 added
  (completed 2026-06-18)
-- [x] **Phase 9: Data** - AeroDataTable (virtualized, sortable, selectable, resizable columns) + AeroTreeView (lazy expand); components/datatable/ package (completed 2026-06-18)
+- [x] **Phase 9: Data** - AeroDataTable (virtualized, sortable, selectable, resizable columns) + AeroTreeView (lazy expand); components/datatable/ package
+ (completed 2026-06-18)
 - [ ] **Phase 10: Layout** - AeroAccordion, AeroSplitPane, AeroSidebar, AeroStepperWizard; components/layout/ package
 - [ ] **Phase 11: Showcase + v2.0 Visual Sign-off** - DataSection, PickersSection, LayoutSection wired into ShowcaseApp; RangeSection extended; 16-item silent-failure checklist as milestone gate
 
@@ -239,7 +240,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   - PITFALL-11 (Sidebar + SplitPane composition): `AeroSidebar` must NOT be placed inside a `AeroSplitPane` pane. Document in KDoc with a correct usage example showing `Row { AeroSidebar(...); content() }`. Showcase demo must keep Sidebar as a top-level layout sibling.
   - PITFALL-12 (onValidate in composable body): `onValidate` is called ONLY in the Next button `onClick` handler. `canProceed` parameter (caller-driven Boolean) controls the button's enabled state for live UI feedback — `onValidate` is a commit gate, not a live signal.
   - PITFALL-03 (touchSlop): `AeroSplitPane` divider uses `AeroDragSplitter` from Phase 7. No new drag implementations in this phase.
-**Plans**: TBD
+**Plans**: 4 plans (all wave 1 — four independent components, no file conflicts)
+- [ ] 10-01-PLAN.md — AeroSplitPane (LAYO-03, LAYO-04): BoxWithConstraints + aeroDragSplitter + clamp helper, 8dp hit-area, grip nasechki [wave 1]
+- [ ] 10-02-PLAN.md — AeroAccordion (LAYO-01, LAYO-02): data-list sections, lifted single/multi state, animateContentSize, rotating caret [wave 1]
+- [ ] 10-03-PLAN.md — AeroSidebar (LAYO-05, LAYO-06, LAYO-07): rememberAeroSidebarState + currentWidthDp (PITFALL-11), 3-mode animateDpAsState, AeroSidebarScope DSL, collapsed AeroTooltip [wave 1]
+- [ ] 10-04-PLAN.md — AeroStepperWizard (LAYO-08, LAYO-09): AeroStepIndicator + step content kept composed (Back-state), onValidate gate on click only (PITFALL-12), canProceed-driven Next [wave 1]
 
 ### Phase 11: Showcase + v2.0 Visual Sign-off
 **Goal**: Every v2.0 component is demonstrated in the showcase with realistic mock data, and the full 16-item "looks done but isn't" silent-failure checklist from PITFALLS.md passes across all three themes — this checklist is the formal gate for v2.0 milestone sign-off
