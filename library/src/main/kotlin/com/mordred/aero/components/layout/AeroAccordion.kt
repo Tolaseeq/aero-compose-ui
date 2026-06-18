@@ -22,8 +22,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.mordred.aero.components.layout.internal.accordion.accordionToggleMulti
@@ -205,6 +207,8 @@ private fun AccordionSectionRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .glassPanel(cornerRadius = 8.dp)
+                // Clip hover/press indication to the rounded surface so it follows the 8dp corners.
+                .clip(RoundedCornerShape(8.dp))
                 .clickable { onToggle() }
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
