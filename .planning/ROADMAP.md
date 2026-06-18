@@ -263,7 +263,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   - W11-02 (shadow clipping): Popup depth uses border + glassBorder + two-layer background (existing `AeroDropdownPopup` technique), NOT `Modifier.shadow` — confirmed during visual sign-off.
   - The 16-item checklist from PITFALLS.md is the formal sign-off gate. Do not mark Phase 11 complete without every item checked PASS.
   - Showcase wiring follows v1.0/v1.1 pattern: new Section files added, `ShowcaseApp.kt` receives new calls, no structural changes to existing sections.
-**Plans**: TBD
+**Plans**: 5 plans
+- [ ] 11-01-PLAN.md — RangeSection +AeroRangeSlider row + PickersSection (5 pickers + RangeSlider, value Text) [wave 1]
+- [ ] 11-02-PLAN.md — DataSection: AeroDataTable (100 rows, 6 mixed cols) + AeroTreeView (logging onExpand), bounded boxes [wave 1]
+- [ ] 11-03-PLAN.md — LayoutSection: Accordion single+multi, SplitPane h+v, Sidebar mode-toggle sibling, StepperWizard 3-step gate [wave 1]
+- [ ] 11-04-PLAN.md — Wire 3 sections into ShowcaseApp.kt + delete Phase 7 scratch files [wave 2]
+- [ ] 11-05-PLAN.md — Sign-off gate: W11-01/W11-02 grep gates + 16-item x 3-theme checklist (11-SIGNOFF.md) [wave 3]
 
 ---
 
