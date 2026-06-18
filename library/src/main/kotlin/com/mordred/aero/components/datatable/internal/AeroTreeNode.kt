@@ -57,7 +57,10 @@ internal fun <T> AeroTreeNode(
         modifier = modifier
             .fillMaxWidth()
             .height(rowHeight)
-            .clickable { onNodeClick() },
+            .clickable {
+                onNodeClick()
+                if (flatNode.isExpandable) onExpandClick()
+            },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Depth indentation
