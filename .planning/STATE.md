@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Stateful + Layout
-status: in-progress
-stopped_at: Completed 08-01-PLAN.md
-last_updated: "2026-06-18T10:00:55.365Z"
+status: completed
+stopped_at: Completed 08-02-PLAN.md (AeroDatePicker + PickerPopupContainer)
+last_updated: "2026-06-18T10:01:37.190Z"
 last_activity: "2026-06-18 — Phase 8 plan-01 completed: public AeroRangeSlider landed (custom Canvas + awaitPointerEventScope dual-thumb drag, start<=end clamp, primary inter-thumb fill, last-moved-on-top z-order); 13 state-logic tests green; first new public v2.0 component validates the locked drag pattern (PITFALL-03)"
 progress:
   total_phases: 11
   completed_phases: 7
   total_plans: 37
-  completed_plans: 33
+  completed_plans: 34
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-30 — v2.0 Current Milestone section
 ## Current Position
 
 Phase: 8 — Pickers
-Plan: 1 of 6 complete (08-01-range-slider done)
-Status: 08-01 (AeroRangeSlider / PICK-08) complete — 5 picker plans remaining in phase
-Last activity: 2026-06-18 — Phase 8 plan-01 completed: public AeroRangeSlider landed (custom Canvas + awaitPointerEventScope dual-thumb drag, start<=end clamp, primary inter-thumb fill, last-moved-on-top z-order); 13 state-logic tests green; first new public v2.0 component validates the locked drag pattern (PITFALL-03)
+Plan: 2 of 6 complete (08-01-range-slider, 08-02-datepicker done)
+Status: 08-02 (AeroDatePicker / PICK-01 + PickerPopupContainer) complete — 4 picker plans remaining in phase
+Last activity: 2026-06-18 — Phase 8 plan-02 completed: public AeroDatePicker landed (read-only trigger + anchored AeroCalendarGrid popup, day-click -> onValueChange(LocalDate) + close, prev/next month nav, dimmed out-of-range dates, right-aligns instead of clipping near window edge); PickerPopupContainer shared W11-02 popup surface (two-layer bg + glassPanel, no elevation) built here for reuse by 08-03/04/05; 6 dateIsDisabled predicate tests green
 
 ```
-v2.0 Progress: [███       ] 26% (1/5 phases, 1/6 plans of phase 8)
+v2.0 Progress: [███       ] 27% (1/5 phases, 2/6 plans of phase 8)
 ```
 
 ## Shipped Milestones
@@ -81,6 +81,7 @@ See `.planning/MILESTONES.md` for accomplishments and `.planning/milestones/v1.1
 | 07-02 visuals-and-scratch | ~10m 33s | 5 | 8 | aeroDragSplitter + HsvColorSquare + HueSlider + StepIndicator landed; AeroPhase7Scratch aggregator in :library + thin Phase7ScratchSection wrapper in :showcase preserves locked-internal API for all 6 primitives; PITFALL-03 mitigation locked at the shared-utility level |
 | Phase 07-shared-internal-primitives P03 | 3min | 2 tasks | 2 files |
 | Phase 08-pickers P01 | 3min | 2 tasks | 2 files |
+| Phase 08-pickers P02 | 4min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -111,6 +112,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 07]: Architecture B reconfirmed: AeroCard glass wrappers in scratch demo only — AeroCalendarGrid + AeroStepIndicator remain surface-less; glass is a consumer responsibility
 - [Phase 08-pickers]: AeroRangeSlider tooltip is an overlaid glassEffect Box positioned by thumb x (AeroSlider pill approach), not in-Canvas text; behind showTooltip, only for the active thumb
 - [Phase 08-pickers]: lastMovedThumb inits to RangeThumb.End so the Start thumb draws on top when both thumbs compress (PITFALL-07); thumbToDrawFirst helper makes z-order unit-testable
+- [Phase 08-pickers]: [Phase 08] PickerPopupContainer is the single shared W11-02 popup surface (two-layer background + glassPanel, no elevation) for all 4 date/time pickers; cornerRadius locked 8.dp
+- [Phase 08-pickers]: [Phase 08] AeroDatePicker min/max bounds are inclusive; dateIsDisabled extracted as pure internal predicate for unit testability
 
 ### Pending Todos
 
@@ -129,7 +132,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-18T10:00:27.710Z
-Stopped at: Completed 08-01-PLAN.md
+Last session: 2026-06-18T10:01:27.227Z
+Stopped at: Completed 08-02-PLAN.md (AeroDatePicker + PickerPopupContainer)
 Resume file: None
 Next action: `/gsd:verify-work` (Phase 7 complete) → `/gsd:plan-phase 8` — Pickers

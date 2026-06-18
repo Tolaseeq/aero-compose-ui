@@ -20,7 +20,7 @@ Milestone v2.0 — Stateful + Layout. 12 новых компонентов (8 co
 
 ### Pickers — Date / Time / Color / Range (PICK)
 
-- [ ] **PICK-01**: `AeroDatePicker` — поле + кнопка-триггер открывают popup-календарь (месячная сетка 7 колонок); пользователь кликает день → callback с `kotlinx.datetime.LocalDate`; кнопки prev/next month навигируют по месяцам; current month и selected day визуально подсвечены
+- [x] **PICK-01**: `AeroDatePicker` — поле + кнопка-триггер открывают popup-календарь (месячная сетка 7 колонок); пользователь кликает день → callback с `kotlinx.datetime.LocalDate`; кнопки prev/next month навигируют по месяцам; current month и selected day визуально подсвечены
 - [ ] **PICK-02**: `AeroDateRangePicker` — popup с двумя календарями рядом (start month + end month); пользователь выбирает start кликом, затем end кликом (либо в том же, либо в следующем календаре); промежуточные дни визуально подсвечены как range; на узких окнах (`BoxWithConstraints` < ~560dp) календари стекаются вертикально; range НЕ авто-свапается, если end < start (валидация на стороне caller)
 - [ ] **PICK-03**: `AeroTimePicker` — поле часов + поле минут (два `AeroTextField` или `AeroNumberSpinner`-подобных контрола); валидация диапазонов 0-23 / 0-59; callback с `kotlinx.datetime.LocalTime`; опциональный 12h/24h режим (default 24h)
 - [ ] **PICK-04**: `AeroDateTimePicker` — комбинированный picker: календарь сверху + time controls снизу в одном popup; кнопки `Apply` / `Cancel` явно — popup НЕ закрывается автоматически при выборе даты (иначе time не успевает установиться); callback с `kotlinx.datetime.LocalDateTime` только по `Apply`
@@ -110,7 +110,7 @@ Updated: 2026-04-30 (v2.0 roadmap created — phase mapping complete)
 | DATA-04 | Phase 9 | Pending |
 | DATA-05 | Phase 9 | Pending |
 | DATA-06 | Phase 9 | Pending |
-| PICK-01 | Phase 8 | Pending |
+| PICK-01 | Phase 8 | Complete |
 | PICK-02 | Phase 8 | Pending |
 | PICK-03 | Phase 8 | Pending |
 | PICK-04 | Phase 8 | Pending |
