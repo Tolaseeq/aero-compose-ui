@@ -35,9 +35,9 @@ Milestone v2.0 — Stateful + Layout. 12 новых компонентов (8 co
 - [x] **LAYO-02**: `AeroAccordion` поддерживает `mode = single | multi`: в `single` ровно одна секция открыта в момент времени (раскрытие новой свёртывает предыдущую); в `multi` каждая секция независима; default — `multi`
 - [ ] **LAYO-03**: `AeroSplitPane` рендерит две панели (`start`, `end`) разделённые draggable splitter'ом; `orientation = horizontal | vertical`; пользователь тянет splitter для регулировки соотношения; minimum size для каждой панели предотвращает схлопывание
 - [ ] **LAYO-04**: Splitter `AeroSplitPane` имеет невидимый расширенный hit-area (~8-12dp) вокруг 1dp видимой линии — обеспечивает практичный mouse grab; cursor меняется на resize-cursor при hover; реализация через `awaitPointerEventScope` (общий `AeroDragSplitter` primitive)
-- [ ] **LAYO-05**: `AeroSidebar` — persistent (всегда в layout, не overlay); рендерит вертикальный список items с иконкой и опциональным label; режим `expanded` показывает иконку + label + width ~240dp; `collapsed` показывает только иконку + label в `AeroTooltip` при hover + width ~48dp; `hidden` полностью скрывает sidebar
-- [ ] **LAYO-06**: Переключение между режимами `AeroSidebar` анимировано (smooth width transition через `animateDpAsState`); active item подсвечен primary-цветом; selected item callback через `onItemClick: (ItemKey) -> Unit`
-- [ ] **LAYO-07**: `AeroSidebar` items описываются через composable slots (НЕ data list) для максимальной гибкости — caller предоставляет `content: @Composable AeroSidebarScope.() -> Unit` где `AeroSidebarScope.item(icon, label, selected, onClick)` доступна как extension
+- [x] **LAYO-05**: `AeroSidebar` — persistent (всегда в layout, не overlay); рендерит вертикальный список items с иконкой и опциональным label; режим `expanded` показывает иконку + label + width ~240dp; `collapsed` показывает только иконку + label в `AeroTooltip` при hover + width ~48dp; `hidden` полностью скрывает sidebar
+- [x] **LAYO-06**: Переключение между режимами `AeroSidebar` анимировано (smooth width transition через `animateDpAsState`); active item подсвечен primary-цветом; selected item callback через `onItemClick: (ItemKey) -> Unit`
+- [x] **LAYO-07**: `AeroSidebar` items описываются через composable slots (НЕ data list) для максимальной гибкости — caller предоставляет `content: @Composable AeroSidebarScope.() -> Unit` где `AeroSidebarScope.item(icon, label, selected, onClick)` доступна как extension
 - [ ] **LAYO-08**: `AeroStepperWizard` рендерит горизонтальный step indicator (точки + соединительные линии + номера/иконки шагов) сверху; current/completed/upcoming шаги визуально различимы через primary/onSurface/disabled цвета
 - [ ] **LAYO-09**: `AeroStepperWizard` показывает content current step ниже indicator + кнопки `Back` / `Next` (на последнем шаге `Next` → `Finish`); каждый шаг определяет `onValidate: () -> Boolean` callback — `Next` блокируется при `false`; composable state шагов сохраняется при Back-навигации (НЕ destroy на dispose)
 
@@ -122,9 +122,9 @@ Updated: 2026-04-30 (v2.0 roadmap created — phase mapping complete)
 | LAYO-02 | Phase 10 | Complete |
 | LAYO-03 | Phase 10 | Pending |
 | LAYO-04 | Phase 10 | Pending |
-| LAYO-05 | Phase 10 | Pending |
-| LAYO-06 | Phase 10 | Pending |
-| LAYO-07 | Phase 10 | Pending |
+| LAYO-05 | Phase 10 | Complete |
+| LAYO-06 | Phase 10 | Complete |
+| LAYO-07 | Phase 10 | Complete |
 | LAYO-08 | Phase 10 | Pending |
 | LAYO-09 | Phase 10 | Pending |
 | SHW-07 | Phase 11 | Pending |
