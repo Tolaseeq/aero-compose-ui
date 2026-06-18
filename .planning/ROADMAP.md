@@ -192,7 +192,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   - PITFALL-09 (AeroDark disabled cells): Disabled date cells in AeroDark must use `labelText` token, not `onSurface.copy(alpha=0.4f)` — confirmed during Phase 8 visual review, verified formally in Phase 11.
   - W11-01: All picker popups use `Popup(...)`, NOT `Dialog(transparent=true)`. Grep gate per plan.
   - Build order within phase: RangeSlider → DatePicker (validates CalendarGrid) → TimePicker → DateTimePicker (composition) → DateRangePicker (LARGE) → ColorPicker (LARGE).
-**Plans**: TBD
+**Plans**: 6 plans
+- [ ] 08-01-PLAN.md — AeroRangeSlider (PICK-08): custom Canvas dual-thumb, awaitPointerEventScope, no-cross + z-order [wave 1]
+- [ ] 08-02-PLAN.md — AeroDatePicker (PICK-01) + shared PickerPopupContainer (W11-02 popup surface) [wave 1]
+- [ ] 08-03-PLAN.md — AeroTimePicker (PICK-03): TimeFields spinner row, 24h only, LocalTime [wave 2]
+- [ ] 08-04-PLAN.md — AeroDateTimePicker (PICK-04): calendar+time, Apply/Cancel commit gate [wave 3]
+- [ ] 08-05-PLAN.md — AeroDateRangePicker (PICK-02): dual-month, sealed state, responsive stacking + AeroCalendarGrid range extension [wave 4]
+- [ ] 08-06-PLAN.md — AeroColorPicker + AeroColorPickerButton (PICK-05/06/07): HSV-truth panel, swatches, alpha [wave 1]
 
 ### Phase 9: Data
 **Goal**: AeroDataTable and AeroTreeView are publicly available in the library — the table virtualizes thousands of rows without fps loss, supports Ctrl/Shift multi-selection by stable key, sorts by column header, and allows column width drag-resize; the tree lazily loads children via callback exactly once per node regardless of scroll behavior
