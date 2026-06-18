@@ -66,13 +66,18 @@ public fun AeroColorPickerButton(
                     dismissOnClickOutside = true,
                 ),
             ) {
-                AeroColorPicker(
-                    value = value,
-                    onValueChange = onValueChange,
-                    enableAlpha = enableAlpha,
-                    swatches = swatches,
-                    enabled = enabled,
-                )
+                // Box wraps AeroColorPicker so the Popup content sizes to the panel's
+                // bounded intrinsic width (280.dp, set in AeroColorPicker) and never
+                // stretches to fill the window width (F10 glass/rounded consistency).
+                Box {
+                    AeroColorPicker(
+                        value = value,
+                        onValueChange = onValueChange,
+                        enableAlpha = enableAlpha,
+                        swatches = swatches,
+                        enabled = enabled,
+                    )
+                }
             }
         }
     }
