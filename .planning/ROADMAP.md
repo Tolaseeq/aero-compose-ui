@@ -294,4 +294,4 @@ Decimal phases appear between their surrounding integers in numeric order.
 | 8. Pickers | 6/6 | Complete   | 2026-06-18 | - |
 | 9. Data | 3/3 | Complete   | 2026-06-18 | - |
 | 10. Layout | 3/4 | Complete    | 2026-06-18 | - |
-| 11. Showcase + v2.0 Visual Sign-off | 9/11 | In Progress|  | - |
+| 11. Showcase + v2.0 Visual Sign-off | 10/11 | In Progress|  | - |

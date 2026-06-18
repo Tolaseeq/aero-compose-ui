@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Stateful + Layout
 status: completed
-stopped_at: "Phase 11 plan 11-10 complete: showcase gap fixes F8/F7/F13/F6/F-WIZARD"
-last_updated: "2026-06-18T17:42:40.821Z"
+stopped_at: "Phase 11 plan 11-11 complete: v2.0 sign-off gate PASSED — all 48 cells PASS, SHW-10 satisfied"
+last_updated: "2026-06-18T18:10:52.077Z"
 last_activity: "2026-06-18 — Phase 8 plan-05 completed: public AeroDateRangePicker (PICK-02) — dual-month popup that stacks vertically below 560dp (NEW-PICK-03), range highlight via additive AeroCalendarGrid rangeStart/rangeEnd params (primary@0.15f intermediate, primary endpoints — PITFALL-09 extension), and a sealed AeroDateRangeState machine whose pure nextRangeState transition makes onRangeSelect fire exactly once per completed range and never on a partial start click (PITFALL-06). 5 unit tests + compileKotlin green; existing DatePicker/DateTimePicker/CalendarGrid tests unaffected (additive change)."
 progress:
   total_phases: 11
   completed_phases: 10
   total_plans: 55
-  completed_plans: 54
+  completed_plans: 55
 ---
 
 # Project State
@@ -102,6 +102,7 @@ See `.planning/MILESTONES.md` for accomplishments and `.planning/milestones/v1.1
 | Phase 11-showcase-v2-0-visual-sign-off P08 | 3min | 2 tasks | 5 files |
 | Phase 11 P06 | 12min | 3 tasks | 3 files |
 | Phase 11-showcase-v2-0-visual-sign-off P10 | 2min | 3 tasks | 3 files |
+| Phase 11 P11 | 15min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -167,6 +168,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 11]: positionChange() chosen for aeroDragSplitter delta — single-frame intra-event API, immune to hit-area Box relocation between frames (F3/F15 root cause)
 - [Phase 11]: rememberUpdatedState(value) in AeroRangeSlider drag loop so applyThumbMove always reads the latest committed range (F9 root cause — stale captured value in pointerInput lambda)
 - [Phase 11-showcase-v2-0-visual-sign-off]: F-WIZARD root cause: AeroStepperWizard is intentionally surface-less; active step uses weight(1f,fill=false) inside a plain Column — needs caller-provided bounded parent height; showcase fix is Box(height(200.dp)); no library edit needed
+- [Phase 11-showcase-v2-0-visual-sign-off]: F-ACCORDION-HOVER: .clip(RoundedCornerShape(8.dp)) added before .clickable in AeroAccordion.kt so hover/press highlight clips to rounded glass surface — found during sign-off, fixed at 94a524f
 
 ### Pending Todos
 
@@ -185,7 +187,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-18T17:42:40.815Z
-Stopped at: Phase 11 plan 11-10 complete: showcase gap fixes F8/F7/F13/F6/F-WIZARD
+Last session: 2026-06-18T18:10:48.335Z
+Stopped at: Phase 11 plan 11-11 complete: v2.0 sign-off gate PASSED — all 48 cells PASS, SHW-10 satisfied
 Resume file: None
 Next action: `/gsd:plan-phase 11 --gaps` — create gap-closure plans for the 16 defects (gap plans may edit component source)
