@@ -122,11 +122,19 @@ public fun <T> AeroDataTable(
                 totalWidthPx = availableWidthPx,
                 pxPerDp = pxPerDp,
             )
+            val availableDp = availableWidthPx / pxPerDp
             baseWidths.mapIndexed { i, resolved ->
                 val overrideDp = (resizeOverridesPx[i] ?: 0f) / pxPerDp
                 val adjustedDp = resolved.dpValue + overrideDp
                 val minDp = columns[i].minWidth.value
-                ResolvedWidth(adjustedDp.coerceAtLeast(minDp)).dpValue.dp
+                // Upper bound: available width minus the floor each OTHER column needs, so the
+                // table never overflows and no column can be dragged off-screen (F-RESIZE right-side).
+                val othersMinDp = columns.indices
+                    .filter { it != i }
+                    .sumOf { columns[it].minWidth.value.toDouble() }
+                    .toFloat()
+                val maxDp = (availableDp - othersMinDp).coerceAtLeast(minDp)
+                ResolvedWidth(adjustedDp.coerceIn(minDp, maxDp)).dpValue.dp
             }
         }
 
