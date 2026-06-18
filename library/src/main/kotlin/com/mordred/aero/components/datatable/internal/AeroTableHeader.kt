@@ -44,7 +44,8 @@ import com.mordred.aero.theme.glassPanel
  * The header's horizontal scroll is driven by the body — [horizontalScrollState] with
  * `enabled = false` so the header tracks the body but does NOT eat scroll gestures.
  *
- * NO stickyHeader (JetBrains #3016/#2940). NO detectDragGestures (PITFALL-03).
+ * Uses external header Row (not LazyColumn's sticky-header API — JetBrains #3016/#2940).
+ * Column resize uses [aeroDragSplitter], not raw pointer gestures (PITFALL-03).
  *
  * @param columns column specs in order.
  * @param columnWidthsDp resolved widths per column.
