@@ -169,7 +169,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-18T16:07:27.440Z
-Stopped at: Completed 11-04-PLAN.md (ShowcaseApp wiring + scratch deletion)
-Resume file: None
-Next action: `/gsd:verify-work` (Phase 7 complete) → `/gsd:plan-phase 8` — Pickers
+Last session: 2026-06-18 — Phase 11 executed (waves 1-2: Data/Pickers/Layout sections wired into ShowcaseApp, Phase 7 scratch removed). Sign-off gate (11-05) FAILED on human UAT: 16 component defects across DataTable/TreeView/pickers/ColorPicker/RangeSlider/Accordion/SplitPane/Wizard. Decision recorded: F7 showSeconds optional (default off).
+Stopped at: Phase 11 sign-off FAILED — awaiting gap closure
+Resume file: .planning/phases/11-showcase-v2-0-visual-sign-off/11-SIGNOFF.md (full findings + decisions)
+Next action: `/gsd:plan-phase 11 --gaps` — create gap-closure plans for the 16 defects (gap plans may edit component source)
