@@ -40,7 +40,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 9: Data** - AeroDataTable (virtualized, sortable, selectable, resizable columns) + AeroTreeView (lazy expand); components/datatable/ package
  (completed 2026-06-18)
 - [x] **Phase 10: Layout** - AeroAccordion, AeroSplitPane, AeroSidebar, AeroStepperWizard; components/layout/ package (completed 2026-06-18)
-- [ ] **Phase 11: Showcase + v2.0 Visual Sign-off** - DataSection, PickersSection, LayoutSection wired into ShowcaseApp; RangeSection extended; 16-item silent-failure checklist as milestone gate
+- [x] **Phase 11: Showcase + v2.0 Visual Sign-off** - DataSection, PickersSection, LayoutSection wired into ShowcaseApp; RangeSection extended; 16-item silent-failure checklist as milestone gate (completed 2026-06-18)
 
 ## Phase Details
 
@@ -294,4 +294,4 @@ Decimal phases appear between their surrounding integers in numeric order.
 | 8. Pickers | 6/6 | Complete   | 2026-06-18 | - |
 | 9. Data | 3/3 | Complete   | 2026-06-18 | - |
 | 10. Layout | 3/4 | Complete    | 2026-06-18 | - |
-| 11. Showcase + v2.0 Visual Sign-off | 10/11 | In Progress|  | - |
+| 11. Showcase + v2.0 Visual Sign-off | 10/11 | Complete    | 2026-06-18 | - |
