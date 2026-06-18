@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Stateful + Layout
 status: completed
-stopped_at: Completed 11-07-PLAN.md (F2/F4/F5/F-RESIZE DataTable+TreeView bug fixes)
-last_updated: "2026-06-18T17:36:56.514Z"
+stopped_at: Completed 11-08-PLAN.md (F6 DD.MM.YYYY default + F14 same-month range tests)
+last_updated: "2026-06-18T17:37:00.584Z"
 last_activity: "2026-06-18 — Phase 8 plan-05 completed: public AeroDateRangePicker (PICK-02) — dual-month popup that stacks vertically below 560dp (NEW-PICK-03), range highlight via additive AeroCalendarGrid rangeStart/rangeEnd params (primary@0.15f intermediate, primary endpoints — PITFALL-09 extension), and a sealed AeroDateRangeState machine whose pure nextRangeState transition makes onRangeSelect fire exactly once per completed range and never on a partial start click (PITFALL-06). 5 unit tests + compileKotlin green; existing DatePicker/DateTimePicker/CalendarGrid tests unaffected (additive change)."
 progress:
   total_phases: 11
@@ -180,7 +180,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-18T17:36:44.439Z
-Stopped at: Completed 11-07-PLAN.md (F2/F4/F5/F-RESIZE DataTable+TreeView bug fixes)
+Last session: 2026-06-18T17:37:00.577Z
+Stopped at: Completed 11-08-PLAN.md (F6 DD.MM.YYYY default + F14 same-month range tests)
 Resume file: None
 Next action: `/gsd:plan-phase 11 --gaps` — create gap-closure plans for the 16 defects (gap plans may edit component source)
