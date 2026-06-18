@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Stateful + Layout
 status: completed
-stopped_at: Completed 11-04-PLAN.md (ShowcaseApp wiring + scratch deletion)
-last_updated: "2026-06-18T16:07:27.445Z"
+stopped_at: Phase 11 gap-closure context gathered (4 areas + F7 decided; 10 clear bugs queued)
+last_updated: "2026-06-18T17:05:56.322Z"
 last_activity: "2026-06-18 — Phase 8 plan-05 completed: public AeroDateRangePicker (PICK-02) — dual-month popup that stacks vertically below 560dp (NEW-PICK-03), range highlight via additive AeroCalendarGrid rangeStart/rangeEnd params (primary@0.15f intermediate, primary endpoints — PITFALL-09 extension), and a sealed AeroDateRangeState machine whose pure nextRangeState transition makes onRangeSelect fire exactly once per completed range and never on a partial start click (PITFALL-06). 5 unit tests + compileKotlin green; existing DatePicker/DateTimePicker/CalendarGrid tests unaffected (additive change)."
 progress:
   total_phases: 11
@@ -169,7 +169,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-18 — Phase 11 executed (waves 1-2: Data/Pickers/Layout sections wired into ShowcaseApp, Phase 7 scratch removed). Sign-off gate (11-05) FAILED on human UAT: 16 component defects across DataTable/TreeView/pickers/ColorPicker/RangeSlider/Accordion/SplitPane/Wizard. Decision recorded: F7 showSeconds optional (default off).
-Stopped at: Phase 11 sign-off FAILED — awaiting gap closure
-Resume file: .planning/phases/11-showcase-v2-0-visual-sign-off/11-SIGNOFF.md (full findings + decisions)
+Last session: 2026-06-18T17:05:56.316Z
+Stopped at: Phase 11 gap-closure context gathered (4 areas + F7 decided; 10 clear bugs queued)
+Resume file: .planning/phases/11-showcase-v2-0-visual-sign-off/11-CONTEXT.md
 Next action: `/gsd:plan-phase 11 --gaps` — create gap-closure plans for the 16 defects (gap plans may edit component source)
