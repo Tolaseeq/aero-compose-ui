@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.mordred.aero.components.range.AeroProgressBar
+import com.mordred.aero.components.range.AeroRangeSlider
 import com.mordred.aero.components.range.AeroSlider
 import com.mordred.aero.theme.AeroTheme
 
@@ -23,6 +24,7 @@ fun RangeSection() {
     val colors = AeroTheme.colors
     val typography = AeroTheme.typography
     var sliderValue by remember { mutableStateOf(0.5f) }
+    var rangeValue by remember { mutableStateOf(0.2f..0.7f) }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Range & Progress", color = colors.onBackground, style = typography.title)
@@ -36,6 +38,18 @@ fun RangeSection() {
         }
         RangeRow(label = "AeroProgressBar (ind)") {
             AeroProgressBar(modifier = Modifier.width(240.dp))
+        }
+        RangeRow(label = "AeroRangeSlider") {
+            AeroRangeSlider(
+                value = rangeValue,
+                onValueChange = { rangeValue = it },
+                modifier = Modifier.width(240.dp)
+            )
+            Text(
+                text = "${"%.2f".format(rangeValue.start)} → ${"%.2f".format(rangeValue.endInclusive)}",
+                color = colors.labelText,
+                style = typography.bodyMedium
+            )
         }
     }
 }

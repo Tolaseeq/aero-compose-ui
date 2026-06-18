@@ -17,6 +17,7 @@ dependencies {
     implementation(compose.foundation)
     implementation(compose.runtime)
     implementation(compose.ui)
+    implementation(libs.kotlinx.datetime)
 }
 
 compose.desktop {
