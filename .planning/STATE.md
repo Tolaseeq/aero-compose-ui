@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Stateful + Layout
 status: completed
-stopped_at: Completed 11-08-PLAN.md (F6 DD.MM.YYYY default + F14 same-month range tests)
-last_updated: "2026-06-18T17:37:00.584Z"
+stopped_at: "Phase 11 plan 11-06 complete: drag root-cause fixes (F3/F15/F9)"
+last_updated: "2026-06-18T17:37:46.395Z"
 last_activity: "2026-06-18 — Phase 8 plan-05 completed: public AeroDateRangePicker (PICK-02) — dual-month popup that stacks vertically below 560dp (NEW-PICK-03), range highlight via additive AeroCalendarGrid rangeStart/rangeEnd params (primary@0.15f intermediate, primary endpoints — PITFALL-09 extension), and a sealed AeroDateRangeState machine whose pure nextRangeState transition makes onRangeSelect fire exactly once per completed range and never on a partial start click (PITFALL-06). 5 unit tests + compileKotlin green; existing DatePicker/DateTimePicker/CalendarGrid tests unaffected (additive change)."
 progress:
   total_phases: 11
   completed_phases: 10
   total_plans: 55
-  completed_plans: 52
+  completed_plans: 53
 ---
 
 # Project State
@@ -100,6 +100,7 @@ See `.planning/MILESTONES.md` for accomplishments and `.planning/milestones/v1.1
 | Phase 11 P09 | 3min | 3 tasks | 3 files |
 | Phase 11-showcase-v2-0-visual-sign-off P07 | 3min | 3 tasks | 4 files |
 | Phase 11-showcase-v2-0-visual-sign-off P08 | 3min | 2 tasks | 5 files |
+| Phase 11 P06 | 12min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -162,6 +163,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 11]: F-RESIZE: coerceIn(minDp, maxDp) where maxDp = availableDp - othersMinDp; left over-shrink for Name column deferred to 11-10 showcase config (larger minWidth)
 - [Phase 11-showcase-v2-0-visual-sign-off]: formatAeroDate in AeroDatePicker.kt as package-internal helper used by all three date pickers for DD.MM.YYYY default (F6)
 - [Phase 11-showcase-v2-0-visual-sign-off]: F14 required no state-machine changes: nextRangeState already committed same-month ranges; both calendar grids route onDateSelected=onDayClick; fix was verification + tests only
+- [Phase 11]: positionChange() chosen for aeroDragSplitter delta — single-frame intra-event API, immune to hit-area Box relocation between frames (F3/F15 root cause)
+- [Phase 11]: rememberUpdatedState(value) in AeroRangeSlider drag loop so applyThumbMove always reads the latest committed range (F9 root cause — stale captured value in pointerInput lambda)
 
 ### Pending Todos
 
@@ -180,7 +183,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-18T17:37:00.577Z
-Stopped at: Completed 11-08-PLAN.md (F6 DD.MM.YYYY default + F14 same-month range tests)
+Last session: 2026-06-18T17:37:46.389Z
+Stopped at: Phase 11 plan 11-06 complete: drag root-cause fixes (F3/F15/F9)
 Resume file: None
 Next action: `/gsd:plan-phase 11 --gaps` — create gap-closure plans for the 16 defects (gap plans may edit component source)
