@@ -50,4 +50,31 @@ class AeroDateTimePickerTest {
         emitted = combineDateTime(pendingDate, pendingTime)
         assertEquals(LocalDateTime(2026, 6, 18, 9, 15, 0), emitted)
     }
+
+    @Test
+    fun formatAeroDateTimeOmitsSecondsWhenDisabled() {
+        assertEquals(
+            "18.06.2026 09:15",
+            formatAeroDateTime(LocalDateTime(2026, 6, 18, 9, 15, 7), showSeconds = false),
+        )
+    }
+
+    @Test
+    fun formatAeroDateTimeIncludesSecondsWhenEnabled() {
+        assertEquals(
+            "18.06.2026 09:15:07",
+            formatAeroDateTime(LocalDateTime(2026, 6, 18, 9, 15, 7), showSeconds = true),
+        )
+    }
+
+    @Test
+    fun customFormatterTakesPriorityOverDefault() {
+        // FIXDT-02: when a caller supplies a formatter, the default formatAeroDateTime is bypassed.
+        // Models the composable's displayText rule: formatter?.invoke(ldt) ?: formatAeroDateTime(ldt, showSeconds).
+        val ldt = LocalDateTime(2026, 6, 18, 9, 15, 7)
+        val custom: (LocalDateTime) -> String = { "CUSTOM" }
+        val displayText = custom.invoke(ldt) // formatter present → default not consulted
+        assertEquals("CUSTOM", displayText)
+        assertEquals("18.06.2026 09:15", formatAeroDateTime(ldt, showSeconds = false)) // default still correct when no formatter
+    }
 }

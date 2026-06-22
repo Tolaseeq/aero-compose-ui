@@ -197,6 +197,20 @@ private fun todayLocalDate(): LocalDate =
     Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
 
 /**
+ * Renders a [LocalDateTime] as `DD.MM.YYYY HH:MM` (or `DD.MM.YYYY HH:MM:SS` when [showSeconds]).
+ * Single source of truth for datetime trigger strings — shared by AeroDateTimePicker (PICK-04)
+ * and AeroDateTimeRangePicker (DTR). Prevents re-introducing the hardcoded-HH:MM bug (PITFALL-H).
+ */
+internal fun formatAeroDateTime(ldt: LocalDateTime, showSeconds: Boolean): String {
+    val timePart = if (showSeconds) {
+        "%02d:%02d:%02d".format(ldt.hour, ldt.minute, ldt.second)
+    } else {
+        "%02d:%02d".format(ldt.hour, ldt.minute)
+    }
+    return "${formatAeroDate(ldt.date)} $timePart"
+}
+
+/**
  * Merges a [LocalDate] and a [LocalTime] into a single [LocalDateTime]. This is the commit-gate
  * seam for `AeroDateTimePicker` (PICK-04): the pending date and pending time live in separate
  * state holders and are only combined here when the user clicks **Apply**. Extracted as a pure,
