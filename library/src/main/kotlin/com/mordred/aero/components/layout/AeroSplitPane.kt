@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -106,11 +107,19 @@ public fun AeroSplitPane(
         var dividerFraction by remember { mutableStateOf(initialSplitFraction) }
         val dividerPx = fractionToPx(dividerFraction, totalPx)
 
+        // aeroDragSplitter keys its pointerInput on (orientation, enabled) only, so the onDrag
+        // closure below is captured ONCE and never recreated. It must therefore read live state,
+        // not frozen locals: dividerFraction is a MutableState (read live through its delegate),
+        // and totalPx is wrapped in rememberUpdatedState so a parent resize / outer-pane drag in
+        // nested layouts is always reflected. Capturing the plain `dividerPx` val here instead
+        // re-introduces the F9 stale-capture bug (divider jitters and snaps back to its start).
+        val liveTotalPx by rememberUpdatedState(totalPx)
         val onDrag: (Float) -> Unit = { delta ->
             val minFirstPx = with(density) { minFirstPaneSize.toPx() }
-            val maxPx = totalPx - with(density) { minSecondPaneSize.toPx() }
-            val newPx = clampDividerPx(dividerPx, delta, minFirstPx, maxPx)
-            dividerFraction = pxToFraction(newPx, totalPx)
+            val maxPx = liveTotalPx - with(density) { minSecondPaneSize.toPx() }
+            val currentPx = fractionToPx(dividerFraction, liveTotalPx)
+            val newPx = clampDividerPx(currentPx, delta, minFirstPx, maxPx)
+            dividerFraction = pxToFraction(newPx, liveTotalPx)
             onSplitChange?.invoke(dividerFraction)
         }
 
