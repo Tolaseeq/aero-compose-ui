@@ -19,6 +19,7 @@ import com.mordred.aero.components.pickers.AeroColorPickerButton
 import com.mordred.aero.components.pickers.AeroDatePicker
 import com.mordred.aero.components.pickers.AeroDateRangePicker
 import com.mordred.aero.components.pickers.AeroDateTimePicker
+import com.mordred.aero.components.pickers.AeroDateTimeRangePicker
 import com.mordred.aero.components.pickers.AeroTimePicker
 import com.mordred.aero.components.range.AeroRangeSlider
 import com.mordred.aero.theme.AeroTheme
@@ -38,6 +39,9 @@ fun PickersSection() {
     var rangeEnd by remember { mutableStateOf<LocalDate?>(null) }
     var colorValue by remember { mutableStateOf(Color(0xFF4FC3F7)) }
     var sliderRange by remember { mutableStateOf(0.2f..0.7f) }
+    var dtRangeStart by remember { mutableStateOf<LocalDateTime?>(null) }
+    var dtRangeEnd by remember { mutableStateOf<LocalDateTime?>(null) }
+    var dtSecondsValue by remember { mutableStateOf<LocalDateTime?>(null) }
 
     // F13: disabled-date demo bounds — only June 2026 selectable
     val minD = LocalDate(2026, 6, 1)
@@ -75,7 +79,7 @@ fun PickersSection() {
         }
 
         // F8: compact trigger width (220.dp); F7: showSeconds = true; F6: value text raw for HH:MM:SS
-        RangeRow(label = "AeroDateTimePicker") {
+        RangeRow(label = "AeroDateTimePicker (showSeconds=true)") {
             AeroDateTimePicker(
                 value = dateTimeValue,
                 onValueChange = { dateTimeValue = it },
@@ -83,6 +87,16 @@ fun PickersSection() {
                 modifier = Modifier.width(220.dp)
             )
             Text(dateTimeValue?.toString() ?: "—", color = colors.labelText, style = typography.bodyMedium)
+        }
+
+        RangeRow(label = "AeroDateTimePicker (showSeconds=false)") {
+            AeroDateTimePicker(
+                value = dtSecondsValue,
+                onValueChange = { dtSecondsValue = it },
+                showSeconds = false,
+                modifier = Modifier.width(220.dp),
+            )
+            Text(dtSecondsValue?.toString() ?: "—", color = colors.labelText, style = typography.bodyMedium)
         }
 
         // F8: compact trigger width (220.dp); F6: DD.MM.YYYY range value preview
@@ -99,6 +113,23 @@ fun PickersSection() {
                 else "—",
                 color = colors.labelText,
                 style = typography.bodyMedium
+            )
+        }
+
+        RangeRow(label = "AeroDateTimeRangePicker") {
+            AeroDateTimeRangePicker(
+                startValue = dtRangeStart,
+                endValue = dtRangeEnd,
+                onRangeSelect = { start, end -> dtRangeStart = start; dtRangeEnd = end },
+                showSeconds = true,
+                modifier = Modifier.width(280.dp),
+            )
+            Text(
+                text = if (dtRangeStart != null && dtRangeEnd != null)
+                    "${dtRangeStart} → ${dtRangeEnd}"
+                else "—",
+                color = colors.labelText,
+                style = typography.bodyMedium,
             )
         }
 
