@@ -620,3 +620,186 @@ Expand/collapse arrow icon (animated rotation)
 ---
 *Feature research for: aero-compose-ui v2.0 Stateful + Layout (12 components)*
 *Researched: 2026-04-30*
+
+---
+---
+
+# Feature Research — aero-compose-ui v2.0.1 AeroDateTimeRangePicker + Seconds Fix
+
+**Domain:** Datetime range picker — Compose Desktop UI library (additive milestone on v2.0)
+**Researched:** 2026-06-22
+**Confidence:** HIGH (derived directly from existing codebase + well-established datetime-picker UX conventions)
+
+---
+
+## AeroDateTimeRangePicker — Feature Landscape
+
+### Table Stakes (Users Expect These)
+
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| Two-calendar range selection | AeroDateRangePicker already provides this; the datetime variant must match | LOW | Reuse `AeroDateRangeState` + `nextRangeState` verbatim. Both calendars share `leftMonth` driver; `rightMonth = leftMonth + 1`. |
+| Start time row + end time row | A range spanning time needs both endpoints timed | MEDIUM | Two `TimeFields` instances bound to `pendingStartTime` / `pendingEndTime`. Small "Start time:" / "End time:" labels distinguish rows. |
+| Cancel / Apply commit-gate | AeroDateTimePicker uses this; consistency requires it on any time-bearing picker | LOW | Apply disabled until `rangeState is AeroDateRangeState.Selected`. Cancel dismisses silently, no emission. |
+| `showSeconds` + `minuteStep` API parity | AeroDateTimePicker exposes both; callers expect the same on any time-bearing picker | LOW | Both `TimeFields` rows receive the same `showSeconds` and `minuteStep`. No per-endpoint overrides in this milestone. |
+| Trigger field shows `DD.MM.YYYY HH:MM → DD.MM.YYYY HH:MM` | AeroDateRangePicker renders `"${formatter(start)} → ${formatter(end)}"`; adding time is the natural extension | LOW | Default formatter delegates to `formatAeroDateTime(ldt, showSeconds)` — the same new internal helper that fixes the AeroDateTimePicker seconds bug. With `showSeconds = true`: `DD.MM.YYYY HH:MM:SS → DD.MM.YYYY HH:MM:SS`. |
+| `onRangeSelect: (LocalDateTime, LocalDateTime) -> Unit` fires only on Apply | Partial state must never escape to caller | LOW | Single call site guarded by Apply click AND `rangeState is Selected`. |
+| Same-day start ≤ end ordering enforcement | When both dates are equal, time order determines validity | MEDIUM | Silent swap at Apply (mirrors `nextRangeState` date-swap). Extract as pure `internal fun orderDateTimeRange(...)` — unit-testable. |
+| Pending state keyed on `expanded` | AeroDateTimePicker and AeroDateRangePicker both use `remember(expanded)` to isolate sessions | LOW | All four pending values keyed on `expanded`; cancelled partial selection never leaks into next open. |
+| `clearable` / `onClear` / `enabled` / `placeholder` | All existing pickers have these; absence would be a gap | LOW | Mirror AeroDateRangePicker parameter signature exactly. |
+| `minDate` / `maxDate` / `selectableDates` | Both calendar grids must respect date bounds | LOW | Pass same `dateIsDisabled` call to both `AeroCalendarGrid` instances. |
+| `formatter: ((LocalDateTime) -> String)? = null` | Callers need custom trigger format without fighting a fixed default | LOW | Nullable: `null` uses internal default `formatAeroDateTime(ldt, showSeconds)`. Non-null: caller's formatter used as-is. |
+
+---
+
+### Same-Day Start ≤ End Ordering — Edge Case Detail
+
+When `pendingStartDate == pendingEndDate`, time order determines validity.
+
+**Do not add live-validation UI.** Enforce ordering silently at Apply time, mirroring `nextRangeState`'s existing date-swap pattern:
+
+```kotlin
+val startLdt = LocalDateTime(startDate, startTime)
+val endLdt   = LocalDateTime(endDate, endTime)
+val (orderedStart, orderedEnd) =
+    if (startLdt <= endLdt) startLdt to endLdt else endLdt to startLdt
+onRangeSelect(orderedStart, orderedEnd)
+```
+
+Extract as `internal fun orderDateTimeRange(startDate, startTime, endDate, endTime): Pair<LocalDateTime, LocalDateTime>` — pure, no Compose dependency, unit-testable.
+
+**Cross-day case:** No special handling needed. `2025-06-07T23:59 → 2025-06-08T00:01` is valid; times are unconstrained when dates differ.
+
+---
+
+### Apply Gate — Partial Range Behavior
+
+Apply must be `enabled = rangeState is AeroDateRangeState.Selected`.
+
+While `rangeState` is `Idle` or `SelectingEnd`: Apply is disabled. No error message — the user is mid-selection. The disabled button is sufficient feedback. This is identical to AeroDateTimePicker's `enabled = pendingDate != null` guard.
+
+---
+
+### Trigger Text Format (Conventional Seconds Display)
+
+**Without seconds (default, `showSeconds = false`):**
+```
+07.06.2025 14:30 → 08.06.2025 09:15
+```
+
+**With `showSeconds = true`:**
+```
+07.06.2025 14:30:00 → 08.06.2025 09:15:45
+```
+
+**New internal helper — also fixes the AeroDateTimePicker bug:**
+
+```kotlin
+internal fun formatAeroDateTime(ldt: LocalDateTime, showSeconds: Boolean): String =
+    if (showSeconds)
+        "${formatAeroDate(ldt.date)} ${"%02d:%02d:%02d".format(ldt.hour, ldt.minute, ldt.second)}"
+    else
+        "${formatAeroDate(ldt.date)} ${"%02d:%02d".format(ldt.hour, ldt.minute)}"
+```
+
+**AeroDateTimePicker seconds bug root cause (confirmed in source):**
+Line 76 of `AeroDateTimePicker.kt` hardcodes `%02d:%02d` regardless of `showSeconds`. Since Kotlin default parameter expressions cannot reference sibling parameters, the fix requires one of:
+- Make `formatter` nullable (`((LocalDateTime) -> String)? = null`) — **recommended**, non-breaking
+- Inside composable body: `formatter?.invoke(ldt) ?: formatAeroDateTime(ldt, showSeconds)`
+
+Existing callers that pass an explicit formatter are unaffected. Callers relying on the default now see seconds when `showSeconds = true`.
+
+---
+
+### Differentiators (Valuable, Not Required)
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| "Start time:" / "End time:" labels | Immediately disambiguates which row is which | LOW | Small `Text` label above each `TimeFields`. Essentially free given the two-row design. Include in core implementation. |
+| Silent swap at Apply | Forgiving UX — user doesn't get an error for adjusting times in the wrong order | LOW | Already required by same-day ordering. Coherent with `nextRangeState` philosophy. |
+
+---
+
+### Anti-Features (Explicitly Exclude)
+
+| Feature | Why Requested | Why Problematic | Alternative |
+|---------|---------------|-----------------|-------------|
+| Hover-preview range highlight | Web pickers do this | Requires passing hover state into `AeroCalendarGrid` — new API surface, disproportionate for a patch milestone | Defer to a later milestone when `AeroCalendarGrid` is ready for it |
+| Per-endpoint `showSeconds` / `minuteStep` | Superficially more flexible | Doubles API surface for an unconfirmed use case; the two time rows must visually match for coherence | Single `showSeconds` + single `minuteStep` applied to both rows |
+| Live validation error on same-day time inversion | More explicit feedback | Creates distracting UI state mid-edit; user has not finished yet | Silent swap at Apply |
+| Inline (always-visible) mode | Useful for form dashboards | Explicitly deferred to v2.x in PROJECT.md | Popup-only, consistent with all other pickers |
+| Time zone selector | Enterprise feature | Massive scope; no TZ abstraction exists in the library | Caller handles TZ externally; component works with `LocalDateTime` only |
+| Direct text input for dates / times | Power-user shortcut | Requires parsing, error handling, significant new UI — disproportionate for a patch milestone | Spinner-based `TimeFields` (existing), calendar grid for dates |
+| `onStartChange` / `onEndChange` partial emission callbacks | Caller might want intermediate state | Violates commit-gate contract; leads to partial ranges leaking into caller state | Apply-only emission |
+
+---
+
+## Feature Dependencies
+
+```
+AeroDateTimeRangePicker
+    ├── reuses ──> AeroDateRangeState + nextRangeState  (AeroDateRangePicker.kt)
+    ├── reuses ──> AeroCalendarGrid                     (internal, Phase 7 primitive)
+    ├── reuses ──> TimeFields                           (internal, shared by AeroTimePicker + AeroDateTimePicker)
+    ├── reuses ──> dateIsDisabled                       (AeroDatePicker.kt)
+    ├── reuses ──> formatAeroDate                       (AeroDatePicker.kt)
+    ├── reuses ──> AeroCalendarPositionProvider         (internal popup)
+    ├── reuses ──> PickerPopupContainer                 (internal)
+    └── requires ──> formatAeroDateTime(ldt, showSeconds)  [NEW internal helper]
+
+formatAeroDateTime [NEW]
+    └── also fixes ──> AeroDateTimePicker trigger seconds bug (line 76)
+
+orderDateTimeRange [NEW internal pure function]
+    └── used by ──> AeroDateTimeRangePicker Apply logic
+```
+
+`formatAeroDateTime` is the only net-new shared primitive. Add it in the same pass as the AeroDateTimePicker seconds fix, before implementing `AeroDateTimeRangePicker`.
+
+---
+
+## MVP Definition for v2.0.1
+
+### Build
+
+- [ ] `internal fun formatAeroDateTime(ldt: LocalDateTime, showSeconds: Boolean): String` — gates both the fix and the new component
+- [ ] Fix `AeroDateTimePicker` — change `formatter` to `((LocalDateTime) -> String)? = null`; use `formatter?.invoke(ldt) ?: formatAeroDateTime(ldt, showSeconds)` in display
+- [ ] `internal fun orderDateTimeRange(...)` — pure ordering function, unit-tested
+- [ ] `AeroDateTimeRangePicker` with full parameter set: `startValue`, `endValue`, `onRangeSelect`, `modifier`, `formatter`, `placeholder`, `clearable`, `onClear`, `minDate`, `maxDate`, `selectableDates`, `enabled`, `showSeconds`, `minuteStep`
+- [ ] Showcase entry in PickersSection demonstrating range with `showSeconds = true`
+
+### Defer
+
+- Hover-preview range highlight — needs `AeroCalendarGrid` API extension
+- Time zone awareness — separate feature domain
+- Per-endpoint `showSeconds` / `minuteStep` — no consumer request
+
+---
+
+## Feature Prioritization Matrix
+
+| Feature | User Value | Implementation Cost | Priority |
+|---------|------------|---------------------|----------|
+| `formatAeroDateTime` helper | HIGH | LOW | P1 — gates both items below |
+| AeroDateTimePicker seconds fix | HIGH (bug fix) | LOW | P1 |
+| `orderDateTimeRange` pure function | HIGH | LOW | P1 — include with new component |
+| AeroDateTimeRangePicker core | HIGH | MEDIUM | P1 |
+| Start/end time row labels | MEDIUM | LOW | P1 — include in core, essentially free |
+| Showcase PickersSection entry | MEDIUM | LOW | P1 |
+| Hover-preview range highlight | LOW (this milestone) | HIGH | P3 — defer |
+
+---
+
+## Sources
+
+- Codebase: `AeroDateRangePicker.kt` — `nextRangeState`, `AeroDateRangeState`, trigger format pattern (`"${formatter(start)} → ${formatter(end)}"`)
+- Codebase: `AeroDateTimePicker.kt` — formatter bug (line 76 hardcodes `%02d:%02d`), Apply gate pattern (`enabled = pendingDate != null`), `combineDateTime`
+- Codebase: `AeroDatePicker.kt` — `formatAeroDate`, `dateIsDisabled`
+- Codebase: `internal/TimeFields.kt` — `TimeFields` composable, `assembleTime`
+- Codebase: `PROJECT.md` — milestone scope, deferred features, v2.0 decisions
+- Convention: `nextRangeState` date-swap behavior applied to datetime ordering at Apply
+- Kotlin language: default parameter expressions cannot reference sibling parameters — drives the nullable formatter fix pattern
+
+---
+*Feature research for: AeroDateTimeRangePicker UX + AeroDateTimePicker seconds display (v2.0.1)*
+*Researched: 2026-06-22*

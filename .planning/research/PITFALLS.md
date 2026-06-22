@@ -1,368 +1,359 @@
 # Pitfalls Research
 
-**Domain:** Compose Desktop UI library — adding v2.0 Stateful + Layout components to aero-compose-ui
-**Researched:** 2026-04-30
-**Confidence:** HIGH (grounded in actual codebase reading + confirmed upstream issues)
+**Domain:** Compose Desktop UI library — v2.0.1 milestone: SplitPane nested freeze fix + AeroDateTimeRangePicker new component + AeroDateTimePicker seconds-in-trigger fix
+**Researched:** 2026-06-22
+**Confidence:** HIGH (all claims grounded in actual source files read above)
+
+> **Scope note:** This file covers only the three items in v2.0.1. The v2.0 pitfalls (PITFALL-01 through PITFALL-15, W11-01, W11-02) remain locked and are not re-documented here. Carry-forward rules referenced inline where a new pitfall extends a previous one.
 
 ---
 
 ## Critical Pitfalls
 
-### PITFALL-01: LazyColumn inside AeroScrollArea (DataTable virtualization destroyed)
+### PITFALL-A: `remember(totalPx)` re-keys nested SplitPane divider on every outer drag
 
-**Components:** AeroDataTable
-**Failure mode:** Compiles but wrong behavior — rows are never virtualized; all rows render at once; frame drops on 500+ rows.
-
-**What goes wrong:**
-`AeroScrollArea` wraps a `Column` with `Modifier.verticalScroll(state)`. If AeroDataTable is naively implemented by placing a `LazyColumn` inside `AeroScrollArea`, Compose gives the `LazyColumn` an infinite-height constraint (because its parent is a scrollable `Column`). Compose crashes at runtime with *"LazyColumn does not support scrollable containers as parents"* or silently falls back to composing all items, destroying virtualization.
-
-**Why it happens:**
-Developers reach for `AeroScrollArea` by habit because it gives the Aero-styled scrollbar automatically. The existing v1.0 pattern (wrap content in `AeroScrollArea`) is wrong for any lazy list. This exact pattern already caused the AeroDropdown popup offset regression in v1.0 (`AeroScrollArea` → `Column.fillMaxWidth()` + unbounded height forcing the 320dp cap outward).
-
-**Root cause:** `Modifier.verticalScroll` imposes infinite max height on children, which breaks `LazyColumn`'s height measurement entirely.
-
-**Prevention:**
-- AeroDataTable MUST own its own `LazyColumn` with `LazyListState` and pair it with a standalone `AeroScrollBar` (the existing `AeroScrollBar` composable already accepts a `ScrollState`-alike via `rememberScrollbarAdapter`). Do NOT use `AeroScrollArea`.
-- Provide a `rememberLazyListState()` and pass it to both `LazyColumn` and `AeroScrollBar(lazyListState)`. Add a `LazyScrollbarAdapter` — Compose Desktop Foundation's `rememberScrollbarAdapter` overload accepts `LazyListState`.
-- Add a `Modifier.fillMaxHeight()` (or caller-supplied height constraint) to the DataTable outer container so `LazyColumn` receives a bounded max height.
-
-**Warning signs:** If the DataTable renders all rows regardless of visible area, or if a `MeasureException` appears in logs mentioning "infinite constraints", this pitfall has been hit.
-
-**Phase to address:** DataTable implementation phase (Phase 1 of v2.0). Must be decided in the plan before writing a single row of DataTable layout code.
-
----
-
-### PITFALL-02: AeroPopupPositionProvider clamps calendar popup to trigger width
-
-**Components:** AeroDatePicker, AeroTimePicker, AeroDateTimePicker, AeroDateRangePicker
-**Failure mode:** Compiles but wrong behavior — calendar popup is clipped or repositioned to an unusable offset because the calendar is wider than the trigger field.
+**Components:** AeroSplitPane (nested configuration — 3+ panes, 2+ splitters)
 
 **What goes wrong:**
-`AeroPopupPositionProvider` positions the popup left-aligned to `anchorBounds.left`, which is correct for dropdowns that match trigger width. A calendar panel is typically 300–320 dp wide; `AeroDateRangePicker` with two months side-by-side is 560–640 dp. The `clamp()` in `AeroPopupPositionProvider` will push the calendar leftward if it overflows the right edge of the window, but if the trigger is near the right edge, the calendar may partially underflow the left edge. The `overflows()` check will flip to `AeroPopupSide.Top` (not Start/End), moving the calendar above the field rather than to the side — correct for narrow dropdowns, wrong for wide calendars.
-
-**Root cause:**
-`AeroDropdownPopup` uses `widthIn(min = anchorWidth, max = anchorWidth)` — it locks the popup to trigger width. Calendar pickers need `widthIn(min = calendarWidth)` with a separate horizontal-alignment strategy. The existing `AeroPopupPositionProvider` was designed for same-width dropdowns.
-
-**Prevention:**
-- Do NOT reuse `AeroDropdownPopup` for date pickers. Use raw `Popup(popupPositionProvider = ...)` with a new `AeroCalendarPositionProvider` that:
-  1. Places the popup left-aligned to `anchorBounds.left` by default.
-  2. If `anchorBounds.left + calendarWidth > windowSize.width`, right-aligns to `anchorBounds.right` instead.
-  3. Never flips to Top/Bottom just because width overflows — only flips to Top/Bottom when *height* overflows.
-- `AeroDateRangePicker` specifically needs a minimum width of ~560 dp and should check horizontal overflow before vertical.
-- Keep `PopupProperties(focusable = true)` for all date pickers so keyboard navigation (arrow keys, Enter, Esc) works without separate workarounds.
-
-**Warning signs:** Calendar appears right-edge clipped on a narrow window, or the calendar jumps above the trigger field when the trigger is placed near the right edge of the window.
-
-**Phase to address:** Date/time pickers implementation phase. The `AeroCalendarPositionProvider` must be written as the first task in that phase, before any calendar grid rendering.
-
----
-
-### PITFALL-03: Desktop touchSlop breaks drag on Canvas components (ColorPicker HSV + RangeSlider + DataTable column resize)
-
-**Components:** AeroColorPicker (HSV square drag, hue bar drag), AeroRangeSlider (dual thumb drag), AeroDataTable (column resize splitter drag)
-**Failure mode:** Compiles, no crash — drag silently does nothing. User clicks and holds but the drag never starts.
-
-**What goes wrong:**
-`detectDragGestures` in Compose Desktop uses `DesktopViewConfiguration.touchSlop = 18dp`. Mouse movements are typically 1–3px per event. The gesture is cancelled before it starts because the accumulated delta never reaches 18dp between `awaitFirstDown` and the slop threshold check (`awaitTouchSlopOrCancellation`). This is a confirmed upstream issue (JetBrains/compose-multiplatform issue #343, not yet fixed as of CMP 1.7.3).
-
-**Root cause:**
-`detectDragGestures` is designed for touch screens where a thumb moves 18px before it's clear the user is dragging (not tapping). On Desktop with a mouse, the pointer reports exact pixel positions and events fire very frequently — 18dp of cumulative movement represents a large deliberate mouse drag that feels laggy.
-
-**Prevention:**
-For all Canvas-based drag interaction in v2.0 components, use the lower-level `awaitPointerEventScope` + `awaitFirstDown` + custom loop instead of `detectDragGestures`:
+`AeroSplitPane.kt` line 105 keys the divider state on `totalPx`:
 
 ```kotlin
-Modifier.pointerInput(Unit) {
-    awaitPointerEventScope {
-        while (true) {
-            val down = awaitFirstDown(requireUnconsumed = false)
-            // handle immediately on first down — no slop wait
-            var position = down.position
-            onDragStart(position)
-            while (true) {
-                val event = awaitPointerEvent()
-                val change = event.changes.firstOrNull() ?: break
-                if (change.pressed) {
-                    position = change.position
-                    change.consume()
-                    onDrag(position)
-                } else {
-                    onDragEnd()
-                    break
-                }
-            }
-        }
-    }
+var dividerPx by remember(totalPx) {
+    mutableStateOf(fractionToPx(initialSplitFraction, totalPx))
 }
 ```
 
-This bypasses `detectDragGestures` entirely and fires on every pointer event after `awaitFirstDown`.
+When the outer (left) splitter is dragged, the inner (right) `AeroSplitPane` receives a new constraint from its parent `Box(Modifier.weight(1f))`. `BoxWithConstraints` re-reads `constraints.maxWidth.toFloat()` and produces a new `totalPx`. Because `remember(totalPx)` uses `totalPx` as its key, Compose invalidates the remembered state and reinitialises `dividerPx` to `fractionToPx(initialSplitFraction, totalPx)` — the inner divider snaps back to `initialSplitFraction` on every outer drag frame.
 
-**Warning signs:** HSV square cursor position doesn't update during drag; RangeSlider thumbs don't move on mouse drag; DataTable column splitter doesn't respond to drag.
+**Why it happens:**
+The comment at line 103–104 says "Reinitialised on totalPx change (window resize) to preserve the current fraction." This is correct intent for a window resize (infrequent, large Δ) but wrong for being inside a dragged end-slot, where `totalPx` changes continuously on every drag event. The two cases were not distinguished.
 
-**Phase to address:** Every phase that implements a drag-heavy component. Must be established as a shared utility (`AeroPointerDragUtil` or inline pattern) in the first v2.0 phase that touches drag (DataTable or ColorPicker, whichever comes first).
+**How to avoid:**
+Store the divider as a fraction, not as an absolute px, and only use `totalPx` for rendering, not as a remember key:
 
----
+```kotlin
+var dividerFraction by remember { mutableStateOf(initialSplitFraction) }
+val dividerPx = dividerFraction * totalPx   // derived, not remembered
 
-### PITFALL-04: DataTable selection indices become stale after sort
+val onDrag: (Float) -> Unit = { delta ->
+    val minFirstPx = with(density) { minFirstPaneSize.toPx() }
+    val maxPx      = totalPx - with(density) { minSecondPaneSize.toPx() }
+    val rawPx      = (dividerFraction * totalPx + delta).coerceIn(minFirstPx.coerceAtMost(maxPx), maxPx.coerceAtLeast(minFirstPx))
+    dividerFraction = if (totalPx > 0f) rawPx / totalPx else dividerFraction
+    onSplitChange?.invoke(dividerFraction)
+}
+```
 
-**Components:** AeroDataTable
-**Failure mode:** Compiles and appears to work — but selected rows jump to wrong rows after the user clicks a column header to sort.
+`dividerFraction` is never re-keyed; it updates only when the user drags. `totalPx` is used at render time to derive `dividerPx` on every recomposition — correct, because the pane has genuinely resized and the divider should honour the same fraction.
 
-**What goes wrong:**
-If selection state is stored as `Set<Int>` (row indices into the displayed list), sorting the data produces a new order and old indices now point to different rows. The user selected row 3 (which contained "Saturn"), but after sorting alphabetically row 3 is now "Uranus". The highlight appears on the wrong row; nothing crashes.
+**Warning signs:**
+- Dragging the outer splitter causes the inner splitter to snap back to the centre (50%) or to `initialSplitFraction`.
+- The inner splitter cannot be held in position while the outer one moves.
 
-**Root cause:**
-Index-based selection is tempting because LazyColumn works with indices, but DataTable data is inherently sortable, so the displayed index is unstable.
+**Phase to address:** SplitPane nested freeze fix (v2.0.1, Phase 12 or first fix phase).
 
-**Prevention:**
-- Selection state MUST be `Set<RowKey>` where `RowKey` is a stable identifier from the row data itself (e.g., the row object's identity, or an explicit `id: K` parameter the caller provides via `AeroTableColumn<T, K>`).
-- The DataTable API should require callers to supply a `key: (T) -> Any` lambda (mirrors `LazyColumn`'s `items(key = ...)` parameter).
-- On sort, the displayed list reorders but `selectedKeys: Set<Any>` is unchanged — rows with matching keys simply receive the selected highlight regardless of their current position.
-- Use the same `key` in `LazyColumn`'s `items(key = key)` for correct item reuse during recomposition.
-
-**Warning signs:** If unit tests verify "select row at index 2, sort, verify row at index 2 still highlighted" — that test would pass but verify the wrong thing. Write tests that verify "select row with key X, sort, verify row with key X still highlighted".
-
-**Phase to address:** DataTable state design — must be locked in the API design discussion before any implementation.
-
----
-
-### PITFALL-05: TreeView lazy callback called on every recomposition (no debounce / key guard)
-
-**Components:** AeroTreeView
-**Failure mode:** Compiles but wrong behavior — `onExpand` fires repeatedly for already-expanded nodes, causing duplicate network/IO calls or flickering children.
-
-**What goes wrong:**
-If the `LaunchedEffect` that triggers child loading uses `expanded` (a `Boolean` in node state) as its key without also checking whether children are already loaded, every recomposition that touches the node (hover highlight, scroll into view, parent re-render) can re-fire the effect. Even if `LaunchedEffect(expanded)` is used correctly, if the node is removed from the composition (scrolled off in a LazyColumn) and then scrolled back, the effect re-fires with the same key value because the composable was disposed and recomposed from scratch.
-
-**Root cause:**
-`LazyColumn` disposes composables when they scroll out of the viewport. When the node scrolls back in, Compose recomposes it from scratch. `LaunchedEffect(expanded = true)` sees `true` and re-fires `onExpand`.
-
-**Prevention:**
-- Keep `childrenLoaded: Boolean` in the node's state alongside `expanded: Boolean`.
-- `LaunchedEffect(expanded)` body: `if (expanded && !node.childrenLoaded) { onExpand(node); node.childrenLoaded = true }`.
-- Use a single `SnapshotStateMap<NodeKey, NodeState>` at the tree level (not in each node composable) to hold expanded + childrenLoaded. This state survives LazyColumn item disposal because it lives above the LazyColumn.
-- The `onExpand` callback should be idempotent on the caller side as a defensive fallback, but the library must not rely on that.
-
-**Warning signs:** Passing a logging lambda as `onExpand` and seeing duplicate log lines for the same node after scrolling.
-
-**Phase to address:** TreeView implementation phase. State shape must be finalized before implementation begins.
+**Regression risk to v2.0 API:** None. `dividerFraction` is fully internal state; public API parameters `initialSplitFraction`, `minFirstPaneSize`, `minSecondPaneSize`, and `onSplitChange` are unchanged. Single-level use is unaffected because without a parent splitter, `totalPx` changes only on window resize (the intended trigger).
 
 ---
 
-### PITFALL-06: DateRangePicker partial state when only start date is selected
+### PITFALL-B: `coerceIn(min, max)` crash when nested pane is squeezed below `minFirst + minSecond`
 
-**Components:** AeroDateRangePicker
-**Failure mode:** Compiles but subtle UX issue that is hard to recover from once the API is published — the `onRangeSelect` callback receives a half-valid value.
+**Components:** AeroSplitPane + `SplitClamp.kt:clampDividerPx`
 
 **What goes wrong:**
-A `DateRange(start: LocalDate, end: LocalDate)` return type forces a valid range. If the library calls `onRangeSelect` with a synthesized `DateRange(start, start)` when only the start is picked, callers who check `start == end` to detect "no range" have a fragile convention. Alternatively, if the library uses `DateRange(start: LocalDate?, end: LocalDate?)` and calls the callback after each click, callers receive two calls per range selection — one with `end = null` (incomplete) and one complete.
+`SplitClamp.kt` line 22:
 
-**Root cause:**
-The interaction model for range selection is: click 1 = set start; click 2 = set end. Between clicks, the state is partial. The API must represent partial state without leaking it to callers as a completed range.
+```kotlin
+internal fun clampDividerPx(currentPx: Float, deltaPx: Float, minFirstPx: Float, maxPx: Float): Float =
+    (currentPx + deltaPx).coerceIn(minFirstPx, maxPx)
+```
 
-**Prevention:**
-- Use a sealed type for the pending state: `AeroDateRangeState = Idle | SelectingEnd(start) | Selected(start, end)`.
-- Expose it as an observable `val rangeState: AeroDateRangeState` that the host can read for rendering (show a "partial" indicator in its own UI).
-- Only call `onRangeSelect(start, end)` when both dates are committed (state transitions to `Selected`).
-- Internally, while in `SelectingEnd`, highlight the start date and show a hover preview of the potential end date on mouse-over — requires tracking `hoveredDate` as separate internal state.
+The caller (`AeroSplitPane.kt` lines 110–112) computes:
 
-**Warning signs:** If `onRangeSelect` is called with `start == end`, the caller-facing API has leaked partial state.
+```kotlin
+val minFirstPx = with(density) { minFirstPaneSize.toPx() }
+val maxPx = totalPx - with(density) { minSecondPaneSize.toPx() }
+```
 
-**Phase to address:** Date/time pickers design phase (API surface discussion). Must be settled before calendar grid implementation.
+When the nested pane's `totalPx` is squeezed below `minFirstPaneSize.toPx() + minSecondPaneSize.toPx()` (default 48.dp + 48.dp = 96.dp at 1× density), `maxPx` becomes less than `minFirstPx`. Kotlin's `Float.coerceIn(minimumValue, maximumValue)` throws `IllegalArgumentException: Cannot coerce value to an empty range: maximum X is less than minimum Y`. This is the immediate cause of the "right splitter freeze" — the exception propagates and the composable stops rendering.
+
+**Why it happens:**
+The clamp formula assumes `totalPx >= minFirstPx + minSecondPx`. This is true for a top-level SplitPane (the window cannot be smaller than 96dp without the user manually shrinking it below usable size). It is NOT guaranteed for a nested inner SplitPane whose `totalPx` is controlled by the outer SplitPane's drag — the outer splitter can freely push the inner pane below the combined minimum.
+
+**How to avoid:**
+Guard the clamp call so `min <= max` is always satisfied before calling `coerceIn`:
+
+```kotlin
+// In onDrag lambda (AeroSplitPane.kt):
+val minFirstPx = with(density) { minFirstPaneSize.toPx() }
+val minSecondPx = with(density) { minSecondPaneSize.toPx() }
+val maxPx = (totalPx - minSecondPx).coerceAtLeast(minFirstPx)
+```
+
+Using `coerceAtLeast(minFirstPx)` on `maxPx` ensures `maxPx >= minFirstPx` always. When the inner pane is too narrow to honour both minimums simultaneously, the first pane's minimum takes precedence and the second pane is silently squeezed — a graceful visual degradation rather than a crash. Alternatively, clamp `clampDividerPx` itself:
+
+```kotlin
+internal fun clampDividerPx(currentPx: Float, deltaPx: Float, minFirstPx: Float, maxPx: Float): Float {
+    val safeMax = maxPx.coerceAtLeast(minFirstPx)  // guard against inverted range
+    return (currentPx + deltaPx).coerceIn(minFirstPx, safeMax)
+}
+```
+
+Fixing in `clampDividerPx` is preferable because it is the only call site for the clamp and is already unit-tested.
+
+**Warning signs:**
+- `IllegalArgumentException: Cannot coerce value to an empty range` in the Compose error log.
+- The right (inner) splitter becomes unmoveable after the outer splitter is dragged past the point where `innerTotalPx < 96.dp`.
+- Application appears frozen because Compose swallows the exception per-frame and stops composing the affected subtree.
+
+**Phase to address:** SplitPane nested freeze fix (v2.0.1). Fix both the `coerceAtLeast` guard in `clampDividerPx` and the remember-key issue (PITFALL-A) in the same change — they are both part of the same root-cause investigation.
+
+**Regression risk to v2.0 API:** None for single-level use. For nested use, the new behaviour (inner pane gracefully squeezed) is strictly better than a crash. The `coerceAtLeast` change in `clampDividerPx` is backward-compatible because the affected code path (inverted range) previously threw.
+
+---
+
+### PITFALL-C: Float churn — sub-pixel `totalPx` jitter causes spurious `remember(totalPx)` invalidation even on window-stable layouts
+
+**Components:** AeroSplitPane (any depth), especially on HiDPI displays
+
+**What goes wrong:**
+`constraints.maxWidth.toFloat()` returns a pixel value that Compose derives from the dp constraint via the current density. On HiDPI displays (1.25×, 1.5× scale), `BoxWithConstraints` can report values like `1279.5f` or `1280.0f` for the same logical size depending on the recomposition path. If `totalPx` oscillates between two float values (e.g., `623.0f` and `623.5f`) due to layout rounding in the parent row, `remember(totalPx)` is invalidated on alternating frames even though the window has not resized.
+
+This is a secondary amplifier of PITFALL-A: even after fixing the nested-drag reset, float churn can still cause spurious resets during hover or other non-drag recompositions if `remember(totalPx)` is retained as the key.
+
+**Why it happens:**
+`Int`-based constraints (`constraints.maxWidth: Int`) are exact. `toFloat()` is lossless for integers. However, when a parent `Row` uses `Modifier.weight(1f)` for the end pane and then the inner `BoxWithConstraints` measures, the weight-based size may be a fractional dp that Compose rounds differently depending on the measurement pass. On desktop the density is not always exactly 1.0 — it follows the OS display scale.
+
+**How to avoid:**
+This pitfall is entirely eliminated by the PITFALL-A fix. Switching from `remember(totalPx)` with float key to `remember { mutableStateOf(initialSplitFraction) }` with no key removes all float-based remember invalidation. The fraction is updated intentionally in `onDrag` only.
+
+If the `remember(totalPx)` approach is retained for any reason (e.g., for a "re-anchor on resize" feature), use an integer key: `remember(constraints.maxWidth)` instead of `remember(totalPx)`. `constraints.maxWidth` is `Int` and does not suffer float jitter.
+
+**Warning signs:**
+- Divider position resets intermittently on hover over other components (no drag involved).
+- On 1.25× or 1.5× Windows display scale, the inner divider resets more frequently than on 1× displays.
+
+**Phase to address:** SplitPane nested freeze fix (v2.0.1). Addressed implicitly by the PITFALL-A fix; called out explicitly to prevent a partial fix that replaces `remember(totalPx)` with `remember(constraints.maxWidth)` but does not switch to fraction-based state.
+
+---
+
+### PITFALL-D: Single-level SplitPane regression — fraction-based fix must still re-anchor on genuine window resize
+
+**Components:** AeroSplitPane (single-level, v2.0 shipped behaviour)
+
+**What goes wrong:**
+The v2.0 comment at line 103–104 documents the intent: "Reinitialised on totalPx change (window resize) to preserve the current fraction." If the fix for PITFALL-A simply removes the `remember` key entirely, a window resize no longer re-anchors the divider to the current fraction. Instead, `dividerPx = dividerFraction * totalPx` is computed on every recomposition from the current fraction — which already achieves the desired re-anchor behaviour. However, if `dividerFraction` is `remember`ed without a key AND the component is removed from the composition and recomposed (e.g., tab switching), `dividerFraction` resets to `initialSplitFraction` because Compose disposes the remembered state on removal.
+
+The correct behaviour: fraction persists across drags; fraction is NOT reset by `totalPx` changes; fraction IS reset to `initialSplitFraction` only on component disposal and re-entry (which is correct — the caller controls `initialSplitFraction` if they want persistence across tab switches).
+
+**How to avoid:**
+Use `remember { mutableStateOf(initialSplitFraction) }` with no key. On window resize, `dividerPx = dividerFraction * totalPx` is recomputed automatically from the stored fraction — the divider moves proportionally without any state reset. This matches the documented intent without re-keying. Write a single-level visual regression test: resize the window, verify divider stays at the same visual fraction.
+
+**Warning signs:**
+- After applying the nested-freeze fix, a single-level SplitPane at 30% resets to 50% on window resize (indicates `remember` key was removed but `dividerFraction` was not used as the render basis).
+- Alternatively, a nested SplitPane continues to reset inner divider on outer drag (indicates the fraction approach was adopted but `dividerPx` is still being used as the state variable rather than derived).
+
+**Phase to address:** SplitPane nested freeze fix (v2.0.1). Verified by adding the existing single-level showcase demo to the regression checklist.
+
+---
+
+### PITFALL-E: `AeroDateTimeRangePicker` must NOT auto-close on second date click — Apply gate is mandatory
+
+**Components:** AeroDateTimeRangePicker (new)
+
+**What goes wrong:**
+`AeroDateRangePicker` (the date-only version) auto-closes on second click: `nextRangeState` returns a non-null commit and `expanded = false` is set immediately (line 200 in `AeroDateRangePicker.kt`). Copying this pattern to `AeroDateTimeRangePicker` would close the popup before the user sets start/end times, discarding the time selections entirely.
+
+The structural difference: `AeroDateRangePicker` emits `(LocalDate, LocalDate)` — times are irrelevant, so auto-close is correct UX. `AeroDateTimeRangePicker` emits `(LocalDateTime, LocalDateTime)` — the user must set two dates AND two times before committing. Only the Apply button should trigger `onRangeSelect` and `expanded = false`.
+
+**Why it happens:**
+`AeroDateTimeRangePicker` is built by analogy with `AeroDateRangePicker`. The `nextRangeState` transition function returns a non-null commit pair on the second click, which is the natural signal to close. A developer copying the range picker pattern will add `if (commit != null) { onRangeSelect(...); expanded = false }` matching the date-only picker — incorrect for the datetime variant.
+
+**How to avoid:**
+In `AeroDateTimeRangePicker`, decouple the range-completion signal from the close-and-emit action:
+
+```kotlin
+// Day click — updates pending range state only, NEVER closes, NEVER emits
+val onDayClick: (LocalDate) -> Unit = { date ->
+    val (next, _) = nextRangeState(rangeState, date)  // commit pair intentionally discarded
+    rangeState = next
+    // do NOT set expanded = false here
+    // do NOT call onRangeSelect here
+}
+
+// Apply button — SOLE emit site
+AeroButton(
+    text = "Apply",
+    enabled = rangeState is AeroDateRangeState.Selected,
+    onClick = {
+        val s = rangeState
+        if (s is AeroDateRangeState.Selected) {
+            val startDt = LocalDateTime(s.start, pendingStartTime)
+            val endDt   = LocalDateTime(s.end,   pendingEndTime)
+            // ordering guard (PITFALL-F) applied here
+            onRangeSelect(startDt, endDt)
+            expanded = false
+        }
+    },
+)
+```
+
+The Apply button is disabled until both dates are chosen (`rangeState is Selected`). Cancel sets `expanded = false` without emitting. This is the same commit-gate pattern used in `AeroDateTimePicker` (single picker) — see line 178–188 in `AeroDateTimePicker.kt`.
+
+**Warning signs:**
+- Popup closes immediately after clicking the second date without showing the time rows.
+- `onRangeSelect` fires before the user touches any time spinners.
+
+**Phase to address:** AeroDateTimeRangePicker implementation (v2.0.1). This is the first design decision — the commit-gate architecture must be locked before writing any composable code.
+
+---
+
+### PITFALL-F: Same-day range with reversed times produces chronologically inverted `LocalDateTime` pair
+
+**Components:** AeroDateTimeRangePicker (new)
+
+**What goes wrong:**
+`nextRangeState` orders the dates: `if (clicked >= current.start) current.start to clicked else clicked to current.start`. This guarantees `startDate <= endDate`. However, it does NOT guarantee `startDateTime <= endDateTime` when `startDate == endDate`. If the user selects the same date twice and sets `startTime = 14:30` and `endTime = 09:00`, the emitted pair is `(2026-06-22T14:30, 2026-06-22T09:00)` — chronologically inverted.
+
+**Why it happens:**
+The date ordering from `nextRangeState` is correct for date-only ranges. For datetime ranges, time must be included in the ordering comparison. The Apply button assembles `LocalDateTime(s.start, pendingStartTime)` and `LocalDateTime(s.end, pendingEndTime)`, but if `s.start == s.end`, the time order is whatever the user set — not validated.
+
+**How to avoid:**
+At the Apply button's onClick, after assembling both `LocalDateTime` values, swap if needed:
+
+```kotlin
+val (startDt, endDt) = if (startDtRaw <= endDtRaw) {
+    startDtRaw to endDtRaw
+} else {
+    endDtRaw to startDtRaw
+}
+onRangeSelect(startDt, endDt)
+```
+
+`LocalDateTime` implements `Comparable` in `kotlinx-datetime 0.6.2` — the `<=` operator works directly. This ensures the emitted pair is always chronologically ordered regardless of click order and time settings.
+
+Alternatively, document a stricter UX: disable the Apply button when `startDt > endDt` and show an inline warning. This is more explicit but adds visual complexity for a rare edge case. The swap approach is simpler and matches how `nextRangeState` handles reversed date clicks.
+
+**Warning signs:**
+- Unit test: select same date twice, set `startTime = 15:00` and `endTime = 08:00`, click Apply — verify emitted `(start, end)` has `start < end`.
+- Production sign: callers receiving inverted ranges and calculating negative duration.
+
+**Phase to address:** AeroDateTimeRangePicker implementation (v2.0.1). Add the ordering guard to `combineRangeDateTime` (a pure internal function, unit-testable — analogous to `combineDateTime` in `AeroDateTimePicker.kt`).
+
+---
+
+### PITFALL-G: Pending start/end time state leaking across popup opens
+
+**Components:** AeroDateTimeRangePicker (new)
+
+**What goes wrong:**
+If `pendingStartTime` and `pendingEndTime` are `remember`ed without a key, they survive across popup open/close cycles. The user: (1) opens the popup, adjusts start time to 10:00, clicks Cancel; (2) opens the popup again — the time row shows 10:00 instead of the committed value (or midnight if no range was committed). The leaked pending state makes the picker appear to have pre-selected times the user did not confirm.
+
+`AeroDateTimePicker.kt` already solves this correctly at line 132–133:
+
+```kotlin
+var pendingDate by remember(expanded) { mutableStateOf(value?.date) }
+var pendingTime by remember(expanded) { mutableStateOf(value?.time ?: LocalTime(0, 0, 0)) }
+```
+
+The `remember(expanded)` key ensures that when `expanded` flips from `false` to `true` (popup opens), the pending state is reinitialised from the committed value.
+
+**How to avoid:**
+Apply the same `remember(expanded)` pattern to both time fields in `AeroDateTimeRangePicker`:
+
+```kotlin
+var pendingStartTime by remember(expanded) {
+    mutableStateOf(startValue?.time ?: LocalTime(0, 0, 0))
+}
+var pendingEndTime by remember(expanded) {
+    mutableStateOf(endValue?.time ?: LocalTime(0, 0, 0))
+}
+```
+
+And analogously for the range state and `leftMonth` (already done in `AeroDateRangePicker.kt` line 174 and 183 — carry the same keys forward).
+
+**Warning signs:**
+- Click Apply with `startTime=10:00`, then open the picker again with Cancel — the time row should show the last committed time (or 00:00 if no prior commit), not the cancelled edit.
+- Time spinners show stale values from a previous partial session.
+
+**Phase to address:** AeroDateTimeRangePicker implementation (v2.0.1). The `remember(expanded)` keying pattern is already established in the codebase — do not deviate from it.
+
+---
+
+### PITFALL-H: `showSeconds` not flowing to the trigger formatter — the root cause of the v2.0.1 seconds bug, and must not be replicated in the range picker
+
+**Components:** AeroDateTimePicker (fix), AeroDateTimeRangePicker (new — must not repeat the bug)
+
+**What goes wrong (AeroDateTimePicker bug):**
+`AeroDateTimePicker.kt` line 76:
+
+```kotlin
+formatter: (LocalDateTime) -> String = { ldt ->
+    "${formatAeroDate(ldt.date)} ${"%02d:%02d".format(ldt.hour, ldt.minute)}"
+},
+```
+
+The default formatter hardcodes `HH:MM`. Even when `showSeconds = true`, the trigger displays `"22.06.2026 14:30"` rather than `"22.06.2026 14:30:45"`. The seconds are correctly committed (they flow through `TimeFields` → `combineDateTime` → `onValueChange`) but are never rendered.
+
+**Root cause:** The formatter lambda is a parameter default that is evaluated at the call site — it captures nothing. The `showSeconds` parameter is in scope in the composable body but is not accessible inside a default parameter expression. The fix must either: (a) compute `displayText` inside the composable body using `showSeconds`, not via a default formatter lambda; or (b) always include seconds in the formatter and let callers who want HH:MM override it.
+
+**Correct fix (option a — minimal surface change):**
+
+```kotlin
+val displayText = value?.let { ldt ->
+    val base = "${formatAeroDate(ldt.date)} ${"%02d:%02d".format(ldt.hour, ldt.minute)}"
+    if (showSeconds) "$base:${"%02d".format(ldt.second)}" else base
+} ?: ""
+```
+
+This replaces the `value?.let(formatter)` call with a conditional that respects `showSeconds`, while still applying a custom `formatter` if one was supplied. The public API (`formatter` parameter) is preserved; the default behaviour is corrected.
+
+**Same bug must not be replicated in AeroDateTimeRangePicker:**
+`AeroDateTimeRangePicker` will have a `formatter: (LocalDateTime) -> String` parameter (or a `startFormatter`/`endFormatter` pair). Its default must also respect `showSeconds`. Apply the same fix pattern: compute `displayText` conditionally inside the composable body rather than relying on a default formatter lambda.
+
+**Warning signs:**
+- `AeroDateTimePicker(showSeconds = true)` — enter 14:30:45, click Apply, trigger shows "14:30" (missing seconds).
+- Unit test: `combineDateTime` returns a `LocalDateTime` with `second = 45`; `formatter(ldt)` returns a string not containing "45".
+
+**Phase to address:** AeroDateTimePicker fix (v2.0.1, Phase 12 or first fix phase). AeroDateTimeRangePicker implementation (v2.0.1) — incorporate the correct pattern from the outset.
 
 ---
 
 ## Moderate Pitfalls
 
-### PITFALL-07: AeroRangeSlider dual thumb overlap — smaller thumb permanently trapped
+### PITFALL-I: Popup height insufficient for two time rows under two calendars
 
-**Components:** AeroRangeSlider
-**Failure mode:** Compiles and mostly works — but when the two thumbs overlap, dragging either one can "pass through" the other, making it impossible to separate them.
+**Components:** AeroDateTimeRangePicker (new)
 
 **What goes wrong:**
-If both thumbs share a single `pointerInput` zone computed from the track, the first thumb's hit area overlaps the second when they converge. Whichever thumb's composable is drawn on top captures all pointer events. The lower thumb becomes unreachable by mouse.
+`AeroDateRangePicker` uses `BoxWithConstraints` inside `PickerPopupContainer` and switches from Row (≥560dp) to Column (<560dp) layout for the two calendars. Adding two `TimeFields` rows below the calendars increases popup height by approximately 48–56dp per time row (one `AeroNumberSpinner` row plus spacing). On a 1080p display, the extra ~100dp is fine. On a 768p display, the popup may extend below the screen edge.
 
-**Root cause:** No minimum separation constraint, no Z-order strategy for overlapping thumbs.
+`AeroCalendarPositionProvider` positions below the trigger by default and flips above if height overflows. The flip logic handles this correctly — but only if `popupContentSize` is fully measured. If the two `TimeFields` rows are conditionally rendered (e.g., only after dates are picked), the popup size changes between the first measurement and the settled size, causing a layout jump (related to PITFALL-08 from v2.0).
 
-**Prevention:**
-- Enforce a minimum separation: `endValue = max(endValue, startValue + minStepGap)` on every drag update, where `minStepGap` is at least one step value (or a fixed dp-converted fraction if continuous).
-- When thumbs are within 4dp of each other, give the thumb that was most recently moved a higher Z-order (drawn last, so its hit area wins pointer events). Track `lastMovedThumb: Thumb` in state.
-- Use `AeroSlider`'s visual as a reference but do NOT try to compose two `AeroSlider` instances — they each own a full Material3 `Slider` which has its own interaction state and will not coordinate.
+**How to avoid:**
+Always render both `TimeFields` rows unconditionally regardless of whether dates have been picked yet. The time spinners can be visually disabled (`enabled = false`) until both dates are selected, but they must be present in the layout from the first composition so popup height is stable on frame 1. Do not conditionally include or exclude the time rows based on `rangeState`.
 
-**Warning signs:** End value equals start value and dragging either thumb immediately snaps it back; no visual indication which thumb is on top.
+**Warning signs:**
+- Popup jumps vertically between frame 1 and frame 2 when the time rows appear after date selection.
+- On 768p displays, popup bottom clips off-screen even though `AeroCalendarPositionProvider` should have flipped above.
 
-**Phase to address:** AeroRangeSlider implementation phase.
+**Phase to address:** AeroDateTimeRangePicker implementation (v2.0.1). Layout decision: render time rows unconditionally, disable spinners until dates are selected.
 
 ---
 
-### PITFALL-08: AeroPopupPositionProvider `unmeasured` sentinel fires on first frame of calendar popup
+### PITFALL-J: `kotlinx-datetime` declared `implementation`, not `api` — affects `(LocalDateTime, LocalDateTime)` in AeroDateTimeRangePicker's public signature
 
-**Components:** AeroDatePicker, AeroDateRangePicker, AeroColorPicker
-**Failure mode:** Compiles, no crash — but the popup appears at the window corner for one frame before snapping to the correct position, causing a visible flash.
-
-**What goes wrong:**
-`AeroPopupPositionProvider.calculatePosition()` returns `IntOffset(windowSize.width + popupContentSize.width, windowSize.height + popupContentSize.height)` when `popupContentSize >= windowSize` (the `unmeasured` guard). On the very first frame after `expanded = true`, Compose has not yet measured the popup — `popupContentSize` is `(0, 0)`. Neither condition `>= windowSize` is true, so the sentinel does NOT fire. Instead, `primaryFor()` runs with `popup = (0, 0)` and returns `IntOffset(anchor.left, anchor.bottom + gap)` — which happens to be correct. **However**, if the calendar content is loaded asynchronously or has a complex layout, the first measurement may return a size smaller than the final size, causing a layout jump on frame 2.
-
-For `AeroDateRangePicker` specifically: the popup is wide (~560dp). On a typical 1280dp window, `popupContentSize.width (560) < windowSize.width (1280)`, so the sentinel never fires even when the popup hasn't measured yet. The guard condition `>= windowSize` was designed for dropdowns (max 320dp) and is too conservative for wide calendars.
-
-**Prevention:**
-- In the calendar position provider, treat `popupContentSize == IntSize.Zero` as unmeasured (not `>= windowSize`).
-- Add `if (popupContentSize == IntSize.Zero) return IntOffset.Zero` as the unmeasured guard (places popup off-screen at top-left, invisible on first frame).
-- Keep the calendar popup's layout structure non-lazy (all cells rendered eagerly) so measurement is stable on frame 1. For `AeroDateRangePicker`, two fixed-size month grids will always measure to the same size — no async concern.
-
-**Warning signs:** Calendar popup jumps position between frame 1 and frame 2 during visual checkpoint.
-
-**Phase to address:** Date/time pickers implementation phase, during the position provider work (PITFALL-02 mitigation).
-
----
-
-### PITFALL-09: AeroDark contrast failure on disabled date cells
-
-**Components:** AeroDatePicker, AeroDateRangePicker
-**Failure mode:** Subtle UX issue — disabled dates (past dates, or dates outside the selectable range) are invisible in AeroDark.
+**Components:** AeroDateTimeRangePicker (new) — publication concern
 
 **What goes wrong:**
-AeroDark's `onSurface` is `Color(0xFFCCCCCC)` and `background` is `Color(0xFF0A0A1A)`. Disabled cells at `0.4f` alpha render as `Color(0xFFCCCCCC).copy(alpha = 0.4f)` on the dark background — WCAG contrast ratio is approximately 1.6:1, which is below readable. The cell exists but appears as near-invisible grey on dark.
+`.planning/PROJECT.md` Key Decisions table flags: "`kotlinx-datetime` declared `implementation`, not `api` — ⚠️ Revisit on publish — picker signatures expose `kotlinx.datetime.*`; for PUBLISHED library transitive type will leak (address at POM step)."
 
-**Root cause:** All v1.0 components use the `0.4f` alpha convention for disabled state (see `AeroSlider`, `AeroListItem`). This works in AeroBlue (lighter backgrounds) but fails in AeroDark at cell scale (calendar cells are ~32×32dp, smaller than list items).
+`AeroDateTimeRangePicker` will add one more public API parameter typed `(LocalDateTime, LocalDateTime)`. This is the same concern as `AeroDateTimePicker`, `AeroDatePicker`, and `AeroDateRangePicker` — but one more surface. The issue is not a compilation failure during library development; it is a Gradle dependency resolution failure for consumers who do not explicitly add `kotlinx-datetime` to their own build.
 
-**Prevention:**
-- Date cells in AeroDark should use `labelText` (`Color(0xFFAAAAAA)`) for disabled text instead of `onSurface.copy(alpha = 0.4f)`. This gives approximately 3:1 contrast on the `0x0A0A1A` background.
-- In Classic, `labelText = Color.LightGray` at 0.4f alpha → `Color(0xFFD3D3D3).copy(alpha = 0.4f)` on `Color(0xFF1E1E1E)` background — also borderline. Use `borderDefault` (`Color(0xFF555555)`) as disabled cell text color in Classic.
-- The three-theme visual checkpoint for date pickers must explicitly include a "disabled cells are visible in all three themes" verification item.
+**How to avoid:**
+This is a pre-existing flagged issue, not newly introduced by the range picker. The range picker does not change the remediation: the POM step (when publishing) must either change the Gradle declaration to `api(libs.kotlinx.datetime)` or document that consumers must add `kotlinx-datetime` as a direct dependency. Address at the same time as the existing pickers, not specially for the range picker. Do not block the v2.0.1 implementation on this — flag in the implementation phase KDoc and REQUIREMENTS.
 
-**Warning signs:** Visual checkpoint: disabled dates blend into background in AeroDark or Classic.
-
-**Phase to address:** Date/time pickers visual checkpoint plan. Flag during design phase, verify during visual sign-off.
-
----
-
-### PITFALL-10: AeroDataTable selection highlight conflicts with buttonHover token
-
-**Components:** AeroDataTable
-**Failure mode:** Subtle UX issue — selected rows and hovered-but-unselected rows look identical in AeroBlue.
-
-**What goes wrong:**
-`AeroListItem` uses `colors.primary.copy(alpha = 0.2f)` for selected and `colors.buttonHover` for hover. In AeroBlue: `primary = Color(0xFF4FC3F7)` at 0.2f alpha = `Color(0x334FC3F7)`. `buttonHover = Color(0x40FFFFFF)`. These render as similar light-blue/white overlays on the dark `0xCC1A3A5C` surface. A selected-and-hovered row must not merge the two states visually into an ambiguous color.
-
-**Root cause:** `buttonHover = Color(0x40FFFFFF)` is a neutral white overlay; `primary.copy(0.2f)` is a blue tint. They are close enough in luminance that when overlaid (selected + hovered), the visual distinction is subtle.
-
-**Prevention:**
-- For DataTable rows, selected state should use `colors.borderSelected.copy(alpha = 0.15f)` as background (a more saturated color token already designated for selection, distinct from `buttonHover`).
-- Hover-on-selected row: add `colors.buttonHover` on top of the selected background (stacked alpha, not replacing). This produces a visually distinct "selected + hovered" vs "selected" vs "hovered" vs "normal" — four readable states.
-- Validate all four states in the three-theme visual checkpoint. AeroDark is the most likely to collapse states (all tokens have very low alpha).
-
-**Warning signs:** In the showcase DataTable demo, clicking a row and then hovering another looks the same as having two selected rows.
-
-**Phase to address:** DataTable implementation phase. Establish the four-state color scheme in the design discussion before writing row composable code.
-
----
-
-### PITFALL-11: AeroSidebar width animation conflict with AeroSplitPane left pane
-
-**Components:** AeroSidebar + AeroSplitPane (when composed together by caller)
-**Failure mode:** Compiles but layout thrashes — SplitPane divider position jumps when sidebar collapses.
-
-**What goes wrong:**
-`AeroSidebar` in `expanded → collapsed` transition changes its `width` from (e.g.) 220dp to 56dp. If the caller places `AeroSidebar` inside the left pane of `AeroSplitPane`, the SplitPane measures the left pane's desired width, caches the divider offset in `dp`, and does not participate in the sidebar's animation. The sidebar animates its content width but the `SplitPane` divider stays fixed, causing the sidebar content to clip, or the SplitPane to fight the sidebar's `animateFloatAsState` with its own static constraints.
-
-**Root cause:** `AeroSplitPane` will hold divider position in its own state (a `Dp` offset from the leading edge). If the sidebar inside the pane animates its own width independently, the two width signals are not coordinated.
-
-**Prevention:**
-- Document clearly in `AeroSidebar` KDoc: do NOT place inside a SplitPane left pane. Sidebar is a top-level layout sibling, not a nested child.
-- `AeroSidebar`'s three modes (expanded/collapsed/hidden) produce fixed target widths — the caller should use `AeroSidebar`'s `currentWidth` observable (a state that animates) to drive any adjacent layout. Expose `val currentWidthDp: State<Dp>` from `AeroSidebar`'s state object.
-- Provide a usage example in KDoc showing `Row { AeroSidebar(...); SplitPane(...) }` with `sidebarState.currentWidthDp` wired to `AeroSplitPane`'s initial divider position.
-
-**Warning signs:** Demo in showcase places sidebar inside a SplitPane pane → visible clip during collapse animation.
-
-**Phase to address:** AeroSidebar + AeroSplitPane implementation phases. The `currentWidthDp` API contract must be established in `AeroSidebar` first.
-
----
-
-### PITFALL-12: AeroStepperWizard onValidate called during recomposition
-
-**Components:** AeroStepperWizard
-**Failure mode:** Compiles but wrong behavior — form validation runs on every recomposition, not only on "Next" button press, causing stuttering or unexpected state side-effects.
-
-**What goes wrong:**
-If `onValidate: () -> Boolean` is called inside the composable body (e.g., `val isValid = onValidate()`) to derive whether the "Next" button is enabled, it is called on every recomposition — including hover events, scroll events, or sibling state changes. If `onValidate` reads ViewModel state, this triggers ViewModel reads on every frame, potentially causing infinite recomposition loops if the validation itself writes back to state.
-
-**Root cause:** Calling side-effectful or expensive functions in composable body.
-
-**Prevention:**
-- `onValidate` must only be invoked in response to a user action (Next button click). The button is always rendered; on click, `val valid = onValidate(); if (valid) advanceStep()`.
-- "Next" button disabled state should be derived from a `canProceed: Boolean` parameter that the **caller** provides based on their own state — not from calling `onValidate` in the composable body. `onValidate` is a gate, not a live signal.
-- Alternatively, expose `onValidate` as a coroutine suspend function to allow async validation (show a loading state while `onValidate` runs).
-
-**Warning signs:** If visual validation feedback (error borders on fields) flickers during hover, `onValidate` is being called outside of user actions.
-
-**Phase to address:** AeroStepperWizard implementation phase.
-
----
-
-### PITFALL-13: AeroAccordion single-mode state stored in child composable (not lifted)
-
-**Components:** AeroAccordion
-**Failure mode:** Compiles but wrong behavior — in `mode = single`, opening section B does not close section A.
-
-**What goes wrong:**
-If each accordion section manages its own `expanded: Boolean` internal state (`var expanded by remember { mutableStateOf(false) }`), sections cannot coordinate. Single-mode requires that opening any section closes all others — this is only possible if expansion state is held at the parent (accordion) level, not in individual section composables.
-
-**Root cause:** Per-section internal state is the natural first instinct ("just like AeroDrawer is self-contained") but accordion sections are not independent.
-
-**Prevention:**
-- `AeroAccordion` holds `expandedIndex: Int?` (single mode) or `expandedIndices: Set<Int>` (multi mode) in its own state.
-- Each section composable receives `expanded: Boolean` and `onToggle: () -> Unit` as parameters.
-- The toggle logic lives in `AeroAccordion`: `onToggle = { if (mode == Single) expandedIndex = if (expandedIndex == i) null else i }`.
-- The section content slot is a `@Composable () -> Unit` lambda, not an `AeroAccordionSection` class — avoids DSL overhead.
-
-**Warning signs:** In the showcase demo, clicking two section headers in quick succession leaves both open in single mode.
-
-**Phase to address:** AeroAccordion implementation phase. State architecture must be decided before writing any section composable.
-
----
-
-### PITFALL-14: AeroSplitPane divider drag escaping pane bounds (no clamp)
-
-**Components:** AeroSplitPane
-**Failure mode:** Compiles but wrong behavior — divider can be dragged beyond the edges, collapsing one pane to zero or negative width/height.
-
-**What goes wrong:**
-Divider position is stored as a pixel offset. If no minimum pane size is enforced, the divider can be dragged to position 0 or to `totalSize`, making one pane invisible. The opposite pane then fills all space. This is visually broken and may trigger `0dp` layout issues in the content composable inside the collapsed pane.
-
-**Root cause:** `pointerInput` drag delta accumulation without clamping.
-
-**Prevention:**
-- Clamp divider position: `dividerPx = (dividerPx + delta).coerceIn(minPaneSize.toPx(), totalSize - minPaneSize.toPx())`.
-- Expose `minFirstPaneSize: Dp = 48.dp` and `minSecondPaneSize: Dp = 48.dp` as parameters.
-- Use `onPreviewKeyEvent` on the divider to support arrow key nudging (4dp per keypress) — desktop users expect keyboard-accessible resize.
-
-**Warning signs:** During showcase testing, dragging divider all the way to one edge and then the content composable inside the zero-width pane throws a layout exception.
-
-**Phase to address:** AeroSplitPane implementation phase.
-
----
-
-### PITFALL-15: ColorPicker HSV ↔ RGB round-trip drift
-
-**Components:** AeroColorPicker
-**Failure mode:** Compiles and appears correct — but after moving HSV sliders and reading back RGB, the HEX value drifts by 1–2 units per round-trip.
-
-**What goes wrong:**
-HSV → RGB conversion uses floating point; `(hue * 255 / 360).roundToInt()` introduces rounding error. If the HEX input then feeds back RGB → HSV, the hue drifts. After several round-trips (drag HSV → read HEX → parse HEX → set RGB → convert to HSV), the internal state drifts from the user's intended value.
-
-**Root cause:** Multiple lossless floating-point conversions with integer clamping at each step.
-
-**Prevention:**
-- Maintain a **single source of truth**: internal state is always `(hue: Float, saturation: Float, value: Float, alpha: Float)` in the `[0f, 1f]` range.
-- RGB sliders and HEX input are derived views: when RGB slider moves, convert RGB → HSV immediately and store the HSV result. Never store both HSV and RGB simultaneously.
-- HEX input: on commit (Enter / focus lost), parse HEX to RGB, convert RGB → HSV, store. On display, derive HEX from current HSV. Do NOT keep HEX as a separate state field — it drifts.
-- Use `kotlin.math` functions (`floor`, not `round`) for HSV sector computation to match standard HSV formulas.
-
-**Warning signs:** Start at `#FF0000` (red), drag the saturation slider slightly, then type `#FF0000` back in — if HSV values read differently than the initial state, drift is present.
-
-**Phase to address:** AeroColorPicker implementation phase. HSV ↔ RGB math should be written as a pure-function utility with unit tests before the UI is built.
+**Phase to address:** Publication / POM step (already flagged in PROJECT.md, not v2.0.1 scope). Mentioned here to prevent "this is new with the range picker" misattribution.
 
 ---
 
@@ -370,31 +361,12 @@ HSV → RGB conversion uses floating point; `(hue * 255 / 360).roundToInt()` int
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Use `AeroScrollArea` for DataTable | Instant scrollbar styling | All rows rendered, virtualization gone, crashes on infinite constraints | Never |
-| Store selection as `Set<Int>` for DataTable | Simple index math | Indices become stale after sort; wrong rows highlighted | Never |
-| Reuse `AeroDropdownPopup` for calendar popups | Zero new infrastructure | Calendar clipped / mispositioning on wide pickers; width-lock bug | Never |
-| Call `onValidate()` in composable body for StepperWizard | Easy to derive button enabled state | Validation fires on every recomposition; potential infinite loop | Never |
-| Keep per-section expanded state in AeroAccordion child | Self-contained section composable | Single-mode coordination impossible without prop-drilling or callbacks | Never |
-| `detectDragGestures` for HSV/RangeSlider Canvas drag | Standard API | Silent drag failure on Desktop due to touchSlop=18dp | Never for Canvas drag on Desktop |
-| HSV + RGB as dual state in ColorPicker | Easier slider binding | Round-trip drift, state divergence after HEX input | Never |
-| Divider offset in SplitPane without clamp | Simple delta accumulation | Pane collapses to zero, layout exception from zero-width content | Never |
-
----
-
-## Integration Gotchas
-
-Integration pitfalls specific to adding v2.0 components to the existing aero-compose-ui codebase.
-
-| Integration Point | Common Mistake | Correct Approach |
-|-------------------|----------------|------------------|
-| `AeroScrollArea` + lazy lists | Nest `LazyColumn` inside `AeroScrollArea` (v1.0 pattern) | `LazyColumn` with standalone `AeroScrollBar(lazyListState)` via `rememberScrollbarAdapter(LazyListState)` |
-| `AeroDropdownPopup` for date pickers | Reuse existing popup infrastructure (same `heightIn(max=320.dp)` cap) | New `Popup(popupPositionProvider = AeroCalendarPositionProvider(...))` with no height cap |
-| `AeroSlider` as base for `AeroRangeSlider` | Compose two `AeroSlider` instances on the same track | Custom Canvas track + two independent thumb hitboxes; `AeroSlider` internal state would conflict |
-| `AeroDrawer` pattern for `AeroSidebar` | Copy AeroDrawer's `FullWindowPositionProvider` popup approach | `AeroSidebar` is not a modal overlay — it is an in-layout `Box` with animated width, no `Popup` |
-| `buttonHover` token for DataTable row selection | Use same `colors.primary.copy(alpha = 0.2f)` as `AeroListItem` | Use `colors.borderSelected.copy(alpha = 0.15f)` for selection to distinguish from `buttonHover` |
-| Glass modifiers on popup calendar content | Apply `glassEffect`/`glassSurface` directly to calendar grid cells | Apply glass surface to the calendar popup container; cells use `cardBackground` for individual day cells |
-| `AeroIcons.*` for DataTable sort indicator | Use text `▲`/`▼` glyphs (old v1.0 pattern) | `Icon(AeroIcons.CaretUp, tint = ...)` / `Icon(AeroIcons.CaretDown, tint = ...)` — v1.1 rule |
-| `AeroIcons.*` for TreeView expand/collapse | Use text `+`/`-` | `Icon(AeroIcons.CaretRight, tint = ...)` rotated 90° when expanded via `graphicsLayer { rotationZ = angle }` |
+| Keep `remember(totalPx)` float key in SplitPane | Simple "reset on resize" | Re-keys on every outer drag frame in nested use; divider snaps to initial fraction continuously | Never for nested use; fix by switching to fraction state |
+| Skip `coerceAtLeast` guard in `clampDividerPx` | Shorter code | `IllegalArgumentException` crash when nested pane squeezed below combined minimum | Never |
+| Auto-close AeroDateTimeRangePicker on second date click (copy DateRangePicker pattern) | Zero new button infrastructure | Popup closes before user can set times; time selection silently lost | Never |
+| Default formatter for AeroDateTimeRangePicker ignores `showSeconds` | Simple lambda default | Seconds never appear in trigger even when `showSeconds = true`; replicates the existing AeroDateTimePicker bug | Never |
+| `pendingStartTime`/`pendingEndTime` without `remember(expanded)` key | Slightly less code | Cancelled time edits leak into next open session; confusing UX | Never |
+| Conditionally rendering time rows based on date selection state | Visually cleaner "before dates" state | Popup size changes after dates picked, causing position jump | Never |
 
 ---
 
@@ -402,72 +374,30 @@ Integration pitfalls specific to adding v2.0 components to the existing aero-com
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| DataTable: no `key` in `LazyColumn items()` | Every sort recomposes all visible rows; jank on 200+ rows | `items(items = sortedRows, key = { keyFn(it) })` | Visible at 100+ rows |
-| ColorPicker: recompose entire picker on every drag event | Frame drops during HSV drag; CPU spike visible in profiler | Isolate HSV state in `derivedStateOf`; canvas redraws only when HSV changes | Immediate on drag |
-| TreeView: non-lazy child rendering | All children of expanded nodes rendered at once even if offscreen | Wrap entire tree in `LazyColumn`; each node is a `LazyColumn` item | Visible at 50+ nodes |
-| DataTable: measuring all column widths on every recomposition | Jank on column count > 8 | Compute column widths in `remember(columns, data) {}` block; skip on row recomposition | 8+ columns with variable data |
-| SplitPane: `SubcomposeLayout` for dynamic pane measurement | Sub-compose overhead on every drag event | Use `BoxWithConstraints` for initial measurement; store divider in `Dp` state; recalculate only on divider drag | Constant on every drag if SubcomposeLayout used naively |
-| AeroAccordion: animating max-height for expand/collapse | `animateIntAsState(maxHeight)` requires measuring actual content height, causing multiple layout passes | Use `animateFloatAsState` on `scaleY` + `clip(RectangleShape)` or `animateContentSize()` from Foundation | Visible as layout jank on slow expand |
-
----
-
-## Win11 / Undecorated Window Pitfalls
-
-### W11-01: No `transparent=true` — the locked rule applies to Dialogs and child Windows too
-
-**Components:** AeroDatePicker, AeroColorPicker (if implemented as Dialog instead of Popup)
-**Failure mode:** Won't run — `EXCEPTION_ACCESS_VIOLATION` crash on Window creation.
-
-**What goes wrong:**
-The rule `undecorated=true` BEZ `transparent=true` is locked for the main window (Win11 issue #3757). However, if any v2.0 component is naively implemented as a `Dialog(undecorated=true, transparent=true)` (seeking a non-standard transparent container), the same crash occurs.
-
-**Prevention:**
-- All popup calendar, color picker, and time picker overlays use `Popup(...)`, NOT `Dialog(...)` or a new `Window(...)`.
-- The `AeroDrawer` pattern (full-window `Popup` with `FullWindowPositionProvider`) is the approved approach for modal overlays — use the same `Popup` + scrim pattern if modal behavior is needed.
-- No v2.0 component creates a new `Window` or a `Dialog` with `undecorated=true` or `transparent=true`.
-- This rule must appear in the KDoc of every overlay composable: `// Do not use Dialog(transparent=true) — Win11 EXCEPTION_ACCESS_VIOLATION (CMP issue #3757)`.
-
-**Phase to address:** Every phase that implements a popup-bearing component. Pre-flight checklist item for each phase.
-
----
-
-### W11-02: Popup shadow rendering on undecorated window
-
-**Components:** AeroDatePicker, AeroColorPicker, any calendar popup
-**Failure mode:** Subtle UX issue — `Modifier.shadow(elevation = 8.dp)` on a `Popup` content box renders with a hard edge or no shadow on Win11 when the main window is `undecorated=true` without `transparent=true`.
-
-**What goes wrong:**
-On Win11, `Popup` composables render in their own skiko layer. Without `transparent=true` on the host window, the shadow drawn by `Modifier.shadow` clips at the popup's bounding box — the shadow has no surface to render on outside the box. The result is a sharp edge with no visual depth despite the `elevation` setting.
-
-**Root cause:** Compose Desktop `Popup` creates a child AWT window for the popup content. Without the host being transparent, the shadow alpha blend has no compositing target outside the popup window bounds.
-
-**Prevention:**
-- Use the existing `AeroDropdownPopup` technique: simulate shadow via `border + glassBorder` + a slightly darker background, rather than `Modifier.shadow`. This is already the pattern in `AeroDropdownPopup` (which uses `.shadow(elevation = 8.dp, shape = shape)` before `.background`). Verify this renders acceptably during visual checkpoint.
-- For wider calendar popups, add an explicit `panelBackground` fill layer (two `background` calls: `colors.background` fully opaque first, then `colors.panelBackground` on top) so the popup has an opaque backdrop that won't show through. This is already the established two-layer technique from `AeroDropdownPopup` and `AeroComboBox`.
-- If shadow is truly required, use a custom `drawBehind` shadow simulation (draw blurred rect manually) rather than `Modifier.shadow`.
-
-**Phase to address:** Date/time pickers visual checkpoint plan.
+| `remember(totalPx: Float)` invalidating on HiDPI sub-pixel jitter | Inner divider resets during hover events with no drag (0 user interaction) | Switch to fraction-based state with no remember key (PITFALL-A fix) | On any HiDPI display (1.25×, 1.5× scale); constant |
+| Two `AeroCalendarGrid` composables + two `TimeFields` rows in one `Popup` | Popup composing ~400+ day-cells + 6 spinners per recomposition | All calendar grid cells are non-lazy and stateless — no issue. `TimeFields` is a Row of 2–3 spinners — negligible | No threshold issue; composition is fast. Main concern is popup HEIGHT (PITFALL-I), not CPU |
 
 ---
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **AeroDataTable virtualization:** Verify row count above the fold does NOT equal total row count when data > 50 rows. If all rows are mounted, `LazyColumn` is not actually lazy.
-- [ ] **AeroDataTable selection after sort:** Select row with key X, sort descending, verify row with key X is still highlighted at its new position.
-- [ ] **AeroDataTable column resize:** Drag a column splitter past the available width — verify other columns reflow and no column goes to zero width.
-- [ ] **AeroTreeView lazy callback:** Open a node, scroll it off screen, scroll back — verify `onExpand` is NOT called again.
-- [ ] **AeroDatePicker popup position:** Place the trigger field at the right edge of a 1024dp window — verify calendar does not clip.
-- [ ] **AeroDateRangePicker partial state:** Click only start date, close without selecting end — verify `onRangeSelect` was NOT called.
-- [ ] **AeroColorPicker round-trip:** Set to `#FF0000`, drag saturation to 50%, drag back to 100% — verify HEX still reads `#FF0000` (no drift).
-- [ ] **AeroRangeSlider thumb overlap:** Drag start thumb to equal end thumb — verify thumbs do not permanently merge (one becomes unreachable).
-- [ ] **AeroAccordion single mode:** Open section B while section A is open — verify A closes.
-- [ ] **AeroSplitPane clamp:** Drag divider to far edge — verify pane does not collapse to zero.
-- [ ] **AeroSidebar + adjacent layout:** Collapse sidebar — verify adjacent content reflows to use reclaimed space.
-- [ ] **AeroStepperWizard validation:** Tab through fields without clicking Next — verify `onValidate` is NOT called during focus movement.
-- [ ] **All pickers: AeroDark disabled cells:** Verify disabled date cells are readable (not invisible) in AeroDark theme.
-- [ ] **All drag components: Desktop drag response:** Verify HSV square, RangeSlider thumbs, and DataTable column splitters all respond on first mouse movement (no slop delay). If drag requires a ~18px movement before activating, `detectDragGestures` touchSlop pitfall is present.
-- [ ] **No `transparent=true`:** Grep `transparent = true` in all new v2.0 files — must be zero results.
-- [ ] **No `AeroScrollArea` wrapping LazyColumn:** Grep for `AeroScrollArea` inside any DataTable or TreeView file — must be zero results.
+These items are the v2.0.1-specific verification checks. They extend the v2.0 checklist in the previous PITFALLS.md (those checks remain valid for regression purposes).
+
+- [ ] **AeroDateTimePicker seconds in trigger:** Set `showSeconds = true`, pick a time with non-zero seconds, click Apply — trigger field must show `HH:MM:SS`, not `HH:MM`.
+- [ ] **AeroDateTimePicker single-level regression:** Without `showSeconds`, trigger still shows `HH:MM` (fix must not break the default case).
+- [ ] **SplitPane nested — inner divider stability:** 3-pane layout (outer + inner). Drag outer splitter left/right — inner divider MUST remain at its last user-set position.
+- [ ] **SplitPane nested — coerceIn crash:** Squeeze inner pane below 96dp by dragging outer splitter far right — no `IllegalArgumentException` in log; inner splitter gracefully stops.
+- [ ] **SplitPane nested — release and re-drag:** After outer drag, inner divider must still be draggable to a new position (not frozen).
+- [ ] **SplitPane single-level regression:** Window resize — divider must stay at same visual fraction (not reset to `initialSplitFraction`).
+- [ ] **AeroDateTimeRangePicker — no auto-close on second date click:** Click first date, click second date — popup must remain open, time rows visible.
+- [ ] **AeroDateTimeRangePicker — Apply gate:** Apply button must be disabled until both dates are selected. Enabled after second date click.
+- [ ] **AeroDateTimeRangePicker — Cancel does not emit:** Click dates, set times, Cancel — `onRangeSelect` must not have been called.
+- [ ] **AeroDateTimeRangePicker — same-day reversed times:** Select same date twice, set `startTime = 15:00`, `endTime = 08:00`, Apply — emitted `(start, end)` has `start.time < end.time`.
+- [ ] **AeroDateTimeRangePicker — pending state leak:** Open picker, adjust start time spinner, Cancel. Open again — start time row must show committed value (or 00:00:00), not the cancelled edit.
+- [ ] **AeroDateTimeRangePicker — showSeconds in trigger:** `showSeconds = true`, pick range with non-zero seconds, Apply — trigger shows `DD.MM.YYYY HH:MM:SS → DD.MM.YYYY HH:MM:SS`.
+- [ ] **AeroDateTimeRangePicker — showSeconds default false:** `showSeconds = false` (default) — trigger shows `HH:MM`, Apply emits `LocalDateTime` with `second == 0`.
+- [ ] **AeroDateTimeRangePicker — three-theme visual:** Verify popup renders correctly in AeroBlue, AeroDark, Classic (time rows use same token set as single `AeroDateTimePicker`).
+- [ ] **No `transparent = true`:** Grep all three new/modified files — zero results (carry-forward W11-01).
 
 ---
 
@@ -475,13 +405,16 @@ On Win11, `Popup` composables render in their own skiko layer. Without `transpar
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| AeroScrollArea wrapping LazyColumn discovered during execute | MEDIUM | Remove AeroScrollArea; wire LazyListState to AeroScrollBar; add height constraint to DataTable outer box. One plan's work. |
-| Selection using index instead of key discovered after DataTable ships | HIGH | API breaking change — `selectedKeys: Set<Any>` replaces `selectedIndices: Set<Int>`; callers must update. Avoid by fixing in design phase. |
-| `detectDragGestures` touchSlop discovered during ColorPicker testing | LOW | Replace with `awaitPointerEventScope` custom loop. 1–2 hours per affected component. Non-breaking API change. |
-| Calendar popup clipping discovered during visual checkpoint | LOW | Write `AeroCalendarPositionProvider`, swap position provider in `Popup()` call. No API change needed. |
-| HSV drift discovered after ColorPicker ships | MEDIUM | Requires internal refactor of state model (single source of truth). API surface unchanged but behavior changes. |
-| Accordion single-mode not working discovered during showcase | LOW | State lift from section composable to accordion parent. Internal-only change. |
-| `transparent=true` crash discovered on Win11 test machine | HIGH | Must remove `transparent=true` from any overlay/dialog; may require rearchitecting the overlay approach. |
+| PITFALL-A: remember(totalPx) reset discovered during testing | LOW | Replace `remember(totalPx) { mutableStateOf(fractionToPx(...)) }` with `remember { mutableStateOf(initialSplitFraction) }`; derive `dividerPx` inline. One surgical change in `AeroSplitPane.kt`. |
+| PITFALL-B: coerceIn crash discovered in nested layout | LOW | Add `.coerceAtLeast(minFirstPx)` to `maxPx` computation in `clampDividerPx` or in the `onDrag` lambda. One-line fix. |
+| PITFALL-C: float churn discovered on HiDPI after PITFALL-A partial fix | LOW | Replace any remaining `remember(totalPx)` with `remember(constraints.maxWidth)` (Int key). Covered entirely by PITFALL-A's fraction-based fix if fully applied. |
+| PITFALL-D: single-level regression after nested fix | LOW | Verify `dividerPx = dividerFraction * totalPx` is computed on every recomposition (not cached). If divider jumps on window resize, the render derivation is missing. |
+| PITFALL-E: auto-close replicated in range picker | MEDIUM | Decouple `nextRangeState` commit from `expanded = false`; add Apply/Cancel buttons. UI structure change but no API change. |
+| PITFALL-F: reversed datetime discovered post-ship | LOW | Add `if (startDt > endDt) swap` before emit in Apply onClick. Zero API change. |
+| PITFALL-G: state leak discovered in manual testing | LOW | Add `remember(expanded)` keys to `pendingStartTime` and `pendingEndTime`. |
+| PITFALL-H: seconds missing in trigger (AeroDateTimePicker fix) | LOW | Replace `value?.let(formatter)` with conditional inline string in composable body. |
+| PITFALL-H: seconds missing in range trigger (range picker) | LOW | Same inline conditional pattern from the outset — zero recovery cost if built correctly. |
+| PITFALL-I: popup height jump on 768p | LOW | Make time rows unconditional; use `enabled = false` until dates selected. Layout-only change. |
 
 ---
 
@@ -489,42 +422,32 @@ On Win11, `Popup` composables render in their own skiko layer. Without `transpar
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| PITFALL-01: LazyColumn in AeroScrollArea | DataTable design/API phase | Grep for `AeroScrollArea` in DataTable; row count check with 100-row dataset |
-| PITFALL-02: Calendar popup width mismatch | Pickers design phase — write `AeroCalendarPositionProvider` first | Visual checkpoint: trigger near right edge of 1024dp window |
-| PITFALL-03: touchSlop drag failure | First drag-component phase (DataTable column resize or ColorPicker, whichever is first) | Drag test: 1px mouse move must register |
-| PITFALL-04: Selection lost on sort | DataTable design/API phase | Automated test: select by key, sort, assert key still selected |
-| PITFALL-05: TreeView lazy callback repeat | TreeView design/API phase | Log `onExpand` calls; scroll node off-screen and back |
-| PITFALL-06: DateRangePicker partial state leak | Pickers design/API phase | Assert `onRangeSelect` call count == 1 per complete range selection |
-| PITFALL-07: RangeSlider thumb overlap | RangeSlider implementation phase | Drag thumbs to same position; verify both remain draggable |
-| PITFALL-08: Calendar popup first-frame flash | Pickers implementation phase | Record visual: popup must not jump on frame 1 |
-| PITFALL-09: AeroDark disabled cells | Pickers visual checkpoint phase | Three-theme visual sign-off checklist item |
-| PITFALL-10: Selection vs hover token conflict | DataTable visual checkpoint phase | Four-state hover/select demo in showcase; AeroDark verification |
-| PITFALL-11: Sidebar + SplitPane layout conflict | Sidebar implementation phase | KDoc example; showcase demo keeps Sidebar as top-level sibling |
-| PITFALL-12: onValidate in composable body | StepperWizard design/API phase | Log `onValidate` calls; verify zero calls during hover events |
-| PITFALL-13: Accordion state not lifted | Accordion design phase (before implementation) | Single-mode demo: click two headers, verify only one stays open |
-| PITFALL-14: SplitPane no clamp | SplitPane implementation phase | Drag divider to edge; verify 48dp minimum pane size enforced |
-| PITFALL-15: ColorPicker HSV drift | ColorPicker math utility phase | Unit test: set #FF0000, convert HSV→RGB→HSV, assert no drift |
-| W11-01: transparent=true on Dialog | Every overlay-bearing phase | Pre-flight grep: `transparent = true` must be zero results |
-| W11-02: Shadow clipping on undecorated | Pickers visual checkpoint phase | Visual check: popup border/depth visible without `Modifier.shadow` |
+| PITFALL-A: remember(totalPx) nested reset | SplitPane fix phase | 3-pane showcase: drag outer, inner divider stays put |
+| PITFALL-B: coerceIn crash | SplitPane fix phase | Squeeze inner pane below 96dp — no exception in log |
+| PITFALL-C: float churn | SplitPane fix phase (eliminated by PITFALL-A fix) | HiDPI manual test: hover events must not reset inner divider |
+| PITFALL-D: single-level regression | SplitPane fix phase — regression test | Window resize: divider fraction preserved |
+| PITFALL-E: auto-close on second date click | AeroDateTimeRangePicker design (first decision) | Second date click — popup remains open |
+| PITFALL-F: same-day reversed times | AeroDateTimeRangePicker implementation (Apply onClick) | Unit test: `combineRangeDateTime` with same-date reversed times returns ordered pair |
+| PITFALL-G: pending time state leak | AeroDateTimeRangePicker implementation | Cancel + reopen: time spinners show committed or midnight values |
+| PITFALL-H: showSeconds trigger bug (DateTimePicker fix) | AeroDateTimePicker fix phase | Trigger shows HH:MM:SS when showSeconds=true |
+| PITFALL-H: showSeconds in range trigger (range picker) | AeroDateTimeRangePicker implementation (displayText calculation) | Trigger shows HH:MM:SS for both endpoints when showSeconds=true |
+| PITFALL-I: popup height instability | AeroDateTimeRangePicker implementation (layout structure) | Open picker on 768p display — popup does not jump |
+| PITFALL-J: kotlinx-datetime api/implementation | POM / publication phase (pre-existing, not v2.0.1) | Consumer Gradle build does not fail without explicit kotlinx-datetime dep |
 
 ---
 
 ## Sources
 
-- Actual `AeroScrollArea.kt` source (confirms `Column + verticalScroll` pattern; root cause of v1.0 AeroDropdown popup regression documented in `.planning/MILESTONES.md`)
-- Actual `AeroDropdownPopup.kt` source (confirms `widthIn(min = anchorWidth, max = anchorWidth)` width-lock; `heightIn(max = 320.dp)` cap)
-- Actual `AeroPopupPositionProvider.kt` source (confirms `unmeasured` guard logic; `overflows` checks both axes indiscriminately)
-- Actual `AeroColorScheme.kt` source (exact alpha values for all three themes; basis for PITFALL-09 and PITFALL-10 contrast analysis)
-- Actual `AeroSlider.kt` source (confirms single `MutableInteractionSource`; basis for PITFALL-07 "don't compose two AeroSliders")
-- Actual `AeroDrawer.kt` source (confirms `FullWindowPositionProvider` pattern; approved modal overlay technique for Win11)
-- Actual `AeroListItem.kt` source (confirms `primary.copy(alpha = 0.2f)` selection pattern; basis for PITFALL-10)
-- `.planning/MILESTONES.md` — v1.1 shipped lessons: AeroNumberSpinner sub-pixel pitfall, AeroDropdown popup-offset root cause, wave ordering lessons
-- `.planning/RETROSPECTIVE.md` — Key lesson 1: "compute pixel-stroke risks at planning time, not at execution"
-- `.planning/PROJECT.md` — v2.0 locked decisions, `undecorated=true` BEZ `transparent=true` rule, AeroDropdown popup offset root cause
-- JetBrains/compose-multiplatform issue #3757 — Win11 `undecorated+transparent` EXCEPTION_ACCESS_VIOLATION (confirmed open)
-- JetBrains/compose-jb issue #343 — `detectDragGestures` unusable on Desktop due to `DesktopViewConfiguration.touchSlop = 18` (MEDIUM confidence — confirmed in search results, known issue)
-- JetBrains/compose-multiplatform issue #3333 — LazyColumn cannot auto-scroll in SelectionContainer (related: LazyColumn in scrollable parent constraints)
+- `AeroSplitPane.kt` (read 2026-06-22) — line 105 confirms `remember(totalPx)` float key; lines 110–112 confirm `maxPx = totalPx - minSecondPaneSize.toPx()` without coerceAtLeast guard
+- `SplitClamp.kt` (read 2026-06-22) — line 22 confirms `coerceIn(minFirstPx, maxPx)` with no range-validity guard; Kotlin stdlib `Float.coerceIn` throws `IllegalArgumentException` when min > max (documented in stdlib KDoc)
+- `AeroDateTimePicker.kt` (read 2026-06-22) — line 76 confirms default formatter hardcodes `%02d:%02d` (HH:MM only); lines 132–133 confirm `remember(expanded)` pending-state pattern; lines 178–188 confirm Apply-gate single-emit pattern
+- `AeroDateRangePicker.kt` (read 2026-06-22) — lines 174, 183 confirm `remember(expanded)` for rangeState and leftMonth; line 200 confirms auto-close on second date click (`expanded = false` in `if (commit != null)` block); `nextRangeState` pure function at lines 71–78 orders by date only
+- `TimeFields.kt` (read 2026-06-22) — confirms `showSeconds` controls spinner visibility but not the formatter in the parent picker
+- `PickerPopupContainer.kt` (read 2026-06-22) — confirms two-background glass pattern; no height cap; safe to add time rows vertically
+- `.planning/PROJECT.md` (read 2026-06-22) — v2.0.1 root-cause description confirms SplitPane nested freeze via `remember(totalPx)` re-key and `coerceIn(min>max)` exception; `kotlinx-datetime` implementation/api flag
+- Kotlin stdlib KDoc: `Float.coerceIn(minimumValue, maximumValue)` — "Throws IllegalArgumentException if minimumValue is greater than maximumValue"
+- Carry-forward pitfalls from v2.0: PITFALL-06 (onRangeSelect exactly once — honoured by PITFALL-E Apply gate), PITFALL-02 (AeroCalendarPositionProvider — reused unchanged), W11-01 (no transparent=true — checklist item above)
 
 ---
-*Pitfalls research for: aero-compose-ui v2.0 Stateful + Layout components*
-*Researched: 2026-04-30*
+*Pitfalls research for: aero-compose-ui v2.0.1 SplitPane nested freeze + AeroDateTimeRangePicker + seconds fix*
+*Researched: 2026-06-22*

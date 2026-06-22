@@ -1,220 +1,154 @@
 # Stack Research
 
-**Domain:** Compose Desktop UI Library — v2.0 Stateful + Layout Components
-**Researched:** 2026-04-30
-**Confidence:** MEDIUM-HIGH (all library versions verified against Maven Central / GitHub releases; Compose API patterns verified against official docs and JetBrains repo)
+**Domain:** Compose Desktop UI library — v2.0.1 milestone (2 bug fixes + AeroDateTimeRangePicker)
+**Researched:** 2026-06-22
+**Confidence:** HIGH
 
 ---
 
-## Verdict: One New Dependency Only
+## Verdict: Zero new dependencies required
 
-After checking every v2.0 component against what Compose Desktop 1.7.3 / Kotlin 2.1.21 / JDK 17 already provides, the addition is minimal:
-
-**Add: `org.jetbrains.kotlinx:kotlinx-datetime:0.6.2`** (date/time pickers only).
-
-Everything else — table virtualization, column resize, drag gestures, HSV color math, accordion animation, split-pane divider, sidebar state, stepper state — is hand-rolled on top of APIs already available in `compose.foundation`, `compose.animation`, `compose.ui`, and `java.time` (via JDK 17).
-
-Do NOT add `components-splitpane-desktop`. Rationale below.
+All three deliverables in v2.0.1 are fully implementable with the exact stack currently declared in `library/build.gradle.kts`. No version bumps, no new library coordinates, no build file changes of any kind.
 
 ---
 
-## Recommended Stack
+## Current Stack (confirmed from source)
 
-### Core Technologies (unchanged from v1.x)
+| Technology | Version | Source of truth |
+|------------|---------|-----------------|
+| Kotlin | 2.1.21 | `gradle/libs.versions.toml` |
+| Compose Desktop | 1.7.3 | `gradle/libs.versions.toml` |
+| Gradle Kotlin DSL | 8.14.3 | project root |
+| JDK | 17 | `library/build.gradle.kts` `jvmToolchain(17)` |
+| kotlinx-datetime | 0.6.2 | `gradle/libs.versions.toml` |
+| kotlinx-coroutines-core | 1.10.2 | `gradle/libs.versions.toml` (internal only) |
 
-| Technology | Version | Purpose | Status |
-|------------|---------|---------|--------|
-| Kotlin | 2.1.21 | Language | Already in `libs.versions.toml` |
-| Compose Multiplatform | 1.7.3 | UI framework | Already declared |
-| Gradle Kotlin DSL | 8.14.3 | Build | Already in use |
-| JDK | 17 | JVM target | Already in `jvmToolchain(17)` |
-| kotlinx-coroutines-core | 1.10.2 | Async state | Already in `library/build.gradle.kts` |
+---
 
-### New Dependency: kotlinx-datetime
+## Question (a): Does AeroDateTimeRangePicker need any new dependency?
 
-| Library | Version | Purpose | Needed By |
-|---------|---------|---------|-----------|
-| `org.jetbrains.kotlinx:kotlinx-datetime` | **0.6.2** | `LocalDate` / `LocalTime` / `LocalDateTime` value types; month arithmetic; `Clock.System.now()` for default values | `AeroDatePicker`, `AeroTimePicker`, `AeroDateTimePicker`, `AeroDateRangePicker` |
+**No. Zero new dependencies.**
 
-**Why 0.6.2, not 0.7.x:**
-- 0.7.0 removed `kotlinx.datetime.Instant` and `kotlinx.datetime.Clock` (replaced by `kotlin.time.Instant` / `kotlin.time.Clock` promoted to stdlib in Kotlin 2.1). This is a breaking API change with no consumer demand driving it in this project.
-- 0.7.1 added type aliases back for migration convenience, but the `Instant`/`Clock` rename is still live. `dayOfMonth` → `day` and `monthNumber` → `month` renames in 0.7.0 are additional break surface if any caller code builds against the library source.
-- 0.6.2 is the last stable release in the 0.6.x train. It is fully compatible with Kotlin 2.1.x (Kotlin stdlib compatibility policy guarantees `.kotlinx` libraries built with older compilers run on newer JVMs/runtimes unchanged). Its JVM artifact delegates directly to `java.time` under the hood.
-- The alternative `0.7.1-0.6.x-compat` compat artifact was released precisely to ease migration — using it signals you are in a transitional state. Since this project has no existing kotlinx-datetime code to migrate, starting at 0.6.2 stable is cleaner.
+`AeroDateTimeRangePicker` is a composition of two already-built components. Every primitive it needs exists in the codebase today:
 
-**Confidence:** MEDIUM. The 0.6.x / 0.7.x compatibility status with Kotlin 2.1.21 is inferred from Kotlin's backward-compatibility guarantee and the library changelog; no explicit "requires Kotlin >= X" entry was found in the changelog for either branch. If a compile error appears, the fallback is `0.7.1-0.6.x-compat` which is explicitly documented as the migration bridge.
+| Needed primitive | Already exists in |
+|------------------|-------------------|
+| Dual-calendar layout (`AeroCalendarGrid` × 2) | `AeroDateRangePicker` |
+| `BoxWithConstraints` responsive stacking (portrait < 560dp) | `AeroDateRangePicker` |
+| `nextRangeState` sealed state machine | `AeroDateRangePicker.kt` (internal) |
+| Two-row `TimeFields` (start + end) | `TimeFields.kt` (internal, already accepts `LocalTime`) |
+| `combineDateTime(date, time) → LocalDateTime` | `AeroDateTimePicker.kt` (internal) |
+| Apply / Cancel commit-gate | `AeroDateTimePicker` |
+| `AeroCalendarPositionProvider` popup anchor | `AeroCalendarPositionProvider.kt` |
+| `PickerPopupContainer` glass surface | `PickerPopupContainer.kt` |
+| `LocalDateTime` output type | `kotlinx-datetime:0.6.2` (already `api`-scoped) |
 
-**Placement in build:**
+The new component is a structural merge of `AeroDateRangePicker` (dual calendar + range state machine) and `AeroDateTimePicker` (time rows + Apply gate) with `LocalDateTime` as the emit type instead of `LocalDate`. No new library is needed.
+
+---
+
+## Question (b): LocalDateTime comparison/ordering API in kotlinx-datetime 0.6.2
+
+**`LocalDateTime` implements `Comparable<LocalDateTime>` in 0.6.2. The `<`, `>`, `<=`, `>=` Kotlin operators work directly. No helper function or conversion to `Instant` is needed.**
+
+Verified from the v0.6.2 source (`core/common/src/LocalDateTime.kt`):
+
 ```kotlin
-// library/build.gradle.kts — add inside dependencies { }
-implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+public expect class LocalDateTime : Comparable<LocalDateTime>
+
+public override operator fun compareTo(other: LocalDateTime): Int
 ```
 
-No entry in `libs.versions.toml` is strictly required (the version is pinned inline for a single dep), but adding it is idiomatic:
-```toml
-# gradle/libs.versions.toml
-[versions]
-kotlinxDatetime = "0.6.2"
+Comparison semantics: returns negative if `this` is earlier civil time, zero if equal, positive if later. Comparison is lexicographic across (year, month, day, hour, minute, second, nanosecond) — correct for ordering a (start, end) pair regardless of whether they fall on the same date or different dates.
 
-[libraries]
-kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
+**Recommended ordering idiom for AeroDateTimeRangePicker** (mirrors the `LocalDate` pattern already used in `nextRangeState`):
+
+```kotlin
+// AeroDateRangePicker.nextRangeState — existing idiom on LocalDate:
+val (s, e) = if (clicked >= current.start) current.start to clicked else clicked to current.start
+
+// AeroDateTimeRangePicker — identical idiom on LocalDateTime:
+val (s, e) = if (clickedEnd >= pendingStart) pendingStart to clickedEnd else clickedEnd to pendingStart
 ```
+
+The `>=` operator on `LocalDateTime` routes through `Comparable.compareTo`, so the semantics are identical to the existing `LocalDate` usage. The codebase already demonstrates this works; `AeroDateRangePicker` has been in production use since v2.0.
+
+No `.atStartOfDayIn(TimeZone)` conversion or `Instant` arithmetic is needed. Civil-time `LocalDateTime` comparison is exactly correct for a picker that does not cross time-zone boundaries.
+
+**Note on the `nextRangeState` state machine:** The existing function is `internal` and typed to `LocalDate`. `AeroDateTimeRangePicker` will need its own parallel sealed type (e.g. `AeroDateTimeRangeState`) typed to `LocalDateTime`, or a refactored generic version if sharing is preferred. This is an implementation-level decision for the phase; it is not a stack constraint.
 
 ---
 
-## Compose / Foundation APIs Needed (Already Available in Compose 1.7.3)
+## Question (c): `api` vs `implementation` for kotlinx-datetime
 
-These are not new dependencies — they are APIs in `compose.foundation`, `compose.ui`, or `compose.animation` that are already on the compile classpath. Listed here so the roadmap phase plans know exactly what to call.
+**Already resolved. `kotlinx-datetime` is declared `api` in the current `library/build.gradle.kts`. No action required.**
 
-### AeroDataTable
+```kotlin
+// library/build.gradle.kts — current state (confirmed):
+api(libs.kotlinx.datetime)
+```
 
-| API | Source Module | Purpose |
-|-----|--------------|---------|
-| `LazyColumn` + `rememberLazyListState()` | `compose.foundation` | Virtualized row rendering — only visible rows compose |
-| `LazyListState.firstVisibleItemIndex` | `compose.foundation` | Drive vertical scrollbar position |
-| `rememberScrollState()` + `Modifier.horizontalScroll()` | `compose.foundation` | Shared horizontal scroll state for header row + data rows |
-| `VerticalScrollbar` + `HorizontalScrollbar` + `rememberScrollbarAdapter()` | `compose.desktop.common` | Native desktop scrollbar chrome |
-| `Modifier.pointerInput` + `detectDragGestures` | `compose.ui` | Column resize — drag handle on header divider |
-| `remember { mutableStateOf(columnWidths) }` | `compose.runtime` | Mutable column width state |
-| `SubcomposeLayout` or `Layout` | `compose.ui` | Measure header cells to match data cells (if uniform column-width approach is not used) |
+The PROJECT.md "Key Decisions" table has a stale tech-debt flag:
 
-**Critical known issue:** `LazyColumn.stickyHeader` interacts badly with `VerticalScrollbar` in CMP — the scrollbar flickers (issues #3016, #2940 on JetBrains tracker). **Do not use `stickyHeader` for the data table header row.** Instead, render the header as a normal `Row` outside the `LazyColumn`, share the same horizontal `ScrollState`, and overlay the `LazyColumn` below it. This is the correct desktop table pattern.
+> `kotlinx-datetime` declared `implementation`, not `api` — ⚠️ Revisit on publish
 
-### AeroTreeView
+That note does not match the actual build file. The dependency is already `api`-scoped. This means:
 
-| API | Source Module | Purpose |
-|-----|--------------|---------|
-| `LazyColumn` | `compose.foundation` | Virtualized node list |
-| `AnimatedVisibility` + `expandVertically` / `shrinkVertically` | `compose.animation` | Expand/collapse transition |
-| `animateFloatAsState` | `compose.animation` | Caret rotation (0° → 90°) |
-| `Modifier.padding(start = depth * indent)` | `compose.foundation.layout` | Indentation by tree depth |
+- Consumers of `com.mordred:aero-compose-ui` who use `AeroDateTimePicker`, `AeroDateRangePicker`, or the new `AeroDateTimeRangePicker` get `kotlinx-datetime` on their compile classpath transitively.
+- They do not need to add `kotlinx-datetime` themselves to reference `LocalDate`/`LocalDateTime`/`LocalTime` in their own callbacks and state.
+- This is the correct configuration for a published library whose public API surface exposes types from another library.
 
-### AeroDatePicker / AeroTimePicker / AeroDateTimePicker / AeroDateRangePicker
+**Recommendation for v2.0.1:** Clear the stale tech-debt note from PROJECT.md as part of this milestone. No build file changes needed.
 
-| API | Source | Purpose |
-|-----|--------|---------|
-| `kotlinx.datetime.LocalDate` | kotlinx-datetime 0.6.2 | Immutable date value type passed to `onDateSelected` |
-| `kotlinx.datetime.LocalTime` | kotlinx-datetime 0.6.2 | Immutable time value type |
-| `kotlinx.datetime.LocalDateTime` | kotlinx-datetime 0.6.2 | Combined date+time value |
-| `kotlinx.datetime.Clock.System.todayIn(TimeZone.currentSystemDefault())` | kotlinx-datetime 0.6.2 | Default "today" for the picker |
-| `LocalDate.plus(DateTimeUnit.MONTH, n)` | kotlinx-datetime 0.6.2 | Month navigation in calendar grid |
-| `Popup` + `PopupProperties` | `compose.ui.window` | Popup container (same mechanism as AeroDropdown / AeroTooltip already in library) |
-| `AnimatedVisibility` | `compose.animation` | Popup open/close fade |
-| `LazyVerticalGrid` | `compose.foundation.lazy.grid` | Calendar day grid (7 columns) |
+---
 
-**Why not `java.time.LocalDate` directly:** `java.time` is available on JDK 17 and requires zero additional deps. However the picker's public API surface (`onDateSelected: (LocalDate) -> Unit`) would then expose a JDK platform type (`java.time.LocalDate`). kotlinx-datetime's `LocalDate` is the multiplatform-clean equivalent and it delegates to `java.time` on JVM at zero overhead. Consumers who need `java.time` can call `.toJavaLocalDate()` from the kotlinx-datetime extension. This keeps the library API consistent and Kotlin-idiomatic.
+## Bug fixes — stack impact
 
-**Why not Material3 DatePicker:** Material3's `DatePicker` is documented to crash on Compose Desktop (Kotlin Slack `#compose-desktop`, confirmed 2025). It relies on internal Android-only APIs. Not viable.
+**Fix 1: AeroDateTimePicker default formatter ignores `showSeconds` (line 76)**
 
-### AeroColorPicker
+Pure logic change in `AeroDateTimePicker.kt`. The default `formatter` lambda is:
 
-| API | Source | Purpose |
-|-----|--------|---------|
-| `Color.hsv(hue, saturation, value, alpha)` | `compose.ui.graphics` (built-in) | Construct `Color` from HSV components |
-| `Color.red`, `.green`, `.blue`, `.alpha` | `compose.ui.graphics` (built-in) | Decompose color to RGB for sliders |
-| Custom HSV decomposition (hand-rolled ~10 lines) | Hand-rolled | Compose provides `Color.hsv()` (HSV → Color) but NOT the inverse; RGB → HSV must be hand-written using standard math formulas |
-| `Canvas` + `drawRect` with `Brush.horizontalGradient` | `compose.foundation` | HSV saturation/value square gradient rendering |
-| `Modifier.pointerInput` + `detectDragGestures` | `compose.ui` | Drag crosshair on HSV square |
-| `BasicTextField` | `compose.foundation` | HEX input field |
+```kotlin
+formatter: (LocalDateTime) -> String = { ldt ->
+    "${formatAeroDate(ldt.date)} ${"%02d:%02d".format(ldt.hour, ldt.minute)}"
+},
+```
 
-**Color math:** The HSV ↔ RGB round-trip is ~20 lines of pure Kotlin math (no external library needed). The concern in STATE.md about "drift on round-trips" is real: use `Float` throughout and only convert to `Int` (0–255) at the display/output layer, not in intermediate state. No third-party color library is needed.
+It hardcodes `HH:MM` and never appends seconds. The fix makes the default formatter conditional on `showSeconds`. No new API, no new types, no dependency change. The parameter is in scope as a `@Composable` parameter.
 
-### AeroRangeSlider
+**Fix 2: AeroSplitPane nested freeze**
 
-No new APIs — composition over existing `AeroSlider` logic + `Modifier.pointerInput` for dual-thumb gesture disambiguation.
+Pure logic change in `AeroSplitPane.kt`. Root causes per PROJECT.md:
+1. `remember(totalPx)` re-keys when a parent splitter drag changes the outer pane's total size, resetting the inner divider position.
+2. `coerceIn(min, max)` throws `IllegalArgumentException` when the inner pane is squeezed below `minFirst + minSecond` (i.e., `min > max`).
 
-### AeroAccordion
-
-| API | Source | Purpose |
-|-----|--------|---------|
-| `AnimatedVisibility` + `expandVertically` / `shrinkVertically` | `compose.animation` | Content reveal |
-| `animateFloatAsState` | `compose.animation` | Chevron rotation |
-| `remember { mutableStateSetOf<Int>() }` | `compose.runtime` | Multi-mode: set of open section indices |
-
-### AeroSplitPane
-
-| API | Source | Purpose |
-|-----|--------|---------|
-| `BoxWithConstraints` | `compose.foundation.layout` | Measure total available size |
-| `Modifier.pointerInput` + `detectDragGestures` | `compose.ui` | Divider drag |
-| `remember { mutableStateOf(fraction) }` | `compose.runtime` | Split position (0f–1f fraction) |
-| `Modifier.width(...)` / `Modifier.height(...)` derived from fraction | `compose.foundation.layout` | Slot sizing |
-
-**Why not `components-splitpane-desktop`:** The last stable release on Maven Central is **1.5.2** (September 2023). Development builds (1.7.0-dev1703) exist but are not stable releases. There is no `1.7.3` matching the project's CMP version. The component's API is thin (it is ~200 lines of Compose code internally). Hand-rolling `AeroSplitPane` avoids a dev-build dependency, gives full control over the Aero divider styling, and matches the project's existing pattern of owning all visual components. The implementation fits in ~80 lines.
-
-### AeroSidebar
-
-| API | Source | Purpose |
-|-----|--------|---------|
-| `AnimatedVisibility` + `slideInHorizontally` / `slideOutHorizontally` | `compose.animation` | Expand ↔ hidden transition |
-| `animateDpAsState` | `compose.animation` | Smooth width transition expanded ↔ collapsed |
-| `Modifier.width(expandedWidth)` / `collapsedWidth` | `compose.foundation.layout` | Fixed width slots (no drag-resize per OUT-OF-SCOPE decision) |
-| `AeroTooltip` (existing) | library | Tooltip on collapsed icon buttons |
-
-### AeroStepperWizard
-
-| API | Source | Purpose |
-|-----|--------|---------|
-| `remember { mutableStateOf(currentStep) }` | `compose.runtime` | Step index |
-| `AnimatedContent` with `slideInHorizontally` | `compose.animation` | Step content transition |
-| `onValidate: () -> Boolean` | library API surface | Per-step gate; called on "Next" click synchronously (no coroutine needed for v2.0) |
+No new API, no new types, no dependency change.
 
 ---
 
 ## What NOT to Add
 
-| Reject | Why | What to Use Instead |
-|--------|-----|---------------------|
-| `org.jetbrains.compose.components:components-splitpane-desktop` | Latest stable on Maven Central is 1.5.2 (Sept 2023); no 1.7.3 stable exists; dev builds are not stable; adds an unvetted dep for ~80 lines of code | Hand-roll `AeroSplitPane` with `BoxWithConstraints` + `detectDragGestures` |
-| `kotlinx-datetime:0.7.0` or `0.7.1` (stable) | Breaking API changes: `Instant`/`Clock` removed, `dayOfMonth`→`day`, `monthNumber`→`month` renames; introduces more migration surface with no benefit for a new codebase | Use `0.6.2` (last stable in 0.6.x train; compatible with Kotlin 2.1.x) |
-| `kotlinx-datetime:0.8.0-rc02` | Release candidate, not stable | Wait for stable or use 0.6.2 |
-| `compose.materialIconsExtended` | Explicitly removed in v1.1 (shed ~36 MB classpath). No component in v2.0 requires Material icons — all glyphs use `AeroIcons.*` | `AeroIcons.*` (already in library) |
-| Third-party color picker libraries (e.g. `kolor-picker`, `godaddy/compose-color-picker`, `SmartToolFactory/Compose-Color-Picker-Bundle`) | Android-only or bring heavy transitive deps; HSV ↔ RGB math is ~20 lines; visual style must be Aero-glass which no third-party component delivers | Hand-roll HSV square + `Color.hsv()` built-in |
-| Third-party table/grid libraries | None exist for Compose Desktop with the Aero visual contract; `LazyColumn` virtualization is sufficient for v2.0 read-only tables | `LazyColumn` + shared `ScrollState` for header |
-| `kotlinx.coroutines.flow.MutableStateFlow` for date/time state | Coroutines already on classpath but date picker state is synchronous UI state — no async needed | `remember { mutableStateOf() }` |
-| `java.time.LocalDate` as the public API type for pickers | Exposes a JDK platform type; less idiomatic in KMP-adjacent library | `kotlinx.datetime.LocalDate` (delegates to `java.time` on JVM at zero cost) |
-
----
-
-## Installation
-
-```kotlin
-// gradle/libs.versions.toml — add:
-[versions]
-kotlinxDatetime = "0.6.2"
-
-[libraries]
-kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
-
-// library/build.gradle.kts — add inside dependencies { }:
-implementation(libs.kotlinx.datetime)
-```
-
-No changes to `showcase/build.gradle.kts` or root `build.gradle.kts` are needed. The showcase will pick up `kotlinx-datetime` transitively through `:library`.
-
----
-
-## Version Compatibility
-
-| Package | Version | Compatible With | Notes |
-|---------|---------|-----------------|-------|
-| `kotlinx-datetime` | 0.6.2 | Kotlin 2.1.21 / JDK 17 | MEDIUM confidence — compatibility inferred from Kotlin backward-compat policy; no explicit incompatibility found; fallback is `0.7.1-0.6.x-compat` if compile errors surface |
-| All other v2.0 APIs | — | Already in Compose 1.7.3 | HIGH confidence — `LazyColumn`, `AnimatedVisibility`, `detectDragGestures`, `Color.hsv()`, `Popup`, `BoxWithConstraints` all stable in CMP 1.7.3 |
-| `components-splitpane-desktop` | N/A — NOT added | — | Latest stable (1.5.2) predates CMP 1.7.3; no stable 1.7.x exists |
+| Avoid | Why |
+|-------|-----|
+| kotlinx-datetime version bump (0.6.2 → 0.7.x / 0.8.x) | No API gap exists. 0.7.x introduced breaking renames (`dayOfMonth→day`, `monthNumber→month`, `Instant`/`Clock` moved). Unnecessary churn risk on a published library mid-milestone. |
+| `java.time` types in picker public signatures | Breaks API parity with existing pickers; consumers would need two different date type systems side-by-side. |
+| ThreeTenBP or any backport library | JDK 17 baseline + JVM-only target; no Android; `java.time` is native. |
+| Separate `:datepickers` Gradle module | Explicitly deferred per PROJECT.md; single `:library` module is the constraint through v2.x. |
+| `components-splitpane-desktop` | Not needed; SplitPane is already hand-rolled and the freeze is a logic bug, not a missing library. |
 
 ---
 
 ## Sources
 
-- `github.com/Kotlin/kotlinx-datetime/releases` — version list; 0.6.2 is last stable 0.6.x; 0.7.0/0.7.1 stable with breaking changes; 0.8.0-rc02 is latest pre-release (MEDIUM confidence)
-- `github.com/Kotlin/kotlinx-datetime/blob/master/CHANGELOG.md` — 0.7.0 breaking changes confirmed (`Instant`/`Clock` removal, `dayOfMonth`→`day`, `monthNumber`→`month`) (HIGH confidence)
-- `repo1.maven.org/maven2/org/jetbrains/compose/components/components-splitpane-desktop/` — only 1.5.2 and 1.2.0-alpha01-dev609 present as Maven Central stable; dev builds (1.7.0-dev1703) not stable (HIGH confidence)
-- `developer.android.com/reference/kotlin/androidx/compose/ui/graphics/Color.Companion` — `Color.hsv(hue, saturation, value, alpha)` exists as built-in in `compose.ui.graphics`; no inverse function (HIGH confidence)
-- `github.com/JetBrains/compose-multiplatform/issues/3016` and `#2940` — `stickyHeader` + `VerticalScrollbar` known flicker bug; do not use `stickyHeader` for table header row (HIGH confidence)
-- `slack-chats.kotlinlang.org` — Material3 `DatePicker` crashes on Compose Desktop (MEDIUM confidence — community-confirmed, no official JB bug tracker link found)
-- `github.com/JetBrains/compose-multiplatform/tree/master/components/SplitPane` — SplitPane component source; publishes as `org.jetbrains.compose.components:components-splitpane-desktop`; group ID confirmed from `build.gradle.kts` (HIGH confidence)
+- `C:\1A_WORK\ui_lib\library\build.gradle.kts` — confirmed `api(libs.kotlinx.datetime)`, confirmed no `implementation(libs.kotlinx.datetime)` (HIGH confidence)
+- `C:\1A_WORK\ui_lib\gradle\libs.versions.toml` — confirmed `kotlinxDatetime = "0.6.2"` (HIGH confidence)
+- `C:\1A_WORK\ui_lib\.planning\PROJECT.md` — Key Decisions table, Current Milestone scope, Constraints (HIGH confidence)
+- `C:\1A_WORK\ui_lib\library\src\main\kotlin\com\mordred\aero\components\pickers\AeroDateTimePicker.kt` — formatter bug confirmed at line 76; `combineDateTime` utility confirmed; public signature confirmed (HIGH confidence)
+- `C:\1A_WORK\ui_lib\library\src\main\kotlin\com\mordred\aero\components\pickers\AeroDateRangePicker.kt` — `nextRangeState` `LocalDate >= LocalDate` operator confirmed as existing idiom (HIGH confidence)
+- `https://github.com/Kotlin/kotlinx-datetime/blob/v0.6.2/core/common/src/LocalDateTime.kt` — `LocalDateTime : Comparable<LocalDateTime>` and `compareTo` operator confirmed at v0.6.2 source level (HIGH confidence)
+- `https://kotlinlang.org/api/kotlinx-datetime/kotlinx-datetime/kotlinx.datetime/-local-date-time/compare-to.html` — `compareTo` semantics documented (HIGH confidence)
 
 ---
 
-*Stack research for: aero-compose-ui v2.0 Stateful + Layout*
-*Researched: 2026-04-30*
+*Stack research for: aero-compose-ui v2.0.1 Picker & SplitPane Fixes*
+*Researched: 2026-06-22*
