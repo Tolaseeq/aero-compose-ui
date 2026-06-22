@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: "Roadmap ready — awaiting `/gsd:plan-phase 12`"
-stopped_at: Phase 12 context gathered
-last_updated: "2026-06-22T12:18:04.124Z"
+stopped_at: "Completed 12-02-PLAN.md (Fix B: SplitPane nested-drag freeze + inverted-range crash)"
+last_updated: "2026-06-22T12:49:58.190Z"
 last_activity: 2026-06-22 — Roadmap revised, 18/18 requirements consolidated to Phase 12
 progress:
   total_phases: 1
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 4
+  completed_plans: 2
 ---
 
 # Project State
@@ -148,6 +148,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 11]: rememberUpdatedState(value) in AeroRangeSlider drag loop so applyThumbMove always reads the latest committed range (F9 root cause — stale captured value in pointerInput lambda)
 - [Phase 11-showcase-v2-0-visual-sign-off]: F-WIZARD root cause: AeroStepperWizard is intentionally surface-less; active step uses weight(1f,fill=false) inside a plain Column — needs caller-provided bounded parent height; showcase fix is Box(height(200.dp)); no library edit needed
 - [Phase 11-showcase-v2-0-visual-sign-off]: F-ACCORDION-HOVER: .clip(RoundedCornerShape(8.dp)) added before .clickable in AeroAccordion.kt so hover/press highlight clips to rounded glass surface
+- [Phase 12]: Fraction-based SplitPane divider state: var dividerFraction by remember with val dividerPx derived each recompose; no remember(totalPx) key eliminates nested-drag snap-back (PITFALL-A fix, FIXSP-01)
+- [Phase 12]: clampDividerPx guard: val safeMax = maxPx.coerceAtLeast(minFirstPx) before coerceIn prevents IllegalArgumentException when inner pane squeezed below combined minima (PITFALL-B fix, FIXSP-02)
 
 ### Pending Todos
 
@@ -164,7 +166,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-22T12:18:04.115Z
-Stopped at: Phase 12 context gathered
-Resume file: .planning/phases/12-v2-0-1-seconds-fix-splitpane-fix-aerodatetimerangepicker/12-CONTEXT.md
+Last session: 2026-06-22T12:49:58.185Z
+Stopped at: Completed 12-02-PLAN.md (Fix B: SplitPane nested-drag freeze + inverted-range crash)
+Resume file: None
 Next action: `/gsd:plan-phase 12`

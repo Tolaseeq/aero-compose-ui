@@ -14,10 +14,10 @@
 
 ### Fix: AeroSplitPane Nested Freeze (FIXSP)
 
-- [ ] **FIXSP-01**: При вложенной N-pane компоновке (3+ pane через 2+ сплиттера, вложение в `end`-слот) перетаскивание внешнего/левого сплиттера НЕ сбрасывает позицию вложенного/правого сплиттера — внутренний divider сохраняет свою позицию как фракцию при изменении `totalPx` (root cause: `remember(totalPx)` ре-кеил state).
-- [ ] **FIXSP-02**: Перетаскивание любого сплиттера никогда не бросает исключение и не «фризит», даже когда вложенный pane сжат ниже `minFirstPaneSize + minSecondPaneSize` — `clampDividerPx` защищён от `coerceIn(min > max)` (guard `maxPx.coerceAtLeast(minFirstPx)`).
-- [ ] **FIXSP-03**: Одноуровневый (non-nested) `AeroSplitPane` не регрессирует — drag, clamp на min-границах, и re-anchor при resize окна работают как в v2.0.
-- [ ] **FIXSP-04**: Unit-тест на `clampDividerPx` с инвертированным диапазоном (`maxPx < minFirstPx`) написан до фикса и проходит после (no-throw, clamped result).
+- [x] **FIXSP-01**: При вложенной N-pane компоновке (3+ pane через 2+ сплиттера, вложение в `end`-слот) перетаскивание внешнего/левого сплиттера НЕ сбрасывает позицию вложенного/правого сплиттера — внутренний divider сохраняет свою позицию как фракцию при изменении `totalPx` (root cause: `remember(totalPx)` ре-кеил state).
+- [x] **FIXSP-02**: Перетаскивание любого сплиттера никогда не бросает исключение и не «фризит», даже когда вложенный pane сжат ниже `minFirstPaneSize + minSecondPaneSize` — `clampDividerPx` защищён от `coerceIn(min > max)` (guard `maxPx.coerceAtLeast(minFirstPx)`).
+- [x] **FIXSP-03**: Одноуровневый (non-nested) `AeroSplitPane` не регрессирует — drag, clamp на min-границах, и re-anchor при resize окна работают как в v2.0.
+- [x] **FIXSP-04**: Unit-тест на `clampDividerPx` с инвертированным диапазоном (`maxPx < minFirstPx`) написан до фикса и проходит после (no-throw, clamped result).
 
 ### New: AeroDateTimeRangePicker (DTR)
 
@@ -77,10 +77,10 @@ Carried over from `.planning/milestones/v2.0-REQUIREMENTS.md` "v3+ Future Requir
 |-------------|-------|--------|
 | FIXDT-01 | Phase 12 | Pending |
 | FIXDT-02 | Phase 12 | Pending |
-| FIXSP-01 | Phase 12 | Pending |
-| FIXSP-02 | Phase 12 | Pending |
-| FIXSP-03 | Phase 12 | Pending |
-| FIXSP-04 | Phase 12 | Pending |
+| FIXSP-01 | Phase 12 | Complete |
+| FIXSP-02 | Phase 12 | Complete |
+| FIXSP-03 | Phase 12 | Complete |
+| FIXSP-04 | Phase 12 | Complete |
 | DTR-01 | Phase 12 | Pending |
 | DTR-02 | Phase 12 | Pending |
 | DTR-03 | Phase 12 | Pending |
