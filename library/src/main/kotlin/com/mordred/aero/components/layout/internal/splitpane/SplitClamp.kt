@@ -18,8 +18,10 @@ package com.mordred.aero.components.layout.internal.splitpane
  * @param maxPx maximum allowed position; caller computes as `totalPx - minSecondPaneSize.toPx()`
  * @return new clamped divider position
  */
-internal fun clampDividerPx(currentPx: Float, deltaPx: Float, minFirstPx: Float, maxPx: Float): Float =
-    (currentPx + deltaPx).coerceIn(minFirstPx, maxPx)
+internal fun clampDividerPx(currentPx: Float, deltaPx: Float, minFirstPx: Float, maxPx: Float): Float {
+    val safeMax = maxPx.coerceAtLeast(minFirstPx)   // guard: coerceIn(a,b) throws when a > b (PITFALL-B)
+    return (currentPx + deltaPx).coerceIn(minFirstPx, safeMax)
+}
 
 /**
  * Converts a split fraction [0f..1f] to an absolute pixel position.

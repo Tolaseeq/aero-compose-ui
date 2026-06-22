@@ -100,17 +100,18 @@ public fun AeroSplitPane(
         else
             constraints.maxHeight.toFloat()
 
-        // Internal state in px for clamp math (PITFALL-14). Reinitialised on totalPx change
-        // (window resize) to preserve the current fraction.
-        var dividerPx by remember(totalPx) {
-            mutableStateOf(fractionToPx(initialSplitFraction, totalPx))
-        }
+        // Fraction is the stable, viewport-independent coordinate. Pixel position is derived every
+        // recompose from totalPx, so a parent resize (or a parent-drag totalPx change in nested
+        // layouts) re-anchors proportionally instead of resetting to initialSplitFraction (PITFALL-A).
+        var dividerFraction by remember { mutableStateOf(initialSplitFraction) }
+        val dividerPx = fractionToPx(dividerFraction, totalPx)
 
         val onDrag: (Float) -> Unit = { delta ->
             val minFirstPx = with(density) { minFirstPaneSize.toPx() }
             val maxPx = totalPx - with(density) { minSecondPaneSize.toPx() }
-            dividerPx = clampDividerPx(dividerPx, delta, minFirstPx, maxPx)
-            onSplitChange?.invoke(pxToFraction(dividerPx, totalPx))
+            val newPx = clampDividerPx(dividerPx, delta, minFirstPx, maxPx)
+            dividerFraction = pxToFraction(newPx, totalPx)
+            onSplitChange?.invoke(dividerFraction)
         }
 
         if (orientation == AeroSplitOrientation.Horizontal) {
