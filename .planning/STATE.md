@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: "Roadmap ready — awaiting `/gsd:plan-phase 12`"
-stopped_at: "Completed 12-01-PLAN.md (Fix A: formatAeroDateTime helper + showSeconds trigger fix + PROJECT.md SHW-14)"
-last_updated: "2026-06-22T12:50:43.949Z"
+stopped_at: Completed 12-03-PLAN.md (AeroDateTimeRangePicker composable with Apply gate, DTR-01..08)
+last_updated: "2026-06-22T12:57:10.111Z"
 last_activity: 2026-06-22 — Roadmap revised, 18/18 requirements consolidated to Phase 12
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -152,6 +152,9 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 12-01]: kotlinx-datetime declared api(libs.kotlinx.datetime) confirmed; PROJECT.md stale implementation/Revisit note corrected to factual api record (SHW-14)
 - [Phase 12]: Fraction-based SplitPane divider state: var dividerFraction by remember with val dividerPx derived each recompose; no remember(totalPx) key eliminates nested-drag snap-back (PITFALL-A fix, FIXSP-01)
 - [Phase 12]: clampDividerPx guard: val safeMax = maxPx.coerceAtLeast(minFirstPx) before coerceIn prevents IllegalArgumentException when inner pane squeezed below combined minima (PITFALL-B fix, FIXSP-02)
+- [Phase 12]: Apply gate (PITFALL-E prevention): nextRangeState commit pair discarded in onDayClick; onRangeSelect fires ONLY at Apply onClick guarded by rangeState is Selected (DTR-02/03)
+- [Phase 12]: orderDateTimeRange applied at sole emit site: LocalDateTime Comparable a<=b swap for same-day reversed times (DTR-04); no Instant conversion needed in kotlinx-datetime 0.6.2
+- [Phase 12]: Both TimeFields rows rendered unconditionally; enabled=false until rangeState is Selected — stable popup height for AeroCalendarPositionProvider flip logic (DTR-08, PITFALL-I)
 
 ### Pending Todos
 
@@ -167,7 +170,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-22T12:50:43.943Z
-Stopped at: Completed 12-01-PLAN.md (Fix A: formatAeroDateTime helper + showSeconds trigger fix + PROJECT.md SHW-14)
+Last session: 2026-06-22T12:57:01.084Z
+Stopped at: Completed 12-03-PLAN.md (AeroDateTimeRangePicker composable with Apply gate, DTR-01..08)
 Resume file: None
 Next action: `/gsd:plan-phase 12`

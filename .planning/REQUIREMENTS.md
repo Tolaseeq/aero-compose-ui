@@ -21,14 +21,14 @@
 
 ### New: AeroDateTimeRangePicker (DTR)
 
-- [ ] **DTR-01**: `AeroDateTimeRangePicker` — публичный компонент: read-only триггер открывает popup с двойным календарём (range-выбор как у `AeroDateRangePicker`), отдельными time-rows для start и end, и кнопками Cancel/Apply.
-- [ ] **DTR-02**: Выбор диапазона дат переиспользует `AeroDateRangeState` + `nextRangeState` verbatim (date-level); клик по дню НЕ закрывает popup и НЕ эмитит — это commit-gate компонент.
-- [ ] **DTR-03**: `onRangeSelect(start: LocalDateTime, end: LocalDateTime)` вызывается РОВНО один раз — только по Apply, и только когда выбран полный диапазон дат (`rangeState is Selected`); Apply задизейблен при partial/idle.
-- [ ] **DTR-04**: При `start date == end date` и `startTime > endTime` эмитируемая пара упорядочивается так, что `start ≤ end` включая время (silent swap на Apply, по аналогии с date-swap в `nextRangeState`).
-- [ ] **DTR-05**: Full API parity с `AeroDateTimePicker` — параметры `showSeconds` и `minuteStep` применяются одинаково к обоим time-rows.
-- [ ] **DTR-06**: Дефолтный форматтер триггера рендерит `DD.MM.YYYY HH:MM → DD.MM.YYYY HH:MM` (или `…HH:MM:SS…` при `showSeconds = true`); пользовательский `formatter` переопределяет. Фикс FIXDT-01 не повторяется как баг здесь.
-- [ ] **DTR-07**: Pending-state (`pendingStartTime`, `pendingEndTime`, range state) keyed на `expanded` — отменённая сессия (Cancel/click-outside) не протекает в следующее открытие.
-- [ ] **DTR-08**: Time-rows рендерятся безусловно (стабильная высота popup, без position-jump); `clearable`/`onClear`, `minDate`/`maxDate`/`selectableDates`, `enabled` поддержаны как у `AeroDateRangePicker`. Popup использует `Popup` + `AeroCalendarPositionProvider` + `PickerPopupContainer` (W11-01/W11-02 соблюдены).
+- [x] **DTR-01**: `AeroDateTimeRangePicker` — публичный компонент: read-only триггер открывает popup с двойным календарём (range-выбор как у `AeroDateRangePicker`), отдельными time-rows для start и end, и кнопками Cancel/Apply.
+- [x] **DTR-02**: Выбор диапазона дат переиспользует `AeroDateRangeState` + `nextRangeState` verbatim (date-level); клик по дню НЕ закрывает popup и НЕ эмитит — это commit-gate компонент.
+- [x] **DTR-03**: `onRangeSelect(start: LocalDateTime, end: LocalDateTime)` вызывается РОВНО один раз — только по Apply, и только когда выбран полный диапазон дат (`rangeState is Selected`); Apply задизейблен при partial/idle.
+- [x] **DTR-04**: При `start date == end date` и `startTime > endTime` эмитируемая пара упорядочивается так, что `start ≤ end` включая время (silent swap на Apply, по аналогии с date-swap в `nextRangeState`).
+- [x] **DTR-05**: Full API parity с `AeroDateTimePicker` — параметры `showSeconds` и `minuteStep` применяются одинаково к обоим time-rows.
+- [x] **DTR-06**: Дефолтный форматтер триггера рендерит `DD.MM.YYYY HH:MM → DD.MM.YYYY HH:MM` (или `…HH:MM:SS…` при `showSeconds = true`); пользовательский `formatter` переопределяет. Фикс FIXDT-01 не повторяется как баг здесь.
+- [x] **DTR-07**: Pending-state (`pendingStartTime`, `pendingEndTime`, range state) keyed на `expanded` — отменённая сессия (Cancel/click-outside) не протекает в следующее открытие.
+- [x] **DTR-08**: Time-rows рендерятся безусловно (стабильная высота popup, без position-jump); `clearable`/`onClear`, `minDate`/`maxDate`/`selectableDates`, `enabled` поддержаны как у `AeroDateRangePicker`. Popup использует `Popup` + `AeroCalendarPositionProvider` + `PickerPopupContainer` (W11-01/W11-02 соблюдены).
 
 ### Showcase + Docs (SHW)
 
@@ -81,14 +81,14 @@ Carried over from `.planning/milestones/v2.0-REQUIREMENTS.md` "v3+ Future Requir
 | FIXSP-02 | Phase 12 | Complete |
 | FIXSP-03 | Phase 12 | Complete |
 | FIXSP-04 | Phase 12 | Complete |
-| DTR-01 | Phase 12 | Pending |
-| DTR-02 | Phase 12 | Pending |
-| DTR-03 | Phase 12 | Pending |
-| DTR-04 | Phase 12 | Pending |
-| DTR-05 | Phase 12 | Pending |
-| DTR-06 | Phase 12 | Pending |
-| DTR-07 | Phase 12 | Pending |
-| DTR-08 | Phase 12 | Pending |
+| DTR-01 | Phase 12 | Complete |
+| DTR-02 | Phase 12 | Complete |
+| DTR-03 | Phase 12 | Complete |
+| DTR-04 | Phase 12 | Complete |
+| DTR-05 | Phase 12 | Complete |
+| DTR-06 | Phase 12 | Complete |
+| DTR-07 | Phase 12 | Complete |
+| DTR-08 | Phase 12 | Complete |
 | SHW-11 | Phase 12 | Pending |
 | SHW-12 | Phase 12 | Pending |
 | SHW-13 | Phase 12 | Pending |
