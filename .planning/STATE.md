@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: "Roadmap ready — awaiting `/gsd:plan-phase 12`"
-stopped_at: "12-04 checkpoint: Task 3 awaiting human visual sign-off (SHW-11/12/13)"
-last_updated: "2026-06-22T12:59:58.377Z"
+stopped_at: Completed 12-04-PLAN.md — v2.0.1 milestone all plans done
+last_updated: "2026-06-22T13:18:46.898Z"
 last_activity: 2026-06-22 — Roadmap revised, 18/18 requirements consolidated to Phase 12
 progress:
   total_phases: 1
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -155,6 +155,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 12]: Apply gate (PITFALL-E prevention): nextRangeState commit pair discarded in onDayClick; onRangeSelect fires ONLY at Apply onClick guarded by rangeState is Selected (DTR-02/03)
 - [Phase 12]: orderDateTimeRange applied at sole emit site: LocalDateTime Comparable a<=b swap for same-day reversed times (DTR-04); no Instant conversion needed in kotlinx-datetime 0.6.2
 - [Phase 12]: Both TimeFields rows rendered unconditionally; enabled=false until rangeState is Selected — stable popup height for AeroCalendarPositionProvider flip logic (DTR-08, PITFALL-I)
+- [Phase 12]: Three-theme visual sign-off (SHW-11/12/13) approved on AeroBlue/AeroDark/Classic; SplitPane drag regression (stale captured state) found during sign-off and fixed in 7f38c0c
 
 ### Pending Todos
 
@@ -170,7 +171,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-22T12:59:58.356Z
-Stopped at: 12-04 checkpoint: Task 3 awaiting human visual sign-off (SHW-11/12/13)
+Last session: 2026-06-22T13:18:46.894Z
+Stopped at: Completed 12-04-PLAN.md — v2.0.1 milestone all plans done
 Resume file: None
 Next action: `/gsd:plan-phase 12`
