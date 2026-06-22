@@ -1,0 +1,106 @@
+# Requirements: aero-compose-ui — v2.0.1 Picker & SplitPane Fixes
+
+**Defined:** 2026-06-22
+**Core Value:** Разработчик подключает одну зависимость и получает полный набор Aero-styled компонентов с тремя темами — без необходимости реализовывать стиль самостоятельно.
+
+> Patch milestone: два bug-фикса + один аддитивный компонент. **Zero new dependencies. No breaking changes к v2.0 public API.** Phases continue from 12.
+
+## v2.0.1 Requirements
+
+### Fix: AeroDateTimePicker Seconds (FIXDT)
+
+- [ ] **FIXDT-01**: При `showSeconds = true` триггер-поле `AeroDateTimePicker` отображает введённые секунды (формат `DD.MM.YYYY HH:MM:SS`); при `showSeconds = false` остаётся `DD.MM.YYYY HH:MM`. Дефолтный форматтер учитывает `showSeconds` (root cause: дефолтный formatter хардкодил `HH:MM`).
+- [ ] **FIXDT-02**: Явно переданный пользователем `formatter` имеет приоритет и используется как есть — фикс не ломает callers с кастомным форматтером (no breaking change).
+
+### Fix: AeroSplitPane Nested Freeze (FIXSP)
+
+- [ ] **FIXSP-01**: При вложенной N-pane компоновке (3+ pane через 2+ сплиттера, вложение в `end`-слот) перетаскивание внешнего/левого сплиттера НЕ сбрасывает позицию вложенного/правого сплиттера — внутренний divider сохраняет свою позицию как фракцию при изменении `totalPx` (root cause: `remember(totalPx)` ре-кеил state).
+- [ ] **FIXSP-02**: Перетаскивание любого сплиттера никогда не бросает исключение и не «фризит», даже когда вложенный pane сжат ниже `minFirstPaneSize + minSecondPaneSize` — `clampDividerPx` защищён от `coerceIn(min > max)` (guard `maxPx.coerceAtLeast(minFirstPx)`).
+- [ ] **FIXSP-03**: Одноуровневый (non-nested) `AeroSplitPane` не регрессирует — drag, clamp на min-границах, и re-anchor при resize окна работают как в v2.0.
+- [ ] **FIXSP-04**: Unit-тест на `clampDividerPx` с инвертированным диапазоном (`maxPx < minFirstPx`) написан до фикса и проходит после (no-throw, clamped result).
+
+### New: AeroDateTimeRangePicker (DTR)
+
+- [ ] **DTR-01**: `AeroDateTimeRangePicker` — публичный компонент: read-only триггер открывает popup с двойным календарём (range-выбор как у `AeroDateRangePicker`), отдельными time-rows для start и end, и кнопками Cancel/Apply.
+- [ ] **DTR-02**: Выбор диапазона дат переиспользует `AeroDateRangeState` + `nextRangeState` verbatim (date-level); клик по дню НЕ закрывает popup и НЕ эмитит — это commit-gate компонент.
+- [ ] **DTR-03**: `onRangeSelect(start: LocalDateTime, end: LocalDateTime)` вызывается РОВНО один раз — только по Apply, и только когда выбран полный диапазон дат (`rangeState is Selected`); Apply задизейблен при partial/idle.
+- [ ] **DTR-04**: При `start date == end date` и `startTime > endTime` эмитируемая пара упорядочивается так, что `start ≤ end` включая время (silent swap на Apply, по аналогии с date-swap в `nextRangeState`).
+- [ ] **DTR-05**: Full API parity с `AeroDateTimePicker` — параметры `showSeconds` и `minuteStep` применяются одинаково к обоим time-rows.
+- [ ] **DTR-06**: Дефолтный форматтер триггера рендерит `DD.MM.YYYY HH:MM → DD.MM.YYYY HH:MM` (или `…HH:MM:SS…` при `showSeconds = true`); пользовательский `formatter` переопределяет. Фикс FIXDT-01 не повторяется как баг здесь.
+- [ ] **DTR-07**: Pending-state (`pendingStartTime`, `pendingEndTime`, range state) keyed на `expanded` — отменённая сессия (Cancel/click-outside) не протекает в следующее открытие.
+- [ ] **DTR-08**: Time-rows рендерятся безусловно (стабильная высота popup, без position-jump); `clearable`/`onClear`, `minDate`/`maxDate`/`selectableDates`, `enabled` поддержаны как у `AeroDateRangePicker`. Popup использует `Popup` + `AeroCalendarPositionProvider` + `PickerPopupContainer` (W11-01/W11-02 соблюдены).
+
+### Showcase + Docs (SHW)
+
+Каждый пункт milestone должен быть **виден и проверяем в showcase** на трёх темах (AeroBlue / AeroDark / Classic).
+
+- [ ] **SHW-11**: `PickersSection` получает строку-демо `AeroDateTimeRangePicker` рядом с `AeroDateRangePicker`; выбранный диапазон дата+время отображается живым лейблом (видно `(LocalDateTime, LocalDateTime)`). Визуально проверено на трёх темах.
+- [ ] **SHW-12**: Showcase-демо `AeroDateTimePicker` с `showSeconds = true` (FIXDT-01 виден глазами): введённые секунды появляются в триггере. Существующая `AeroDateTimePicker`-демо расширяется или добавляется второй экземпляр с секундами.
+- [ ] **SHW-13**: `LayoutSection` получает демо **вложенного** `AeroSplitPane` (3 pane через 2 сплиттера, вложение в `end`-слот), на котором FIXSP-01/02 воспроизводимы и проверяемы: левый сплиттер можно гонять, правый сохраняет позицию и не фризит. Проверено на трёх темах.
+- [ ] **SHW-14**: Стейл-нота "Revisit on publish — kotlinx-datetime declared implementation" в PROJECT.md Key Decisions очищена/исправлена (фактически уже `api(...)` — leak отсутствует). Doc-hygiene.
+
+## Future Requirements (deferred — not in this milestone)
+
+Carried over from `.planning/milestones/v2.0-REQUIREMENTS.md` "v3+ Future Requirements":
+
+### Pickers / Data / Layout advanced
+- **PICK-INL-01**: inline-режим pickers (всегда видимый календарь)
+- **DATA-EDIT-01 / DATA-REORDER-01 / DATA-FILTER-01**: DataTable cell editing / column reorder / column filter UI
+- **TREE-DND-01**: TreeView drag-and-drop reordering
+- **COLOR-EYE-01**: ColorPicker eyedropper (system color pick)
+- **STEP-BR-01**: StepperWizard non-linear branching
+- **SIDE-RES-01**: Sidebar drag-to-resize width в expanded режиме
+- **DROP-FIX-01**: AeroDropdown popup-offset regression (v1.0 carry-over)
+
+### Range picker hover-preview (new deferral)
+- **DTR-HOVER-01**: hover-preview подсветка диапазона между start и наведённой датой (требует расширения `AeroCalendarGrid` API) — anti-feature для v2.0.1, отложено.
+
+## Out of Scope
+
+Явно исключённое для v2.0.1.
+
+| Feature | Reason |
+|---------|--------|
+| Новые зависимости | Всё реализуемо на текущем стеке; kotlinx-datetime:0.6.2 уже подключён (`api`) |
+| Breaking changes к v2.0 public API | Patch milestone — только аддитивный компонент + внутренние фиксы |
+| Hover-preview подсветка диапазона в AeroDateTimeRangePicker | Требует расширения `AeroCalendarGrid`; deferred (DTR-HOVER-01) |
+| Per-endpoint time step/seconds overrides | `showSeconds`/`minuteStep` применяются глобально к обоим time-rows |
+| Live inversion error message (start > end) | Тихий swap на Apply достаточен; нет error-UI |
+| Inline mode AeroDateTimeRangePicker | Только popup, как все pickers v2.0 |
+| Timezone selection | `LocalDateTime` без зоны, как остальные pickers |
+| Изменение `nextRangeState` / `AeroDateRangeState` | Переиспользуются verbatim; не рефакторятся под generic |
+| Фикс других компонентов помимо названных двух | AeroDropdown popup-offset и прочее — отдельный milestone |
+
+## Traceability
+
+Заполняется при создании ROADMAP.md.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| FIXDT-01 | TBD | Pending |
+| FIXDT-02 | TBD | Pending |
+| FIXSP-01 | TBD | Pending |
+| FIXSP-02 | TBD | Pending |
+| FIXSP-03 | TBD | Pending |
+| FIXSP-04 | TBD | Pending |
+| DTR-01 | TBD | Pending |
+| DTR-02 | TBD | Pending |
+| DTR-03 | TBD | Pending |
+| DTR-04 | TBD | Pending |
+| DTR-05 | TBD | Pending |
+| DTR-06 | TBD | Pending |
+| DTR-07 | TBD | Pending |
+| DTR-08 | TBD | Pending |
+| SHW-11 | TBD | Pending |
+| SHW-12 | TBD | Pending |
+| SHW-13 | TBD | Pending |
+| SHW-14 | TBD | Pending |
+
+**Coverage:**
+- v2.0.1 requirements: 18 total
+- Mapped to phases: 0 (roadmap pending)
+- Unmapped: 18 ⚠️
+
+---
+*Requirements defined: 2026-06-22 (v2.0.1 Picker & SplitPane Fixes)*
+*Last updated: 2026-06-22 after initial definition*
