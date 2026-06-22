@@ -1,7 +1,7 @@
 # Project Research Summary
 
-**Project:** aero-compose-ui v2.0.1
-**Domain:** Compose Desktop UI component library -- patch milestone (2 bug fixes + 1 new component)
+**Project:** aero-compose-ui v2.0.2 - AeroPanelGroup
+**Domain:** Compose Desktop UI library - additive vertical collapsible+resizable layout component
 **Researched:** 2026-06-22
 **Confidence:** HIGH
 
@@ -9,11 +9,24 @@
 
 ## Executive Summary
 
-v2.0.1 is a tightly scoped patch milestone with two confirmed bug fixes and one new component that is architecturally a composition of existing primitives. All three deliverables are implementable with zero new dependencies and zero build file changes. kotlinx-datetime 0.6.2 is already declared api-scoped at library/build.gradle.kts:27; the stale Revisit-on-publish note in PROJECT.md Key Decisions is factually wrong and must be cleared as doc hygiene -- this is the only administrative action for the milestone. LocalDateTime implements Comparable in 0.6.2, so <= and >= operators work directly for ordering range endpoints with no helper conversion needed.
+AeroPanelGroup is a single new layout component (plus its AeroPanelSection data class) that fills the gap between AeroAccordion (content-sized, no drag) and AeroSplitPane (2-pane, no collapse): N vertical sections that fill their parent container height, collapse to a fixed header strip on click, and let adjacent expanded sections be resized by dragging a divider between them. The canonical reference is the VS Code Left Sidebar (Explorer / Source Control / Outline / Timeline). The component is additive - no existing components change, no new Gradle dependencies are required.
 
-The two bug fixes have confirmed root causes with minimal, surgical fixes. Fix A (AeroDateTimePicker seconds not shown in trigger) is a single-site change to the default formatter at line 76 -- the lambda closes over showSeconds but currently ignores it; the fix computes displayText inside the composable body with a conditional seconds suffix. Fix B (AeroSplitPane nested freeze) has two root causes that must land together: remember(totalPx) re-keys divider state on every outer-drag frame (cause of snap-back), and coerceIn(min, max) throws IllegalArgumentException when the inner pane is squeezed below minFirst + minSecond (cause of the freeze). A unit test for clampDividerPx with an inverted range must be written before the fix is applied.
+The implementation strategy is almost entirely a composition of existing in-repo primitives: BoxWithConstraints (same as AeroSplitPane), aeroDragSplitter + clampDividerPx (reused verbatim), animateFloatAsState at 200ms FastOutSlowInEasing (same as AeroSidebar), the AeroAccordion hybrid controlled/uncontrolled API shape, and glassPanel + CaretRight for the Aero header. The only genuinely new code is one pure-JVM distribution file (PanelDistribution.kt - no Compose imports, fully unit-testable) and the two public Compose files (AeroPanelGroup.kt and its showcase addition).
 
-AeroDateTimeRangePicker is a structural merge of AeroDateRangePicker (dual calendar + AeroDateRangeState state machine) and AeroDateTimePicker (time rows + Apply commit gate), emitting (LocalDateTime, LocalDateTime). Every internal primitive needed -- AeroCalendarGrid, TimeFields, nextRangeState, combineDateTime, AeroCalendarPositionProvider, PickerPopupContainer -- already exists and is reused read-only. The new formatAeroDateTime(ldt, showSeconds) internal helper, introduced as part of Fix A, is shared by the new component, making Fix A the natural prerequisite.
+The primary risk - and the mandatory first step - is confirming that animateFloatAsState and direct drag writes to the same sizePx state can coexist without oscillation. The architecture section describes the likely resolution (split intent-state from display-state), but this has not been empirically tested in this codebase. All other implementation decisions are direct ports of shipped patterns with HIGH confidence. This is strictly a single-phase milestone; the build order within the phase leads with that spike.
+
+---
+
+## Open Questions
+
+These questions were raised by the researchers and must be answered before requirements are finalized. Resolve them with the user before writing REQ-IDs.
+
+| # | Question | Where It Bites | Researcher Suggested Default |
+|---|----------|----------------|------------------------------|
+| OQ-1 | **onLayoutChange firing contract:** Should it fire on every drag delta, on drag-end only, or on both drag-end and toggle? FEATURES.md says after drag-end or toggle; PITFALLS.md says not on every drag frame. These are consistent but must be explicit in the REQ-ID. | API design; caller persist strategy | Fire on drag-end and on each collapse/expand toggle - not on every drag frame |
+| OQ-2 | **Min-size granularity:** Is `minSectionSize: Dp` a group-level parameter or per-section? FEATURES.md writes group-level; ARCHITECTURE.md shows per-section in pseudocode. The clamp logic differs. | API shape of AeroPanelSection and clampPanelDividerPx signature | Group-level matches AeroSplitPane simplicity; per-section is more flexible - confirm with user |
+| OQ-3 | **Collapsed header height:** STACK.md states `36.dp` with no qualifier; ARCHITECTURE.md treats it as a constant. Fixed in the library or caller-configurable? | Whether a `headerHeight: Dp` parameter is needed | Fixed 36dp matches AeroAccordion; exposing it adds API surface with no stated consumer need |
+| OQ-4 | **Section stable ID:** PITFALLS.md (PNL-PITFALL-08) requires `key(section.id)` to prevent state re-key on reorder. FEATURES.md and ARCHITECTURE.md do not include `id` in the data class. A default of `title` breaks with duplicate titles. | Public API of AeroPanelSection | Add `id: String = title` as a defaulted parameter; document that callers with duplicate titles must supply unique IDs |
 
 ---
 
@@ -21,184 +34,131 @@ AeroDateTimeRangePicker is a structural merge of AeroDateRangePicker (dual calen
 
 ### Recommended Stack
 
-**Zero new dependencies. Zero build file changes.**
+No Gradle changes required. AeroPanelGroup is built entirely from APIs already on the compile classpath. Confirmed versions: Kotlin 2.1.21, Compose Multiplatform 1.7.3, JDK 17.
 
-| Technology | Version | Status |
-|------------|---------|--------|
-| Kotlin | 2.1.21 | Unchanged |
-| Compose Desktop | 1.7.3 | Unchanged |
-| kotlinx-datetime | 0.6.2 | Already api-scoped at library/build.gradle.kts:27 -- confirmed |
-| JDK | 17 | Unchanged |
+**Core APIs used:**
 
-**Dependency configuration resolved (orchestrator-verified fact):** library/build.gradle.kts:27 declares api(libs.kotlinx.datetime). The Architecture/Pitfalls still-implementation/publish-debt note is WRONG. The publish-time transitive-type leak is ALREADY resolved. The only residual action is doc hygiene: clear the stale Revisit-on-publish note from PROJECT.md Key Decisions. Zero new dependencies for this milestone.
+- `BoxWithConstraints` - read `constraints.maxHeight.toFloat()` once as `totalPx`; same pattern as AeroSplitPane; not SubcomposeLayout
+- `animateFloatAsState` + `tween(200, FastOutSlowInEasing)` - collapse/expand animation; matches AeroSidebar timing
+- `Modifier.aeroDragSplitter(Orientation.Vertical, onDrag)` - drag resize; reused verbatim from AeroDragSplitter.kt; avoids `detectDragGestures` touchSlop bug (PITFALL-03)
+- `clampDividerPx` from SplitClamp.kt - reused verbatim; inverted-range guard already in place
+- `mutableStateListOf` - per-section `sizePx`, `lastExpandedFraction`, `expanded`
+- `rememberUpdatedState(totalPx)` - mandatory; prevents stale-capture snap-back (FIXSP-01 pattern)
+- `Modifier.glassPanel(cornerRadius = 0.dp)` + `AeroIcons.CaretRight` - Win7 Aero header
 
-**LocalDateTime ordering:** LocalDateTime implements Comparable in 0.6.2. The <= / >= Kotlin operators work directly -- no .atStartOfDayIn(TimeZone) conversion or Instant arithmetic needed. The existing nextRangeState idiom (if (clicked >= current.start)) applies identically to LocalDateTime.
+**New internal file (pure JVM, no Compose imports):**
 
-**Explicitly excluded for this milestone:**
-- kotlinx-datetime version bump -- 0.7.x introduced breaking renames; no API gap exists in 0.6.2
-- java.time types in picker signatures -- breaks API parity with existing pickers
-- Any new Gradle module -- single :library module constraint through v2.x
+    library/src/main/kotlin/com/mordred/aero/components/layout/internal/panelgroup/PanelDistribution.kt
+
+Contains `distributePx`, `shareTransferOnCollapse`, `shareTransferOnExpand`, `computeAvailablePx`. All unit-testable without a Compose runtime.
 
 ### Expected Features
 
-**Fix A -- AeroDateTimePicker seconds trigger (regression fix):**
-- Root cause confirmed: AeroDateTimePicker.kt line 76 default formatter hardcodes %02d:%02d and never consults showSeconds
-- Minimal fix: compute displayText inside composable body with conditional seconds suffix; introduce internal fun formatAeroDateTime(ldt, showSeconds) shared helper
-- Existing callers passing an explicit formatter are unaffected; callers relying on the default now correctly see seconds when showSeconds = true
+**Must have (table stakes):**
 
-**Fix B -- AeroSplitPane nested freeze (regression fix, two root causes):**
-- Root cause 1 (AeroSplitPane.kt:105): remember(totalPx) re-keys divider state on every frame when outer pane resizes; fix: var dividerFraction by remember { mutableStateOf(initialSplitFraction) } with val dividerPx = fractionToPx(dividerFraction, totalPx) derived each recompose
-- Root cause 2 (SplitClamp.kt:22): coerceIn(minFirstPx, maxPx) throws when maxPx < minFirstPx; fix: val safeMax = maxPx.coerceAtLeast(minFirstPx) guard before coerceIn
-- Both files must change in the same commit; write unit test for inverted-range case in clampDividerPx first
+- N sections in a vertical column filling parent height - the defining behavior vs. AeroAccordion
+- Collapse section to ~36dp header strip; neighbors absorb freed space proportionally
+- Expand collapsed section; size restores from `lastExpandedFraction`; neighbors shrink proportionally
+- Drag divider between two adjacent expanded sections; direct px writes, no animation lag
+- Divider only between two expanded neighbors; static join between expanded+collapsed pair
+- Min-size clamp per divider drag (prevents zero-height sections)
+- `collapsible = false` per section (locked decision)
+- `resizable = false` per section or group-level (locked decision)
+- Win7 Aero header styling: `glassPanel`, CaretRight 0-to-90-degree rotation animation
+- Hybrid controlled/uncontrolled expansion API (matches AeroAccordion exactly)
+- `onLayoutChange` + `initialSizes` parameters for persist/restore
+- Showcase demo in LayoutSection.kt with three-theme sign-off
 
-**AeroDateTimeRangePicker (new component -- table stakes):**
+**Should have (cheap differentiators, include in this milestone):**
 
-| Feature | Implementation note |
-|---------|---------------------|
-| Dual calendar (AeroCalendarGrid x2) | Reused verbatim from AeroDateRangePicker |
-| AeroDateRangeState + nextRangeState | Reused verbatim; date-level state machine unchanged |
-| Two TimeFields rows | pendingStartTime / pendingEndTime, both keyed on expanded |
-| Apply commit gate | enabled = rangeState is AeroDateRangeState.Selected; auto-close on second date click prohibited |
-| Same-day ordering | Silent swap at Apply using LocalDateTime <= LocalDateTime; extract as internal fun orderDateTimeRange for unit testing |
-| Pending state isolation | All four pending values keyed on expanded; cancelled partial session never leaks |
-| TimeFields rendered unconditionally | enabled = false until dates chosen; popup height stable from frame 1 |
-| Trigger format | DD.MM.YYYY HH:MM[:SS] -> DD.MM.YYYY HH:MM[:SS] |
-| showSeconds + minuteStep parity | Same values applied to both time rows; no per-endpoint overrides |
-| Full parameter set | startValue, endValue, onRangeSelect, modifier, formatter, placeholder, clearable, onClear, minDate, maxDate, selectableDates, enabled, showSeconds, minuteStep |
+- `headerActions: @Composable RowScope.() -> Unit` slot per section (VS Code model; essentially free)
+- `leadingIcon: ImageVector?` per section (matches AeroAccordion API; free)
+- Pure-logic unit tests in PanelDistributionTest.kt (library quality gate)
 
-**Anti-features (explicitly out of scope for v2.0.1):**
+**Defer (not in v2.0.2):**
 
-| Excluded | Reason |
-|----------|--------|
-| Hover-preview range highlight | Needs AeroCalendarGrid API extension; disproportionate for a patch milestone |
-| Per-endpoint showSeconds / minuteStep | Doubles API surface; no confirmed use case |
-| Live inversion error UI on same-day time reversal | Silent swap at Apply is simpler and sufficient |
-| Inline (always-visible) mode | Explicitly deferred to v2.x per PROJECT.md |
-| Timezone selector | Separate feature domain; component works with LocalDateTime only |
-| onStartChange / onEndChange partial emission | Violates commit-gate contract |
+- Horizontal orientation
+- Keyboard resize of dividers
+- Imperative collapse/expand handle
+- `maxSize` per section
+- Nested AeroPanelGroup support
+- Drag-to-reorder sections
 
 ### Architecture Approach
 
-v2.0.1 touches exactly four files. No new packages, no structural changes.
+The component follows three existing patterns simultaneously: the `BoxWithConstraints` + fraction-state pattern from AeroSplitPane (sizes stored as weights in an expanded pool, derived to px each recompose - no `remember(totalPx)` key); the `aeroDragSplitter` + `clampDividerPx` drag infrastructure from AeroSplitPane (reused verbatim, `Orientation.Vertical`); and the hybrid controlled/uncontrolled expansion API from AeroAccordion. The distribution math (`availableForExpanded = totalPx - sum-of-collapsedHeaders - sum-of-activeDividers`) is extracted into a pure-JVM PanelDistribution.kt file testable with `kotlin.test` in the same pattern as SplitClampTest.kt and AccordionToggleTest.kt.
 
-**Files changed:**
+**Major components:**
 
-| File | Change |
-|------|--------|
-| components/pickers/AeroDateTimePicker.kt | Fix A: default formatter seconds branch (1-site change) |
-| components/layout/AeroSplitPane.kt | Fix B-1: replace remember(totalPx) with fraction-based state |
-| components/layout/internal/splitpane/SplitClamp.kt | Fix B-2: coerceAtLeast guard in clampDividerPx |
-| components/pickers/AeroDateTimeRangePicker.kt | NEW file: full new component |
+1. `AeroPanelGroup` (layout/AeroPanelGroup.kt) - public composable; owns `BoxWithConstraints`, section state list, render loop, divider placement logic
+2. `AeroPanelSection` (data class, same file) - pure data descriptor: title, content lambda, collapsible, resizable, leadingIcon, headerActions
+3. `PanelGroupDivider` (private composable, same file) - 8dp hit-area + 1dp Aero line + grip dots; `aeroDragSplitter` applied; rendered only between two adjacent expanded sections
+4. `PanelDistribution.kt` (pure JVM, internal/panelgroup/) - `distributePx`, `shareTransferOnCollapse`, `shareTransferOnExpand`, `computeAvailablePx`
 
-**Primitives reused read-only (zero modifications):**
-AeroCalendarGrid, TimeFields, AeroDateRangeState, nextRangeState, combineDateTime, AeroCalendarPositionProvider, PickerPopupContainer, dateIsDisabled, formatAeroDate, pxToFraction, fractionToPx, aeroDragSplitter
+**Key patterns:**
 
-**Key architectural patterns:**
-1. Fraction as stable coordinate -- SplitPane divider stored as fraction [0..1]; px derived at render time (val dividerPx = dividerFraction * totalPx). Fraction does not change when container resizes.
-2. Apply gate for compound pickers -- never auto-close when multiple independent inputs must be combined before the value is complete.
-3. Sealed state machine for range selection -- in AeroDateTimeRangePicker the commit pair from nextRangeState is discarded in the day-click handler; Apply is the sole emit site.
+- Sizes stored as raw px weights in a `SnapshotStateList<Float>`; rendered heights derived as proportional shares of `availableForExpanded` each recompose - window resize rescales proportionally with no state reset
+- `animateFloatAsState` per section targeting rendered height or `headerPx`; drag writes directly to `sizePx` (subject to spike confirmation in Step 1)
+- Divider existence derived inline (`isExpanded(i) && isExpanded(i+1)`); no divider state to synchronize
+- `rememberUpdatedState(totalPx)` mandatory in drag lambda; `SnapshotStateList` reads inside drag lambda are always live
 
 ### Critical Pitfalls
 
-1. **remember(totalPx) re-keys nested SplitPane on every outer drag (PITFALL-A)** -- Confirmed at AeroSplitPane.kt:105. Fix: fraction-based state with no remember key; derive px each recompose. PITFALL-A and PITFALL-B must land together.
+**Top risks, in priority order:**
 
-2. **coerceIn(min, max) crash when nested pane squeezed (PITFALL-B)** -- Confirmed at SplitClamp.kt:22. Fix: val safeMax = maxPx.coerceAtLeast(minFirstPx). Write unit test for inverted range before applying fix.
+1. **PNL-PITFALL-01: Animation vs. drag state conflict** - `animateFloatAsState` and direct drag writes competing for the same `sizePx` cause oscillation or snap-back. Mitigation: split intent-state (written by drag) from display-state (animated, read-only in layout); disable drag while animation is in-flight on either neighbor. Validate in the mandatory spike.
 
-3. **Auto-close on second date click replicated from AeroDateRangePicker (PITFALL-E)** -- The if (commit != null) { expanded = false } pattern at AeroDateRangePicker.kt:200 must NOT be copied. First design decision -- lock before writing composable code.
+2. **PNL-PITFALL-04: N-section cascading clamp crash** - With 3+ sections, dragging past the point where remaining sections cannot satisfy their combined `minSize` causes `coerceIn(min, max)` to throw `IllegalArgumentException` (same class as PITFALL-B). Mitigation: `clampPanelDividerPx` summing all minSizes above and below the divider; TDD with RED test first.
 
-4. **showSeconds not flowing to trigger formatter (PITFALL-H)** -- Root cause of Fix A; must not be replicated in new component. Compute displayText inside composable body; never use unconditional %02d:%02d in a picker with showSeconds.
+3. **PITFALL-A carry-forward: `remember(totalPx)` re-key** - Initializing `sizePx` in a `remember(totalPx)` block resets all section sizes on every window resize. Mitigation: `remember { mutableStateListOf(...) }` with no key, always.
 
-5. **Pending time state leaking across popup opens (PITFALL-G)** -- Key pendingStartTime and pendingEndTime on expanded. Established pattern in AeroDateTimePicker.kt:132-133.
+4. **FIXSP-01 carry-forward: stale capture in drag lambda** - `aeroDragSplitter` captures `onDrag` once; plain locals in the composable scope are stale after first drag event. Mitigation: read `sizePx[above]` and `sizePx[below]` directly inside the lambda; wrap `totalPx` in `rememberUpdatedState`.
 
-6. **Popup height jump when time rows rendered conditionally (PITFALL-I)** -- Render both TimeFields rows unconditionally; use enabled = false until dates selected. Layout stable from frame 1 for position provider flip logic on 768p displays.
+5. **PNL-PITFALL-06: `lastExpandedPx` overflow after window shrink** - Restoring absolute px after the window has shrunk overflows the group. Mitigation: store `lastExpandedFraction` (ratio at collapse time); restore as `lastExpandedFraction * currentAvailableForExpanded`.
 
-7. **Same-day reversed times in emitted range (PITFALL-F)** -- At Apply: val (s, e) = if (startLdt <= endLdt) startLdt to endLdt else endLdt to startLdt. LocalDateTime <= LocalDateTime works directly in 0.6.2.
+6. **PNL-PITFALL-08: Section state re-key on list reorder** - Positional keys in the render loop reset section state when order changes. Mitigation: `key(section.id)` in the render loop; `id: String` on `AeroPanelSection` (see OQ-4).
 
 ---
 
 ## Implications for Roadmap
 
-All three deliverables are architecturally independent. Recommended build order: Fix A -> Fix B -> New Component.
+This is a **single-phase milestone**. The user confirmed small scope, strictly one phase. All tasks belong to Phase 13. The ordering within the phase is non-negotiable - the spike must come first.
 
-### Phase 1: Fix A -- AeroDateTimePicker Seconds Trigger
+### Phase 13: AeroPanelGroup
 
-**Rationale:** Smallest change (1 file, 1 site); fixes visible regression; establishes formatAeroDateTime helper inherited by the new component. Must land before new component to avoid writing the same bug pattern twice.
+**Rationale:** Additive component with no dependence on any not-yet-shipped primitive. All blocking work shipped in prior phases. The only open risk (animation-vs-drag coexistence) is resolved by an upfront spike before any library code is written.
 
-**Delivers:** Correct HH:MM:SS display when showSeconds = true. internal fun formatAeroDateTime(ldt, showSeconds) available for reuse.
+**Delivers:** Fully functional `AeroPanelGroup` + `AeroPanelSection` public API; `PanelDistribution.kt` pure-logic module with unit tests; `PanelGroupDivider` private composable; showcase demo with three-theme sign-off.
 
-**Addresses:** PITFALL-H
+**Build order within Phase 13 (non-negotiable):**
 
-**Files changed:** AeroDateTimePicker.kt only
+| Step | Name | Gate before proceeding |
+|------|------|------------------------|
+| 1 | Animation-vs-drag spike | Drag is instant; toggle animates 200ms; collapse-then-immediate-drag produces no snap-back or oscillation |
+| 2 | Pure logic + TDD (PanelDistribution.kt, PanelGroupLogicTest.kt) | All tests GREEN; covers distributePx, shareTransfer, computeAvailablePx, clampPanelDividerPx, lastExpandedFraction restore |
+| 3 | Layout skeleton (no animation, no drag) | Window resize redistributes heights correctly; collapse/expand toggle changes heights correctly |
+| 4 | Collapse/expand animation | 200ms FastOutSlowInEasing; concurrent animations on multiple sections do not conflict |
+| 5 | Drag resize | Instant; no snap-back after window resize during drag |
+| 6 | Controlled expansion path + KDoc | Both branches present; KDoc has do-not-collapse-to-one-branch comment |
+| 7 | Aero visual polish | glassPanel header, CaretRight caret, headerActions slot, grip dots on divider; three-theme check |
+| 8 | Showcase demo + sign-off | LayoutSection.kt updated; three-theme visual sign-off completed |
 
-**Verification:** showSeconds = true, set seconds = 45, Apply -- trigger shows HH:MM:45. Default showSeconds = false still shows HH:MM (regression check required).
+**Features addressed:** All P1 table-stakes plus the three cheap differentiators (headerActions, leadingIcon, unit tests).
 
-**Research flag:** None -- single-file, single-pattern fix.
+**Pitfalls to address per step:**
 
----
-
-### Phase 2: Fix B -- AeroSplitPane Nested Freeze
-
-**Rationale:** Two-part fix that must land together; independent from Fix A. Placed second so Fix A is verifiable before tackling the two-file SplitPane change.
-
-**Delivers:** 3-pane layouts work -- inner divider holds position during outer drag; no crash when squeezed. Single-level behavior unchanged.
-
-**Addresses:** PITFALL-A, PITFALL-B, PITFALL-C (eliminated implicitly by PITFALL-A fix), PITFALL-D (single-level regression guard)
-
-**Files changed:** AeroSplitPane.kt + SplitClamp.kt (must change together)
-
-**Pre-fix requirement:** Write unit test for clampDividerPx with inverted range (minFirstPx > maxPx) before applying the fix.
-
-**Verification:** 3-pane showcase -- drag outer splitter, inner divider holds position. Squeeze inner pane below 96dp -- no IllegalArgumentException. Window resize -- single-level divider fraction preserved.
-
-**Research flag:** None -- both root causes confirmed from source with exact line numbers.
-
----
-
-### Phase 3: New Component -- AeroDateTimeRangePicker
-
-**Rationale:** Largest surface area; benefits from Fix A being complete (formatter pattern established). Placed last for defect containment.
-
-**First design decision (lock before writing composable code):** Apply gate architecture -- nextRangeState commit pair discarded in day-click handler; only Apply button triggers onRangeSelect + expanded = false.
-
-**Delivers:** AeroDateTimeRangePicker with (LocalDateTime, LocalDateTime) output, dual-calendar range, dual time rows, Apply gate, same-day ordering, trigger format DD.MM.YYYY HH:MM[:SS] -> DD.MM.YYYY HH:MM[:SS]. Showcase entry in PickersSection.kt.
-
-**New internal code:**
-- formatAeroDateTime -- from Phase 1, already exists when Phase 3 begins
-- internal fun orderDateTimeRange(startDate, startTime, endDate, endTime): Pair -- pure, unit-testable; applied at Apply onClick
-
-**Reused read-only:** AeroCalendarGrid x2, TimeFields x2, AeroDateRangeState, nextRangeState, combineDateTime x2, AeroCalendarPositionProvider, PickerPopupContainer
-
-**Addresses:** PITFALL-E, PITFALL-F, PITFALL-G, PITFALL-H (range trigger), PITFALL-I
-
-**Verification (from PITFALLS.md Looks-Done-But-Isnt checklist):**
-- Second date click -- popup stays open, time rows visible
-- Apply disabled until both dates selected
-- Cancel -- onRangeSelect not called
-- Same date, startTime=15:00, endTime=08:00, Apply -- emitted start.time < end.time
-- Cancel after time edit -- reopen shows committed value or 00:00, not cancelled edit
-- showSeconds = true, non-zero seconds, Apply -- trigger shows HH:MM:SS -> HH:MM:SS
-- showSeconds = false (default) -- trigger shows HH:MM
-- Three-theme visual (AeroBlue, AeroDark, Classic)
-- No transparent = true in new file (W11-01 carry-forward)
-
-**Research flag:** None -- structural composition of two existing components; all patterns confirmed from codebase.
-
----
-
-### Phase Ordering Rationale
-
-- Fix A before New Component: formatAeroDateTime lands with Fix A; new component inherits it without re-introducing the seconds bug
-- Fix B after Fix A: independent but slightly more complex; cleaner to have Fix A verified first
-- New Component last: largest surface area; defect containment; formatter pattern already established
-- Each phase independently verifiable and committable in isolation
+- Step 1: PNL-PITFALL-01 (animation-vs-drag), PNL-PITFALL-08 (remember discipline)
+- Step 2: PNL-PITFALL-04 (N-section clamp), PNL-PITFALL-02 (float drift), PNL-PITFALL-05 (share-transfer rounding), PNL-PITFALL-06 (lastExpandedFraction), PNL-PITFALL-07 (divider count off-by-one), PITFALL-A + PITFALL-B carry-forwards
+- Step 3: PNL-PITFALL-08 (key(section.id) in render loop), PNL-PITFALL-09 (no drag divider on collapsed boundary), PNL-PITFALL-10 (no animateContentSize), PNL-PITFALL-11 (weight only on last expanded section), PITFALL-03 carry-forward (no detectDragGestures), FIXSP-01 carry-forward (pointerInput(Unit) + rememberUpdatedState)
+- Steps 3+: PNL-PITFALL-03 (mid-drag collapse race - dragging flag guard)
 
 ### Research Flags
 
-All three phases have HIGH-confidence findings from direct source inspection. No phase requires /gsd:research-phase.
+Phase 13 does NOT need `/gsd:research-phase` - all patterns are direct ports of shipped code with verified in-repo precedents.
 
-- Phase 1 (Fix A): Standard Compose default parameter pattern -- well-understood
-- Phase 2 (Fix B): Standard Compose state management; root causes confirmed with exact line numbers
-- Phase 3 (New Component): Structural composition confirmed from codebase; no implementation unknowns
+One spike is needed before requirements are written: Step 1 (animation-vs-drag coexistence). This is an empirical question answered by a throwaway proof-of-concept composable in the showcase, not external documentation.
+
+Before requirements finalization: resolve OQ-1 through OQ-4 with the user. These are API-shape decisions that do not block the spike or the pure-logic step.
 
 ---
 
@@ -206,44 +166,45 @@ All three phases have HIGH-confidence findings from direct source inspection. No
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | api(libs.kotlinx.datetime) confirmed at library/build.gradle.kts:27; all versions confirmed from libs.versions.toml |
-| Features | HIGH | Bug root causes confirmed from source line numbers; AeroDateTimeRangePicker features derived from established codebase patterns |
-| Architecture | HIGH | All reused primitives confirmed as existing internal components; popup layout derived from AeroDateRangePicker pattern |
-| Pitfalls | HIGH | Both SplitPane root causes confirmed from source (line 105 / line 22); formatter bug confirmed at line 76; all pitfall patterns are established Compose anti-patterns |
+| Stack | HIGH | All APIs verified against in-repo source files; no new dependencies |
+| Features | HIGH | Cross-referenced VS Code, react-resizable-panels v4, JetBrains tool windows, and existing codebase; all decisions locked |
+| Architecture | HIGH (one MEDIUM gap) | All patterns are direct ports of shipped code; the MEDIUM item is animation-vs-drag coexistence, architecturally sound but unverified empirically in this codebase |
+| Pitfalls | HIGH | Grounded in actual shipped bugs (FIXSP-01), actual source code (SplitClamp.kt, AeroSplitPane.kt), and Kotlin stdlib semantics (`coerceIn` throws on inverted range) |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **Doc hygiene only:** Clear the stale Revisit-on-publish note from PROJECT.md Key Decisions. The build file already has api; the note is factually wrong.
-- **nextRangeState visibility:** Confirm package-level internal access from AeroDateTimeRangePicker.kt before coding Phase 3. If same package, no action needed.
-- **combineDateTime visibility:** Same consideration -- confirm during Phase 3 setup.
+- **Animation-vs-drag coexistence:** Architecture is sound but must be confirmed empirically in the Step 1 spike before Step 3 starts. If the spike fails, the fallback (separate intent-state and display-state; disable drag during animation) is documented in PNL-PITFALL-01 and adds approximately 20 lines of complexity.
+- **OQ-1 through OQ-4:** API design questions that need a short conversation with the user before REQ-IDs are written. They do not block the spike or the pure-logic step.
 
 ---
 
 ## Sources
 
-### Primary (HIGH confidence)
+### Primary (HIGH confidence - in-repo source files, read 2026-06-22)
 
-- library/build.gradle.kts:27 -- api(libs.kotlinx.datetime) confirmed
-- gradle/libs.versions.toml -- kotlinxDatetime = 0.6.2, Kotlin 2.1.21, Compose Desktop 1.7.3
-- components/pickers/AeroDateTimePicker.kt:76 -- formatter bug confirmed; remember(expanded) at lines 132-133; Apply gate at lines 178-188
-- components/pickers/AeroDateRangePicker.kt -- AeroDateRangeState, nextRangeState, dual-calendar layout, auto-close at line 200 confirmed
-- components/layout/AeroSplitPane.kt:105 -- remember(totalPx) re-key confirmed
-- components/layout/internal/splitpane/SplitClamp.kt:22 -- coerceIn without guard confirmed
-- components/pickers/internal/TimeFields.kt -- showSeconds, minuteStep, assembleTime confirmed
-- components/pickers/internal/calendar/AeroCalendarGrid.kt -- range params, isDisabled, onMonthChange confirmed
-- components/pickers/internal/PickerPopupContainer.kt -- glass popup surface confirmed
-- components/internal/popup/AeroCalendarPositionProvider.kt -- popup position provider confirmed
-- https://github.com/Kotlin/kotlinx-datetime/blob/v0.6.2/core/common/src/LocalDateTime.kt -- LocalDateTime Comparable confirmed at source level
-- .planning/PROJECT.md -- v2.0.1 scope, root-cause descriptions, Key Decisions table
+- `library/.../AeroSplitPane.kt` - BoxWithConstraints pattern, rememberUpdatedState(totalPx), aeroDragSplitter usage, clampDividerPx, weight(1f) second-pane, fraction-state rationale
+- `library/.../AeroAccordion.kt` - hybrid controlled/uncontrolled API, animateFloatAsState caret, tween(160ms), animateContentSize (negative precedent for AeroPanelGroup)
+- `library/.../AeroSidebar.kt` - animateDpAsState tween(200ms, FastOutSlowInEasing); the 200ms animation spec precedent
+- `library/.../AeroDragSplitter.kt` - aeroDragSplitter signature, Orientation.Vertical, awaitPointerEventScope, PITFALL-03 documentation
+- `library/.../SplitClamp.kt` - clampDividerPx, coerceAtLeast guard
+- `library/.../SplitClampTest.kt` and `AccordionToggleTest.kt` - TDD pattern templates
+- `gradle/libs.versions.toml` - confirmed Kotlin 2.1.21, CMP 1.7.3
+- `library/build.gradle.kts` - confirmed all api(...) declarations; no new dependencies required
+- `.planning/PROJECT.md` - locked decisions, v2.0.2 spec, spike mandate, PITFALL cross-references
 
-### Secondary (MEDIUM confidence)
+### Secondary (HIGH confidence - design references)
 
-- MUI X DateRangePicker, daterangepicker.com -- inform anti-feature decisions (defer hover-preview, inline mode)
-- Kotlin stdlib KDoc -- Float.coerceIn throws IllegalArgumentException when minimumValue > maximumValue
+- VS Code Left Sidebar UX (collapse to strip, drag between expanded, no drag on collapsed boundary)
+- react-resizable-panels v4 (collapsible, minSize, onLayoutChange after drag-end, proportional redistribution)
+- JetBrains tool windows (per-window size memory, drag sash between adjacent tool windows)
+
+### Tertiary (MEDIUM confidence - changelog/web)
+
+- react-resizable-panels v4 CHANGELOG - onCollapse/onExpand removed in v4 in favor of onResize; onLayoutChanged fires after resize completes
 
 ---
 
 *Research completed: 2026-06-22*
-*Ready for roadmap: yes*
+*Ready for roadmap: yes - single phase; resolve OQ-1 through OQ-4 before writing REQ-IDs*
