@@ -53,9 +53,33 @@ aero-compose-ui/
 ./gradlew :showcase:run
 ```
 
-### Use in your project
+### Add as a dependency (JitPack)
 
-Add the `:library` module to your build, then wrap your UI in `AeroTheme`:
+Add the JitPack repository to your `settings.gradle.kts` (or root `build.gradle.kts`):
+
+```kotlin
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+        maven("https://jitpack.io")
+    }
+}
+```
+
+Then declare the dependency:
+
+```kotlin
+dependencies {
+    implementation("com.github.Tolaseeq.aero-compose-ui:library:v0.1.0")
+}
+```
+
+Your consuming module also needs the Compose Multiplatform plugin applied (the library
+exposes Compose types in its public API). [See available versions on JitPack →](https://jitpack.io/#Tolaseeq/aero-compose-ui)
+
+### Usage
+
+Wrap your UI in `AeroTheme` and use the components:
 
 ```kotlin
 import androidx.compose.ui.window.Window
