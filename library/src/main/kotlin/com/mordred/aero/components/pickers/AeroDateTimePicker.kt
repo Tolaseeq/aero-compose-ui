@@ -57,7 +57,7 @@ import kotlinx.datetime.toLocalDateTime
  * @param value the currently committed date+time, or `null` for none.
  * @param onValueChange fires with the combined [LocalDateTime] ONLY when **Apply** is clicked.
  * @param modifier applied to the trigger.
- * @param formatter renders [value] in the trigger field (default DD.MM.YYYY HH:MM).
+ * @param formatter renders [value] in the trigger; `null` (default) uses `DD.MM.YYYY HH:MM` (or `HH:MM:SS` when [showSeconds]).
  * @param placeholder shown when [value] is `null`.
  * @param clearable when `true` and a value is set, shows an X button that calls [onClear].
  * @param onClear invoked by the clear button.
@@ -73,7 +73,7 @@ public fun AeroDateTimePicker(
     value: LocalDateTime?,
     onValueChange: (LocalDateTime) -> Unit,
     modifier: Modifier = Modifier,
-    formatter: (LocalDateTime) -> String = { ldt -> "${formatAeroDate(ldt.date)} ${"%02d:%02d".format(ldt.hour, ldt.minute)}" },
+    formatter: ((LocalDateTime) -> String)? = null,
     placeholder: String = "Select date & time",
     clearable: Boolean = false,
     onClear: (() -> Unit)? = null,
@@ -85,7 +85,7 @@ public fun AeroDateTimePicker(
     minuteStep: Int = 1,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val displayText = value?.let(formatter) ?: ""
+    val displayText = value?.let { ldt -> formatter?.invoke(ldt) ?: formatAeroDateTime(ldt, showSeconds) } ?: ""
 
     Box(modifier = modifier) {
         AeroTextField(
