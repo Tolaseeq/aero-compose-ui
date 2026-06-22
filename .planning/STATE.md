@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: Stateful + Layout
-status: shipped
-stopped_at: "v2.0 milestone shipped 2026-06-18 — archived, tagged, requirements reset. Awaiting /gsd:new-milestone."
-last_updated: "2026-06-18T18:24:19.957Z"
-last_activity: "2026-06-18 — v2.0 Stateful + Layout milestone completed via /gsd:complete-milestone: ROADMAP/REQUIREMENTS/AUDIT archived to milestones/, PROJECT.md evolved (27 reqs → Validated), RETROSPECTIVE updated, REQUIREMENTS.md reset, git tagged v2.0."
+milestone: v2.0.1
+milestone_name: Picker & SplitPane Fixes
+status: defining-requirements
+stopped_at: "v2.0.1 milestone started 2026-06-22 — defining requirements (2 bug fixes + AeroDateTimeRangePicker)."
+last_updated: "2026-06-22"
+last_activity: "2026-06-22 — Milestone v2.0.1 Picker & SplitPane Fixes started via /gsd:new-milestone; research first, then requirements → roadmap."
 progress:
   total_phases: 11
   completed_phases: 11
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-18 — full v2.0 milestone-completion evolution review)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, typed `AeroIcons`, and a showcase — no manual style work or icon-pack hunting required.
-**Current focus:** Between milestones — v2.0 shipped. Next milestone not yet defined; run `/gsd:new-milestone` to scope it.
+**Current focus:** v2.0.1 Picker & SplitPane Fixes — defining requirements (2 bug fixes + `AeroDateTimeRangePicker`). Phases continue from 12.
 
 ## Current Position
 
-Phase: — (no active milestone)
+Phase: Not started (defining requirements)
 Plan: —
-Status: v2.0 Stateful + Layout SHIPPED 2026-06-18 — all 5 phases (7–11), 27 plans, 27/27 requirements; milestone audit PASSED; archived to `.planning/milestones/v2.0-*`; git tag `v2.0`.
-Last activity: 2026-06-18 — `/gsd:complete-milestone v2.0` ran: archives created, PROJECT.md/ROADMAP.md/RETROSPECTIVE.md updated, REQUIREMENTS.md reset, milestone committed + tagged.
+Status: Defining requirements
+Last activity: 2026-06-22 — Milestone v2.0.1 started
 
 ```
-v2.0 Progress: [██████████] 100% (5/5 phases, 27/27 plans) — SHIPPED
+v2.0.1 Progress: defining requirements (research first → requirements → roadmap)
 ```
 
 ## Shipped Milestones
