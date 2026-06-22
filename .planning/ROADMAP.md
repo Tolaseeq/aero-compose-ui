@@ -70,7 +70,11 @@ Details: `.planning/milestones/v2.0-ROADMAP.md` · Audit: `.planning/milestones/
   6. Cancelling or clicking outside `AeroDateTimeRangePicker` and reopening shows no trace of the previous partial session — pending times and range state reset cleanly; `showSeconds` and `minuteStep` apply equally to both time rows
   7. The showcase contains: (a) `PickersSection` row for `AeroDateTimeRangePicker` with live `(LocalDateTime, LocalDateTime)` label; (b) `AeroDateTimePicker` demo with `showSeconds = true` where seconds are visible in the trigger; (c) `LayoutSection` nested 3-pane demo where both splitters are freely draggable — all verified on AeroBlue / AeroDark / Classic
   8. The stale "Revisit on publish — kotlinx-datetime declared implementation" note in PROJECT.md Key Decisions is replaced with the factual record that `api(libs.kotlinx.datetime)` is already in place
-**Plans**: TBD
+**Plans**: 4 plans
+  - [ ] 12-01-PLAN.md — Fix A: formatAeroDateTime helper + showSeconds-aware trigger + doc hygiene (FIXDT-01/02, SHW-14)
+  - [ ] 12-02-PLAN.md — Fix B: inverted-range clamp test (TDD) + fraction-based SplitPane state (FIXSP-01..04)
+  - [ ] 12-03-PLAN.md — AeroDateTimeRangePicker: Apply-gate dual-calendar datetime range picker + orderDateTimeRange (DTR-01..08)
+  - [ ] 12-04-PLAN.md — Showcase demos on three themes: range picker, seconds contrast, nested 3-pane SplitPane (SHW-11/12/13)
 
 ## Progress
 
@@ -89,7 +93,7 @@ Details: `.planning/milestones/v2.0-ROADMAP.md` · Audit: `.planning/milestones/
 | 9. Data | v2.0 | 3/3 | Complete | 2026-06-18 |
 | 10. Layout | v2.0 | 4/4 | Complete | 2026-06-18 |
 | 11. Showcase + v2.0 Visual Sign-off | v2.0 | 11/11 | Complete | 2026-06-18 |
-| 12. v2.0.1 — Seconds Fix + SplitPane Fix + AeroDateTimeRangePicker | v2.0.1 | 0/? | Not started | - |
+| 12. v2.0.1 — Seconds Fix + SplitPane Fix + AeroDateTimeRangePicker | v2.0.1 | 0/4 | Not started | - |
 
 ---
 
