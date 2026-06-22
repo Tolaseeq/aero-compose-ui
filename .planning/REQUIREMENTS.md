@@ -73,34 +73,32 @@ Carried over from `.planning/milestones/v2.0-REQUIREMENTS.md` "v3+ Future Requir
 
 ## Traceability
 
-Заполняется при создании ROADMAP.md.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FIXDT-01 | TBD | Pending |
-| FIXDT-02 | TBD | Pending |
-| FIXSP-01 | TBD | Pending |
-| FIXSP-02 | TBD | Pending |
-| FIXSP-03 | TBD | Pending |
-| FIXSP-04 | TBD | Pending |
-| DTR-01 | TBD | Pending |
-| DTR-02 | TBD | Pending |
-| DTR-03 | TBD | Pending |
-| DTR-04 | TBD | Pending |
-| DTR-05 | TBD | Pending |
-| DTR-06 | TBD | Pending |
-| DTR-07 | TBD | Pending |
-| DTR-08 | TBD | Pending |
-| SHW-11 | TBD | Pending |
-| SHW-12 | TBD | Pending |
-| SHW-13 | TBD | Pending |
-| SHW-14 | TBD | Pending |
+| FIXDT-01 | Phase 12 | Pending |
+| FIXDT-02 | Phase 12 | Pending |
+| FIXSP-01 | Phase 12 | Pending |
+| FIXSP-02 | Phase 12 | Pending |
+| FIXSP-03 | Phase 12 | Pending |
+| FIXSP-04 | Phase 12 | Pending |
+| DTR-01 | Phase 12 | Pending |
+| DTR-02 | Phase 12 | Pending |
+| DTR-03 | Phase 12 | Pending |
+| DTR-04 | Phase 12 | Pending |
+| DTR-05 | Phase 12 | Pending |
+| DTR-06 | Phase 12 | Pending |
+| DTR-07 | Phase 12 | Pending |
+| DTR-08 | Phase 12 | Pending |
+| SHW-11 | Phase 12 | Pending |
+| SHW-12 | Phase 12 | Pending |
+| SHW-13 | Phase 12 | Pending |
+| SHW-14 | Phase 12 | Pending |
 
 **Coverage:**
 - v2.0.1 requirements: 18 total
-- Mapped to phases: 0 (roadmap pending)
-- Unmapped: 18 ⚠️
+- Mapped to phases: 18 (Phase 12: 18)
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-06-22 (v2.0.1 Picker & SplitPane Fixes)*
-*Last updated: 2026-06-22 after initial definition*
+*Last updated: 2026-06-22 — traceability revised: all 18 requirements consolidated to Phase 12*
