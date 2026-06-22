@@ -85,6 +85,26 @@ fun LayoutSection() {
             )
         }
 
+        // ── SplitPane nested 3-pane (FIXSP-01/02 reproducible: drag outer, inner holds & never freezes) ──
+        Text("AeroSplitPane (nested 3-pane)", color = colors.labelText, style = typography.bodyMedium)
+        Box(Modifier.fillMaxWidth().height(240.dp)) {
+            AeroSplitPane(
+                orientation = AeroSplitOrientation.Horizontal,
+                modifier = Modifier.fillMaxSize(),
+                initialSplitFraction = 0.33f,
+                start = { Box(Modifier.fillMaxSize()) { Text("Pane 1", color = colors.onSurface) } },
+                end = {
+                    AeroSplitPane(
+                        orientation = AeroSplitOrientation.Horizontal,
+                        modifier = Modifier.fillMaxSize(),
+                        initialSplitFraction = 0.5f,
+                        start = { Box(Modifier.fillMaxSize()) { Text("Pane 2", color = colors.onSurface) } },
+                        end = { Box(Modifier.fillMaxSize()) { Text("Pane 3", color = colors.onSurface) } },
+                    )
+                },
+            )
+        }
+
         // ── AeroSidebar — top-level Row sibling (PITFALL-11) ─────────────────
         val sidebarState = rememberAeroSidebarState(AeroSidebarMode.Expanded)
         Text("AeroSidebar (toggle reflows adjacent content)", color = colors.labelText, style = typography.bodyMedium)
