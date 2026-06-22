@@ -9,8 +9,8 @@
 
 ### Fix: AeroDateTimePicker Seconds (FIXDT)
 
-- [ ] **FIXDT-01**: При `showSeconds = true` триггер-поле `AeroDateTimePicker` отображает введённые секунды (формат `DD.MM.YYYY HH:MM:SS`); при `showSeconds = false` остаётся `DD.MM.YYYY HH:MM`. Дефолтный форматтер учитывает `showSeconds` (root cause: дефолтный formatter хардкодил `HH:MM`).
-- [ ] **FIXDT-02**: Явно переданный пользователем `formatter` имеет приоритет и используется как есть — фикс не ломает callers с кастомным форматтером (no breaking change).
+- [x] **FIXDT-01**: При `showSeconds = true` триггер-поле `AeroDateTimePicker` отображает введённые секунды (формат `DD.MM.YYYY HH:MM:SS`); при `showSeconds = false` остаётся `DD.MM.YYYY HH:MM`. Дефолтный форматтер учитывает `showSeconds` (root cause: дефолтный formatter хардкодил `HH:MM`).
+- [x] **FIXDT-02**: Явно переданный пользователем `formatter` имеет приоритет и используется как есть — фикс не ломает callers с кастомным форматтером (no breaking change).
 
 ### Fix: AeroSplitPane Nested Freeze (FIXSP)
 
@@ -37,7 +37,7 @@
 - [ ] **SHW-11**: `PickersSection` получает строку-демо `AeroDateTimeRangePicker` рядом с `AeroDateRangePicker`; выбранный диапазон дата+время отображается живым лейблом (видно `(LocalDateTime, LocalDateTime)`). Визуально проверено на трёх темах.
 - [ ] **SHW-12**: Showcase-демо `AeroDateTimePicker` с `showSeconds = true` (FIXDT-01 виден глазами): введённые секунды появляются в триггере. Существующая `AeroDateTimePicker`-демо расширяется или добавляется второй экземпляр с секундами.
 - [ ] **SHW-13**: `LayoutSection` получает демо **вложенного** `AeroSplitPane` (3 pane через 2 сплиттера, вложение в `end`-слот), на котором FIXSP-01/02 воспроизводимы и проверяемы: левый сплиттер можно гонять, правый сохраняет позицию и не фризит. Проверено на трёх темах.
-- [ ] **SHW-14**: Стейл-нота "Revisit on publish — kotlinx-datetime declared implementation" в PROJECT.md Key Decisions очищена/исправлена (фактически уже `api(...)` — leak отсутствует). Doc-hygiene.
+- [x] **SHW-14**: Стейл-нота "Revisit on publish — kotlinx-datetime declared implementation" в PROJECT.md Key Decisions очищена/исправлена (фактически уже `api(...)` — leak отсутствует). Doc-hygiene.
 
 ## Future Requirements (deferred — not in this milestone)
 
@@ -75,8 +75,8 @@ Carried over from `.planning/milestones/v2.0-REQUIREMENTS.md` "v3+ Future Requir
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FIXDT-01 | Phase 12 | Pending |
-| FIXDT-02 | Phase 12 | Pending |
+| FIXDT-01 | Phase 12 | Complete |
+| FIXDT-02 | Phase 12 | Complete |
 | FIXSP-01 | Phase 12 | Complete |
 | FIXSP-02 | Phase 12 | Complete |
 | FIXSP-03 | Phase 12 | Complete |
@@ -92,7 +92,7 @@ Carried over from `.planning/milestones/v2.0-REQUIREMENTS.md` "v3+ Future Requir
 | SHW-11 | Phase 12 | Pending |
 | SHW-12 | Phase 12 | Pending |
 | SHW-13 | Phase 12 | Pending |
-| SHW-14 | Phase 12 | Pending |
+| SHW-14 | Phase 12 | Complete |
 
 **Coverage:**
 - v2.0.1 requirements: 18 total

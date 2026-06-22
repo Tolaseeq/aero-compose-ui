@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: "Roadmap ready — awaiting `/gsd:plan-phase 12`"
-stopped_at: "Completed 12-02-PLAN.md (Fix B: SplitPane nested-drag freeze + inverted-range crash)"
-last_updated: "2026-06-22T12:49:58.190Z"
+stopped_at: "Completed 12-01-PLAN.md (Fix A: formatAeroDateTime helper + showSeconds trigger fix + PROJECT.md SHW-14)"
+last_updated: "2026-06-22T12:50:43.949Z"
 last_activity: 2026-06-22 — Roadmap revised, 18/18 requirements consolidated to Phase 12
 progress:
   total_phases: 1
@@ -85,7 +85,7 @@ See `.planning/MILESTONES.md` for full accomplishments.
 **v1.0:** 26 plans, ~3 days, average ~7–25 min per plan.
 **v1.1:** 11 plans, single-day push (2026-04-29, ~10 h), 60 commits, 340 files changed, +20,212 / −477 lines.
 **v2.0:** 55 plans, ~49 days, 145 commits, 152 files changed, +27,406 / −2,285 lines.
-**v2.0.1:** 0 plans completed (roadmap phase).
+**v2.0.1:** 1 plan completed — Fix A (12-01); 4 min, 3 tasks, 3 files.
 
 ## Accumulated Context
 
@@ -148,13 +148,14 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 11]: rememberUpdatedState(value) in AeroRangeSlider drag loop so applyThumbMove always reads the latest committed range (F9 root cause — stale captured value in pointerInput lambda)
 - [Phase 11-showcase-v2-0-visual-sign-off]: F-WIZARD root cause: AeroStepperWizard is intentionally surface-less; active step uses weight(1f,fill=false) inside a plain Column — needs caller-provided bounded parent height; showcase fix is Box(height(200.dp)); no library edit needed
 - [Phase 11-showcase-v2-0-visual-sign-off]: F-ACCORDION-HOVER: .clip(RoundedCornerShape(8.dp)) added before .clickable in AeroAccordion.kt so hover/press highlight clips to rounded glass surface
+- [Phase 12-01]: formatAeroDateTime internal helper in AeroDateTimePicker.kt; formatter param changed to ((LocalDateTime)->String)?=null; displayText dispatches via formatter?.invoke(ldt) ?: formatAeroDateTime(ldt, showSeconds) — resolves FIXDT-01/02, provides shared helper for AeroDateTimeRangePicker (PITFALL-H prevention)
+- [Phase 12-01]: kotlinx-datetime declared api(libs.kotlinx.datetime) confirmed; PROJECT.md stale implementation/Revisit note corrected to factual api record (SHW-14)
 - [Phase 12]: Fraction-based SplitPane divider state: var dividerFraction by remember with val dividerPx derived each recompose; no remember(totalPx) key eliminates nested-drag snap-back (PITFALL-A fix, FIXSP-01)
 - [Phase 12]: clampDividerPx guard: val safeMax = maxPx.coerceAtLeast(minFirstPx) before coerceIn prevents IllegalArgumentException when inner pane squeezed below combined minima (PITFALL-B fix, FIXSP-02)
 
 ### Pending Todos
 
 - Gap-close: AeroDropdown popup offset regression — explicitly OUT of v2.0.1 scope; future milestone
-- v2.0.1 Phase 12 (Fix A): write `internal fun formatAeroDateTime(ldt: LocalDateTime, showSeconds: Boolean): String` as a shared helper alongside the fix so the new component inherits it
 - v2.0.1 Phase 12 (Fix B): write unit test for `clampDividerPx` with inverted range BEFORE applying the two-file fix (mandatory per research SUMMARY.md)
 - v2.0.1 Phase 12 (New Component): lock Apply-gate architecture decision (no auto-close on second date click) BEFORE writing the composable body (PITFALL-E)
 - v2.0.1 Phase 12 (New Component): confirm `nextRangeState` and `combineDateTime` are accessible from `AeroDateTimeRangePicker.kt` package (same package = no extra action; different package = make internal accessible)
@@ -166,7 +167,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-22T12:49:58.185Z
-Stopped at: Completed 12-02-PLAN.md (Fix B: SplitPane nested-drag freeze + inverted-range crash)
+Last session: 2026-06-22T12:50:43.943Z
+Stopped at: Completed 12-01-PLAN.md (Fix A: formatAeroDateTime helper + showSeconds trigger fix + PROJECT.md SHW-14)
 Resume file: None
 Next action: `/gsd:plan-phase 12`
