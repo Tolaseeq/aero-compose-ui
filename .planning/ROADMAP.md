@@ -93,7 +93,7 @@ Details: `.planning/milestones/v2.0-ROADMAP.md` · Audit: `.planning/milestones/
 | 9. Data | v2.0 | 3/3 | Complete | 2026-06-18 |
 | 10. Layout | v2.0 | 4/4 | Complete | 2026-06-18 |
 | 11. Showcase + v2.0 Visual Sign-off | v2.0 | 11/11 | Complete | 2026-06-18 |
-| 12. v2.0.1 — Seconds Fix + SplitPane Fix + AeroDateTimeRangePicker | 4/4 | Complete   | 2026-06-22 | - |
+| 12. v2.0.1 — Seconds Fix + SplitPane Fix + AeroDateTimeRangePicker | 4/4 | Complete    | 2026-06-22 | - |
 
 ---
 
