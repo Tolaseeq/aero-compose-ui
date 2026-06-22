@@ -70,7 +70,7 @@ Then declare the dependency:
 
 ```kotlin
 dependencies {
-    implementation("com.github.Tolaseeq.aero-compose-ui:library:v0.1.0")
+    implementation("com.github.Tolaseeq.aero-compose-ui:library:v2.0.0")
 }
 ```
 
