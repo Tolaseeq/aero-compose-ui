@@ -167,7 +167,7 @@
 | **v2.0:** `AeroScrollArea` запрещён внутри DataTable/TreeView — raw `LazyListState + AeroScrollBar` | `LazyColumn` в `AeroScrollArea` уничтожает виртуализацию (PITFALL-01) | ✓ Good — grep-gate чист; виртуализация подтверждена eyes-on |
 | **v2.0:** `AeroCalendarPositionProvider` (Phase 7) вместо `AeroDropdownPopup` для date-popup | `AeroDropdownPopup` залочен по ширине anchor — календарь шире обрезается (PITFALL-02) | ✓ Good — нет clip на правом крае 1024dp окна |
 | **v2.0:** 16-item × 3-theme "looks done but isn't" checklist как формальный sign-off gate | Stateful-компоненты молча ломаются способами, невидимыми в коде | ✓ Good — первый проход FAILED (16 дефектов), все закрыты, 48/48 cells PASS |
-| **v2.0:** `kotlinx-datetime` объявлен `implementation`, не `api` | Соответствует repo-конвенции all-deps-implementation | ⚠️ Revisit на publish — picker-сигнатуры экспонируют `kotlinx.datetime.*`; для PUBLISHED-библиотеки transitive type утечёт (адресовать на POM-шаге) |
+| **v2.0:** `kotlinx-datetime` объявлен `api(libs.kotlinx.datetime)` (library/build.gradle.kts:27) | Picker-сигнатуры экспонируют `kotlinx.datetime.*` — `api` гарантирует transitive-доступ для consumer'ов | ✓ Good — transitive leak отсутствует; стале-нота закрыта в v2.0.1 (SHW-14) |
 
 ---
 *Last updated: 2026-06-22 — started milestone v2.0.1 Picker & SplitPane Fixes*
