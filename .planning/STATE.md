@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v2.0.2
 milestone_name: "AeroPanelGroup"
-status: "Defining requirements"
-stopped_at: v2.0.2 milestone started — defining requirements
-last_updated: "2026-06-22T14:15:00.000Z"
-last_activity: 2026-06-22 — Milestone v2.0.2 AeroPanelGroup started
+status: "Phase 13 not started"
+stopped_at: v2.0.2 roadmap created — Phase 13 ready for planning
+last_updated: "2026-06-22T14:30:00.000Z"
+last_activity: 2026-06-22 — Roadmap written, Phase 13 defined
 progress:
-  total_phases: 0
+  total_phases: 1
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,18 +20,20 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-22 — after v2.0.1 milestone)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, typed `AeroIcons`, and a showcase — no manual style work or icon-pack hunting required.
-**Current focus:** v2.0.2 AeroPanelGroup — single-phase milestone, defining requirements.
+**Current focus:** v2.0.2 AeroPanelGroup — Phase 13, not started. Roadmap written, awaiting `/gsd:plan-phase 13`.
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 13 — AeroPanelGroup (not started)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-06-22 — Milestone v2.0.2 AeroPanelGroup started
+Status: Phase 13 not started
+Last activity: 2026-06-22 — Roadmap created, Phase 13 defined
 
 ```
-v2.0.1 ✅ SHIPPED → v2.0.2 AeroPanelGroup ◆ defining requirements
+v2.0.1 ✅ SHIPPED → v2.0.2 AeroPanelGroup [Phase 13: not started] ◆ awaiting plan-phase
 ```
+
+Progress: 0/1 phases complete (0/TBD plans)
 
 ## Shipped Milestones
 
@@ -48,6 +50,29 @@ See `.planning/MILESTONES.md` for full accomplishments.
 
 Phase 12 (4 plans, 18/18 requirements) — Fix A (seconds trigger) → Fix B (nested SplitPane) → AeroDateTimeRangePicker → showcase sign-off. Full record: `.planning/MILESTONES.md`; archive: `.planning/milestones/v2.0.1-ROADMAP.md`; lessons: `.planning/RETROSPECTIVE.md`.
 
+## v2.0.2 Current Milestone: Phase 13 AeroPanelGroup
+
+**Phase goal:** Deliver fully functional `AeroPanelGroup` + `AeroPanelSection` — N vertical sections, collapse/expand with 200ms animation, drag-resize between adjacent expanded neighbors, fraction-based size state surviving window resize, hybrid controlled/uncontrolled expansion API, Win7 Aero header, unit tests (TDD), and three-theme showcase sign-off.
+
+**Requirements:** 18 total — PNL-01..PNL-18. All mapped to Phase 13. See `.planning/REQUIREMENTS.md`.
+
+**Build order (non-negotiable, from SUMMARY.md research):**
+1. Animation-vs-drag SPIKE — mandatory gate before any UI code (PNL-PITFALL-01)
+2. Pure logic TDD — `PanelDistribution.kt` + tests RED→GREEN (PNL-PITFALL-04, PITFALL-A/B)
+3. Layout skeleton — `BoxWithConstraints`, `mutableStateListOf` fraction state, `key(section.id)` render loop
+4. Collapse/expand animation — 200ms `FastOutSlowInEasing`, mid-drag race guard
+5. Drag resize — `aeroDragSplitter` + `clampPanelDividerPx`, `rememberUpdatedState(totalPx)`
+6. Controlled expansion path + KDoc (REQ-ID + PITFALL refs)
+7. Aero visual polish — `glassPanel`, CaretRight rotation, `headerActions`, grip dots, `collapsible/resizable` flags
+8. Showcase demo + three-theme sign-off
+
+**Success criteria (observable):**
+1. Collapsing a section redistributes height to neighbors; re-expanding restores prior size from `lastExpandedFraction`.
+2. Dragging a divider between two expanded sections resizes both instantly, no animation lag; divider absent adjacent to collapsed sections.
+3. Window resize keeps section proportions (fraction-based state, no `remember(totalPx)` re-key).
+4. Three-theme visual sign-off passes: Win7 Aero header gloss, CaretRight 0→90° animation, correct grip dots.
+5. All pure-logic functions have GREEN unit tests without a Compose runtime.
+
 ## v2.0 Locked Decisions (carried forward)
 
 - `undecorated=true` BEZ `transparent=true` — Win11 EXCEPTION_ACCESS_VIOLATION rule; extends to ALL Popup/Dialog (W11-01)
@@ -61,7 +86,7 @@ Phase 12 (4 plans, 18/18 requirements) — Fix A (seconds trigger) → Fix B (ne
 - DataTable selection API is `Set<RowKey>` + `key: (T) -> Any`, NOT `Set<Int>` indices (PITFALL-04)
 - ColorPicker internal state is HSV float tuple only; RGB and HEX are derived views (PITFALL-15)
 - `AeroCalendarPositionProvider` replaces `AeroDropdownPopup` for all date picker popups (PITFALL-02)
-- `kotlinx-datetime:0.6.2` is declared `api(...)` at `library/build.gradle.kts:27` — confirmed; stale `implementation` note in PROJECT.md was corrected in Phase 12 (SHW-14, done)
+- `kotlinx-datetime:0.6.2` is declared `api(...)` at `library/build.gradle.kts:27` — confirmed
 
 <!-- v2.0.1 key technical decisions are now realized — see PROJECT.md "Key Decisions" (v2.0.1 rows) and the [Phase 12] entries under Accumulated Context below. -->
 
@@ -70,7 +95,7 @@ Phase 12 (4 plans, 18/18 requirements) — Fix A (seconds trigger) → Fix B (ne
 **v1.0:** 26 plans, ~3 days, average ~7–25 min per plan.
 **v1.1:** 11 plans, single-day push (2026-04-29, ~10 h), 60 commits, 340 files changed, +20,212 / −477 lines.
 **v2.0:** 55 plans, ~49 days, 145 commits, 152 files changed, +27,406 / −2,285 lines.
-**v2.0.1:** 1 plan completed — Fix A (12-01); 4 min, 3 tasks, 3 files.
+**v2.0.1:** 4 plans, single-day push (2026-06-22, ~2h20m), 25 commits, 9 code files changed, +520 / −14 lines.
 
 ## Accumulated Context
 
@@ -144,17 +169,17 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ### Pending Todos
 
-- Gap-close: AeroDropdown popup offset regression (v1.0 carry-over) — explicitly OUT of v2.0.1 scope; candidate for next milestone (DROP-FIX-01)
-- Deferred to next milestone (archived in `v2.0.1-REQUIREMENTS.md` future section): inline pickers, DataTable cell-edit/reorder/filter, TreeView DnD, ColorPicker eyedropper, StepperWizard branching, Sidebar drag-resize, AeroDateTimeRangePicker hover-preview (DTR-HOVER-01)
+- Gap-close: AeroDropdown popup offset regression (v1.0 carry-over) — explicitly OUT of v2.0.2 scope; candidate for future milestone (DROP-FIX-01)
+- Deferred to future milestones: inline pickers, DataTable cell-edit/reorder/filter, TreeView DnD, ColorPicker eyedropper, StepperWizard branching, Sidebar drag-resize, AeroDateTimeRangePicker hover-preview (DTR-HOVER-01), AeroPanelGroup horizontal orientation (PNL-HORIZ-01), drag-to-reorder (PNL-REORDER-01), keyboard resize (PNL-KBD-01)
 
 ### Blockers/Concerns
 
-- None blocking Phase 12. All root causes confirmed from source with exact file/line numbers (research confidence: HIGH).
-- Win11 `undecorated+transparent` crash retest in CMP 1.10.3 — inherited from v1.0; revisit only if CMP version bump is on the table.
+- PNL-PITFALL-01 (animation-vs-drag coexistence): architecture is sound, empirically unverified in this codebase. Resolved by the mandatory Step 1 spike. If spike fails, the fallback (split intent-state from display-state; disable drag during animation-in-flight) adds ~20 lines and is documented in research SUMMARY.md.
+- Phase 13 does NOT need `/gsd:research-phase` — all patterns are direct ports of shipped code per SUMMARY.md.
 
 ## Session Continuity
 
-Last session: 2026-06-22 — v2.0.1 milestone completion
-Stopped at: v2.0.1 archived, PROJECT/ROADMAP/MILESTONES/RETROSPECTIVE updated, tagged `v2.0.1`
+Last session: 2026-06-22 — v2.0.2 roadmap created
+Stopped at: ROADMAP.md written with Phase 13, STATE.md updated, REQUIREMENTS.md traceability confirmed
 Resume file: None
-Next action: `/gsd:new-milestone` (clear context first for a fresh window)
+Next action: `/gsd:plan-phase 13`

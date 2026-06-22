@@ -67,8 +67,6 @@
 
 ## Traceability
 
-Заполняется при создании roadmap.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | PNL-01 | Phase 13 | Pending |
@@ -92,9 +90,9 @@
 
 **Coverage:**
 - v1 requirements: 18 total
-- Mapped to phases: 18 (pending roadmap)
+- Mapped to Phase 13: 18/18
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-06-22*
-*Last updated: 2026-06-22 after initial definition*
+*Last updated: 2026-06-22 — traceability confirmed after roadmap creation (all 18 → Phase 13)*
