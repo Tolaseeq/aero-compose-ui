@@ -17,11 +17,20 @@
 
 **Codebase:** Kotlin / Compose Desktop 1.7.3, Kotlin 2.1.21, Gradle 8.14.3, JDK 17. v2.0 added 152 files changed (+27,406 / −2,285) across phases 7–11; v2.0.1 added 9 code files (+520 / −14) in Phase 12.
 
-## Next Milestone
+## Current Milestone: v2.0.2 AeroPanelGroup
 
-**Not yet defined.** v2.0.1 shipped 2026-06-22. Run `/gsd:new-milestone` to scope the next version (questioning → research → requirements → roadmap).
+**Goal:** Добавить один аддитивный layout-компонент `AeroPanelGroup` (+ `AeroPanelSection`) — вертикальное разбиение на N секций, где любую секцию можно свернуть в полоску-заголовок (соседи забирают освободившуюся высоту), а границу между двумя соседними раскрытыми секциями можно перетаскивать (модель VS Code Side Bar). Строго одна фаза, без breaking changes к v2.x API.
 
-**Candidate scope** (archived in `.planning/milestones/v2.0-REQUIREMENTS.md` "v3+ Future Requirements" and `v2.0.1-REQUIREMENTS.md` future section): inline pickers (PICK-INL-01), DataTable cell-editing/reorder/filter (DATA-EDIT/REORDER/FILTER-01), TreeView drag-and-drop (TREE-DND-01), ColorPicker eyedropper (COLOR-EYE-01), StepperWizard branching (STEP-BR-01), Sidebar drag-resize (SIDE-RES-01), AeroDateTimeRangePicker hover-preview (DTR-HOVER-01), and the carry-over AeroDropdown popup-offset fix (DROP-FIX-01).
+**Target features:**
+- `AeroPanelGroup` — вертикальный контейнер N секций; `BoxWithConstraints → totalPx` (как `AeroSplitPane`, без SubcomposeLayout/height-measurement per frame). Раскрытые секции делят `availableForExpanded = totalPx − Σ(заголовки свёрнутых) − Σ(разделители)` по нормированным `sizePx` — переживают ресайз окна как fraction у SplitPane.
+- `AeroPanelSection` — секция: `expanded: Boolean`, `sizePx: Float`, запоминаемый `lastExpandedPx` для возврата размера при повторном раскрытии. Параметры `collapsible` и `resizable` на уровне секции/группы.
+- **Collapse/expand:** анимация целевых px через `animateFloatAsState` на секцию (200ms FastOutSlowInEasing, в тон AeroSidebar/AeroAccordion); collapse → высота заголовка ~36dp, доля переходит соседям; expand → возвращает `lastExpandedPx`.
+- **Resize:** грип-разделитель (`aeroDragSplitter` + `SplitClamp`) рисуется ТОЛЬКО между двумя соседними раскрытыми секциями; drag пишет px напрямую без анимации, кламп по minSize. Граница рядом со свёрнутой — статичный стык заголовков.
+- **State API:** раскрытие — гибрид controlled/uncontrolled строго по паттерну `AeroAccordion` (обе ветки намеренные); размеры — uncontrolled внутреннее состояние, наружу через `onLayoutChange` для персиста/восстановления.
+- **Главный риск (спайк первым пунктом плана):** совмещение collapse/expand-анимации с drag-ресайзом → размеры в px, drag без анимации, toggle анимирует целевые px; никаких лишних layout-проходов.
+- Визуал строго Win7 Aero (glassPanel-заголовок, шеврон CaretRight 0°→90°, опциональные `headerActions`); юнит-тесты на чистую логику (распределение px, кламп, переход доли) по образцу `SidebarStateTest`/`AccordionToggleTest`/`SplitClamp`; демо в `LayoutSection.kt`; KDoc со ссылками на REQ-ID и PITFALL.
+
+**Deferred (NOT this milestone):** горизонтальная ориентация AeroPanelGroup; и прежний candidate-список — inline pickers, DataTable cell-edit/reorder/filter, TreeView DnD, ColorPicker eyedropper, StepperWizard branching, Sidebar drag-resize, AeroDateTimeRangePicker hover-preview, и carry-over AeroDropdown popup-offset fix (DROP-FIX-01).
 
 <details>
 <summary>📦 v2.0.1 Picker & SplitPane Fixes — shipped 2026-06-22 (milestone goal & target features)</summary>
@@ -103,9 +112,9 @@
 
 ### Active
 
-<!-- No active milestone. v2.0.1 shipped 2026-06-22. Run /gsd:new-milestone to define the next version's requirements. -->
+<!-- v2.0.2 AeroPanelGroup — single-phase milestone. REQ-IDs defined in .planning/REQUIREMENTS.md. -->
 
-(None — между milestone'ами. Следующий набор требований определяется через `/gsd:new-milestone`.)
+- [ ] **AeroPanelGroup** (PNL-*) — N-секционный вертикальный layout с collapse-в-заголовок + перетаскиваемыми границами между раскрытыми соседями (модель VS Code); гибридный controlled/uncontrolled API (раскрытие по паттерну AeroAccordion, размеры через `onLayoutChange`); px-based размеры с `animateFloatAsState`-collapse и drag-без-анимации; строго Win7 Aero визуал — Phase 13 — v2.0.2
 
 ### Out of Scope
 
@@ -187,4 +196,4 @@
 | **v2.0.1:** SplitPane drag читает live state в drag-loop (`rememberUpdatedState`-паттерн), не captured copy из `pointerInput` lambda | Stale captured `dividerFraction` снапил inner splitter обратно — FIXSP-01 регрессия, тот же класс бага что AeroRangeSlider F9 (Phase 11) | ✓ Good — пойман на three-theme sign-off, исправлен (7f38c0c) до approval; подтверждает ценность визуального gate |
 
 ---
-*Last updated: 2026-06-22 — after v2.0.1 Picker & SplitPane Fixes milestone*
+*Last updated: 2026-06-22 — after starting v2.0.2 AeroPanelGroup milestone*

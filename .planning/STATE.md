@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
-milestone: none
-milestone_name: "between milestones"
-status: "v2.0.1 shipped 2026-06-22 — awaiting `/gsd:new-milestone`"
-stopped_at: v2.0.1 milestone archived and tagged
-last_updated: "2026-06-22T14:10:00.000Z"
-last_activity: 2026-06-22 — v2.0.1 Picker & SplitPane Fixes shipped, archived, tagged
+milestone: v2.0.2
+milestone_name: "AeroPanelGroup"
+status: "Defining requirements"
+stopped_at: v2.0.2 milestone started — defining requirements
+last_updated: "2026-06-22T14:15:00.000Z"
+last_activity: 2026-06-22 — Milestone v2.0.2 AeroPanelGroup started
 progress:
   total_phases: 0
   completed_phases: 0
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-22 — after v2.0.1 milestone)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, typed `AeroIcons`, and a showcase — no manual style work or icon-pack hunting required.
-**Current focus:** Between milestones. v2.0.1 shipped — run `/gsd:new-milestone` to scope the next version.
+**Current focus:** v2.0.2 AeroPanelGroup — single-phase milestone, defining requirements.
 
 ## Current Position
 
-Phase: — (no active milestone)
+Phase: Not started (defining requirements)
 Plan: —
-Status: v2.0.1 shipped 2026-06-22 — milestone archived, tagged `v2.0.1`
-Last activity: 2026-06-22 — v2.0.1 Picker & SplitPane Fixes completed
+Status: Defining requirements
+Last activity: 2026-06-22 — Milestone v2.0.2 AeroPanelGroup started
 
 ```
-v2.0.1 ✅ SHIPPED → next milestone undefined (/gsd:new-milestone)
+v2.0.1 ✅ SHIPPED → v2.0.2 AeroPanelGroup ◆ defining requirements
 ```
 
 ## Shipped Milestones
