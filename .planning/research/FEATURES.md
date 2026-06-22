@@ -803,3 +803,203 @@ orderDateTimeRange [NEW internal pure function]
 ---
 *Feature research for: AeroDateTimeRangePicker UX + AeroDateTimePicker seconds display (v2.0.1)*
 *Researched: 2026-06-22*
+
+---
+---
+
+# Feature Research — aero-compose-ui v2.0.2 AeroPanelGroup
+
+**Domain:** Resizable + collapsible multi-panel vertical layout — Compose Desktop UI library
+**Researched:** 2026-06-22
+**Confidence:** HIGH (industry references verified: VS Code sidebar model, react-resizable-panels v4 API, existing AeroAccordion/AeroSplitPane codebase, JetBrains tool-window patterns)
+
+---
+
+## Scope Framing
+
+This research covers **one additive component** (`AeroPanelGroup` + `AeroPanelSection`) for a single-phase milestone.
+The gap this fills: neither AeroAccordion (sized by content, no resize) nor AeroSplitPane (2-pane, no collapse) nor AeroSidebar (single panel) supports "N vertical sections where any section collapses to its header-strip and neighbors absorb the freed space."
+
+The VS Code Left Sidebar (Explorer / Source Control / Outline / Timeline stacked accordion with drag-resizable borders) is the canonical reference. react-resizable-panels (bvaughn, v4) is the most-studied web equivalent.
+
+All locked decisions from the milestone context are respected verbatim and not reconsidered.
+
+---
+
+## AeroPanelGroup + AeroPanelSection — Feature Landscape
+
+### Table Stakes (Must Ship — Users Expect These)
+
+Features whose absence makes the component feel broken or incomplete for its stated purpose.
+
+| Feature | Why Expected | Complexity | Observable User Action |
+|---------|--------------|------------|------------------------|
+| **N sections in a vertical column filling available height** | The component's raison d'etre — unlike AeroAccordion which sizes by content, panels must fill the parent | MEDIUM | User places AeroPanelGroup; it occupies the full height of its parent container and divides it among expanded sections |
+| **Click section header to collapse — header strip remains visible** | VS Code model; AeroAccordion pattern already establishes this expectation in the library | LOW | Click header → section body animates to zero height; only header strip (~36dp) remains; neighbors grow to fill the freed space |
+| **Click collapsed header to expand — restores prior size** | Symmetric with collapse; size memory is the defining difference from a pure accordion | MEDIUM | Click collapsed header → section body animates back to its size before collapsing; neighbors shrink accordingly |
+| **Drag border between two adjacent expanded sections to resize them** | VS Code Left Sidebar does this; react-resizable-panels does this; users with muscle-memory from AeroSplitPane expect it | MEDIUM | Mouse-down on divider between two expanded sections → drag up/down changes their relative sizes; cursor changes to N_RESIZE; divider has 8dp hit-area (same as AeroSplitPane) |
+| **Draggable divider exists ONLY between two expanded neighbors** | The divider between an expanded section and a collapsed section is a static join, not a drag target — VS Code model | LOW | User cannot accidentally drag the boundary next to a collapsed header; cursor does not change on hover of a static join |
+| **Neighbor space redistribution on collapse** | Freed space does not disappear — it is given proportionally to the remaining expanded sections | MEDIUM | Section B collapses; sections A and C (both expanded) each grow; total height remains constant |
+| **Neighbor space redistribution on expand** | Space is taken proportionally from the other expanded sections | MEDIUM | Section B expands back; sections A and C shrink proportionally; total height remains constant |
+| **Min-size clamping per section** | Prevents drag from making a section too small to be useful; same as `AeroSplitPane` clamp | LOW | Drag divider: section cannot be dragged below its `minSize`; divider stops/bounces at that threshold |
+| **`collapsible = false` per section** | Some sections must always be visible (e.g., a mandatory output panel); locked decision | LOW | No chevron rendered in that section's header; header click does nothing; section always participates in resize |
+| **`resizable = false` per section (or group-level)** | Some layouts need collapse/expand but no drag resize — pure accordion-style redistribution | LOW | No draggable dividers rendered anywhere when `resizable = false`; all borders are static; space redistribution still works on collapse/expand |
+| **Win7 Aero header styling** | Library aesthetic rule; headers must use `glassPanel` modifier, matching AeroAccordion visual language | LOW | Header shows gloss gradient, rounded corners, theme-appropriate background; matches AeroAccordion header appearance |
+| **CaretRight chevron in header, rotates 0°→90° on expand** | Established library convention from AeroAccordion | LOW | Collapsed: caret points right (0°); expanded: caret points down (90°); animates via `animateFloatAsState` at 200ms |
+| **Collapse/expand animation via `animateFloatAsState` on section height** | AeroSidebar uses 200ms FastOutSlowInEasing; AeroAccordion uses 160ms; PanelGroup must follow same family | MEDIUM | Collapse/expand is visually smooth, ~200ms, FastOutSlowInEasing; no jank during animation |
+| **Drag produces no animation — direct px writes** | VS Code and react-resizable-panels both do this; animation during drag makes the component feel laggy | LOW | Mouse drag on divider: sizes update immediately, no easing; only toggle (click header) animates |
+| **Hybrid controlled/uncontrolled expansion API** | Locked decision: must match AeroAccordion pattern exactly | MEDIUM | Uncontrolled (default): component manages which sections are expanded; Controlled: caller passes `expandedIndices` + `onExpandedChange`; both branches are intentional |
+| **`onLayoutChange` callback for persist/restore of section sizes** | Locked decision; caller needs to persist layout across sessions | LOW | Fires with a `List<Float>` of current section size fractions after every drag-end or collapse/expand; caller stores these and passes back as `initialSizes` on next composition |
+| **`initialSizes: List<Float>` parameter for restore** | Symmetric with `onLayoutChange`; without it the persist/restore round-trip is incomplete | LOW | Caller passes previously persisted sizes; group initializes sections to those proportions |
+| **Section content composable slot** | PanelGroup is a layout shell; content is arbitrary | LOW | `AeroPanelSection(title = "Explorer") { /* arbitrary content */ }` — standard slot pattern |
+| **Section title displayed in header** | Header must identify the section when collapsed | LOW | `title: String` per section; rendered as `Text` in header row |
+| **Showcase entry in LayoutSection** | Library convention: every new component gets a showcase demo | LOW | LayoutSection contains an AeroPanelGroup demo showing 3+ sections with mix of collapsed/expanded, verifiable across three themes |
+
+---
+
+### Differentiators (Nice to Have — In Scope if Cheap)
+
+Features that are not expected by default but add meaningful value with low implementation cost given the existing primitives.
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| **`headerActions: @Composable RowScope.() -> Unit` slot per section** | VS Code section headers have action icons (e.g., "+" to add item, "..." overflow menu); adds real utility for IDE-like UIs | LOW | Rendered right-aligned in the header row, before the chevron; does not interfere with collapse toggle on the title/chevron click zone. Cheap: just a trailing slot in the header Row. |
+| **`leadingIcon: ImageVector?` per section** | Matches AeroAccordion API; lets caller put a domain icon next to the section title | LOW | If non-null, render `Icon(AeroIcons.*)` left of title with explicit tint; same pattern as AeroAccordion. Essentially free. |
+| **Unit tests for pure layout logic** | Established library quality gate: SplitClampTest, AccordionToggleTest, SidebarStateTest patterns already exist | LOW | Test: space redistribution math, min-size clamp, `lastExpandedPx` restore on re-expand, `onLayoutChange` emission. No Compose runtime needed for these functions if extracted as pure functions. |
+
+---
+
+### Anti-Features (Explicitly Out — Do Not Build)
+
+Features that might be requested but are out of scope for this single-phase milestone. Documenting these prevents scope creep during requirements definition.
+
+| Anti-Feature | Why Excluded | Alternative / What to Do Instead |
+|-------------|--------------|-----------------------------------|
+| **Horizontal orientation** | Locked decision: vertical-only in v2.0.2. Horizontal is deferred to a future milestone. | Caller uses AeroSplitPane (Horizontal orientation) for horizontal splits |
+| **Drag-reorder of sections** | Requires hit-test between section headers during drag, scroll-during-drag, and index mutation — a distinct feature domain with high complexity. Not part of VS Code's drag model for section panels. | Sections are declared statically in order; caller controls order at composition time |
+| **Nested AeroPanelGroups** | Two layers of N-section collapse+resize creates compounded state coordination complexity. Not in the VS Code model. | Caller can compose AeroPanelGroup inside a section's content slot; library does not explicitly support or test cross-group state |
+| **Programmatic collapse/expand via imperative handle** | React-resizable-panels provides `collapse()` / `expand()` on a ref; for this milestone, toggle is only via header click or controlled API. Imperative handle adds API surface with no demonstrated consumer need. | Caller uses the controlled API (`expandedIndices` + `onExpandedChange`) to programmatically change state |
+| **Double-click divider to collapse/expand** | react-resizable-panels has this; VS Code does not. Adds complexity to the drag handler (distinguish click from double-click). No consumer request. | Single-click chevron is the collapse affordance |
+| **`maxSize` per section** | Limits how large a section can grow. Increases clamp complexity; no VS Code parallel. Consumer can constrain via content (e.g., a fixed-height scroll area inside the section). | Not added; minSize clamping is sufficient |
+| **`disabled` per section** | Disabling a section (no interact, no visual affordance) is a distinct concept from `collapsible = false`. Not in the locked decisions. | Use `collapsible = false` to prevent collapse; content inside the section handles its own disabled state |
+| **Scroll within AeroPanelGroup itself** | If all sections are taller than the group, do not add a scroll. Sections size themselves to fill available space — scroll belongs inside section content. | Caller puts `AeroScrollArea` inside a section's content slot if the section content is taller than the section |
+| **Keyboard resize of dividers** | react-resizable-panels supports arrow-key resize of focused separators for accessibility. High implementation cost for a Compose Desktop-only library without a clear accessibility requirement in scope. | Drag mouse interaction only; deferred to future |
+| **Animation during drag (easing on drag delta)** | Locked decision: drag writes px directly without animation. Animation during drag makes the divider feel "drunk." | Only toggle (collapse/expand) animates |
+
+---
+
+## Feature Dependencies
+
+```
+AeroPanelGroup / AeroPanelSection
+    ├── reuses ──> aeroDragSplitter (Modifier)        (AeroDragSplitter.kt — Phase 7 primitive)
+    ├── reuses ──> clampDividerPx / SplitClamp        (SplitClamp.kt — internal splitpane)
+    ├── reuses ──> animateFloatAsState + tween         (Compose animation)
+    ├── reuses ──> BoxWithConstraints                  (same pattern as AeroSplitPane)
+    ├── reuses ──> glassPanel modifier                 (GlassModifiers.kt)
+    ├── reuses ──> AeroIcons.CaretRight                (chevron, same as AeroAccordion)
+    └── follows ──> AeroAccordion hybrid controlled/uncontrolled pattern
+
+Collapse/expand toggle
+    └── animates ──> section sizePx via animateFloatAsState (200ms FastOutSlowInEasing)
+
+Drag resize
+    └── writes ──> section sizePx directly (no animation, same as AeroSplitPane drag)
+
+Space redistribution (collapse/expand)
+    └── requires ──> availableForExpanded = totalPx − Σ(collapsed header heights) − Σ(divider thicknesses)
+    └── section size stored as fraction of availableForExpanded (survives window resize, same as AeroSplitPane fraction pattern)
+
+lastExpandedPx (restore on re-expand)
+    └── stored per section — does not survive controlled remount; lives in internal state alongside fraction
+```
+
+### Dependency Notes
+
+- `aeroDragSplitter` already handles cursor change, `awaitPointerEventScope` (no touchSlop), and the `onDrag(deltaPx)` callback. No changes needed to it.
+- `clampDividerPx` already has the inverted-range guard from FIXSP-02. AeroPanelGroup uses a different clamp formula (per-section min, not total min), but the guard pattern is the same — extract or adapt.
+- The `animateFloatAsState` approach (not `animateContentSize`) is required because section heights are px values that must be co-animated with neighbors shrinking/growing in the opposite direction. `animateContentSize` on a single section would not coordinate with neighbors.
+- `BoxWithConstraints` gives `totalPx` at composition; this avoids `SubcomposeLayout` overhead confirmed by AeroSplitPane history.
+
+---
+
+## MVP Definition for v2.0.2
+
+This is the only phase, so "MVP" = "what ships."
+
+### Build (Table Stakes + Cheap Differentiators)
+
+- [ ] `AeroPanelGroup` composable: `sections` list, `modifier`, `minSectionSize`, `initialSizes`, `expandedIndices` (controlled), `onExpandedChange` (controlled), `onLayoutChange`
+- [ ] `AeroPanelSection` data class: `title`, `content`, `collapsible`, `resizable`, `leadingIcon`, `headerActions`
+- [ ] Internal: fraction-based size state per section; `lastExpandedFraction` per section for restore
+- [ ] Internal: `availableForExpanded` computation; proportional redistribution on toggle
+- [ ] Internal: draggable divider rendered only between two adjacent expanded sections
+- [ ] Internal: static join rendered between expanded and collapsed neighbors (no hit-area, no cursor change)
+- [ ] Internal: pure redistribution functions extracted for unit tests (no Compose runtime dependency)
+- [ ] Unit tests: space redistribution, min-size clamp, last-size restore, `onLayoutChange` emission
+- [ ] Showcase: `LayoutSection.kt` AeroPanelGroup demo — 3+ sections, at least one `collapsible = false`, at least one with `headerActions`, initial collapsed state demonstrating the strip; three-theme visual sign-off
+
+### Defer
+
+- Horizontal orientation — next milestone candidate
+- Keyboard resize of dividers — accessibility future work
+- Imperative collapse/expand handle — no consumer request yet
+- `maxSize` per section — not needed for known use cases
+
+---
+
+## Feature Prioritization Matrix
+
+| Feature | User Value | Implementation Cost | Priority |
+|---------|------------|---------------------|----------|
+| N sections fill height, collapse to strip | HIGH | MEDIUM | P1 — core behavior |
+| Neighbor space redistribution on toggle | HIGH | MEDIUM | P1 — without this, collapse just hides content |
+| Drag resize between expanded neighbors | HIGH | MEDIUM | P1 — VS Code model requirement |
+| `collapsible = false` flag | HIGH | LOW | P1 — locked decision |
+| `resizable = false` flag | MEDIUM | LOW | P1 — locked decision |
+| Collapse/expand animation (200ms) | HIGH | MEDIUM | P1 — library animation standard |
+| Hybrid controlled/uncontrolled expansion API | HIGH | MEDIUM | P1 — locked decision |
+| `onLayoutChange` + `initialSizes` persist/restore | HIGH | LOW | P1 — locked decision |
+| `headerActions` slot | MEDIUM | LOW | P1 — cheap differentiator, include |
+| `leadingIcon` per section | LOW | LOW | P1 — essentially free, matches AeroAccordion API |
+| Unit tests for pure logic | HIGH | LOW | P1 — library quality gate |
+| Showcase demo | HIGH | LOW | P1 — library convention |
+| Keyboard resize | LOW | HIGH | P3 — defer |
+| Horizontal orientation | LOW (this milestone) | HIGH | P3 — explicitly deferred |
+
+---
+
+## Competitor / Reference Behavior Summary
+
+For REQ-ID definition reference: observed behaviors across VS Code, react-resizable-panels v4, and JetBrains tool windows.
+
+| Behavior | VS Code Left Sidebar | react-resizable-panels v4 | JetBrains Tool Windows | Our Approach |
+|----------|---------------------|--------------------------|----------------------|--------------|
+| Collapse to header strip | Yes — collapses upward | Yes — `collapsible` prop, collapses to `collapsedSize` (default 0) | Yes — docked tool windows collapse to tab strip | Yes — collapses to ~36dp header |
+| Restore prior size on expand | Yes — remembers height | Yes — library remembers last size internally | Yes — tool window remembers size | Yes — `lastExpandedFraction` per section |
+| Neighbor fills freed space | Yes | Yes — proportional redistribution | Yes | Yes — proportional redistribution |
+| Drag border between expanded sections | Yes | Yes — PanelResizeHandle | Yes — drag sash between adjacent tool windows | Yes — via `aeroDragSplitter` |
+| No drag target next to collapsed section | Yes | Depends on config | Yes | Yes — static join |
+| `onLayout` callback | Yes (via resize observer) | Yes — `onLayoutChange` (fires on drag end) and `onLayoutChanged` | Via layout persistence APIs | Yes — `onLayoutChange` fires after drag-end or toggle |
+| Min-size clamping | Yes | Yes — `minSize` prop | Yes | Yes — `minSectionSize: Dp` per group (or per section) |
+| Controlled expansion | No (view visibility is always uncontrolled in VS Code sidebar) | Yes — imperative `collapse()` / `expand()` via ref | No | Yes — hybrid per AeroAccordion pattern |
+| Header action buttons | Yes (+ and ... per section) | Not built-in | Yes (gear icon in tool window title) | Yes — `headerActions` slot |
+| Animation on toggle | Yes — smooth height transition | No built-in animation (library is headless) | Yes | Yes — `animateFloatAsState` 200ms |
+| Animation on drag | No | No | No | No — direct px writes |
+
+---
+
+## Sources
+
+- VS Code Left Sidebar behavior: `github.com/microsoft/vscode/issues/204250` (collapse direction discussion), VS Code UX Guidelines `code.visualstudio.com/api/ux-guidelines/sidebars`
+- react-resizable-panels v4 API: `github.com/bvaughn/react-resizable-panels` README + CHANGELOG — confirmed `collapsible`, `collapsedSize`, `minSize`, `defaultSize`, `onResize`, `groupRef.getLayout()`/`setLayout()`; `onCollapse`/`onExpand` removed in v4 in favor of `onResize`; `onLayoutChanged` fires after resize completes (MEDIUM confidence via WebFetch of changelog)
+- Existing codebase: `AeroAccordion.kt` — hybrid controlled/uncontrolled pattern, `animateFloatAsState` at 160ms, CaretRight 0°→90°, `glassPanel` header
+- Existing codebase: `AeroSplitPane.kt` — `BoxWithConstraints` + fraction state + `aeroDragSplitter` + `clampDividerPx`; fraction-over-px design rationale and `rememberUpdatedState` live-read pattern
+- Existing codebase: `AeroDragSplitter.kt` — confirmed `Orientation.Vertical` → `N_RESIZE_CURSOR`, `awaitPointerEventScope` no-touchSlop loop
+- Existing codebase: `SplitClamp.kt` — `clampDividerPx` with `coerceAtLeast` inverted-range guard
+- JetBrains tool window docs: `jetbrains.com/help/idea/tool-windows.html` — tool window resize, per-window size memory, side-by-side stacking
+- PROJECT.md: locked decisions, `AeroPanelGroup` target features, deferred list
+
+---
+*Feature research for: AeroPanelGroup + AeroPanelSection (v2.0.2)*
+*Researched: 2026-06-22*

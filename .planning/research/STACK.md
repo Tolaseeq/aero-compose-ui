@@ -1,154 +1,178 @@
 # Stack Research
 
-**Domain:** Compose Desktop UI library — v2.0.1 milestone (2 bug fixes + AeroDateTimeRangePicker)
+**Domain:** Compose Desktop UI library — v2.0.2 AeroPanelGroup (additive layout component)
 **Researched:** 2026-06-22
-**Confidence:** HIGH
+**Confidence:** HIGH (all claims verified against in-repo source files)
 
 ---
 
-## Verdict: Zero new dependencies required
+## Verdict: NO new Gradle dependencies required
 
-All three deliverables in v2.0.1 are fully implementable with the exact stack currently declared in `library/build.gradle.kts`. No version bumps, no new library coordinates, no build file changes of any kind.
+`AeroPanelGroup` + `AeroPanelSection` are built entirely from Compose APIs already declared
+`api(...)` in `library/build.gradle.kts` and from internal library utilities already shipped
+in v2.0.1. Nothing needs to be added to `libs.versions.toml` or either module's
+`build.gradle.kts`.
 
 ---
 
-## Current Stack (confirmed from source)
+## Confirmed Stack (in-repo versions — do not invent newer ones)
 
 | Technology | Version | Source of truth |
 |------------|---------|-----------------|
-| Kotlin | 2.1.21 | `gradle/libs.versions.toml` |
-| Compose Desktop | 1.7.3 | `gradle/libs.versions.toml` |
-| Gradle Kotlin DSL | 8.14.3 | project root |
+| Kotlin | 2.1.21 | `gradle/libs.versions.toml` `kotlin = "2.1.21"` |
+| Compose Multiplatform | 1.7.3 | `gradle/libs.versions.toml` `composeMultiplatform = "1.7.3"` |
+| Gradle Kotlin DSL | 8.14.3 | PROJECT.md Constraints section |
 | JDK | 17 | `library/build.gradle.kts` `jvmToolchain(17)` |
-| kotlinx-datetime | 0.6.2 | `gradle/libs.versions.toml` |
-| kotlinx-coroutines-core | 1.10.2 | `gradle/libs.versions.toml` (internal only) |
+| kotlinx-datetime | 0.6.2 | `libs.versions.toml` (irrelevant to PanelGroup — date picker only) |
+| kotlinx-coroutines-core | 1.10.2 | `library/build.gradle.kts` `implementation(...)` (irrelevant to PanelGroup) |
+
+All Compose artifacts (`compose.desktop.common`, `compose.material3`, `compose.animation`,
+`compose.foundation`, `compose.runtime`, `compose.ui`) are already declared `api(...)` —
+transitive on the consumer classpath, no duplication required.
 
 ---
 
-## Question (a): Does AeroDateTimeRangePicker need any new dependency?
+## Exact Compose APIs Required for AeroPanelGroup
 
-**No. Zero new dependencies.**
+### Animation
 
-`AeroDateTimeRangePicker` is a composition of two already-built components. Every primitive it needs exists in the codebase today:
+| API | Package | Usage in PanelGroup | Precedent in library |
+|-----|---------|---------------------|----------------------|
+| `animateFloatAsState` | `androidx.compose.animation.core` | Animate each section's target height in px (collapse → `headerHeightPx`; expand → `lastExpandedPx`). Drives the height `Float` passed to `Modifier.height(with(density) { animatedPx.toDp() })`. | `AeroAccordion` caret rotation; `AeroSidebar` uses `animateDpAsState` for width |
+| `tween(durationMillis = 200, easing = FastOutSlowInEasing)` | `androidx.compose.animation.core` | Animation spec for collapse/expand — matches `AeroSidebar` (200ms, same easing). Do NOT use `animateContentSize` — that works on natural content height, not controlled px values. | `AeroSidebar` width: `tween(200, FastOutSlowInEasing)`; `AeroAccordion` caret: `tween(160, FastOutSlowInEasing)` |
+| `FastOutSlowInEasing` | `androidx.compose.animation.core` | Same easing as all existing animated layout components. | `AeroAccordion`, `AeroSidebar` |
+| `graphicsLayer { rotationZ = caretRotation }` | `androidx.compose.ui` (via `Modifier.graphicsLayer`) | Caret chevron 0°→90° on expand — identical to `AeroAccordion`. | `AeroAccordion` `AccordionSectionRow` |
 
-| Needed primitive | Already exists in |
-|------------------|-------------------|
-| Dual-calendar layout (`AeroCalendarGrid` × 2) | `AeroDateRangePicker` |
-| `BoxWithConstraints` responsive stacking (portrait < 560dp) | `AeroDateRangePicker` |
-| `nextRangeState` sealed state machine | `AeroDateRangePicker.kt` (internal) |
-| Two-row `TimeFields` (start + end) | `TimeFields.kt` (internal, already accepts `LocalTime`) |
-| `combineDateTime(date, time) → LocalDateTime` | `AeroDateTimePicker.kt` (internal) |
-| Apply / Cancel commit-gate | `AeroDateTimePicker` |
-| `AeroCalendarPositionProvider` popup anchor | `AeroCalendarPositionProvider.kt` |
-| `PickerPopupContainer` glass surface | `PickerPopupContainer.kt` |
-| `LocalDateTime` output type | `kotlinx-datetime:0.6.2` (already `api`-scoped) |
+**Critical design constraint (from PROJECT.md spike note):** drag writes `sizePx` directly
+without animation; `animateFloatAsState` only runs when `expanded` toggles. The target value
+passed to `animateFloatAsState` must be derived from `lastExpandedPx` (expand) or
+`headerHeightPx` (collapse), NOT from drag deltas. This keeps the two code paths cleanly
+separated and prevents fighting between the animation loop and the drag callback.
 
-The new component is a structural merge of `AeroDateRangePicker` (dual calendar + range state machine) and `AeroDateTimePicker` (time rows + Apply gate) with `LocalDateTime` as the emit type instead of `LocalDate`. No new library is needed.
+### Measurement and density conversion
+
+| API | Package | Usage | Precedent |
+|-----|---------|-------|-----------|
+| `BoxWithConstraints` | `androidx.compose.foundation.layout` | Read `constraints.maxHeight.toFloat()` once at composition to get `totalPx`. Same pattern as `AeroSplitPane` — not SubcomposeLayout, not per-frame height measurement. | `AeroSplitPane` — `BoxWithConstraints` outer wrapper, `constraints.maxHeight.toFloat()` |
+| `LocalDensity.current` | `androidx.compose.ui.platform` | Convert `36.dp` header height to px at composition time via `with(density) { 36.dp.toPx() }`; convert section `sizePx` back to `Dp` for `Modifier.height(...)` every recompose. | `AeroSplitPane` — `with(density) { dividerPx.toDp() }` and `with(density) { minFirstPaneSize.toPx() }` |
+| `rememberUpdatedState` | `androidx.compose.runtime` | Wrap `totalPx` so the drag lambda always reads the live value — mandatory pattern per FIXSP-01 fix (v2.0.1) to prevent stale-capture snap-back. | `AeroSplitPane` line 116: `val liveTotalPx by rememberUpdatedState(totalPx)` |
+
+### Pointer input (drag)
+
+| API | Package | Usage | Notes |
+|-----|---------|-------|-------|
+| `Modifier.aeroDragSplitter(orientation = Orientation.Vertical, onDrag = { delta -> ... })` | `com.mordred.aero.components.internal.drag` (internal) | The draggable grip between two adjacent expanded sections. `Orientation.Vertical` → delta reports `positionChange().y`, cursor becomes `N_RESIZE_CURSOR`. | Already used in `AeroSplitPane`. |
+
+`aeroDragSplitter` is declared `internal` in
+`library/src/main/kotlin/com/mordred/aero/components/internal/drag/AeroDragSplitter.kt`.
+It is accessible to all `com.mordred.aero.*` packages within `:library`, which is where
+`AeroPanelGroup` will live. No visibility change needed.
+
+### State primitives
+
+| API | Package | Usage |
+|-----|---------|-------|
+| `mutableStateOf` | `androidx.compose.runtime` | Per-section `expanded: Boolean`, `sizePx: Float`, `lastExpandedPx: Float`. |
+| `remember { ... }` | `androidx.compose.runtime` | Seed uncontrolled expansion state (mirrors `AeroAccordion` uncontrolled path). |
+| `mutableStateListOf` | `androidx.compose.runtime` | Per-section state list inside the group (N sections, each holding `expanded` + `sizePx` + `lastExpandedPx`). Prefer over `List<MutableState<...>>` — snapshot-aware, triggers targeted recomposition on single-section change. |
+
+### Layout
+
+| API | Package | Usage | Notes |
+|-----|---------|-------|-------|
+| `Column` | `androidx.compose.foundation.layout` | Stack N section composables vertically. | Standard. |
+| `Modifier.height(dp)` | `androidx.compose.foundation.layout` | Apply animated/drag-driven height to each section `Box`. Derived: `with(density) { animatedSizePx.toDp() }`. | Same approach as SplitPane first-pane fixed height. |
+| `Modifier.weight(1f)` | `androidx.compose.foundation.layout` | Last visible expanded section takes remainder after all others have explicit heights — avoids a floating-point accumulation gap at the bottom. | SplitPane uses explicit px for first pane + `weight(1f)` for second. |
+| `Row` | `androidx.compose.foundation.layout` | Header strip layout (chevron + title + optional actions). | Standard. |
+
+### Visual (Aero theme)
+
+| API | Package | Usage |
+|-----|---------|-------|
+| `Modifier.glassPanel(cornerRadius = 0.dp)` | `com.mordred.aero.theme` | Section header strip background — matches `AeroAccordion` header. |
+| `AeroIcons.CaretRight` | `com.mordred.aero.icons.internal` | Chevron glyph in header, rotated 0°→90° via `graphicsLayer`. Vendored and used in `AeroAccordion`. |
+| `AeroTheme.colors.borderDefault` | `com.mordred.aero.theme` | 1dp divider line between sections and static header-to-header joint. |
+| `AeroTheme.colors.onSurface` | `com.mordred.aero.theme` | Icon and text tint in header. |
+| `AeroTheme.colors.buttonHover` | `com.mordred.aero.theme` | Divider grip hover overlay (same as `SplitPaneDivider`). |
 
 ---
 
-## Question (b): LocalDateTime comparison/ordering API in kotlinx-datetime 0.6.2
+## Internal Utilities to Reuse (exact paths)
 
-**`LocalDateTime` implements `Comparable<LocalDateTime>` in 0.6.2. The `<`, `>`, `<=`, `>=` Kotlin operators work directly. No helper function or conversion to `Instant` is needed.**
+| Utility | Path | Reuse pattern |
+|---------|------|---------------|
+| `Modifier.aeroDragSplitter` | `library/src/main/kotlin/com/mordred/aero/components/internal/drag/AeroDragSplitter.kt` | Apply to the 8dp hit-area Box between two adjacent expanded sections. Pass `Orientation.Vertical`, `onDrag = { delta -> ... }`, `onDragEnd = {}`. |
+| `clampDividerPx` | `library/src/main/kotlin/com/mordred/aero/components/layout/internal/splitpane/SplitClamp.kt` | Clamp per-section drag: `clampDividerPx(currentPx, delta, minSectionPx, maxPx)`. The `safeMax` guard already handles the case where squeezing pushes `maxPx < minPx` (PITFALL-B guard, already in prod). |
+| `AeroAccordion` controlled/uncontrolled hybrid | `library/src/main/kotlin/com/mordred/aero/components/layout/AeroAccordion.kt` | API shape: `expandedIndices: Set<Int>? = null`, `onExpandedChange: ((Set<Int>) -> Unit)? = null`; uncontrolled internal `remember { mutableStateOf(...) }`. Both branches intentional — do not collapse to one. |
+| `AeroIcons.CaretRight` | `library/src/main/kotlin/com/mordred/aero/icons/internal/CaretRight.kt` | Same chevron glyph as Accordion, same 0°→90° rotation pattern. |
+| `glassPanel` modifier | `library/src/main/kotlin/com/mordred/aero/theme/GlassModifiers.kt` | Section header strip background (`cornerRadius = 0.dp` for flush full-width strips). |
 
-Verified from the v0.6.2 source (`core/common/src/LocalDateTime.kt`):
+`fractionToPx` / `pxToFraction` from `SplitClamp.kt` are NOT needed — PanelGroup stores
+absolute `sizePx` per section and redistributes on collapse/expand, not bilateral fractions.
+The fraction model in SplitPane solved a 2-pane specific problem; N-section px redistribution
+differs enough that the helpers offer no simplification and would import a false analogy.
 
-```kotlin
-public expect class LocalDateTime : Comparable<LocalDateTime>
+---
 
-public override operator fun compareTo(other: LocalDateTime): Int
+## New Internal File to Create
+
+One new pure-logic internal file is expected (no Compose import, fully unit-testable):
+
+```
+library/src/main/kotlin/com/mordred/aero/components/layout/internal/panelgroup/PanelDistribute.kt
 ```
 
-Comparison semantics: returns negative if `this` is earlier civil time, zero if equal, positive if later. Comparison is lexicographic across (year, month, day, hour, minute, second, nanosecond) — correct for ordering a (start, end) pair regardless of whether they fall on the same date or different dates.
+Responsibilities:
+- Compute `availableForExpanded = totalPx − Σ(headerPx for collapsed sections) − Σ(dividerThicknessPx)`
+- Redistribute freed px among expanded neighbours when a section collapses
+- Clamp each section to `minSectionPx`
+- Normalize expanded sizes when window resizes (totalPx changes)
 
-**Recommended ordering idiom for AeroDateTimeRangePicker** (mirrors the `LocalDate` pattern already used in `nextRangeState`):
-
-```kotlin
-// AeroDateRangePicker.nextRangeState — existing idiom on LocalDate:
-val (s, e) = if (clicked >= current.start) current.start to clicked else clicked to current.start
-
-// AeroDateTimeRangePicker — identical idiom on LocalDateTime:
-val (s, e) = if (clickedEnd >= pendingStart) pendingStart to clickedEnd else clickedEnd to pendingStart
-```
-
-The `>=` operator on `LocalDateTime` routes through `Comparable.compareTo`, so the semantics are identical to the existing `LocalDate` usage. The codebase already demonstrates this works; `AeroDateRangePicker` has been in production use since v2.0.
-
-No `.atStartOfDayIn(TimeZone)` conversion or `Instant` arithmetic is needed. Civil-time `LocalDateTime` comparison is exactly correct for a picker that does not cross time-zone boundaries.
-
-**Note on the `nextRangeState` state machine:** The existing function is `internal` and typed to `LocalDate`. `AeroDateTimeRangePicker` will need its own parallel sealed type (e.g. `AeroDateTimeRangeState`) typed to `LocalDateTime`, or a refactored generic version if sharing is preferred. This is an implementation-level decision for the phase; it is not a stack constraint.
+This follows the `SplitClamp.kt` pattern: plain JVM functions, no Compose dependency, unit-tested independently before integration (per `SplitClampTest.kt` / `AccordionToggleTest.kt` precedent).
 
 ---
 
-## Question (c): `api` vs `implementation` for kotlinx-datetime
+## What NOT to Do
 
-**Already resolved. `kotlinx-datetime` is declared `api` in the current `library/build.gradle.kts`. No action required.**
-
-```kotlin
-// library/build.gradle.kts — current state (confirmed):
-api(libs.kotlinx.datetime)
-```
-
-The PROJECT.md "Key Decisions" table has a stale tech-debt flag:
-
-> `kotlinx-datetime` declared `implementation`, not `api` — ⚠️ Revisit on publish
-
-That note does not match the actual build file. The dependency is already `api`-scoped. This means:
-
-- Consumers of `com.mordred:aero-compose-ui` who use `AeroDateTimePicker`, `AeroDateRangePicker`, or the new `AeroDateTimeRangePicker` get `kotlinx-datetime` on their compile classpath transitively.
-- They do not need to add `kotlinx-datetime` themselves to reference `LocalDate`/`LocalDateTime`/`LocalTime` in their own callbacks and state.
-- This is the correct configuration for a published library whose public API surface exposes types from another library.
-
-**Recommendation for v2.0.1:** Clear the stale tech-debt note from PROJECT.md as part of this milestone. No build file changes needed.
+| Do not use | Why | Use instead |
+|------------|-----|-------------|
+| `detectDragGestures` | PITFALL-03: 18dp touchSlop silently blocks first-pixel mouse drag on Compose Desktop (JetBrains/compose-jb #343, unresolved as of CMP 1.7.3). | `Modifier.aeroDragSplitter` (wraps `awaitPointerEventScope` manual loop, no touchSlop). |
+| `SubcomposeLayout` | Runs subcomposition on every frame, causes extra layout passes and jank. PROJECT.md explicitly calls this out in the PanelGroup spec. | `BoxWithConstraints` → read `constraints.maxHeight.toFloat()` once. |
+| Per-frame height measurement (`onGloballyPositioned`, `Layout` with measuring children each drag event) | Same jank class as SubcomposeLayout; px state must drive layout, not layout drive state. | Compute `totalPx` from `BoxWithConstraints.constraints` once; derive heights from stored `sizePx`. |
+| `animateContentSize` | Works on natural content height determined by children — incompatible with explicit px-driven heights where the outer composable controls section size. | `animateFloatAsState` on target `sizePx` per section. |
+| Capturing `totalPx` as a plain `val` inside the drag lambda | PITFALL-A (same class as FIXSP-01 regression in v2.0.1): stale capture causes snap-back when window resizes or parent drag changes constraints. | `rememberUpdatedState(totalPx)` — mandatory, exact pattern from `AeroSplitPane` line 116. |
+| Third-party split/panel libraries | Introduces an external dependency for a component 100% coverable with existing internal primitives; adds classpath weight; may carry incompatible drag semantics or non-Aero visual style. | Internal implementation using `aeroDragSplitter` + `clampDividerPx`. |
+| `fractionToPx` / `pxToFraction` from `SplitClamp.kt` | Designed for bilateral 2-pane fraction model; does not simplify N-section absolute px redistribution. | Inline distribution logic or `PanelDistribute.kt`. |
 
 ---
 
-## Bug fixes — stack impact
-
-**Fix 1: AeroDateTimePicker default formatter ignores `showSeconds` (line 76)**
-
-Pure logic change in `AeroDateTimePicker.kt`. The default `formatter` lambda is:
+## Gradle Change Summary
 
 ```kotlin
-formatter: (LocalDateTime) -> String = { ldt ->
-    "${formatAeroDate(ldt.date)} ${"%02d:%02d".format(ldt.hour, ldt.minute)}"
-},
+// library/build.gradle.kts  — NO CHANGES REQUIRED
+// gradle/libs.versions.toml — NO CHANGES REQUIRED
+// showcase/build.gradle.kts — NO CHANGES REQUIRED
 ```
 
-It hardcodes `HH:MM` and never appends seconds. The fix makes the default formatter conditional on `showSeconds`. No new API, no new types, no dependency change. The parameter is in scope as a `@Composable` parameter.
-
-**Fix 2: AeroSplitPane nested freeze**
-
-Pure logic change in `AeroSplitPane.kt`. Root causes per PROJECT.md:
-1. `remember(totalPx)` re-keys when a parent splitter drag changes the outer pane's total size, resetting the inner divider position.
-2. `coerceIn(min, max)` throws `IllegalArgumentException` when the inner pane is squeezed below `minFirst + minSecond` (i.e., `min > max`).
-
-No new API, no new types, no dependency change.
-
----
-
-## What NOT to Add
-
-| Avoid | Why |
-|-------|-----|
-| kotlinx-datetime version bump (0.6.2 → 0.7.x / 0.8.x) | No API gap exists. 0.7.x introduced breaking renames (`dayOfMonth→day`, `monthNumber→month`, `Instant`/`Clock` moved). Unnecessary churn risk on a published library mid-milestone. |
-| `java.time` types in picker public signatures | Breaks API parity with existing pickers; consumers would need two different date type systems side-by-side. |
-| ThreeTenBP or any backport library | JDK 17 baseline + JVM-only target; no Android; `java.time` is native. |
-| Separate `:datepickers` Gradle module | Explicitly deferred per PROJECT.md; single `:library` module is the constraint through v2.x. |
-| `components-splitpane-desktop` | Not needed; SplitPane is already hand-rolled and the freeze is a logic bug, not a missing library. |
+All required Compose APIs are already on the compile classpath through the existing
+`api(compose.animation)`, `api(compose.foundation)`, `api(compose.runtime)`, `api(compose.ui)`,
+and `api(compose.material3)` declarations in `library/build.gradle.kts`.
 
 ---
 
 ## Sources
 
-- `C:\1A_WORK\ui_lib\library\build.gradle.kts` — confirmed `api(libs.kotlinx.datetime)`, confirmed no `implementation(libs.kotlinx.datetime)` (HIGH confidence)
-- `C:\1A_WORK\ui_lib\gradle\libs.versions.toml` — confirmed `kotlinxDatetime = "0.6.2"` (HIGH confidence)
-- `C:\1A_WORK\ui_lib\.planning\PROJECT.md` — Key Decisions table, Current Milestone scope, Constraints (HIGH confidence)
-- `C:\1A_WORK\ui_lib\library\src\main\kotlin\com\mordred\aero\components\pickers\AeroDateTimePicker.kt` — formatter bug confirmed at line 76; `combineDateTime` utility confirmed; public signature confirmed (HIGH confidence)
-- `C:\1A_WORK\ui_lib\library\src\main\kotlin\com\mordred\aero\components\pickers\AeroDateRangePicker.kt` — `nextRangeState` `LocalDate >= LocalDate` operator confirmed as existing idiom (HIGH confidence)
-- `https://github.com/Kotlin/kotlinx-datetime/blob/v0.6.2/core/common/src/LocalDateTime.kt` — `LocalDateTime : Comparable<LocalDateTime>` and `compareTo` operator confirmed at v0.6.2 source level (HIGH confidence)
-- `https://kotlinlang.org/api/kotlinx-datetime/kotlinx-datetime/kotlinx.datetime/-local-date-time/compare-to.html` — `compareTo` semantics documented (HIGH confidence)
+- `library/src/main/kotlin/com/mordred/aero/components/internal/drag/AeroDragSplitter.kt` — verified `aeroDragSplitter` signature, `Orientation` usage, PITFALL-03 documentation (HIGH)
+- `library/src/main/kotlin/com/mordred/aero/components/layout/internal/splitpane/SplitClamp.kt` — verified `clampDividerPx` signature and safeMax inverted-range guard (HIGH)
+- `library/src/main/kotlin/com/mordred/aero/components/layout/AeroSplitPane.kt` — verified `BoxWithConstraints` pattern, `rememberUpdatedState(totalPx)`, `LocalDensity` usage, `weight(1f)` second-pane pattern (HIGH)
+- `library/src/main/kotlin/com/mordred/aero/components/layout/AeroAccordion.kt` — verified controlled/uncontrolled hybrid pattern, `animateFloatAsState` caret rotation, `tween(160ms, FastOutSlowInEasing)` (HIGH)
+- `library/src/main/kotlin/com/mordred/aero/components/layout/AeroSidebar.kt` — verified `animateDpAsState` with `tween(200ms, FastOutSlowInEasing)` as the 200ms easing precedent (HIGH)
+- `library/src/main/kotlin/com/mordred/aero/theme/GlassModifiers.kt` — verified `glassPanel` signature (HIGH)
+- `gradle/libs.versions.toml` — verified all version strings (HIGH)
+- `library/build.gradle.kts` — verified all `api(...)` declarations; confirmed no relevant dependency is missing (HIGH)
+- `.planning/PROJECT.md` — verified Constraints, Key Decisions table, Current Milestone spec including spike note and PITFALL cross-references (HIGH)
 
 ---
 
-*Stack research for: aero-compose-ui v2.0.1 Picker & SplitPane Fixes*
+*Stack research for: aero-compose-ui v2.0.2 AeroPanelGroup*
 *Researched: 2026-06-22*
