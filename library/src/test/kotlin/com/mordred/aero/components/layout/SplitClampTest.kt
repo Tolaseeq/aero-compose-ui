@@ -47,4 +47,13 @@ class SplitClampTest {
         // Guard against divide-by-zero when totalPx == 0
         assertEquals(0f, pxToFraction(150f, 0f), 0.01f)
     }
+
+    @Test
+    fun clampInvertedRangeDoesNotThrow() {
+        // Inner pane squeezed below combined minimum: maxPx (30f) < minFirstPx (48f).
+        // Without the safeMax guard, coerceIn(48f, 30f) throws IllegalArgumentException.
+        // After the fix: safeMax = max(30f, 48f) = 48f; coerceIn(48f, 48f) = 48f.
+        val result = clampDividerPx(currentPx = 60f, deltaPx = 10f, minFirstPx = 48f, maxPx = 30f)
+        assertEquals(48f, result, 0.01f)
+    }
 }
