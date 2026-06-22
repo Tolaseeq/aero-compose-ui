@@ -1,5 +1,35 @@
 # Milestones
 
+## v2.0.1 Picker & SplitPane Fixes (Shipped: 2026-06-22)
+
+**Phases:** 12 (1 phase) | **Plans:** 4 (Phase 12: 4) | **Tasks:** 10 atomic commits | **Requirements:** 18/18 (FIXDT-01/02, FIXSP-01..04, DTR-01..08, SHW-11..14)
+
+**Timeline:** 2026-06-22 (single-day push, ~2h20m execution: 14:05 → 16:23 +0300)
+**Git range:** `b684382` (start milestone) → `2c6202c` (phase complete) — 25 commits, 5 `feat` / 3 `fix`
+**Diff:** 9 code files changed, +520 / −14 (30 files incl. docs, +4,440 / −1,188)
+**Verification:** ✅ PASSED — 18/18 must-haves verified (`.planning/phases/12-.../12-VERIFICATION.md`); single-phase patch milestone completed without a separate audit (verification covered requirements + integration + showcase sign-off)
+
+**Delivered:** A patch milestone fixing two known bugs and adding one additive component — zero new dependencies, no breaking changes to the v2.0 public API. `AeroDateTimePicker` now shows seconds in its trigger; nested N-pane `AeroSplitPane` layouts drag without snap-back or crash; and the new `AeroDateTimeRangePicker` ships with a dual-calendar + two-time-row Apply-gate, emitting `(LocalDateTime, LocalDateTime)`. All three deliverables verified in the showcase on AeroBlue / AeroDark / Classic.
+
+**Key accomplishments:**
+1. **Fix A — seconds in trigger (FIXDT-01/02)** — Introduced `internal fun formatAeroDateTime(ldt, showSeconds)` as the single source of truth for datetime trigger strings, and changed `AeroDateTimePicker`'s `formatter` param to nullable with body-level dispatch (`formatter?.invoke(ldt) ?: formatAeroDateTime(ldt, showSeconds)`). Seconds now render when `showSeconds = true`; an explicit caller formatter is used verbatim (no breaking change). Three new unit tests lock the behaviour.
+2. **Fix B — nested SplitPane freeze (FIXSP-01..04, TDD)** — Converted `AeroSplitPane` from `remember(totalPx)` px-state to fraction-based divider state with `val dividerPx` derived each recompose, so an outer-splitter drag no longer re-keys and resets the inner divider (PITFALL-A). Guarded `clampDividerPx` with `val safeMax = maxPx.coerceAtLeast(minFirstPx)` before `coerceIn`, eliminating the `IllegalArgumentException` when an inner pane is squeezed below combined minima (PITFALL-B). Inverted-range test written RED before the fix (`38e0de6`), green after (`f4de00f`).
+3. **New `AeroDateTimeRangePicker` (DTR-01..08)** — Apply-gate dual-calendar datetime range picker reusing `AeroDateRangeState` + `nextRangeState` verbatim. `onDayClick` discards the commit pair; the sole `onRangeSelect` emit + close site is the Apply button, gated by `rangeState is Selected`. `orderDateTimeRange` silently swaps same-day reversed times via `LocalDateTime` Comparable (no Instant conversion). Two unconditional `TimeFields` rows (enabled-gated) keep popup height stable for position-flip logic; four `remember(expanded)` blocks prevent cross-open state leaks. Six unit tests.
+4. **Showcase + three-theme sign-off (SHW-11..13)** — `PickersSection` gained an `AeroDateTimeRangePicker` row with a live `(LocalDateTime, LocalDateTime)` label and a `showSeconds=true` vs `false` contrast pair; `LayoutSection` gained a nested 3-pane `AeroSplitPane` demo (inner in outer `end` slot) that reproduces FIXSP-01/02. Human sign-off PASSED on all three themes.
+5. **Doc hygiene (SHW-14)** — The stale "Revisit on publish — kotlinx-datetime declared implementation" note in `PROJECT.md` Key Decisions was corrected to the factual record that `api(libs.kotlinx.datetime)` was already in place (no transitive leak).
+
+**Patterns established:**
+- **Nullable-formatter dispatch** (`formatter: ((T) -> String)? = null`, body-level `?:` fallback) — avoids PITFALL-H where a default-lambda param can't close over a `showSeconds` declared after it; now the convention for both `AeroDateTimePicker` and `AeroDateTimeRangePicker`.
+- **Fraction-as-stable-coordinate** for resizable dividers — store the fraction, derive px each recompose; survives `totalPx` changes without reset. The locked fix for any viewport-dependent divider state.
+- **Dual Apply-gate picker** — two endpoints sharing the same pending-state discipline as `AeroDateTimePicker`, extended over the `AeroDateRangeState` machine.
+
+**Issues resolved during milestone:**
+- **SplitPane drag regression (`7f38c0c`)** — caught during three-theme sign-off: after the fraction-state conversion, the `aeroDragSplitter` loop was still reading a stale captured `dividerFraction` from the `pointerInput` lambda, snapping the inner splitter back (an FIXSP-01 regression). Fixed by reading live state in the drag loop (`rememberUpdatedState` pattern, same root cause as the Phase 11 `AeroRangeSlider` F9 bug). This is exactly the class of silent failure the visual sign-off gate exists to catch.
+
+**Technical debt incurred:** None functional. (Carry-over from prior milestones still open: AeroDropdown popup-offset regression — explicitly OUT of v2.0.1 scope, future milestone.)
+
+---
+
 ## v2.0 Stateful + Layout (Shipped: 2026-06-18)
 
 **Phases:** 7–11 (5 phases) | **Plans:** 27 (Phase 7: 3, Phase 8: 6, Phase 9: 3, Phase 10: 4, Phase 11: 11) | **Requirements:** 27/27 (PICK-01..08, DATA-01..06, LAYO-01..09, SHW-07..10)

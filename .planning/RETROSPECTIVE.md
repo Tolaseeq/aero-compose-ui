@@ -95,6 +95,44 @@
 
 ---
 
+## Milestone: v2.0.1 — Picker & SplitPane Fixes
+
+**Shipped:** 2026-06-22
+**Phases:** 1 (12) | **Plans:** 4 | **Sessions:** single-day push (~2h20m execution, 14:05→16:23 +0300); git range `b684382`→`2c6202c` (25 commits, 5 `feat` / 3 `fix`), 9 code files (+520 / −14)
+
+### What Was Built
+- **Fix A — seconds in trigger (FIXDT-01/02):** `internal fun formatAeroDateTime(ldt, showSeconds)` single-source helper + nullable-formatter dispatch in `AeroDateTimePicker`; seconds now render, custom formatters preserved.
+- **Fix B — nested SplitPane freeze (FIXSP-01..04):** fraction-based divider state (no `remember(totalPx)` re-key) + `clampDividerPx` `coerceAtLeast` guard against inverted-range throw; TDD RED→GREEN.
+- **New `AeroDateTimeRangePicker` (DTR-01..08):** Apply-gate dual-calendar datetime range picker reusing `AeroDateRangeState`/`nextRangeState` verbatim; `orderDateTimeRange` same-day swap; four `remember(expanded)` no-leak blocks.
+- **Showcase + sign-off (SHW-11..14):** range-picker live label, `showSeconds` contrast pair, nested 3-pane SplitPane demo; three-theme sign-off PASSED; kotlinx-datetime doc note corrected.
+
+### What Worked
+- **Verbatim reuse over re-derivation.** `AeroDateRangeState` + `nextRangeState` were reused unchanged for the new range picker (no generic refactor); `orderDateTimeRange` leaned on `LocalDateTime` `Comparable` directly (no Instant/timezone conversion). The new component inherited `formatAeroDateTime` from Fix A rather than re-implementing trigger formatting — so PITFALL-H could not recur.
+- **TDD RED-before-GREEN for the pure clamp helper.** The inverted-range test (`clampInvertedRangeDoesNotThrow`) was committed failing (`38e0de6`) before the guard (`f4de00f`) — separate commits prove the test actually catches the bug, not just documents the fix.
+- **A documented prior lesson caught the regression fast.** When the fraction-state rewrite snapped the inner splitter back during sign-off, it was immediately recognized as the v2.0 lesson #3 class (stale captured state in `pointerInput`, same root as the AeroRangeSlider F9 bug) and fixed with the established `rememberUpdatedState` pattern.
+- **Single-phase patch milestone shipped on a verification-only gate.** Phase 12's `12-VERIFICATION.md` passed 18/18 (requirements + integration + showcase sign-off); a separate `/gsd:audit-milestone` pass would have been redundant for one phase.
+
+### What Was Inefficient
+- **The fraction-state rewrite re-introduced exactly the stale-capture bug v2.0 lesson #3 warned about.** The lesson was already in this retrospective, yet the 12-02 drag loop still captured `dividerFraction` from the lambda. It wasn't caught until the 12-04 three-theme sign-off — one phase later. Applying the `rememberUpdatedState` pattern *while writing* the fraction-state drag loop would have avoided the regression and the extra fix commit (`7f38c0c`) entirely. **Documented lessons need to be applied at write-time, not merely available for diagnosis.**
+- **No nested-drag integration check at 12-02 close.** 12-02 verified the pure clamp helper (unit) and single-level behaviour but had no nested-topology smoke check — the exact scenario the milestone existed to fix. The regression therefore surfaced at the visual gate rather than at the fix's own plan boundary (a smaller echo of the v2.0 "defer-all-visual" tax).
+
+### Patterns Established
+- **Nullable-formatter dispatch** (`formatter: ((T) -> String)? = null` + body-level `?:` fallback to a `showSeconds`-aware default) — avoids the PITFALL-H capture trap; now the convention for both datetime pickers.
+- **Fraction-as-stable-coordinate** for any resizable divider — store the fraction, derive px each recompose; survives `totalPx` changes without reset. Pair it with a live-state read (`rememberUpdatedState`) in the drag loop.
+- **Dual Apply-gate picker** — two endpoints sharing the single-commit-point discipline of `AeroDateTimePicker`, extended over the `AeroDateRangeState` machine.
+
+### Key Lessons
+1. **Apply documented lessons at write-time, not just at diagnosis.** v2.0 lesson #3 (`rememberUpdatedState` for `pointerInput` captures) was on the books; the fraction-state rewrite ignored it and regressed FIXSP-01. The retrospective made the fix fast — but the regression was avoidable. A lesson is only paying off when it shapes the code as it's written.
+2. **A fix's own plan should verify the topology the fix targets.** FIXSP existed for *nested* SplitPanes; 12-02 verified pure-clamp + single-level only. Put the targeted repro (nested 3-pane drag) in the fixing plan's verification, not just the showcase phase.
+3. **Reuse a working state machine verbatim — don't refactor it generic mid-milestone.** Reusing `nextRangeState`/`AeroDateRangeState` unchanged kept the new range picker's correctness inside an already-proven, already-unit-tested boundary.
+4. **For a single-phase patch milestone, a passing phase VERIFICATION can substitute for a full milestone audit.** The audit's value (cross-phase integration, E2E) collapses to the phase verification when there's exactly one phase.
+
+### Cost Observations
+- Model mix: opus for planning/research, sonnet for execution (`model_profile: balanced`); unchanged from v1.1/v2.0.
+- Fastest milestone by far — 4 plans, ~2h20m wall. Fix A / Fix B / new component each ~4 min execution; the cost concentrated in 12-04 (~40 min: showcase wiring + the sign-off round + the regression fix), again confirming that verification/sign-off, not implementation, dominates wall-clock.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -104,6 +142,7 @@
 | v1.0 | ~3 days | 3 (1–3) | Established `:library` + `:showcase` split, Aero theme system, glass modifiers, 50 components, three themes, undecorated-window pattern (without `transparent=true` for Win11 safety) |
 | v1.1 | ~1 day | 3 (4–6) | Established wave-ordered phase execution, spike-then-batch for code generation, vendored upstream pattern (`tools/phosphor-svgs/`), and visual-checkpoint-as-plan convention |
 | v2.0 | concentrated | 5 (7–11) | Established enabling-phase-first for shared primitives, pure-logic-then-Compose (sealed state machines unit-tested without Compose), front-loaded PITFALLS catalog, silent-failure checklist as sign-off gate, grep-gates for banned APIs, hybrid controlled/uncontrolled component API |
+| v2.0.1 | ~2h20m | 1 (12) | First patch milestone — single phase, verification-only gate (no separate audit); established nullable-formatter dispatch, fraction-as-stable-coordinate dividers, and verbatim state-machine reuse; confirmed that documented lessons must be applied at write-time (v2.0 lesson #3 regressed before the sign-off caught it) |
 
 ### Cumulative Quality
 
@@ -112,6 +151,7 @@
 | v1.0 | ~50 | 0 (text glyphs + Material Icons) | 3 (AeroBlue, AeroDark, Classic) | 8 (Foundation, Buttons, Inputs, Selection, Range, Lists, Containers, Overlays/Nav) | ≈0.96 MB + ~36 MB classpath via `materialIconsExtended` |
 | v1.1 | ~50 (no new components, all migrated) | 138 (`AeroIcons.*`, Phosphor Regular) | 3 (unchanged) | 9 (+ IconsSection) | ≈0.96 MB, classpath shed `materialIconsExtended` |
 | v2.0 | ~62 (+12: 6 pickers, 2 data, 4 layout) | 138 (unchanged) | 3 (unchanged) | 12 (+ DataSection, PickersSection, LayoutSection) | +`kotlinx-datetime:0.6.2` (only new dependency) |
+| v2.0.1 | ~63 (+1: `AeroDateTimeRangePicker`) | 138 (unchanged) | 3 (unchanged) | 12 (PickersSection + LayoutSection demos extended) | unchanged (zero new dependencies) |
 
 ### Top Lessons (Verified Across Milestones)
 

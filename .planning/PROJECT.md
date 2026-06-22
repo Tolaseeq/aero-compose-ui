@@ -8,24 +8,32 @@
 
 Разработчик подключает одну зависимость и получает полный набор Aero-styled компонентов с тремя темами, кастомной шапкой окна, типизированным набором иконок и демо-витриной — без необходимости реализовывать стиль или искать совместимый icon pack самостоятельно.
 
-## Current State (Shipped: v2.0 Stateful + Layout, 2026-06-18)
+## Current State (Shipped: v2.0.1 Picker & SplitPane Fixes, 2026-06-22)
 
 - **v1.0 MVP** (3 фазы, 53 требования): Foundation + Atomic Components + Composite/Navigation. Все компоненты библиотеки реализованы, три темы работают, showcase демонстрирует всё.
 - **v1.1 Icon System** (3 фазы, 17 требований): 138 векторных иконок `AeroIcons` (порт Phosphor Regular) заменили все текстовые символы и `Icons.Outlined.*`; `compose.materialIconsExtended` удалён из Gradle dependency graph; showcase содержит `IconsSection` с поиском.
 - **v2.0 Stateful + Layout** (5 фаз 7–11, 27 требований): 12 новых компонентов (8 complex stateful + 4 advanced layout) поверх внутреннего фундамента primitives. Pickers (`AeroDatePicker`/`TimePicker`/`DateTimePicker`/`DateRangePicker`/`ColorPicker`/`RangeSlider`), Data (`AeroDataTable` виртуализованный + `AeroTreeView` lazy), Layout (`AeroAccordion`/`SplitPane`/`Sidebar`/`StepperWizard`). `kotlinx-datetime:0.6.2` — единственная новая зависимость. Showcase: DataSection + PickersSection + LayoutSection; 16-item × 3-theme sign-off PASSED. No breaking changes к v1.x API.
+- **v2.0.1 Picker & SplitPane Fixes** (1 фаза 12, 18 требований): patch milestone — два bug-фикса + один аддитивный компонент. `AeroDateTimePicker` теперь показывает секунды в триггере при `showSeconds=true` (FIXDT); вложенный N-pane `AeroSplitPane` перетаскивается без snap-back и без краша (FIXSP, fraction-based divider state + inverted-range clamp guard); новый `AeroDateTimeRangePicker` — Apply-gate dual-calendar picker, emits `(LocalDateTime, LocalDateTime)` (DTR). Zero new dependencies, no breaking changes. Three-theme showcase sign-off PASSED.
 
-**Codebase:** Kotlin / Compose Desktop 1.7.3, Kotlin 2.1.21, Gradle 8.14.3, JDK 17. v2.0 added 152 files changed (+27,406 / −2,285) across phases 7–11.
+**Codebase:** Kotlin / Compose Desktop 1.7.3, Kotlin 2.1.21, Gradle 8.14.3, JDK 17. v2.0 added 152 files changed (+27,406 / −2,285) across phases 7–11; v2.0.1 added 9 code files (+520 / −14) in Phase 12.
 
-## Current Milestone: v2.0.1 Picker & SplitPane Fixes
+## Next Milestone
+
+**Not yet defined.** v2.0.1 shipped 2026-06-22. Run `/gsd:new-milestone` to scope the next version (questioning → research → requirements → roadmap).
+
+**Candidate scope** (archived in `.planning/milestones/v2.0-REQUIREMENTS.md` "v3+ Future Requirements" and `v2.0.1-REQUIREMENTS.md` future section): inline pickers (PICK-INL-01), DataTable cell-editing/reorder/filter (DATA-EDIT/REORDER/FILTER-01), TreeView drag-and-drop (TREE-DND-01), ColorPicker eyedropper (COLOR-EYE-01), StepperWizard branching (STEP-BR-01), Sidebar drag-resize (SIDE-RES-01), AeroDateTimeRangePicker hover-preview (DTR-HOVER-01), and the carry-over AeroDropdown popup-offset fix (DROP-FIX-01).
+
+<details>
+<summary>📦 v2.0.1 Picker & SplitPane Fixes — shipped 2026-06-22 (milestone goal & target features)</summary>
 
 **Goal:** Маленький milestone: исправить два известных бага (AeroDateTimePicker не показывает секунды в триггере; AeroSplitPane фризит правый сплиттер при вложенной N-pane компоновке) и добавить один аддитивный компонент `AeroDateTimeRangePicker` — без breaking changes к v2.0 API.
 
-**Target features:**
-- **Fix — AeroDateTimePicker seconds:** default `formatter` хардкодит `HH:MM` и игнорирует `showSeconds`; введённые секунды коммитятся, но не рендерятся в триггере. Дефолтный форматтер должен показывать секунды при `showSeconds = true`.
-- **Fix — AeroSplitPane nested freeze:** при 3+ pane через 2+ сплиттера (вложение в `end`-слот) перетаскивание левого сплиттера меняет `totalPx` вложенного pane, что ре-кеит `remember(totalPx)` и сбрасывает внутренний divider; при сжатии вложенного pane ниже `minFirst+minSecond` `clampDividerPx`'s `coerceIn(min,max)` получает `min > max` и бросает исключение → правый сплиттер «фризит». Root cause подтверждается через systematic-debugging на этапе исполнения.
-- **New — AeroDateTimeRangePicker:** как `AeroDateRangePicker` (двойной календарь, range-выбор), но с временем — отдельные time-rows для start и end + Cancel/Apply commit-gate; emits `(LocalDateTime, LocalDateTime)`; full API parity (`showSeconds` + `minuteStep`) с `AeroDateTimePicker`.
+**Target features (all delivered):**
+- **Fix — AeroDateTimePicker seconds:** default `formatter` хардкодил `HH:MM` и игнорировал `showSeconds`; введённые секунды коммитились, но не рендерились в триггере. ✓ Fixed via `formatAeroDateTime` helper + nullable-formatter dispatch.
+- **Fix — AeroSplitPane nested freeze:** при 3+ pane через 2+ сплиттера (вложение в `end`-слот) перетаскивание левого сплиттера меняло `totalPx` вложенного pane, что ре-кеило `remember(totalPx)` и сбрасывало внутренний divider; при сжатии вложенного pane ниже `minFirst+minSecond` `clampDividerPx`'s `coerceIn(min,max)` получал `min > max` и бросал исключение. ✓ Fixed via fraction-based divider state + `coerceAtLeast` clamp guard (TDD).
+- **New — AeroDateTimeRangePicker:** как `AeroDateRangePicker` (двойной календарь, range-выбор), но с временем — отдельные time-rows для start и end + Cancel/Apply commit-gate; emits `(LocalDateTime, LocalDateTime)`; full API parity (`showSeconds` + `minuteStep`) с `AeroDateTimePicker`. ✓ Shipped.
 
-**Candidate scope deferred to a later milestone** (archived in `.planning/milestones/v2.0-REQUIREMENTS.md` "v3+ Future Requirements"): inline pickers, DataTable cell-editing/reorder/filter, TreeView drag-and-drop, ColorPicker eyedropper, StepperWizard branching, Sidebar drag-resize, и carry-over AeroDropdown popup-offset fix.
+</details>
 
 <details>
 <summary>📦 v2.0 Stateful + Layout — shipped 2026-06-18 (milestone goal & target features)</summary>
@@ -87,13 +95,17 @@
 - ✓ **AeroStepperWizard** (LAYO-08..09) — linear, per-step `onValidate` commit-gate, Back preserves state — Phase 10 — v2.0
 - ✓ **Showcase v2.0** (SHW-07..10) — DataSection + PickersSection + LayoutSection; 16-item × 3-theme sign-off PASSED — Phase 11 — v2.0
 
+**v2.0.1 (18):**
+- ✓ **AeroDateTimePicker seconds fix** (FIXDT-01..02) — `formatAeroDateTime` helper + nullable-formatter dispatch; trigger shows `HH:MM:SS` при `showSeconds=true`, custom formatter сохраняется verbatim — Phase 12 — v2.0.1
+- ✓ **AeroSplitPane nested-freeze fix** (FIXSP-01..04) — fraction-based divider state (no `remember(totalPx)` re-key) + `clampDividerPx` inverted-range guard; nested N-pane drag без snap-back/crash; single-level не регрессирует; TDD-locked — Phase 12 — v2.0.1
+- ✓ **AeroDateTimeRangePicker** (DTR-01..08) — Apply-gate dual-calendar datetime range picker; `onRangeSelect` ровно один раз по Apply; `orderDateTimeRange` same-day swap; no cross-open state leak; `showSeconds`/`minuteStep` parity — Phase 12 — v2.0.1
+- ✓ **Showcase + docs** (SHW-11..14) — `AeroDateTimeRangePicker` live-label row, `showSeconds` contrast demos, nested 3-pane SplitPane demo; three-theme sign-off PASSED; kotlinx-datetime doc-note corrected — Phase 12 — v2.0.1
+
 ### Active
 
-<!-- v2.0.1 Picker & SplitPane Fixes — phases continue from 12. Full list in REQUIREMENTS.md. -->
+<!-- No active milestone. v2.0.1 shipped 2026-06-22. Run /gsd:new-milestone to define the next version's requirements. -->
 
-- [ ] **Fix** AeroDateTimePicker отображает секунды в триггере при `showSeconds = true`
-- [ ] **Fix** AeroSplitPane не фризит при вложенной N-pane компоновке (3+ pane, 2+ сплиттера)
-- [ ] **New** `AeroDateTimeRangePicker` — range дата+время, two time-rows + Apply gate, `(LocalDateTime, LocalDateTime)`
+(None — между milestone'ами. Следующий набор требований определяется через `/gsd:new-milestone`.)
 
 ### Out of Scope
 
@@ -168,6 +180,11 @@
 | **v2.0:** `AeroCalendarPositionProvider` (Phase 7) вместо `AeroDropdownPopup` для date-popup | `AeroDropdownPopup` залочен по ширине anchor — календарь шире обрезается (PITFALL-02) | ✓ Good — нет clip на правом крае 1024dp окна |
 | **v2.0:** 16-item × 3-theme "looks done but isn't" checklist как формальный sign-off gate | Stateful-компоненты молча ломаются способами, невидимыми в коде | ✓ Good — первый проход FAILED (16 дефектов), все закрыты, 48/48 cells PASS |
 | **v2.0:** `kotlinx-datetime` объявлен `api(libs.kotlinx.datetime)` (library/build.gradle.kts:27) | Picker-сигнатуры экспонируют `kotlinx.datetime.*` — `api` гарантирует transitive-доступ для consumer'ов | ✓ Good — transitive leak отсутствует; стале-нота закрыта в v2.0.1 (SHW-14) |
+| **v2.0.1:** `formatAeroDateTime(ldt, showSeconds)` internal helper + nullable `formatter: ((T)->String)? = null` с body-level dispatch | Default-лямбда не может закрыться над `showSeconds`, объявленным после `formatter` (PITFALL-H); helper — единый источник trigger-формата для DateTime + DateTimeRange pickers | ✓ Good — FIXDT-01/02 закрыты, дублирования бага в новом компоненте нет; конвенция для обоих pickers |
+| **v2.0.1:** Fraction-based `AeroSplitPane` divider state (хранится фракция, `dividerPx` derived каждый recompose; нет `remember(totalPx)` ключа) | `remember(totalPx)` ре-кеил state при изменении `totalPx` вложенного pane → внутренний divider сбрасывался во время outer-drag (PITFALL-A) | ✓ Good — nested N-pane drag держит позицию; single-level не регрессирует (FIXSP-01/03) |
+| **v2.0.1:** `clampDividerPx` guard — `val safeMax = maxPx.coerceAtLeast(minFirstPx)` перед `coerceIn` | При сжатии inner pane ниже combined minima `maxPx < minFirstPx` → `coerceIn(min>max)` бросал `IllegalArgumentException` (PITFALL-B) | ✓ Good — no-throw, тихий clamp; inverted-range unit test написан RED до фикса (FIXSP-02/04, TDD) |
+| **v2.0.1:** Apply-gate для `AeroDateTimeRangePicker` — `onDayClick` отбрасывает commit pair; единственный `onRangeSelect` emit+close site — кнопка Apply, gated `rangeState is Selected` | Клик по второй дате не должен ни закрывать popup, ни эмитить partial range (PITFALL-E); `orderDateTimeRange` тихо свопает same-day reversed times | ✓ Good — emit ровно один раз; 4 remember(expanded) блока убирают cross-open leak; verification 18/18 |
+| **v2.0.1:** SplitPane drag читает live state в drag-loop (`rememberUpdatedState`-паттерн), не captured copy из `pointerInput` lambda | Stale captured `dividerFraction` снапил inner splitter обратно — FIXSP-01 регрессия, тот же класс бага что AeroRangeSlider F9 (Phase 11) | ✓ Good — пойман на three-theme sign-off, исправлен (7f38c0c) до approval; подтверждает ценность визуального gate |
 
 ---
-*Last updated: 2026-06-22 — started milestone v2.0.1 Picker & SplitPane Fixes*
+*Last updated: 2026-06-22 — after v2.0.1 Picker & SplitPane Fixes milestone*

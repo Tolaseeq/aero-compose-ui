@@ -1,37 +1,36 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: "Roadmap ready — awaiting `/gsd:plan-phase 12`"
-stopped_at: Completed 12-04-PLAN.md — v2.0.1 milestone all plans done
-last_updated: "2026-06-22T13:23:17.459Z"
-last_activity: 2026-06-22 — Roadmap revised, 18/18 requirements consolidated to Phase 12
+milestone: none
+milestone_name: "between milestones"
+status: "v2.0.1 shipped 2026-06-22 — awaiting `/gsd:new-milestone`"
+stopped_at: v2.0.1 milestone archived and tagged
+last_updated: "2026-06-22T14:10:00.000Z"
+last_activity: 2026-06-22 — v2.0.1 Picker & SplitPane Fixes shipped, archived, tagged
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-22 — v2.0.1 milestone started)
+See: .planning/PROJECT.md (updated 2026-06-22 — after v2.0.1 milestone)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, typed `AeroIcons`, and a showcase — no manual style work or icon-pack hunting required.
-**Current focus:** v2.0.1 Picker & SplitPane Fixes — single Phase 12, roadmap defined, ready to execute.
+**Current focus:** Between milestones. v2.0.1 shipped — run `/gsd:new-milestone` to scope the next version.
 
 ## Current Position
 
-Phase: 12 (not started)
+Phase: — (no active milestone)
 Plan: —
-Status: Roadmap ready — awaiting `/gsd:plan-phase 12`
-Last activity: 2026-06-22 — Roadmap revised, 18/18 requirements consolidated to Phase 12
+Status: v2.0.1 shipped 2026-06-22 — milestone archived, tagged `v2.0.1`
+Last activity: 2026-06-22 — v2.0.1 Picker & SplitPane Fixes completed
 
 ```
-v2.0.1 Progress: [Phase 12]
-                 [ not started ]
+v2.0.1 ✅ SHIPPED → next milestone undefined (/gsd:new-milestone)
 ```
 
 ## Shipped Milestones
@@ -40,22 +39,14 @@ v2.0.1 Progress: [Phase 12]
 |---------|------|--------|-------|--------------|---------|
 | v1.0 | MVP (Foundation + Atomic + Composite/Navigation) | 1–3 | 18 | 53 | 2026-04-28 |
 | v1.1 | Icon System | 4–6 | 11 | 17 | 2026-04-30 |
-| v2.0 | Stateful + Layout | 7–11 | 55 | 27 | 2026-06-18 |
+| v2.0 | Stateful + Layout | 7–11 | 27 | 27 | 2026-06-18 |
+| v2.0.1 | Picker & SplitPane Fixes | 12 | 4 | 18 | 2026-06-22 |
 
 See `.planning/MILESTONES.md` for full accomplishments.
 
-## v2.0.1 Roadmap Summary (2026-06-22, revised)
+## v2.0.1 Shipped (2026-06-22)
 
-| Phase | Name | Goal | Requirements | Build Order (plan-level) |
-|-------|------|------|--------------|--------------------------|
-| 12 | v2.0.1 — Seconds Fix + SplitPane Fix + AeroDateTimeRangePicker | Fix seconds trigger, fix nested SplitPane freeze, add `AeroDateTimeRangePicker`, all showcase demos, doc hygiene | FIXDT-01..02, FIXSP-01..04, DTR-01..08, SHW-11..14 | Fix A → Fix B → New Component |
-
-**Coverage:** 18/18 v2.0.1 requirements mapped. One phase.
-
-**Plan-level build order inside Phase 12:**
-1. Fix A (FIXDT-01, FIXDT-02, SHW-12, SHW-14) — introduces `formatAeroDateTime` helper; must precede new component
-2. Fix B (FIXSP-01..04, SHW-13) — write unit test for inverted-range `clampDividerPx` BEFORE applying the two-file fix
-3. New Component (DTR-01..08, SHW-11) — lock Apply-gate architecture BEFORE writing composable body (PITFALL-E)
+Phase 12 (4 plans, 18/18 requirements) — Fix A (seconds trigger) → Fix B (nested SplitPane) → AeroDateTimeRangePicker → showcase sign-off. Full record: `.planning/MILESTONES.md`; archive: `.planning/milestones/v2.0.1-ROADMAP.md`; lessons: `.planning/RETROSPECTIVE.md`.
 
 ## v2.0 Locked Decisions (carried forward)
 
@@ -70,15 +61,9 @@ See `.planning/MILESTONES.md` for full accomplishments.
 - DataTable selection API is `Set<RowKey>` + `key: (T) -> Any`, NOT `Set<Int>` indices (PITFALL-04)
 - ColorPicker internal state is HSV float tuple only; RGB and HEX are derived views (PITFALL-15)
 - `AeroCalendarPositionProvider` replaces `AeroDropdownPopup` for all date picker popups (PITFALL-02)
-- `kotlinx-datetime:0.6.2` is declared `api(...)` at `library/build.gradle.kts:27` — confirmed; stale `implementation` note in PROJECT.md will be cleared in Phase 12 (SHW-14)
+- `kotlinx-datetime:0.6.2` is declared `api(...)` at `library/build.gradle.kts:27` — confirmed; stale `implementation` note in PROJECT.md was corrected in Phase 12 (SHW-14, done)
 
-## v2.0.1 Key Decisions (pre-roadmap, from research)
-
-- **formatAeroDateTime internal helper** — introduced in Phase 12 Fix A; shared by `AeroDateTimeRangePicker`; prevents re-introducing PITFALL-H in the new component
-- **Apply gate architecture for AeroDateTimeRangePicker** — `nextRangeState` commit pair discarded in day-click handler; only Apply button triggers `onRangeSelect` + `expanded = false`; must be locked before writing composable code (PITFALL-E)
-- **Fraction-based SplitPane divider state** — `var dividerFraction by remember { mutableStateOf(initialSplitFraction) }` with `val dividerPx` derived each recompose; no `remember(totalPx)` key (PITFALL-A fix)
-- **clampDividerPx guard** — `val safeMax = maxPx.coerceAtLeast(minFirstPx)` before `coerceIn`; unit test for inverted range written BEFORE fix is applied (PITFALL-B fix)
-- **Fix A before new component** — `formatAeroDateTime` must exist before writing `AeroDateTimeRangePicker` trigger format to avoid duplicating the bug pattern
+<!-- v2.0.1 key technical decisions are now realized — see PROJECT.md "Key Decisions" (v2.0.1 rows) and the [Phase 12] entries under Accumulated Context below. -->
 
 ## Performance Metrics
 
@@ -159,10 +144,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ### Pending Todos
 
-- Gap-close: AeroDropdown popup offset regression — explicitly OUT of v2.0.1 scope; future milestone
-- v2.0.1 Phase 12 (Fix B): write unit test for `clampDividerPx` with inverted range BEFORE applying the two-file fix (mandatory per research SUMMARY.md)
-- v2.0.1 Phase 12 (New Component): lock Apply-gate architecture decision (no auto-close on second date click) BEFORE writing the composable body (PITFALL-E)
-- v2.0.1 Phase 12 (New Component): confirm `nextRangeState` and `combineDateTime` are accessible from `AeroDateTimeRangePicker.kt` package (same package = no extra action; different package = make internal accessible)
+- Gap-close: AeroDropdown popup offset regression (v1.0 carry-over) — explicitly OUT of v2.0.1 scope; candidate for next milestone (DROP-FIX-01)
+- Deferred to next milestone (archived in `v2.0.1-REQUIREMENTS.md` future section): inline pickers, DataTable cell-edit/reorder/filter, TreeView DnD, ColorPicker eyedropper, StepperWizard branching, Sidebar drag-resize, AeroDateTimeRangePicker hover-preview (DTR-HOVER-01)
 
 ### Blockers/Concerns
 
@@ -171,7 +154,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-22T13:18:46.894Z
-Stopped at: Completed 12-04-PLAN.md — v2.0.1 milestone all plans done
+Last session: 2026-06-22 — v2.0.1 milestone completion
+Stopped at: v2.0.1 archived, PROJECT/ROADMAP/MILESTONES/RETROSPECTIVE updated, tagged `v2.0.1`
 Resume file: None
-Next action: `/gsd:plan-phase 12`
+Next action: `/gsd:new-milestone` (clear context first for a fresh window)
