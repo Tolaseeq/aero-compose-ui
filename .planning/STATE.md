@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: "Roadmap ready — awaiting `/gsd:plan-phase 12`"
-stopped_at: Completed 12-03-PLAN.md (AeroDateTimeRangePicker composable with Apply gate, DTR-01..08)
-last_updated: "2026-06-22T12:57:10.111Z"
+stopped_at: "12-04 checkpoint: Task 3 awaiting human visual sign-off (SHW-11/12/13)"
+last_updated: "2026-06-22T12:59:58.377Z"
 last_activity: 2026-06-22 — Roadmap revised, 18/18 requirements consolidated to Phase 12
 progress:
   total_phases: 1
@@ -170,7 +170,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-22T12:57:01.084Z
-Stopped at: Completed 12-03-PLAN.md (AeroDateTimeRangePicker composable with Apply gate, DTR-01..08)
+Last session: 2026-06-22T12:59:58.356Z
+Stopped at: 12-04 checkpoint: Task 3 awaiting human visual sign-off (SHW-11/12/13)
 Resume file: None
 Next action: `/gsd:plan-phase 12`
