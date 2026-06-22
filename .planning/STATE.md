@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0.1
-milestone_name: Picker & SplitPane Fixes
-status: roadmap-ready
-stopped_at: "v2.0.1 roadmap revised 2026-06-22 — consolidated to single Phase 12, ready to plan Phase 12."
-last_updated: "2026-06-22"
-last_activity: "2026-06-22 — Roadmap revised: phases 12–14 collapsed into single Phase 12. 18/18 requirements mapped to Phase 12."
+milestone: v1.0
+milestone_name: milestone
+status: "Roadmap ready — awaiting `/gsd:plan-phase 12`"
+stopped_at: Phase 12 context gathered
+last_updated: "2026-06-22T12:18:04.124Z"
+last_activity: 2026-06-22 — Roadmap revised, 18/18 requirements consolidated to Phase 12
 progress:
-  total_phases: 12
-  completed_phases: 11
-  total_plans: 55
-  completed_plans: 55
+  total_phases: 1
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
@@ -164,7 +164,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-22
-Stopped at: Roadmap revised — phases 12–14 collapsed to single Phase 12, 18/18 requirements mapped
-Resume file: None
+Last session: 2026-06-22T12:18:04.115Z
+Stopped at: Phase 12 context gathered
+Resume file: .planning/phases/12-v2-0-1-seconds-fix-splitpane-fix-aerodatetimerangepicker/12-CONTEXT.md
 Next action: `/gsd:plan-phase 12`
