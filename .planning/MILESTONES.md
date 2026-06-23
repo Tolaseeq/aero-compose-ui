@@ -1,5 +1,36 @@
 # Milestones
 
+## v2.0.2 AeroPanelGroup (Shipped: 2026-06-23)
+
+**Phases:** 13 + 13.1 (2 phases) | **Plans:** 8 (Phase 13: 5, Phase 13.1: 3) | **Requirements:** 18/18 v1 (PNL-01..PNL-18) + PNL-HORIZ-01 (delivered via inserted Phase 13.1)
+
+**Timeline:** 2026-06-22 17:15 → 2026-06-23 11:01 +0300 (~1-day push)
+**Git range:** `603ae57` (start milestone) → `2d7de8f` (phase 13.1 complete) — 49 commits, 11 `feat` / 7 `fix`
+**Diff:** 4 code files, +1,516 (`AeroPanelGroup.kt` 818, `PanelDistribution.kt` 245, `PanelGroupLogicTest.kt` 235, `LayoutSection.kt` +218); 39 files incl. docs, +8,162 / −877
+**Sign-off:** ✅ APPROVED — three-theme human visual sign-off (AeroBlue / AeroDark / Classic) on both vertical (Phase 13) and horizontal (Phase 13.1) demos; single additive-component milestone completed without a separate audit (requirements 18/18 + both phase sign-offs cover coverage + integration).
+
+**Delivered:** One additive layout component, `AeroPanelGroup` (+ `AeroPanelSection` via scope-DSL) — N sections that fill the parent, collapse to a ~36dp header strip with neighbors absorbing the freed space, and drag-resize between adjacent expanded sections (VS Code Side Bar model). A follow-on inserted phase added a horizontal orientation variant via a shared internal core, with zero breaking changes and zero regression to the vertical behavior. No new Gradle dependencies.
+
+**Key accomplishments:**
+1. **Animation-vs-drag spike (PNL-PITFALL-01, Phase 13-01)** — Mandatory gate before any UI code. Confirmed Pattern 3: `animateFloatAsState` reads `renderHeight` as a target-only value while drag writes `sizePx` directly; `isDragging` flips the spec to `snap()` during a gesture and back to `tween(200ms, FastOutSlowInEasing)` otherwise. Collapse-then-immediate-drag produces no snap-back and no oscillation. Spike also surfaced three layout-math rules (header reservation per-section, drag-delta scaling into sizePx units, `availableForExpanded.coerceAtLeast(0f)`) ported into the real component.
+2. **Pure-logic TDD (PNL-16, Phase 13-02)** — `PanelDistribution.kt` (8 zero-Compose functions: `clampPanelDividerPx`, `computeAvailablePx`, `activeDividerCount`, `distributePx`, `shareTransferOnCollapse/Expand`, `lastExpandedFraction`, `restoreFromFraction`) with `PanelGroupLogicTest.kt` — 12 GREEN JVM tests, no Compose runtime, following the `SplitClampTest`/`AccordionToggleTest` precedent. N-section clamp carries the PITFALL-B `coerceAtLeast` guard.
+3. **Layout + collapse/expand + drag resize (PNL-01..13, Phase 13-03/04)** — `BoxWithConstraints` + fraction-based `mutableStateListOf` state surviving window resize (PITFALL-A, no `remember(totalPx)` key); `key(section.key)` render loop; 200ms collapse/expand animation; `aeroDragSplitter` + `clampPanelDividerPx` + `rememberUpdatedState(totalPx)` drag between expanded neighbors only; hybrid controlled/uncontrolled expansion (`onExpandedChange == null` ⇒ uncontrolled) per the `AeroAccordion` pattern; `onLayoutChange` fires on drag-end + toggle only.
+4. **Win7 Aero visual + per-section flags (PNL-11/12/14, Phase 13-05)** — `glassPanel` header, `AeroIcons.CaretRight` 0°→90° rotation, optional `leadingIcon`, non-bubbling `headerActions` slot, grip-dot dividers; `collapsible = false` hides the chevron, `resizable = false` strips the grip and disables drag. Three-theme sign-off PASS; throwaway spike showcase section deleted.
+5. **Horizontal orientation variant (PNL-HORIZ-01, Phase 13.1)** — Refactored to a public wrapper + internal `AeroPanelGroupImpl(orientation, ...)` core (mirrors `AeroSplitPane`), with an additive `orientation: Orientation = Orientation.Vertical` default param — zero breaking change to existing callers, all 12 logic tests unchanged/GREEN. Horizontal branch: `Row` container, `maxWidth` axis, axis-swapped modifiers, rotated bottom-to-top header strip (`requiredWidth(maxHeight)` + `rotate(-90f)`), 0°/180° chevron, E/W drag. Two showcase demos added append-only.
+6. **Three-theme sign-off, both orientations (PNL-17)** — Human visual sign-off APPROVED on AeroBlue / AeroDark / Classic for the vertical demo (regression) and both horizontal demos; PNL-17 + PNL-HORIZ-01 fully closed.
+
+**Patterns established:**
+- **Public-wrapper + internal-core split for orientation** — `AeroPanelGroupImpl(orientation)` holds all layout/state/drag logic; only three branch points (BoxWithConstraints axis, Row/Column container, section axis modifiers) differ. The reuse template for any future orientation-symmetric layout.
+- **Pattern 3 two-writer coexistence** — animation owns a read-only target, drag owns the source-of-truth state, an `isDragging` flag switches the animation spec. The locked answer to "animate vs. drag the same value."
+- **Rotated header strip** — `BoxWithConstraints` + `requiredWidth(maxHeight)` + `rotate(-90f)` for bottom-to-top text in a fixed-width strip (supersedes `graphicsLayer`-only and `placeRelativeWithLayer` approaches that were abandoned during sign-off).
+
+**Issues resolved during milestone:**
+- **GAP-1 / GAP-2 (Phase 13.1-03 sign-off)** — Horizontal vertical-title rendering and last-column float-rounding distribution were caught at three-theme sign-off and fixed (rotated `requiredWidth` title; explicit `distributePx` width for non-last columns, `weight(1f)` only on the last column's content). Reaffirms the visual gate's value.
+
+**Technical debt incurred:** None functional. Deferred (acknowledged, out of scope): drag-to-reorder sections (PNL-REORDER-01), nested `AeroPanelGroup` first-class API (PNL-NEST-01), keyboard resize (PNL-KBD-01). Carry-over still open: AeroDropdown popup-offset regression (DROP-FIX-01, future milestone).
+
+---
+
 ## v2.0.1 Picker & SplitPane Fixes (Shipped: 2026-06-22)
 
 **Phases:** 12 (1 phase) | **Plans:** 4 (Phase 12: 4) | **Tasks:** 10 atomic commits | **Requirements:** 18/18 (FIXDT-01/02, FIXSP-01..04, DTR-01..08, SHW-11..14)

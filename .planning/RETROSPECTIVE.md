@@ -133,6 +133,43 @@
 
 ---
 
+## Milestone: v2.0.2 — AeroPanelGroup
+
+**Shipped:** 2026-06-23
+**Phases:** 2 (13 + 13.1) | **Plans:** 8 (Phase 13: 5, Phase 13.1: 3) | **Sessions:** ~1-day push (2026-06-22 17:15 → 2026-06-23 11:01 +0300); git range `603ae57`→`2d7de8f` (49 commits, 11 `feat` / 7 `fix`), 4 code files (+1,516)
+
+### What Was Built
+- **AeroPanelGroup (Phase 13, PNL-01..18):** N-section layout that fills its parent, collapses any section to a ~36dp header strip with neighbors absorbing freed height, drag-resizes between adjacent expanded sections (VS Code Side Bar). Fraction-based size state surviving window resize, hybrid controlled/uncontrolled expansion (`AeroAccordion` pattern), Win7 Aero header (glassPanel, CaretRight 0°→90°, `leadingIcon`, `headerActions`), `collapsible`/`resizable` per-section flags. `PanelDistribution.kt` (8 pure functions) + 12 GREEN JVM unit tests.
+- **Horizontal orientation variant (Phase 13.1, PNL-HORIZ-01):** refactored to a public wrapper + internal `AeroPanelGroupImpl(orientation)` core with an additive `orientation: Orientation = Orientation.Vertical` default param. Horizontal branch: `Row` container, `maxWidth` axis, axis-swapped modifiers, rotated bottom-to-top header strip, 0°/180° chevron, E/W drag. Two showcase demos added append-only. Three-theme sign-off APPROVED on both orientations.
+
+### What Worked
+- **Mandatory spike resolved the highest risk before any UI code.** PNL-PITFALL-01 (animate-vs-drag two-writer conflict) was the gating unknown; Plan 13-01 was a throwaway spike whose sole job was to confirm Pattern 3 (animation reads a target-only value, drag writes state directly, `isDragging`→`snap()`). It also surfaced three layout-math rules (per-section header reservation, drag-delta scaling into sizePx units, `coerceAtLeast(0f)` guard) that ported straight into the real component — so the production code was written against already-proven mechanics.
+- **Pure-logic-then-Compose held again.** `PanelDistribution.kt` with 12 GREEN tests (no Compose runtime) locked all the distribution/clamp/share-transfer/fraction-restore math before the composable existed — the same discipline that paid off in v2.0/v2.0.1, now with the N-section cascading clamp (PITFALL-B `coerceAtLeast`) verified RED→GREEN.
+- **Public-wrapper + internal-core made orientation a near-free addition.** Extracting `AeroPanelGroupImpl(orientation)` first (Plan 13.1-01, a pure refactor that left the vertical body and all 12 tests unchanged/GREEN) turned the horizontal variant into three branch points (axis, container, section modifiers) instead of a parallel component. Zero breaking change, zero vertical regression.
+- **The three-theme sign-off gate caught real horizontal-only defects.** GAP-1 (rotated vertical-title width/position) and GAP-2 (last-column float-rounding distribution) were invisible in code and surfaced only at the visual gate — exactly the silent-failure class the gate exists for.
+
+### What Was Inefficient
+- **The rotated-title approach took three tries at sign-off.** `graphicsLayer`-only and `placeRelativeWithLayer` were both attempted and abandoned before `BoxWithConstraints` + `requiredWidth(maxHeight)` + `rotate(-90f)` landed (GAP-1). Rotation-in-a-fixed-strip is a known-thorny Compose problem; a small spike for the horizontal header strip (mirroring the Phase 13 animate-vs-drag spike) would likely have found the working pattern before the sign-off round rather than during it.
+- **Horizontal orientation re-entered as an inserted phase right after shipping the milestone-as-one-phase plan.** v2.0.2 was scoped as a single vertical phase with horizontal explicitly deferred (PNL-HORIZ-01, "out of scope"); it was then pulled back in as Phase 13.1 within the same milestone. The core-extraction refactor made this cheap and clean, but it's a scope boundary that moved mid-milestone — worth noting that the "strictly one phase" framing didn't hold.
+
+### Patterns Established
+- **Pattern 3 (two-writer coexistence)** — when a value is both animated and dragged, give the animation a read-only target and the drag the source-of-truth state, and switch the animation spec to `snap()` while a gesture is active (`isDragging` flag set on `awaitFirstDown`, cleared in `try/finally`). The locked answer to "animate vs. drag the same value."
+- **Public-wrapper + internal-core for orientation symmetry** — `Impl(orientation, …)` holds all shared layout/state/drag; the public default param adds the new axis without breaking callers. Mirrors `AeroSplitPane`; the template for any orientation-symmetric layout.
+- **Rotated fixed-width strip** — `BoxWithConstraints` + `requiredWidth(maxHeight)` + `rotate(-90f)` for bottom-to-top text in a fixed-size strip (supersedes `graphicsLayer`-only and `placeRelativeWithLayer`).
+- **Per-section header reservation** — reserve one header height per section (not per collapsed section); `availableForExpanded = totalPx − sectionCount*headerPx − activeDividers*thickness`, guarded `.coerceAtLeast(0f)`.
+
+### Key Lessons
+1. **Spike the highest-risk interaction before writing the component — and spike each new thorny rendering primitive too.** The animate-vs-drag spike (13-01) paid off cleanly; the *absence* of a parallel spike for the rotated horizontal header strip is exactly why GAP-1 took three tries at the sign-off gate. If a primitive is known-hard (rotation in a fixed strip), give it its own throwaway spike, don't discover the working approach during sign-off.
+2. **Extract the shared core first, then branch.** Doing the pure-refactor extraction (`AeroPanelGroupImpl`) as its own plan — with the vertical body and all unit tests provably unchanged — made the orientation variant a 3-branch-point addition with zero regression. Refactor-then-extend beats building a parallel implementation.
+3. **"Strictly one phase" is a soft boundary.** A deferred/out-of-scope feature (horizontal orientation) re-entered the same milestone as an inserted phase. That was the right call (the core extraction made it cheap), but milestone scope framing should expect this and not over-commit to "one phase, never more."
+4. **Pure-logic TDD keeps paying off for layout math.** The N-section cascading clamp would have crashed (`coerceIn(min>max)`) under realistic squeeze; catching it RED→GREEN in `PanelGroupLogicTest` — without a Compose runtime — is the fourth milestone running where the hardest defect was a pure function, not a rendering bug.
+
+### Cost Observations
+- Model mix: opus for planning/research, sonnet for execution (`model_profile: balanced`); unchanged from v1.1/v2.0/v2.0.1.
+- 8 plans over ~1 day wall. Cost concentrated in the two sign-off plans (13-05 vertical, 13.1-03 horizontal) where the visual gate + GAP fixes lived — again confirming verification/sign-off, not implementation, dominates wall-clock. The 13-01 spike was cheap insurance that prevented the most expensive possible failure mode (a snap-back bug discovered after the full component was built).
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -143,6 +180,7 @@
 | v1.1 | ~1 day | 3 (4–6) | Established wave-ordered phase execution, spike-then-batch for code generation, vendored upstream pattern (`tools/phosphor-svgs/`), and visual-checkpoint-as-plan convention |
 | v2.0 | concentrated | 5 (7–11) | Established enabling-phase-first for shared primitives, pure-logic-then-Compose (sealed state machines unit-tested without Compose), front-loaded PITFALLS catalog, silent-failure checklist as sign-off gate, grep-gates for banned APIs, hybrid controlled/uncontrolled component API |
 | v2.0.1 | ~2h20m | 1 (12) | First patch milestone — single phase, verification-only gate (no separate audit); established nullable-formatter dispatch, fraction-as-stable-coordinate dividers, and verbatim state-machine reuse; confirmed that documented lessons must be applied at write-time (v2.0 lesson #3 regressed before the sign-off caught it) |
+| v2.0.2 | ~1 day | 2 (13 + 13.1) | Single additive layout component + inserted orientation variant; established mandatory-spike-before-component for the highest-risk interaction (Pattern 3 two-writer coexistence), public-wrapper + internal-core for orientation symmetry, and refactor-then-extend (core extraction as its own zero-regression plan); confirmed "strictly one phase" is a soft boundary (deferred horizontal re-entered as Phase 13.1) |
 
 ### Cumulative Quality
 
@@ -152,6 +190,7 @@
 | v1.1 | ~50 (no new components, all migrated) | 138 (`AeroIcons.*`, Phosphor Regular) | 3 (unchanged) | 9 (+ IconsSection) | ≈0.96 MB, classpath shed `materialIconsExtended` |
 | v2.0 | ~62 (+12: 6 pickers, 2 data, 4 layout) | 138 (unchanged) | 3 (unchanged) | 12 (+ DataSection, PickersSection, LayoutSection) | +`kotlinx-datetime:0.6.2` (only new dependency) |
 | v2.0.1 | ~63 (+1: `AeroDateTimeRangePicker`) | 138 (unchanged) | 3 (unchanged) | 12 (PickersSection + LayoutSection demos extended) | unchanged (zero new dependencies) |
+| v2.0.2 | ~64 (+1: `AeroPanelGroup`, vertical + horizontal orientations) | 138 (unchanged) | 3 (unchanged) | 12 (LayoutSection: + vertical + 2 horizontal AeroPanelGroup demos) | unchanged (zero new dependencies) |
 
 ### Top Lessons (Verified Across Milestones)
 

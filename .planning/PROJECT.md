@@ -8,29 +8,41 @@
 
 Разработчик подключает одну зависимость и получает полный набор Aero-styled компонентов с тремя темами, кастомной шапкой окна, типизированным набором иконок и демо-витриной — без необходимости реализовывать стиль или искать совместимый icon pack самостоятельно.
 
-## Current State (Shipped: v2.0.1 Picker & SplitPane Fixes, 2026-06-22)
+## Current State (Shipped: v2.0.2 AeroPanelGroup, 2026-06-23)
 
 - **v1.0 MVP** (3 фазы, 53 требования): Foundation + Atomic Components + Composite/Navigation. Все компоненты библиотеки реализованы, три темы работают, showcase демонстрирует всё.
 - **v1.1 Icon System** (3 фазы, 17 требований): 138 векторных иконок `AeroIcons` (порт Phosphor Regular) заменили все текстовые символы и `Icons.Outlined.*`; `compose.materialIconsExtended` удалён из Gradle dependency graph; showcase содержит `IconsSection` с поиском.
 - **v2.0 Stateful + Layout** (5 фаз 7–11, 27 требований): 12 новых компонентов (8 complex stateful + 4 advanced layout) поверх внутреннего фундамента primitives. Pickers (`AeroDatePicker`/`TimePicker`/`DateTimePicker`/`DateRangePicker`/`ColorPicker`/`RangeSlider`), Data (`AeroDataTable` виртуализованный + `AeroTreeView` lazy), Layout (`AeroAccordion`/`SplitPane`/`Sidebar`/`StepperWizard`). `kotlinx-datetime:0.6.2` — единственная новая зависимость. Showcase: DataSection + PickersSection + LayoutSection; 16-item × 3-theme sign-off PASSED. No breaking changes к v1.x API.
 - **v2.0.1 Picker & SplitPane Fixes** (1 фаза 12, 18 требований): patch milestone — два bug-фикса + один аддитивный компонент. `AeroDateTimePicker` теперь показывает секунды в триггере при `showSeconds=true` (FIXDT); вложенный N-pane `AeroSplitPane` перетаскивается без snap-back и без краша (FIXSP, fraction-based divider state + inverted-range clamp guard); новый `AeroDateTimeRangePicker` — Apply-gate dual-calendar picker, emits `(LocalDateTime, LocalDateTime)` (DTR). Zero new dependencies, no breaking changes. Three-theme showcase sign-off PASSED.
+- **v2.0.2 AeroPanelGroup** (2 фазы 13 + 13.1, 18 + 1 требований): аддитивный layout-компонент `AeroPanelGroup` (+ `AeroPanelSection` через scope-DSL) — N секций заполняют родителя, сворачиваются в ~36dp полоску-заголовок (соседи забирают высоту), drag-resize между соседними раскрытыми секциями (модель VS Code Side Bar); fraction-based размеры переживают ресайз окна; гибридный controlled/uncontrolled API по паттерну `AeroAccordion`; Pattern 3 (animate-target vs. drag-write + `isDragging`→`snap()`) разрешает PNL-PITFALL-01; 12 чистых JVM-юнит-тестов без Compose; Win7 Aero визуал (glassPanel, CaretRight 0°→90°, headerActions, grip dots). Вставленная Phase 13.1 добавила горизонтальную ориентацию через общий internal-core `AeroPanelGroupImpl(orientation)` + аддитивный default-param — zero breaking change, zero vertical regression (PNL-HORIZ-01). Three-theme sign-off PASSED на обеих ориентациях. Zero new dependencies.
 
-**Codebase:** Kotlin / Compose Desktop 1.7.3, Kotlin 2.1.21, Gradle 8.14.3, JDK 17. v2.0 added 152 files changed (+27,406 / −2,285) across phases 7–11; v2.0.1 added 9 code files (+520 / −14) in Phase 12.
+**Codebase:** Kotlin / Compose Desktop 1.7.3, Kotlin 2.1.21, Gradle 8.14.3, JDK 17. v2.0 added 152 files changed (+27,406 / −2,285) across phases 7–11; v2.0.1 added 9 code files (+520 / −14) in Phase 12; v2.0.2 added 4 code files (+1,516: `AeroPanelGroup.kt` 818, `PanelDistribution.kt` 245, `PanelGroupLogicTest.kt` 235, `LayoutSection.kt` +218) across Phases 13 + 13.1. Project version bumped to `2.0.2` (`build.gradle.kts`).
 
-## Current Milestone: v2.0.2 AeroPanelGroup
+## Current Milestone
 
-**Goal:** Добавить один аддитивный layout-компонент `AeroPanelGroup` (+ `AeroPanelSection`) — вертикальное разбиение на N секций, где любую секцию можно свернуть в полоску-заголовок (соседи забирают освободившуюся высоту), а границу между двумя соседними раскрытыми секциями можно перетаскивать (модель VS Code Side Bar). Строго одна фаза, без breaking changes к v2.x API.
+**Нет активного milestone.** v2.0.2 AeroPanelGroup завершён и заархивирован 2026-06-23. Следующий цикл — `/gsd:new-milestone` (questioning → research → requirements → roadmap).
 
-**Target features:**
-- `AeroPanelGroup` — вертикальный контейнер N секций; `BoxWithConstraints → totalPx` (как `AeroSplitPane`, без SubcomposeLayout/height-measurement per frame). Раскрытые секции делят `availableForExpanded = totalPx − Σ(заголовки свёрнутых) − Σ(разделители)` по нормированным `sizePx` — переживают ресайз окна как fraction у SplitPane.
-- `AeroPanelSection` — секция: `expanded: Boolean`, `sizePx: Float`, запоминаемый `lastExpandedPx` для возврата размера при повторном раскрытии. Параметры `collapsible` и `resizable` на уровне секции/группы.
-- **Collapse/expand:** анимация целевых px через `animateFloatAsState` на секцию (200ms FastOutSlowInEasing, в тон AeroSidebar/AeroAccordion); collapse → высота заголовка ~36dp, доля переходит соседям; expand → возвращает `lastExpandedPx`.
-- **Resize:** грип-разделитель (`aeroDragSplitter` + `SplitClamp`) рисуется ТОЛЬКО между двумя соседними раскрытыми секциями; drag пишет px напрямую без анимации, кламп по minSize. Граница рядом со свёрнутой — статичный стык заголовков.
-- **State API:** раскрытие — гибрид controlled/uncontrolled строго по паттерну `AeroAccordion` (обе ветки намеренные); размеры — uncontrolled внутреннее состояние, наружу через `onLayoutChange` для персиста/восстановления.
-- **Главный риск (спайк первым пунктом плана):** совмещение collapse/expand-анимации с drag-ресайзом → размеры в px, drag без анимации, toggle анимирует целевые px; никаких лишних layout-проходов.
-- Визуал строго Win7 Aero (glassPanel-заголовок, шеврон CaretRight 0°→90°, опциональные `headerActions`); юнит-тесты на чистую логику (распределение px, кламп, переход доли) по образцу `SidebarStateTest`/`AccordionToggleTest`/`SplitClamp`; демо в `LayoutSection.kt`; KDoc со ссылками на REQ-ID и PITFALL.
+**Открытые кандидаты на следующий milestone** (из v2.0.2 deferred + carry-over):
+- AeroPanelGroup: drag-to-reorder секций (PNL-REORDER-01), вложенные `AeroPanelGroup` как first-class API (PNL-NEST-01), клавиатурный ресайз разделителей (PNL-KBD-01).
+- Carry-over: AeroDropdown popup-offset regression (DROP-FIX-01, v1.0).
+- Прежний candidate-список: inline pickers, DataTable cell-edit/reorder/filter, TreeView DnD, ColorPicker eyedropper, StepperWizard branching, Sidebar drag-resize, AeroDateTimeRangePicker hover-preview.
 
-**Deferred (NOT this milestone):** горизонтальная ориентация AeroPanelGroup; и прежний candidate-список — inline pickers, DataTable cell-edit/reorder/filter, TreeView DnD, ColorPicker eyedropper, StepperWizard branching, Sidebar drag-resize, AeroDateTimeRangePicker hover-preview, и carry-over AeroDropdown popup-offset fix (DROP-FIX-01).
+<details>
+<summary>📦 v2.0.2 AeroPanelGroup — shipped 2026-06-23 (milestone goal & target features)</summary>
+
+**Goal:** Добавить один аддитивный layout-компонент `AeroPanelGroup` (+ `AeroPanelSection`) — вертикальное разбиение на N секций, где любую секцию можно свернуть в полоску-заголовок (соседи забирают освободившуюся высоту), а границу между двумя соседними раскрытыми секциями можно перетаскивать (модель VS Code Side Bar). Без breaking changes к v2.x API.
+
+**Target features (all delivered):**
+- `AeroPanelGroup` — контейнер N секций; `BoxWithConstraints → totalPx` (как `AeroSplitPane`). Раскрытые секции делят `availableForExpanded = totalPx − Σ(заголовки) − Σ(разделители)` по нормированным `sizePx` — переживают ресайз окна. ✓
+- `AeroPanelSection` (scope-DSL `section(key, title) { content }`) — `expanded`, `sizePx`, `lastExpandedFraction` для возврата размера; `collapsible` / `resizable` флаги. ✓
+- **Collapse/expand:** анимация целевых px через `animateFloatAsState` (200ms FastOutSlowInEasing); collapse → ~36dp заголовок, доля переходит соседям; expand → восстанавливает `lastExpandedFraction`. ✓
+- **Resize:** грип-разделитель (`aeroDragSplitter` + `clampPanelDividerPx`) ТОЛЬКО между двумя соседними раскрытыми; drag пишет px напрямую без анимации (`isDragging`→`snap()`), кламп по minSize. ✓
+- **State API:** раскрытие — гибрид controlled/uncontrolled по паттерну `AeroAccordion`; размеры — uncontrolled, наружу через `onLayoutChange` (drag-end + toggle). ✓
+- **Главный риск (PNL-PITFALL-01, разрешён спайком):** совмещение collapse/expand-анимации с drag-ресайзом — Pattern 3 (animate-target vs. direct-write). ✓
+- Win7 Aero визуал (glassPanel, CaretRight 0°→90°, `leadingIcon`, `headerActions`); 12 чистых JVM-юнит-тестов; демо в `LayoutSection.kt`; KDoc с REQ-ID + PITFALL. ✓
+- **Phase 13.1 (inserted):** горизонтальная ориентация через `AeroPanelGroupImpl(orientation)` + аддитивный `orientation` default-param — zero breaking change, zero vertical regression (PNL-HORIZ-01). ✓
+
+</details>
 
 <details>
 <summary>📦 v2.0.1 Picker & SplitPane Fixes — shipped 2026-06-22 (milestone goal & target features)</summary>
@@ -110,11 +122,16 @@
 - ✓ **AeroDateTimeRangePicker** (DTR-01..08) — Apply-gate dual-calendar datetime range picker; `onRangeSelect` ровно один раз по Apply; `orderDateTimeRange` same-day swap; no cross-open state leak; `showSeconds`/`minuteStep` parity — Phase 12 — v2.0.1
 - ✓ **Showcase + docs** (SHW-11..14) — `AeroDateTimeRangePicker` live-label row, `showSeconds` contrast demos, nested 3-pane SplitPane demo; three-theme sign-off PASSED; kotlinx-datetime doc-note corrected — Phase 12 — v2.0.1
 
+**v2.0.2 (18 + 1):**
+- ✓ **AeroPanelGroup** (PNL-01..13) — scope-DSL N-секционный layout; collapse-в-~36dp-заголовок с перераспределением высоты соседям; drag-resize между раскрытыми соседями (VS Code Side Bar); fraction-based размеры переживают ресайз окна; гибрид controlled/uncontrolled по паттерну `AeroAccordion`; `collapsible`/`resizable` флаги; явный `key` идентичности секции — Phase 13 — v2.0.2
+- ✓ **AeroPanelGroup поведение + визуал** (PNL-14..18) — Win7 Aero glassPanel-заголовок (CaretRight 0°→90°, `leadingIcon`, `headerActions`); краевые случаи (все свёрнуты / одна раскрыта); 12 чистых JVM-юнит-тестов (`PanelGroupLogicTest`); showcase демо + three-theme sign-off PASSED; KDoc с REQ-ID + PITFALL — Phase 13 — v2.0.2
+- ✓ **AeroPanelGroup horizontal orientation** (PNL-HORIZ-01) — горизонтальная ориентация через общий internal-core `AeroPanelGroupImpl(orientation)` + аддитивный `orientation` default-param; N колонок, vertical dividers, drag-resizes-width, rotated header strip; zero breaking change, zero vertical regression; three-theme sign-off на обеих ориентациях — Phase 13.1 — v2.0.2
+
 ### Active
 
-<!-- v2.0.2 AeroPanelGroup — single-phase milestone. REQ-IDs defined in .planning/REQUIREMENTS.md. -->
+<!-- Нет активного milestone. v2.0.2 завершён 2026-06-23. Следующий цикл: /gsd:new-milestone определит фресовые требования. -->
 
-- [ ] **AeroPanelGroup** (PNL-*) — N-секционный вертикальный layout с collapse-в-заголовок + перетаскиваемыми границами между раскрытыми соседями (модель VS Code); гибридный controlled/uncontrolled API (раскрытие по паттерну AeroAccordion, размеры через `onLayoutChange`); px-based размеры с `animateFloatAsState`-collapse и drag-без-анимации; строго Win7 Aero визуал — Phase 13 — v2.0.2
+(Нет активных требований — между milestone. Запустить `/gsd:new-milestone` для определения требований следующего цикла.)
 
 ### Out of Scope
 
@@ -194,6 +211,11 @@
 | **v2.0.1:** `clampDividerPx` guard — `val safeMax = maxPx.coerceAtLeast(minFirstPx)` перед `coerceIn` | При сжатии inner pane ниже combined minima `maxPx < minFirstPx` → `coerceIn(min>max)` бросал `IllegalArgumentException` (PITFALL-B) | ✓ Good — no-throw, тихий clamp; inverted-range unit test написан RED до фикса (FIXSP-02/04, TDD) |
 | **v2.0.1:** Apply-gate для `AeroDateTimeRangePicker` — `onDayClick` отбрасывает commit pair; единственный `onRangeSelect` emit+close site — кнопка Apply, gated `rangeState is Selected` | Клик по второй дате не должен ни закрывать popup, ни эмитить partial range (PITFALL-E); `orderDateTimeRange` тихо свопает same-day reversed times | ✓ Good — emit ровно один раз; 4 remember(expanded) блока убирают cross-open leak; verification 18/18 |
 | **v2.0.1:** SplitPane drag читает live state в drag-loop (`rememberUpdatedState`-паттерн), не captured copy из `pointerInput` lambda | Stale captured `dividerFraction` снапил inner splitter обратно — FIXSP-01 регрессия, тот же класс бага что AeroRangeSlider F9 (Phase 11) | ✓ Good — пойман на three-theme sign-off, исправлен (7f38c0c) до approval; подтверждает ценность визуального gate |
+| **v2.0.2:** Pattern 3 для совмещения анимации и drag на одном `sizePx` — `animateFloatAsState` читает target-only, drag пишет state напрямую, `isDragging` переключает spec на `snap()` | Два writer'а на одно значение дают snap-back/осцилляцию (PNL-PITFALL-01); обязательный спайк первым пунктом плана | ✓ Good — спайк подтвердил отсутствие snap-back/осцилляции; collapse-then-drag чист; залочено как ответ на «animate vs. drag the same value» |
+| **v2.0.2:** Header reservation — `availableForExpanded = totalPx − sectionCount*headerPx − activeDividers*thickness`, резервируется заголовок на КАЖДУЮ секцию (не только свёрнутую) | Каждая секция всегда рендерит 36dp заголовок независимо от expanded; иначе layout-math съезжает (спайк finding 1) | ✓ Good — все секции рендерят header strip; распределение корректно при любом collapse-наборе |
+| **v2.0.2:** Чистая логика в `PanelDistribution.kt` (8 функций, zero Compose imports) + 12 GREEN JVM-тестов до Compose-кода (TDD) | Образец `SplitClampTest`/`AccordionToggleTest`; N-section кламп с PITFALL-B `coerceAtLeast` guard тестируется без runtime | ✓ Good — 12/12 GREEN; кламп-краш предотвращён RED→GREEN |
+| **v2.0.2:** Public-wrapper + internal-core `AeroPanelGroupImpl(orientation)` для горизонтали; аддитивный `orientation: Orientation = Orientation.Vertical` default-param | Mirrors `AeroSplitPane`; orientation добавляется без breaking change и без дублирования layout/state/drag (только 3 branch-точки) | ✓ Good — zero breaking change, 12 logic-тестов unchanged/GREEN, zero vertical regression; three-theme sign-off на обеих ориентациях |
+| **v2.0.2:** Rotated header strip через `BoxWithConstraints` + `requiredWidth(maxHeight)` + `rotate(-90f)` | `graphicsLayer`-only и `placeRelativeWithLayer` подходы давали неправильную ширину/позицию вертикального заголовка (GAP-1, пойман на sign-off) | ✓ Good — корректный bottom-to-top заголовок в 36dp полоске; подходы-кандидаты отброшены |
 
 ---
-*Last updated: 2026-06-22 — after starting v2.0.2 AeroPanelGroup milestone*
+*Last updated: 2026-06-23 — after v2.0.2 AeroPanelGroup milestone*

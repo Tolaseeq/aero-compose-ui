@@ -1,10 +1,10 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
+milestone: v2.0.2
+milestone_name: AeroPanelGroup
 status: completed
 stopped_at: Completed 13.1-03-PLAN.md — phase 13.1 all 3/3 plans done
-last_updated: "2026-06-23T08:01:11.057Z"
+last_updated: "2026-06-23T08:31:19.981Z"
 last_activity: 2026-06-23 — Plan 13.1-03 three-theme horizontal sign-off APPROVED (PNL-HORIZ-01, PNL-17 closed); phase 13.1 complete
 progress:
   total_phases: 2
@@ -17,24 +17,24 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-22 — after v2.0.1 milestone)
+See: .planning/PROJECT.md (updated 2026-06-23 — after v2.0.2 milestone)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, typed `AeroIcons`, and a showcase — no manual style work or icon-pack hunting required.
-**Current focus:** v2.0.2 AeroPanelGroup — Phase 13, not started. Roadmap written, awaiting `/gsd:plan-phase 13`.
+**Current focus:** Between milestones. v2.0.2 AeroPanelGroup shipped + tagged 2026-06-23. Next: `/gsd:new-milestone` (questioning → research → requirements → roadmap).
 
 ## Current Position
 
-Phase: 13.1 — AeroPanelGroup Horizontal Orientation Variant (COMPLETE)
-Plan: 03 complete — Phase 13.1 all 3/3 plans done
-Status: Phase 13.1 complete — 3/3 plans complete; PNL-HORIZ-01 + PNL-17 closed; v2.0.2 ready for milestone tagging
-Last activity: 2026-06-23 — Plan 13.1-03 three-theme horizontal sign-off APPROVED (PNL-HORIZ-01, PNL-17 closed); phase 13.1 complete
+Phase: — (between milestones)
+Plan: — (no active milestone; v2.0.2 archived)
+Status: v2.0.2 AeroPanelGroup SHIPPED 2026-06-23 — 2 phases (13 + 13.1), 8 plans, 18 v1 + PNL-HORIZ-01 requirements, three-theme sign-off APPROVED both orientations. Archived + tagged.
+Last activity: 2026-06-23 — v2.0.2 milestone completed: archived (ROADMAP + REQUIREMENTS), PROJECT.md evolved, RETROSPECTIVE updated, version bumped to 2.0.2, tag v2.0.2.
 
 ```
-v2.0.1 ✅ SHIPPED → v2.0.2 AeroPanelGroup [Phase 13: 5/5] ✅ + Horizontal Variant [Phase 13.1: 3/3] ✅ sign-off PASSED
-[██████████] 100%
+v2.0.1 ✅ → v2.0.2 AeroPanelGroup ✅ SHIPPED [Phase 13: 5/5 + Phase 13.1: 3/3] — archived & tagged
+[██████████] milestone complete · awaiting /gsd:new-milestone
 ```
 
-Progress: 2/2 phases complete (11/11 plans)
+Progress: v2.0.2 complete (2/2 phases, 8/8 plans). No active milestone.
 
 ## Shipped Milestones
 
@@ -44,6 +44,7 @@ Progress: 2/2 phases complete (11/11 plans)
 | v1.1 | Icon System | 4–6 | 11 | 17 | 2026-04-30 |
 | v2.0 | Stateful + Layout | 7–11 | 27 | 27 | 2026-06-18 |
 | v2.0.1 | Picker & SplitPane Fixes | 12 | 4 | 18 | 2026-06-22 |
+| v2.0.2 | AeroPanelGroup | 13–13.1 | 8 | 18 + PNL-HORIZ-01 | 2026-06-23 |
 
 See `.planning/MILESTONES.md` for full accomplishments.
 
@@ -51,28 +52,9 @@ See `.planning/MILESTONES.md` for full accomplishments.
 
 Phase 12 (4 plans, 18/18 requirements) — Fix A (seconds trigger) → Fix B (nested SplitPane) → AeroDateTimeRangePicker → showcase sign-off. Full record: `.planning/MILESTONES.md`; archive: `.planning/milestones/v2.0.1-ROADMAP.md`; lessons: `.planning/RETROSPECTIVE.md`.
 
-## v2.0.2 Current Milestone: Phase 13 AeroPanelGroup
+## v2.0.2 Shipped (2026-06-23)
 
-**Phase goal:** Deliver fully functional `AeroPanelGroup` + `AeroPanelSection` — N vertical sections, collapse/expand with 200ms animation, drag-resize between adjacent expanded neighbors, fraction-based size state surviving window resize, hybrid controlled/uncontrolled expansion API, Win7 Aero header, unit tests (TDD), and three-theme showcase sign-off.
-
-**Requirements:** 18 total — PNL-01..PNL-18. All mapped to Phase 13. See `.planning/REQUIREMENTS.md`.
-
-**Build order (non-negotiable, from SUMMARY.md research):**
-1. Animation-vs-drag SPIKE — mandatory gate before any UI code (PNL-PITFALL-01)
-2. Pure logic TDD — `PanelDistribution.kt` + tests RED→GREEN (PNL-PITFALL-04, PITFALL-A/B)
-3. Layout skeleton — `BoxWithConstraints`, `mutableStateListOf` fraction state, `key(section.id)` render loop
-4. Collapse/expand animation — 200ms `FastOutSlowInEasing`, mid-drag race guard
-5. Drag resize — `aeroDragSplitter` + `clampPanelDividerPx`, `rememberUpdatedState(totalPx)`
-6. Controlled expansion path + KDoc (REQ-ID + PITFALL refs)
-7. Aero visual polish — `glassPanel`, CaretRight rotation, `headerActions`, grip dots, `collapsible/resizable` flags
-8. Showcase demo + three-theme sign-off
-
-**Success criteria (observable):**
-1. Collapsing a section redistributes height to neighbors; re-expanding restores prior size from `lastExpandedFraction`.
-2. Dragging a divider between two expanded sections resizes both instantly, no animation lag; divider absent adjacent to collapsed sections.
-3. Window resize keeps section proportions (fraction-based state, no `remember(totalPx)` re-key).
-4. Three-theme visual sign-off passes: Win7 Aero header gloss, CaretRight 0→90° animation, correct grip dots.
-5. All pure-logic functions have GREEN unit tests without a Compose runtime.
+Phases 13 + 13.1 (8 plans, 18 v1 + PNL-HORIZ-01) — `AeroPanelGroup` + `AeroPanelSection`: N-section collapse-to-header + drag-resize (VS Code Side Bar), fraction-based size state, hybrid controlled/uncontrolled API, Win7 Aero header, 12 pure-logic JVM tests; inserted Phase 13.1 added horizontal orientation via shared internal core (zero breaking change). Three-theme sign-off APPROVED both orientations. Full record: `.planning/MILESTONES.md`; archive: `.planning/milestones/v2.0.2-ROADMAP.md`; lessons: `.planning/RETROSPECTIVE.md`. Key technical decisions promoted to PROJECT.md "Key Decisions" (v2.0.2 rows).
 
 ## v2.0 Locked Decisions (carried forward)
 

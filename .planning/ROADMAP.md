@@ -8,12 +8,13 @@ A Compose Desktop UI component library styled after Windows Aero (Windows 7): gl
 - ✅ **v1.1 Icon System** — Phases 4–6 (shipped 2026-04-30) — 138 `AeroIcons`, dependency removal, IconsSection
 - ✅ **v2.0 Stateful + Layout** — Phases 7–11 (shipped 2026-06-18) — 12 stateful + layout components, showcase sign-off
 - ✅ **v2.0.1 Picker & SplitPane Fixes** — Phase 12 (shipped 2026-06-22) — 2 bug fixes + `AeroDateTimeRangePicker`
-- 🚧 **v2.0.2 AeroPanelGroup** — Phase 13 (in progress) — N-section vertical collapsible+resizable layout
+- ✅ **v2.0.2 AeroPanelGroup** — Phases 13 + 13.1 (shipped 2026-06-23) — N-section collapsible+resizable layout, vertical + horizontal orientations
 
 Full ship-time snapshots (milestone goal, all phase details, decisions, tech debt) are archived per milestone:
 - `.planning/milestones/v1.1-ROADMAP.md` (also captures v1.0 phase definitions)
 - `.planning/milestones/v2.0-ROADMAP.md`
 - `.planning/milestones/v2.0.1-ROADMAP.md`
+- `.planning/milestones/v2.0.2-ROADMAP.md`
 
 ## Phases
 
@@ -57,58 +58,16 @@ Details: `.planning/milestones/v2.0-ROADMAP.md` · Audit: `.planning/milestones/
 Details: `.planning/milestones/v2.0.1-ROADMAP.md` · Summary: `.planning/MILESTONES.md`
 </details>
 
-### ✅ v2.0.2 AeroPanelGroup (Phase 13 Complete — ready for tagging)
+<details>
+<summary>✅ v2.0.2 AeroPanelGroup (Phases 13 + 13.1) — SHIPPED 2026-06-23</summary>
 
-**Milestone Goal:** Add one additive layout component `AeroPanelGroup` (+ `AeroPanelSection`) — N vertical sections that fill the parent container height, collapse to a header strip on click (neighbors absorb freed height), and support drag-resize between adjacent expanded sections (VS Code Side Bar model). Strictly one phase, no breaking changes to v2.x API.
+- [x] **Phase 13: AeroPanelGroup** — Full `AeroPanelGroup` + `AeroPanelSection`: N vertical sections fill the parent, collapse to a ~36dp header strip with neighbors absorbing freed height, drag-resize between adjacent expanded sections, fraction-based size state, hybrid controlled/uncontrolled API, Win7 Aero header, pure-logic unit tests, three-theme sign-off (PNL-01..PNL-18) (5/5 plans, 2026-06-23)
+- [x] **Phase 13.1: Horizontal orientation variant (INSERTED)** — Shared internal `AeroPanelGroupImpl(orientation)` core + additive `orientation: Orientation = Orientation.Vertical` default param; N side-by-side columns, vertical dividers, drag-resizes width, rotated header strip + 0°/180° chevron; zero breaking change, zero vertical regression (PNL-HORIZ-01) (3/3 plans, 2026-06-23)
 
-- [x] **Phase 13: AeroPanelGroup** — Full `AeroPanelGroup` + `AeroPanelSection` with collapse/expand animation, drag-resize between expanded neighbors, fraction-based size state, hybrid controlled/uncontrolled API, Win7 Aero header styling, unit tests, and showcase sign-off (PNL-01..PNL-18) (completed 2026-06-23)
-
-## Phase Details
-
-### Phase 13: AeroPanelGroup
-**Goal**: Developers and users have a fully functional `AeroPanelGroup` component: N vertical sections fill their parent height, any section collapses to a ~36dp header strip with neighbors absorbing the freed space, adjacent expanded sections resize by drag, and the whole component ships with pure-logic unit tests, KDoc, and a three-theme showcase sign-off.
-**Depends on**: Phase 12 (all shipping infrastructure in place; `aeroDragSplitter`, `clampDividerPx`, `animateFloatAsState` patterns all verified in repo)
-**Requirements**: PNL-01, PNL-02, PNL-03, PNL-04, PNL-05, PNL-06, PNL-07, PNL-08, PNL-09, PNL-10, PNL-11, PNL-12, PNL-13, PNL-14, PNL-15, PNL-16, PNL-17, PNL-18
-**Success Criteria** (what must be TRUE):
-  1. A user collapses an expanded section and its neighbors immediately absorb the freed height proportionally; re-expanding restores the prior size from `lastExpandedFraction` and the neighbors shrink back accordingly.
-  2. A user drags a divider between two adjacent expanded sections and both sections resize in real time with no animation lag; the divider is absent (no grip, no cursor change) wherever a collapsed section is adjacent.
-  3. The component survives window resize without section proportions resetting — sizes are fraction-based and re-derive from the new `totalPx` each recompose, matching the AeroSplitPane precedent.
-  4. Three-theme visual sign-off passes on AeroBlue / AeroDark / Classic: glassPanel header, CaretRight chevron rotating 0°→90° on expand, optional `leadingIcon` and `headerActions` slot, grip dots on drag dividers — all consistent with Win7 Aero aesthetic.
-  5. All pure-logic functions (`distributePx`, `shareTransferOnCollapse/Expand`, `computeAvailablePx`, `clampPanelDividerPx`) have unit tests that run without a Compose runtime, following the `SplitClampTest`/`AccordionToggleTest` TDD pattern.
-
-**Build order within Phase 13 (non-negotiable — inherited from research SUMMARY.md):**
-
-| Step | Name | Gate before proceeding |
-|------|------|------------------------|
-| 1 | Animation-vs-drag SPIKE (mandatory gate) | Drag writes `sizePx` instantly; toggle animates 200ms; collapse-then-immediate-drag produces no snap-back or oscillation. PNL-PITFALL-01 resolved. |
-| 2 | Pure logic + TDD — `PanelDistribution.kt` + `PanelGroupLogicTest.kt` | All tests GREEN; covers `distributePx`, `shareTransferOnCollapse/Expand`, `computeAvailablePx`, `clampPanelDividerPx`, `lastExpandedFraction` restore. Pitfalls covered: PNL-PITFALL-04, PNL-PITFALL-05, PNL-PITFALL-06, PNL-PITFALL-07, PITFALL-A, PITFALL-B. |
-| 3 | Layout skeleton (no animation, no drag) | `BoxWithConstraints` + `mutableStateListOf` fraction state; window resize redistributes heights correctly; `key(section.id)` in render loop (PNL-PITFALL-08); no drag divider on collapsed boundary (PNL-PITFALL-09); no `animateContentSize` (PNL-PITFALL-10); `pointerInput(Unit)` + `rememberUpdatedState` (FIXSP-01 carry-forward). |
-| 4 | Collapse/expand animation | 200ms `FastOutSlowInEasing` via `animateFloatAsState`; concurrent animations on multiple sections do not conflict; mid-drag collapse race guarded by dragging flag (PNL-PITFALL-03). |
-| 5 | Drag resize | `aeroDragSplitter` + `clampPanelDividerPx` (N-section Σminima clamp); instant px writes; no snap-back after window resize during drag; `rememberUpdatedState(totalPx)` mandatory (PITFALL-A). |
-| 6 | Controlled expansion path + KDoc | Both controlled/uncontrolled branches present per `AeroAccordion` pattern; KDoc references REQ-IDs and PITFALLs; do-not-collapse-to-one-branch comment in place (PNL-08). |
-| 7 | Aero visual polish | `glassPanel` header; `AeroIcons.CaretRight` 0°→90° rotation; `headerActions` slot; grip dots on `PanelGroupDivider`; `collapsible=false` hides chevron (PNL-11); `resizable=false` strips grip and disables drag (PNL-12); three-theme visual check. |
-| 8 | Showcase demo + sign-off | `LayoutSection.kt` updated with `AeroPanelGroup` demo; three-theme visual sign-off PASSED on AeroBlue / AeroDark / Classic. |
-
-**Key pitfalls to watch (from SUMMARY.md research):**
-- PNL-PITFALL-01: `animateFloatAsState` vs. direct drag writes — spike resolves this first.
-- PNL-PITFALL-04: N-section cascading clamp crash (`coerceIn(min>max)` throw) — TDD RED before fix.
-- PITFALL-A: `remember(totalPx)` re-key resets state on window resize — use `remember { mutableStateListOf(...) }` with no key.
-- FIXSP-01 carry-forward: stale capture in drag lambda — `rememberUpdatedState` mandatory.
-- PNL-PITFALL-06: `lastExpandedPx` overflow after window shrink — store `lastExpandedFraction`, restore as fraction of current `availableForExpanded`.
-- PNL-PITFALL-08: section state re-key on list reorder — `key(section.id)` in render loop.
-
-**No new Gradle dependencies required.** All APIs (`BoxWithConstraints`, `aeroDragSplitter`, `clampDividerPx`, `animateFloatAsState`, `glassPanel`, `AeroIcons.*`) are already on the compile classpath.
-
-**Plans**: 5 plans (one per build-order spine; spike + pure-logic GREEN gate all Compose work)
-- [ ] 13-01-PLAN.md — Animation-vs-drag SPIKE (mandatory gate, PNL-PITFALL-01)
-- [ ] 13-02-PLAN.md — Pure-logic TDD: PanelDistribution.kt + PanelGroupLogicTest.kt (RED→GREEN)
-- [ ] 13-03-PLAN.md — Layout skeleton + 200ms collapse/expand animation (scope-DSL, fraction state)
-- [ ] 13-04-PLAN.md — Drag resize (N-section clamp) + hybrid controlled/uncontrolled + KDoc
-- [ ] 13-05-PLAN.md — Aero visual polish + showcase demo + three-theme sign-off
+Details: `.planning/milestones/v2.0.2-ROADMAP.md` · Summary: `.planning/MILESTONES.md`
+</details>
 
 ## Progress
-
-**Execution Order:** 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -124,21 +83,13 @@ Details: `.planning/milestones/v2.0.1-ROADMAP.md` · Summary: `.planning/MILESTO
 | 10. Layout | v2.0 | 4/4 | Complete | 2026-06-18 |
 | 11. Showcase + v2.0 Visual Sign-off | v2.0 | 11/11 | Complete | 2026-06-18 |
 | 12. Seconds Fix + SplitPane Fix + AeroDateTimeRangePicker | v2.0.1 | 4/4 | Complete | 2026-06-22 |
-| 13. AeroPanelGroup | v2.0.2 | Complete    | 2026-06-23 | 2026-06-23 |
-| 13.1. AeroPanelGroup horizontal orientation variant | 3/3 | Complete    | 2026-06-23 | 2026-06-23 |
+| 13. AeroPanelGroup | v2.0.2 | 5/5 | Complete | 2026-06-23 |
+| 13.1. AeroPanelGroup horizontal orientation variant | v2.0.2 | 3/3 | Complete | 2026-06-23 |
+
+## Next Milestone
+
+No active milestone. Start the next one with `/gsd:new-milestone` (questioning → research → requirements → roadmap).
 
 ---
 
-*Roadmap last updated: 2026-06-23 — Phase 13.1 complete (3/3 plans; horizontal orientation sign-off APPROVED)*
-
-### Phase 13.1: AeroPanelGroup horizontal orientation variant (COMPLETE)
-
-**Goal:** Add a horizontal orientation variant to the shipped `AeroPanelGroup` (PNL-HORIZ-01): N sections as side-by-side columns, vertical dividers, drag resizes WIDTH, collapsed column = thin ~36dp vertical header strip — a 90° rotation of the verified Phase 13 vertical model with ZERO breaking changes to the v2.x API and ZERO regression to the vertical behavior. Delivered by refactoring `AeroPanelGroup.kt` into a shared internal core (`AeroPanelGroupImpl(orientation, ...)`) plus an additive `orientation: Orientation = Orientation.Vertical` public default param.
-**Requirements**: PNL-HORIZ-01 (primary); PNL-01..PNL-18 (inherited behavior preserved through the core-extraction refactor — regression-verified)
-**Depends on:** Phase 13
-**Plans:** 3/3 plans complete
-
-Plans:
-- [x] 13.1-01-PLAN.md — Extract vertical core to internal `AeroPanelGroupImpl(orientation, ...)` + additive `orientation` param; orientation-aware `PanelGroupDivider` (regression firewall — vertical body & 12 logic tests unchanged/GREEN)
-- [x] 13.1-02-PLAN.md — Horizontal orientation branch: `Row` container, `maxWidth` axis, axis-swapped modifiers, rotated header strip + 0°/180° chevron, horizontal drag, KDoc (PNL-HORIZ-01)
-- [x] 13.1-03-PLAN.md — Append-only horizontal showcase demo + vertical regression gate + three-theme sign-off on BOTH demos (PNL-17, PNL-HORIZ-01) — APPROVED
+*Roadmap last updated: 2026-06-23 — v2.0.2 AeroPanelGroup shipped (Phases 13 + 13.1); milestone archived to `.planning/milestones/v2.0.2-ROADMAP.md`.*
