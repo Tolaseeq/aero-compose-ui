@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 13-aeropanelgroup-02 (PanelDistribution.kt pure logic GREEN)
-last_updated: "2026-06-23T05:33:47.221Z"
+stopped_at: Completed 13-aeropanelgroup-03 (AeroPanelGroup.kt skeleton + 200ms animation)
+last_updated: "2026-06-23T05:40:23.432Z"
 last_activity: 2026-06-23 — Plan 13-01 spike gate APPROVED (PNL-PITFALL-01 resolved)
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 5
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -178,6 +178,9 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 13-aeropanelgroup]: DRAG ANIMATION DISABLE (required in 13-04): snap() animationSpec while isDragging=true, tween(200ms, FastOutSlowInEasing) otherwise. isDragging set on awaitFirstDown, cleared in try/finally.
 - [Phase 13]: computeAvailablePx reserves headerPx for ALL sections (sectionCount * headerPx, spike finding 1) plus all-collapsed early-return for PNL-15 invariant
 - [Phase 13]: distributePx and shareTransferOnCollapse use last-index remainder to absorb float drift (PNL-PITFALL-02/05)
+- [Phase 13-aeropanelgroup]: sizePx seeds 1f or defaultSize.toPx(); distributePx handles proportional math so no explicit normalization needed
+- [Phase 13-aeropanelgroup]: animateFloatAsState target when collapsed = headerPx (not 0f): collapsed sections still render 36dp header, content area shrinks to zero
+- [Phase 13-aeropanelgroup]: AeroPanelGroupScope fresh each recompose; seed guard on sizePx.size != sections.size re-inits all three parallel state lists
 
 ### Pending Todos
 
@@ -191,7 +194,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-23T05:33:39.161Z
-Stopped at: Completed 13-aeropanelgroup-02 (PanelDistribution.kt pure logic GREEN)
+Last session: 2026-06-23T05:40:23.429Z
+Stopped at: Completed 13-aeropanelgroup-03 (AeroPanelGroup.kt skeleton + 200ms animation)
 Resume file: None
 Next action: `/gsd:plan-phase 13`

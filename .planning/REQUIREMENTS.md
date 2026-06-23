@@ -18,7 +18,7 @@
 
 ### Layout & State (PNL — core layout)
 
-- [ ] **PNL-01**: Разработчик может разместить N вертикальных секций в `AeroPanelGroup` через scope-DSL (`section(key, title) { content }`)
+- [x] **PNL-01**: Разработчик может разместить N вертикальных секций в `AeroPanelGroup` через scope-DSL (`section(key, title) { content }`)
 - [x] **PNL-02**: Пользователь может свернуть раскрытую секцию в полоску-заголовок (~36dp); освободившаяся высота перераспределяется раскрытым соседям
 - [x] **PNL-03**: Пользователь может повторно раскрыть свёрнутую секцию; она восстанавливает прежний размер (`lastExpandedFraction`), забирая высоту у соседей
 - [x] **PNL-04**: Раскрытые секции делят доступную высоту пропорционально и переживают ресайз окна (нормализованное fraction-based состояние)
@@ -33,7 +33,7 @@
 - [x] **PNL-10**: Каждая секция задаёт свой `minSize` (дефолт-константа), кламп ресайза учитывает Σ минимумов всех секций ниже разделителя (N-section clamp, не только сосед)
 - [ ] **PNL-11**: Секция с `collapsible = false` не имеет шеврона и не сворачивается, но участвует в ресайзе
 - [ ] **PNL-12**: При `resizable = false` разделители рендерятся без грипа и drag отключён (чистый collapse/expand)
-- [ ] **PNL-13**: Идентичность секции задаётся явным `key` (устойчиво к дублирующимся title и переупорядочиванию)
+- [x] **PNL-13**: Идентичность секции задаётся явным `key` (устойчиво к дублирующимся title и переупорядочиванию)
 
 ### Visual, Tests & Integration (PNL)
 
@@ -69,7 +69,7 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PNL-01 | Phase 13 | Pending |
+| PNL-01 | Phase 13 | Complete |
 | PNL-02 | Phase 13 | Complete |
 | PNL-03 | Phase 13 | Complete |
 | PNL-04 | Phase 13 | Complete |
@@ -81,7 +81,7 @@
 | PNL-10 | Phase 13 | Complete |
 | PNL-11 | Phase 13 | Pending |
 | PNL-12 | Phase 13 | Pending |
-| PNL-13 | Phase 13 | Pending |
+| PNL-13 | Phase 13 | Complete |
 | PNL-14 | Phase 13 | Pending |
 | PNL-15 | Phase 13 | Complete |
 | PNL-16 | Phase 13 | Complete |
