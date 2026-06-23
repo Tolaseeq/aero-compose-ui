@@ -22,14 +22,14 @@
 - [x] **PNL-02**: Пользователь может свернуть раскрытую секцию в полоску-заголовок (~36dp); освободившаяся высота перераспределяется раскрытым соседям
 - [x] **PNL-03**: Пользователь может повторно раскрыть свёрнутую секцию; она восстанавливает прежний размер (`lastExpandedFraction`), забирая высоту у соседей
 - [x] **PNL-04**: Раскрытые секции делят доступную высоту пропорционально и переживают ресайз окна (нормализованное fraction-based состояние)
-- [ ] **PNL-05**: Пользователь может перетащить разделитель между двумя соседними раскрытыми секциями для их ресайза; px переносится между ними с клампом по `minSize`
+- [x] **PNL-05**: Пользователь может перетащить разделитель между двумя соседними раскрытыми секциями для их ресайза; px переносится между ними с клампом по `minSize`
 - [x] **PNL-06**: Грип-разделитель рисуется ТОЛЬКО между двумя соседними раскрытыми секциями; граница рядом со свёрнутой секцией — статичный стык заголовков (без грипа, без drag, без resize-курсора)
 
 ### Behavior & API (PNL — configuration)
 
 - [x] **PNL-07**: Collapse/expand анимируется за 200ms FastOutSlowInEasing; drag пишет размер напрямую без анимации (риск-спайк: совмещение анимации и drag без конфликта two-writer)
-- [ ] **PNL-08**: Состояние раскрытия — гибрид controlled/uncontrolled (`onExpandedChange == null` → uncontrolled; non-null → controlled pure renderer), строго по паттерну `AeroAccordion`
-- [ ] **PNL-09**: Внутреннее состояние размеров — uncontrolled; наружу экспонируется через `onLayoutChange` (срабатывает на drag-end и на collapse/expand) для персиста/восстановления
+- [x] **PNL-08**: Состояние раскрытия — гибрид controlled/uncontrolled (`onExpandedChange == null` → uncontrolled; non-null → controlled pure renderer), строго по паттерну `AeroAccordion`
+- [x] **PNL-09**: Внутреннее состояние размеров — uncontrolled; наружу экспонируется через `onLayoutChange` (срабатывает на drag-end и на collapse/expand) для персиста/восстановления
 - [x] **PNL-10**: Каждая секция задаёт свой `minSize` (дефолт-константа), кламп ресайза учитывает Σ минимумов всех секций ниже разделителя (N-section clamp, не только сосед)
 - [ ] **PNL-11**: Секция с `collapsible = false` не имеет шеврона и не сворачивается, но участвует в ресайзе
 - [ ] **PNL-12**: При `resizable = false` разделители рендерятся без грипа и drag отключён (чистый collapse/expand)
@@ -41,7 +41,7 @@
 - [x] **PNL-15**: Краевые случаи: все секции свёрнуты → стопка заголовков сверху, остаток контейнера пустой; одна раскрыта → занимает весь `availableForExpanded`
 - [x] **PNL-16**: Чистая логика (распределение px, N-section кламп, перенос доли при collapse/expand, нормализация при ресайзе) покрыта юнит-тестами по образцу `SplitClampTest`/`AccordionToggleTest` (TDD: RED → GREEN до Compose-кода)
 - [ ] **PNL-17**: Showcase `LayoutSection` получает демо `AeroPanelGroup`; three-theme visual sign-off PASSED на AeroBlue / AeroDark / Classic
-- [ ] **PNL-18**: KDoc со ссылками на REQ-ID и PITFALL, единообразно с соседними layout-компонентами
+- [x] **PNL-18**: KDoc со ссылками на REQ-ID и PITFALL, единообразно с соседними layout-компонентами
 
 ## Future Requirements
 
@@ -73,11 +73,11 @@
 | PNL-02 | Phase 13 | Complete |
 | PNL-03 | Phase 13 | Complete |
 | PNL-04 | Phase 13 | Complete |
-| PNL-05 | Phase 13 | Pending |
+| PNL-05 | Phase 13 | Complete |
 | PNL-06 | Phase 13 | Complete |
 | PNL-07 | Phase 13 | Complete |
-| PNL-08 | Phase 13 | Pending |
-| PNL-09 | Phase 13 | Pending |
+| PNL-08 | Phase 13 | Complete |
+| PNL-09 | Phase 13 | Complete |
 | PNL-10 | Phase 13 | Complete |
 | PNL-11 | Phase 13 | Pending |
 | PNL-12 | Phase 13 | Pending |
@@ -86,7 +86,7 @@
 | PNL-15 | Phase 13 | Complete |
 | PNL-16 | Phase 13 | Complete |
 | PNL-17 | Phase 13 | Pending |
-| PNL-18 | Phase 13 | Pending |
+| PNL-18 | Phase 13 | Complete |
 
 **Coverage:**
 - v1 requirements: 18 total

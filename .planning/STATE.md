@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 13-aeropanelgroup-03 (AeroPanelGroup.kt skeleton + 200ms animation)
-last_updated: "2026-06-23T05:40:23.432Z"
+stopped_at: Completed 13-aeropanelgroup-04 (AeroPanelGroup drag resize + controlled expansion + KDoc)
+last_updated: "2026-06-23T05:46:37.700Z"
 last_activity: 2026-06-23 — Plan 13-01 spike gate APPROVED (PNL-PITFALL-01 resolved)
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 5
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -181,6 +181,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 13-aeropanelgroup]: sizePx seeds 1f or defaultSize.toPx(); distributePx handles proportional math so no explicit normalization needed
 - [Phase 13-aeropanelgroup]: animateFloatAsState target when collapsed = headerPx (not 0f): collapsed sections still render 36dp header, content area shrinks to zero
 - [Phase 13-aeropanelgroup]: AeroPanelGroupScope fresh each recompose; seed guard on sizePx.size != sections.size re-inits all three parallel state lists
+- [Phase 13-aeropanelgroup]: AeroPanelGroup drag resize: aeroDragSplitter + clampPanelDividerPx + isDragging->snap() + rememberUpdatedState(totalPx); hybrid expansion: val controlled = onExpandedChange != null; both branches intentional (PNL-08)
+- [Phase 13-aeropanelgroup]: onLayoutChange fires at drag-end and collapse/expand toggle only — NOT per drag frame (PNL-09)
 
 ### Pending Todos
 
@@ -194,7 +196,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-23T05:40:23.429Z
-Stopped at: Completed 13-aeropanelgroup-03 (AeroPanelGroup.kt skeleton + 200ms animation)
+Last session: 2026-06-23T05:46:37.696Z
+Stopped at: Completed 13-aeropanelgroup-04 (AeroPanelGroup drag resize + controlled expansion + KDoc)
 Resume file: None
 Next action: `/gsd:plan-phase 13`
