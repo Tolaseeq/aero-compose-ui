@@ -15,11 +15,14 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,8 +35,10 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
@@ -46,7 +51,10 @@ import com.mordred.aero.components.layout.internal.panelgroup.lastExpandedFracti
 import com.mordred.aero.components.layout.internal.panelgroup.restoreFromFraction
 import com.mordred.aero.components.layout.internal.panelgroup.shareTransferOnCollapse
 import com.mordred.aero.components.layout.internal.panelgroup.shareTransferOnExpand
+import com.mordred.aero.icons.AeroIcons
+import com.mordred.aero.icons.`internal`.CaretRight
 import com.mordred.aero.theme.AeroTheme
+import com.mordred.aero.theme.glassPanel
 
 // Internal layout constants
 private val HEADER_HEIGHT = 36.dp
@@ -375,6 +383,16 @@ public fun AeroPanelGroup(
             animated
         }
 
+        // --- Per-section caret rotations (Win7 Aero: 0 -> 90 degrees on expand) ---
+        val caretRotations = sections.indices.map { i ->
+            val rotation by animateFloatAsState(
+                targetValue = if (expandedState.getOrElse(i) { false }) 90f else 0f,
+                animationSpec = tween(durationMillis = 160, easing = FastOutSlowInEasing),
+                label = "caret_${sections[i].key}",
+            )
+            rotation
+        }
+
         // --- Find the last expanded section index for weight(1f) assignment ---
         val lastExpandedIdx = expandedState.indexOfLast { it }
 
@@ -384,12 +402,17 @@ public fun AeroPanelGroup(
                     val isExpandedNow = expandedState.getOrElse(i) { false }
                     val animatedHeightPx = animatedHeights[i]
                     val animatedHeightDp = with(density) { animatedHeightPx.toDp() }
+                    val caretRotation = caretRotations[i]
 
                     // Header strip — fixed 36dp, always rendered.
+                    // glassPanel(8.dp) for Win7 Aero gloss/gradient surface; clip before clickable
+                    // so hover/press highlight clips to the rounded glass surface (F-ACCORDION-HOVER).
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(HEADER_HEIGHT)
+                            .glassPanel(cornerRadius = 8.dp)
+                            .clip(RoundedCornerShape(8.dp))
                             .then(
                                 if (section.collapsible) Modifier.clickable { onToggle(i) }
                                 else Modifier
@@ -397,22 +420,47 @@ public fun AeroPanelGroup(
                             .padding(horizontal = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        // CaretRight: only when collapsible (PNL-11 — collapsible=false hides chevron).
+                        // Rotates 0->90 degrees on expand (Win7 Aero caret — AeroAccordion pattern).
+                        if (section.collapsible) {
+                            Icon(
+                                imageVector = AeroIcons.CaretRight,
+                                contentDescription = null,
+                                tint = AeroTheme.colors.onSurface,
+                                modifier = Modifier
+                                    .size(18.dp)
+                                    .graphicsLayer { rotationZ = caretRotation },
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                        }
+
+                        // leadingIcon: rendered with explicit tint (v1.1 rule).
                         section.leadingIcon?.let { icon ->
                             Icon(
                                 imageVector = icon,
                                 contentDescription = null,
                                 tint = AeroTheme.colors.onSurface,
-                                modifier = Modifier.size(16.dp).padding(end = 6.dp),
+                                modifier = Modifier.size(16.dp),
                             )
+                            Spacer(modifier = Modifier.width(6.dp))
                         }
+
+                        // Title fills remaining space so headerActions sit at the far right.
                         Text(
                             text = section.title,
                             style = AeroTheme.typography.bodyMedium,
                             color = AeroTheme.colors.onSurface,
                             modifier = Modifier.weight(1f),
                         )
+
+                        // headerActions: rendered in BOTH collapsed and expanded states (always in header strip).
+                        // Non-bubbling: the actions Row does not have the toggle clickable on it —
+                        // action clicks are consumed by each action's own onClick handler and do NOT
+                        // propagate to the outer Row toggle (PNL-14 / VS Code model).
                         section.headerActions?.let { actions ->
-                            Row { actions() }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                actions()
+                            }
                         }
                     }
 
@@ -464,14 +512,15 @@ public fun AeroPanelGroup(
 /**
  * Internal horizontal drag divider rendered between two adjacent expanded sections.
  *
- * Renders an 8dp-tall hit-area Box with a centered 1dp visual line and hover tint.
+ * Renders an 8dp-tall hit-area Box with a centered 1dp visual line, 3 grip dots, and hover tint.
  * The [aeroDragSplitter] Modifier (locked v2.0 pattern, PITFALL-03) handles cursor change,
  * `pointerHoverIcon`, and the `awaitPointerEventScope` manual loop without touchSlop delay.
  *
  * When [enabled] is false (either neighbor has `resizable = false`, PNL-12) the hit-area
- * renders the static 1dp line with no drag effect and no cursor change.
+ * renders the static 1dp line with no grip dots and no drag effect and no cursor change.
  *
- * Grip dots (visual polish) are deferred to plan 13-05.
+ * Grip dots mirror the AeroSplitPane vertical-orientation Row of 3 x Box(3.dp) separated by
+ * Box(width 4.dp) in labelText color (PNL-05).
  */
 @Composable
 private fun PanelGroupDivider(
@@ -488,13 +537,15 @@ private fun PanelGroupDivider(
             .fillMaxWidth()
             .height(DIVIDER_THICKNESS)
             .hoverable(interactionSource)
-            .aeroDragSplitter(
-                orientation = Orientation.Vertical,
-                onDrag = onDrag,
-                onDragEnd = onDragEnd,
-                enabled = enabled,
+            .then(
+                if (enabled) Modifier.aeroDragSplitter(
+                    orientation = Orientation.Vertical,
+                    onDrag = onDrag,
+                    onDragEnd = onDragEnd,
+                    enabled = true,
+                ) else Modifier
             )
-            .background(if (hovered) colors.buttonHover else Color.Transparent),
+            .background(if (hovered && enabled) colors.buttonHover else Color.Transparent),
         contentAlignment = Alignment.Center,
     ) {
         // 1dp Aero visual line — centered within the 8dp hit-area.
@@ -504,6 +555,23 @@ private fun PanelGroupDivider(
                 .height(1.dp)
                 .background(colors.borderDefault),
         )
-        // Grip dots row deferred to plan 13-05.
+
+        // Grip dots: 3 x Box(3.dp) separated by Box(width 4.dp), labelText color.
+        // Only rendered when enabled (resizable=true on both neighbors, PNL-05 / PNL-12).
+        if (enabled) {
+            Row(
+                modifier = Modifier.align(Alignment.Center),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                repeat(3) { idx ->
+                    if (idx > 0) Box(modifier = Modifier.width(4.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(3.dp)
+                            .background(colors.labelText),
+                    )
+                }
+            }
+        }
     }
 }
