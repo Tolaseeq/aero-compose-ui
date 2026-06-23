@@ -51,7 +51,7 @@ import java.awt.Cursor
 fun PanelGroupSpikeSection() {
     val colors = AeroTheme.colors
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(640.dp)) {
         val totalPx = constraints.maxHeight.toFloat()
 
         // State: no key on remember — stable across window resize (PITFALL-A guard).
