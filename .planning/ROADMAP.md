@@ -125,7 +125,7 @@ Details: `.planning/milestones/v2.0.1-ROADMAP.md` · Summary: `.planning/MILESTO
 | 11. Showcase + v2.0 Visual Sign-off | v2.0 | 11/11 | Complete | 2026-06-18 |
 | 12. Seconds Fix + SplitPane Fix + AeroDateTimeRangePicker | v2.0.1 | 4/4 | Complete | 2026-06-22 |
 | 13. AeroPanelGroup | v2.0.2 | Complete    | 2026-06-23 | 2026-06-23 |
-| 13.1. AeroPanelGroup horizontal orientation variant | 1/3 | In Progress|  | — |
+| 13.1. AeroPanelGroup horizontal orientation variant | 2/3 | In Progress|  | — |
 
 ---
 
@@ -136,7 +136,7 @@ Details: `.planning/milestones/v2.0.1-ROADMAP.md` · Summary: `.planning/MILESTO
 **Goal:** Add a horizontal orientation variant to the shipped `AeroPanelGroup` (PNL-HORIZ-01): N sections as side-by-side columns, vertical dividers, drag resizes WIDTH, collapsed column = thin ~36dp vertical header strip — a 90° rotation of the verified Phase 13 vertical model with ZERO breaking changes to the v2.x API and ZERO regression to the vertical behavior. Delivered by refactoring `AeroPanelGroup.kt` into a shared internal core (`AeroPanelGroupImpl(orientation, ...)`) plus an additive `orientation: Orientation = Orientation.Vertical` public default param.
 **Requirements**: PNL-HORIZ-01 (primary); PNL-01..PNL-18 (inherited behavior preserved through the core-extraction refactor — regression-verified)
 **Depends on:** Phase 13
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] 13.1-01-PLAN.md — Extract vertical core to internal `AeroPanelGroupImpl(orientation, ...)` + additive `orientation` param; orientation-aware `PanelGroupDivider` (regression firewall — vertical body & 12 logic tests unchanged/GREEN)

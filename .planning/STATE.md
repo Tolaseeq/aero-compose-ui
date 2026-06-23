@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 13.1-01-PLAN.md
-last_updated: "2026-06-23T07:04:22.721Z"
+stopped_at: Completed 13.1-02-PLAN.md
+last_updated: "2026-06-23T07:12:02.968Z"
 last_activity: 2026-06-23 — Plan 13-05 three-theme sign-off APPROVED (PNL-14, PNL-17 closed); phase 13 complete
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 8
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # Project State
@@ -193,6 +193,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 13.1-01]: orientation: Orientation (androidx.compose.foundation.gestures) reused directly — no new enum, no AeroSplitOrientation
 - [Phase 13.1-01]: AeroPanelGroupImpl extraction: public wrapper collects DSL scope and delegates to internal core, both in same file
 - [Phase 13.1-01]: PanelGroupDivider both grip-dot branches (Vertical Row, Horizontal Column) written in Plan 01 so Plan 02 needs zero divider edits
+- [Phase 13.1]: Three orientation branch points only: BoxWithConstraints axis (maxWidth/maxHeight), container (Row/Column), section modifiers (fillMaxHeight+width vs fillMaxWidth+height); all state/animation/drag logic shared
+- [Phase 13.1]: caretRotations: 0f/180f for horizontal (>/<); 90f/0f for vertical — driven by isHorizontal inside shared caretRotations map, no duplication
 
 ### Pending Todos
 
@@ -206,7 +208,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-23T07:04:22.714Z
-Stopped at: Completed 13.1-01-PLAN.md
+Last session: 2026-06-23T07:12:02.960Z
+Stopped at: Completed 13.1-02-PLAN.md
 Resume file: None
 Next action: `/gsd:plan-phase 13`
