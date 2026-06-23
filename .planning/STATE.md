@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: "Checkpoint: Task 3 three-theme visual sign-off — 13.1-03-PLAN.md"
-last_updated: "2026-06-23T07:16:35.828Z"
-last_activity: 2026-06-23 — Plan 13-05 three-theme sign-off APPROVED (PNL-14, PNL-17 closed); phase 13 complete
+stopped_at: "Phase 13.1 plan 03 complete (3/3 plans) — horizontal sign-off APPROVED"
+last_updated: "2026-06-23T07:46:36.000Z"
+last_activity: 2026-06-23 — Plan 13.1-03 three-theme horizontal sign-off APPROVED (PNL-HORIZ-01, PNL-17 closed); phase 13.1 complete (3/3 plans)
 progress:
   total_phases: 2
   completed_phases: 2
-  total_plans: 8
-  completed_plans: 8
+  total_plans: 11
+  completed_plans: 11
 ---
 
 # Project State
@@ -24,17 +24,17 @@ See: .planning/PROJECT.md (updated 2026-06-22 — after v2.0.1 milestone)
 
 ## Current Position
 
-Phase: 13 — AeroPanelGroup (COMPLETE)
-Plan: 05 complete — Phase 13 all 5 plans done
-Status: Phase 13 complete — 5/5 plans complete; v2.0.2 ready for milestone tagging
-Last activity: 2026-06-23 — Plan 13-05 three-theme sign-off APPROVED (PNL-14, PNL-17 closed); phase 13 complete
+Phase: 13.1 — AeroPanelGroup Horizontal Orientation Variant (COMPLETE)
+Plan: 03 complete — Phase 13.1 all 3/3 plans done
+Status: Phase 13.1 complete — 3/3 plans complete; PNL-HORIZ-01 + PNL-17 closed; v2.0.2 ready for milestone tagging
+Last activity: 2026-06-23 — Plan 13.1-03 three-theme horizontal sign-off APPROVED (PNL-HORIZ-01, PNL-17 closed); phase 13.1 complete
 
 ```
-v2.0.1 ✅ SHIPPED → v2.0.2 AeroPanelGroup [Phase 13: 5/5 plans] ✅ three-theme sign-off PASSED
+v2.0.1 ✅ SHIPPED → v2.0.2 AeroPanelGroup [Phase 13: 5/5] ✅ + Horizontal Variant [Phase 13.1: 3/3] ✅ sign-off PASSED
 [██████████] 100%
 ```
 
-Progress: 1/1 phases complete (5/5 plans)
+Progress: 2/2 phases complete (11/11 plans)
 
 ## Shipped Milestones
 
@@ -195,11 +195,15 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 13.1-01]: PanelGroupDivider both grip-dot branches (Vertical Row, Horizontal Column) written in Plan 01 so Plan 02 needs zero divider edits
 - [Phase 13.1]: Three orientation branch points only: BoxWithConstraints axis (maxWidth/maxHeight), container (Row/Column), section modifiers (fillMaxHeight+width vs fillMaxWidth+height); all state/animation/drag logic shared
 - [Phase 13.1]: caretRotations: 0f/180f for horizontal (>/<); 90f/0f for vertical — driven by isHorizontal inside shared caretRotations map, no duplication
+- [Phase 13.1-03]: Horizontal-section vertical titles: BoxWithConstraints + requiredWidth(maxHeight) + rotate(-90f) is the approved pattern; graphicsLayer-only and placeRelativeWithLayer approaches were abandoned (GAP-1 sign-off defect)
+- [Phase 13.1-03]: GAP-2 column distribution: removed weight(1f) from outer section Row; explicit distributePx width for non-last columns; last column absorbs float rounding with weight(1f) at content level
+- [Phase 13.1-03]: Three-theme sign-off APPROVED — AeroBlue / AeroDark / Classic — on both vertical (regression) and horizontal (PNL-HORIZ-01) demos; PNL-17 Aero fidelity confirmed across both orientations
 
 ### Pending Todos
 
 - Gap-close: AeroDropdown popup offset regression (v1.0 carry-over) — explicitly OUT of v2.0.2 scope; candidate for future milestone (DROP-FIX-01)
-- Deferred to future milestones: inline pickers, DataTable cell-edit/reorder/filter, TreeView DnD, ColorPicker eyedropper, StepperWizard branching, Sidebar drag-resize, AeroDateTimeRangePicker hover-preview (DTR-HOVER-01), AeroPanelGroup horizontal orientation (PNL-HORIZ-01), drag-to-reorder (PNL-REORDER-01), keyboard resize (PNL-KBD-01)
+- Deferred to future milestones: inline pickers, DataTable cell-edit/reorder/filter, TreeView DnD, ColorPicker eyedropper, StepperWizard branching, Sidebar drag-resize, AeroDateTimeRangePicker hover-preview (DTR-HOVER-01), AeroPanelGroup drag-to-reorder (PNL-REORDER-01), keyboard resize (PNL-KBD-01)
+- [CLOSED Phase 13.1]: AeroPanelGroup horizontal orientation (PNL-HORIZ-01) — DELIVERED and signed off
 
 ### Blockers/Concerns
 
@@ -208,7 +212,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-23T07:16:35.802Z
-Stopped at: Checkpoint: Task 3 three-theme visual sign-off — 13.1-03-PLAN.md
+Last session: 2026-06-23T07:46:36.000Z
+Stopped at: Completed 13.1-03-PLAN.md — phase 13.1 all 3/3 plans done
 Resume file: None
-Next action: `/gsd:plan-phase 13`
+Next action: `/gsd:complete-milestone` (v2.0.2)

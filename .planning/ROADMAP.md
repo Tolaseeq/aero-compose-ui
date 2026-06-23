@@ -125,20 +125,20 @@ Details: `.planning/milestones/v2.0.1-ROADMAP.md` · Summary: `.planning/MILESTO
 | 11. Showcase + v2.0 Visual Sign-off | v2.0 | 11/11 | Complete | 2026-06-18 |
 | 12. Seconds Fix + SplitPane Fix + AeroDateTimeRangePicker | v2.0.1 | 4/4 | Complete | 2026-06-22 |
 | 13. AeroPanelGroup | v2.0.2 | Complete    | 2026-06-23 | 2026-06-23 |
-| 13.1. AeroPanelGroup horizontal orientation variant | 2/3 | In Progress|  | — |
+| 13.1. AeroPanelGroup horizontal orientation variant | 3/3 | Complete | 2026-06-23 | 2026-06-23 |
 
 ---
 
-*Roadmap last updated: 2026-06-23 — Phase 13.1 planned (3 plans, horizontal orientation variant)*
+*Roadmap last updated: 2026-06-23 — Phase 13.1 complete (3/3 plans; horizontal orientation sign-off APPROVED)*
 
-### Phase 13.1: AeroPanelGroup horizontal orientation variant (INSERTED)
+### Phase 13.1: AeroPanelGroup horizontal orientation variant (COMPLETE)
 
 **Goal:** Add a horizontal orientation variant to the shipped `AeroPanelGroup` (PNL-HORIZ-01): N sections as side-by-side columns, vertical dividers, drag resizes WIDTH, collapsed column = thin ~36dp vertical header strip — a 90° rotation of the verified Phase 13 vertical model with ZERO breaking changes to the v2.x API and ZERO regression to the vertical behavior. Delivered by refactoring `AeroPanelGroup.kt` into a shared internal core (`AeroPanelGroupImpl(orientation, ...)`) plus an additive `orientation: Orientation = Orientation.Vertical` public default param.
 **Requirements**: PNL-HORIZ-01 (primary); PNL-01..PNL-18 (inherited behavior preserved through the core-extraction refactor — regression-verified)
 **Depends on:** Phase 13
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
-- [ ] 13.1-01-PLAN.md — Extract vertical core to internal `AeroPanelGroupImpl(orientation, ...)` + additive `orientation` param; orientation-aware `PanelGroupDivider` (regression firewall — vertical body & 12 logic tests unchanged/GREEN)
-- [ ] 13.1-02-PLAN.md — Horizontal orientation branch: `Row` container, `maxWidth` axis, axis-swapped modifiers, rotated header strip + 0°/180° chevron, horizontal drag, KDoc (PNL-HORIZ-01)
-- [ ] 13.1-03-PLAN.md — Append-only horizontal showcase demo + vertical regression gate + three-theme sign-off on BOTH demos (PNL-17, PNL-HORIZ-01)
+- [x] 13.1-01-PLAN.md — Extract vertical core to internal `AeroPanelGroupImpl(orientation, ...)` + additive `orientation` param; orientation-aware `PanelGroupDivider` (regression firewall — vertical body & 12 logic tests unchanged/GREEN)
+- [x] 13.1-02-PLAN.md — Horizontal orientation branch: `Row` container, `maxWidth` axis, axis-swapped modifiers, rotated header strip + 0°/180° chevron, horizontal drag, KDoc (PNL-HORIZ-01)
+- [x] 13.1-03-PLAN.md — Append-only horizontal showcase demo + vertical regression gate + three-theme sign-off on BOTH demos (PNL-17, PNL-HORIZ-01) — APPROVED
