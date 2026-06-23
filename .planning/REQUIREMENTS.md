@@ -19,18 +19,18 @@
 ### Layout & State (PNL — core layout)
 
 - [ ] **PNL-01**: Разработчик может разместить N вертикальных секций в `AeroPanelGroup` через scope-DSL (`section(key, title) { content }`)
-- [ ] **PNL-02**: Пользователь может свернуть раскрытую секцию в полоску-заголовок (~36dp); освободившаяся высота перераспределяется раскрытым соседям
-- [ ] **PNL-03**: Пользователь может повторно раскрыть свёрнутую секцию; она восстанавливает прежний размер (`lastExpandedFraction`), забирая высоту у соседей
-- [ ] **PNL-04**: Раскрытые секции делят доступную высоту пропорционально и переживают ресайз окна (нормализованное fraction-based состояние)
+- [x] **PNL-02**: Пользователь может свернуть раскрытую секцию в полоску-заголовок (~36dp); освободившаяся высота перераспределяется раскрытым соседям
+- [x] **PNL-03**: Пользователь может повторно раскрыть свёрнутую секцию; она восстанавливает прежний размер (`lastExpandedFraction`), забирая высоту у соседей
+- [x] **PNL-04**: Раскрытые секции делят доступную высоту пропорционально и переживают ресайз окна (нормализованное fraction-based состояние)
 - [ ] **PNL-05**: Пользователь может перетащить разделитель между двумя соседними раскрытыми секциями для их ресайза; px переносится между ними с клампом по `minSize`
-- [ ] **PNL-06**: Грип-разделитель рисуется ТОЛЬКО между двумя соседними раскрытыми секциями; граница рядом со свёрнутой секцией — статичный стык заголовков (без грипа, без drag, без resize-курсора)
+- [x] **PNL-06**: Грип-разделитель рисуется ТОЛЬКО между двумя соседними раскрытыми секциями; граница рядом со свёрнутой секцией — статичный стык заголовков (без грипа, без drag, без resize-курсора)
 
 ### Behavior & API (PNL — configuration)
 
 - [x] **PNL-07**: Collapse/expand анимируется за 200ms FastOutSlowInEasing; drag пишет размер напрямую без анимации (риск-спайк: совмещение анимации и drag без конфликта two-writer)
 - [ ] **PNL-08**: Состояние раскрытия — гибрид controlled/uncontrolled (`onExpandedChange == null` → uncontrolled; non-null → controlled pure renderer), строго по паттерну `AeroAccordion`
 - [ ] **PNL-09**: Внутреннее состояние размеров — uncontrolled; наружу экспонируется через `onLayoutChange` (срабатывает на drag-end и на collapse/expand) для персиста/восстановления
-- [ ] **PNL-10**: Каждая секция задаёт свой `minSize` (дефолт-константа), кламп ресайза учитывает Σ минимумов всех секций ниже разделителя (N-section clamp, не только сосед)
+- [x] **PNL-10**: Каждая секция задаёт свой `minSize` (дефолт-константа), кламп ресайза учитывает Σ минимумов всех секций ниже разделителя (N-section clamp, не только сосед)
 - [ ] **PNL-11**: Секция с `collapsible = false` не имеет шеврона и не сворачивается, но участвует в ресайзе
 - [ ] **PNL-12**: При `resizable = false` разделители рендерятся без грипа и drag отключён (чистый collapse/expand)
 - [ ] **PNL-13**: Идентичность секции задаётся явным `key` (устойчиво к дублирующимся title и переупорядочиванию)
@@ -38,8 +38,8 @@
 ### Visual, Tests & Integration (PNL)
 
 - [ ] **PNL-14**: Полоска-заголовок — `glassPanel`-поверхность с шевроном `AeroIcons.CaretRight` (0°→90° при раскрытии), опциональным `leadingIcon` и опциональным правым слотом `headerActions`; эстетика строго Win7 Aero (gloss/gradient/rounded/depth)
-- [ ] **PNL-15**: Краевые случаи: все секции свёрнуты → стопка заголовков сверху, остаток контейнера пустой; одна раскрыта → занимает весь `availableForExpanded`
-- [ ] **PNL-16**: Чистая логика (распределение px, N-section кламп, перенос доли при collapse/expand, нормализация при ресайзе) покрыта юнит-тестами по образцу `SplitClampTest`/`AccordionToggleTest` (TDD: RED → GREEN до Compose-кода)
+- [x] **PNL-15**: Краевые случаи: все секции свёрнуты → стопка заголовков сверху, остаток контейнера пустой; одна раскрыта → занимает весь `availableForExpanded`
+- [x] **PNL-16**: Чистая логика (распределение px, N-section кламп, перенос доли при collapse/expand, нормализация при ресайзе) покрыта юнит-тестами по образцу `SplitClampTest`/`AccordionToggleTest` (TDD: RED → GREEN до Compose-кода)
 - [ ] **PNL-17**: Showcase `LayoutSection` получает демо `AeroPanelGroup`; three-theme visual sign-off PASSED на AeroBlue / AeroDark / Classic
 - [ ] **PNL-18**: KDoc со ссылками на REQ-ID и PITFALL, единообразно с соседними layout-компонентами
 
@@ -70,21 +70,21 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | PNL-01 | Phase 13 | Pending |
-| PNL-02 | Phase 13 | Pending |
-| PNL-03 | Phase 13 | Pending |
-| PNL-04 | Phase 13 | Pending |
+| PNL-02 | Phase 13 | Complete |
+| PNL-03 | Phase 13 | Complete |
+| PNL-04 | Phase 13 | Complete |
 | PNL-05 | Phase 13 | Pending |
-| PNL-06 | Phase 13 | Pending |
+| PNL-06 | Phase 13 | Complete |
 | PNL-07 | Phase 13 | Complete |
 | PNL-08 | Phase 13 | Pending |
 | PNL-09 | Phase 13 | Pending |
-| PNL-10 | Phase 13 | Pending |
+| PNL-10 | Phase 13 | Complete |
 | PNL-11 | Phase 13 | Pending |
 | PNL-12 | Phase 13 | Pending |
 | PNL-13 | Phase 13 | Pending |
 | PNL-14 | Phase 13 | Pending |
-| PNL-15 | Phase 13 | Pending |
-| PNL-16 | Phase 13 | Pending |
+| PNL-15 | Phase 13 | Complete |
+| PNL-16 | Phase 13 | Complete |
 | PNL-17 | Phase 13 | Pending |
 | PNL-18 | Phase 13 | Pending |
 

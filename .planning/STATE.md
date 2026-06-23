@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Phase 13 in progress (1/5 plans)
-stopped_at: Completed 13-aeropanelgroup-01 (spike gate APPROVED, plan 13-01 done)
-last_updated: "2026-06-23T05:25:46.896Z"
-last_activity: 2026-06-22 — Roadmap created, Phase 13 defined
+status: executing
+stopped_at: Completed 13-aeropanelgroup-02 (PanelDistribution.kt pure logic GREEN)
+last_updated: "2026-06-23T05:33:47.221Z"
+last_activity: 2026-06-23 — Plan 13-01 spike gate APPROVED (PNL-PITFALL-01 resolved)
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 5
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -176,6 +176,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 13-aeropanelgroup]: HEADER RESERVATION: availableForExpanded = totalPx - (sectionCount * headerHeightPx) - (activeDividerCount * dividerThicknessPx). All sections always render a header strip.
 - [Phase 13-aeropanelgroup]: DRAG DELTA SCALING: scale = expandedSizeSum / availableForExpanded; apply scaledDelta = delta * scale; min-clamp also in sizePx units.
 - [Phase 13-aeropanelgroup]: DRAG ANIMATION DISABLE (required in 13-04): snap() animationSpec while isDragging=true, tween(200ms, FastOutSlowInEasing) otherwise. isDragging set on awaitFirstDown, cleared in try/finally.
+- [Phase 13]: computeAvailablePx reserves headerPx for ALL sections (sectionCount * headerPx, spike finding 1) plus all-collapsed early-return for PNL-15 invariant
+- [Phase 13]: distributePx and shareTransferOnCollapse use last-index remainder to absorb float drift (PNL-PITFALL-02/05)
 
 ### Pending Todos
 
@@ -189,7 +191,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-23T05:25:46.893Z
-Stopped at: Completed 13-aeropanelgroup-01 (spike gate APPROVED, plan 13-01 done)
+Last session: 2026-06-23T05:33:39.161Z
+Stopped at: Completed 13-aeropanelgroup-02 (PanelDistribution.kt pure logic GREEN)
 Resume file: None
 Next action: `/gsd:plan-phase 13`
