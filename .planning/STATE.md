@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 13-aeropanelgroup-05 (Aero visual polish + showcase demo + three-theme sign-off)
-last_updated: "2026-06-23T06:15:59.491Z"
+stopped_at: Phase 13.1 context gathered
+last_updated: "2026-06-23T06:28:22.190Z"
 last_activity: 2026-06-23 — Plan 13-05 three-theme sign-off APPROVED (PNL-14, PNL-17 closed); phase 13 complete
 progress:
-  total_phases: 1
+  total_phases: 2
   completed_phases: 1
   total_plans: 5
   completed_plans: 5
@@ -99,6 +99,10 @@ Phase 12 (4 plans, 18/18 requirements) — Fix A (seconds trigger) → Fix B (ne
 **v2.0.1:** 4 plans, single-day push (2026-06-22, ~2h20m), 25 commits, 9 code files changed, +520 / −14 lines.
 
 ## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 13.1 inserted after Phase 13: AeroPanelGroup horizontal orientation variant (PNL-HORIZ-01) — side-by-side columns, vertical dividers, drag resizes width; orthogonal to the vertical/stacked AeroPanelGroup shipped in Phase 13. Reuses Phase 13 patterns (PanelDistribution pure logic, aeroDragSplitter Orientation.Horizontal, Pattern 3 + snap()-during-drag, pairwise clamp, headerPx+content target). (INSERTED 2026-06-23)
 
 ### Decisions
 
@@ -199,7 +203,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-23T06:09:40.850Z
-Stopped at: Completed 13-aeropanelgroup-05 (Aero visual polish + showcase demo + three-theme sign-off)
-Resume file: None
+Last session: 2026-06-23T06:28:22.187Z
+Stopped at: Phase 13.1 context gathered
+Resume file: .planning/phases/13.1-aeropanelgroup-horizontal-orientation-variant/13.1-CONTEXT.md
 Next action: `/gsd:plan-phase 13`
