@@ -41,6 +41,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -464,14 +465,16 @@ internal fun AeroPanelGroupImpl(
                         val headerWidthDp = with(density) { headerPx.toDp() }
 
                         // ── Section outer Row: full-height, width = animated main-axis ──────
-                        // Last expanded section uses weight(1f) to absorb float rounding (PNL-PITFALL-11).
+                        // All sections use explicit width(animatedMainPx) — symmetric with the
+                        // vertical branch where each section header has fixed height and the Column
+                        // stacks them without weight on the outer section element. Float-rounding
+                        // for total column widths is already absorbed by distributePx (last-expanded
+                        // remainder rule, PNL-PITFALL-02). weight(1f) belongs only on the CONTENT
+                        // box within the last column (fills remaining space inside that outer Row).
                         Row(
                             modifier = Modifier
                                 .fillMaxHeight()
-                                .then(
-                                    if (i == lastExpandedIdx && isExpandedNow) Modifier.weight(1f)
-                                    else Modifier.width(with(density) { animatedMainPx.toDp() })
-                                ),
+                                .width(with(density) { animatedMainPx.toDp() }),
                         ) {
                             // ── Header strip: full-height, HEADER_HEIGHT-wide (36dp) ──────────
                             // glassPanel for Win7 Aero gloss surface; clip before clickable so
@@ -502,10 +505,12 @@ internal fun AeroPanelGroupImpl(
                                     )
                                 }
 
-                                // Rotated title — fills remaining height, reads bottom-to-top.
-                                // softWrap=false: prevents text wrapping on the unrotated 36dp
-                                // measurement axis. clipToBounds on the parent Box prevents the
-                                // drawn (rotated) text from leaking into the content area. (Pitfall 1)
+                                // Rotated title — fills remaining strip height, reads bottom-to-top.
+                                // Uses a layout modifier to swap width/height measurement constraints
+                                // so the Text is measured against the available column height (not the
+                                // 36dp strip width). graphicsLayer rotationZ is draw-phase only and does
+                                // NOT change the bounding box, which is why this layout swap is required
+                                // to prevent truncation to 36dp. (Pitfall 1 — measurement axis swap)
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
@@ -518,8 +523,24 @@ internal fun AeroPanelGroupImpl(
                                         style = AeroTheme.typography.bodyMedium,
                                         color = AeroTheme.colors.onSurface,
                                         maxLines = 1,
-                                        softWrap = false,
-                                        modifier = Modifier.graphicsLayer { rotationZ = -90f },
+                                        modifier = Modifier.layout { measurable, constraints ->
+                                            // Measure text with maxWidth = available height so the full
+                                            // title fits without truncation along the rotation axis.
+                                            val relaxed = constraints.copy(
+                                                minWidth = 0,
+                                                maxWidth = if (constraints.maxHeight == Int.MAX_VALUE)
+                                                    constraints.maxWidth else constraints.maxHeight,
+                                            )
+                                            val placeable = measurable.measure(relaxed)
+                                            // Report swapped layout dimensions so the Column accounts
+                                            // for the rotated element's footprint correctly.
+                                            layout(placeable.height, placeable.width) {
+                                                placeable.placeRelativeWithLayer(
+                                                    x = -(placeable.width - placeable.height) / 2,
+                                                    y = -(placeable.height - placeable.width) / 2,
+                                                ) { rotationZ = -90f }
+                                            }
+                                        },
                                     )
                                 }
 
