@@ -1,5 +1,6 @@
 package com.mordred.showcase.sections
 
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -241,6 +242,60 @@ fun LayoutSection() {
                         Text("[INFO] Application started", color = colors.onSurface, style = typography.bodyMedium)
                         Text("[WARN] Config missing, using defaults", color = colors.onSurface, style = typography.bodyMedium)
                         Text("[ERROR] Connection timeout", color = colors.onSurface, style = typography.bodyMedium)
+                    }
+                }
+            }
+        }
+
+        // ── AeroPanelGroup horizontal — Win7 Aero side-by-side columns (PNL-HORIZ-01) ──
+        // 90° rotation of the vertical model: vertical dividers, drag resizes WIDTH,
+        // collapsed column = ~36dp full-height header strip with bottom-to-top rotated title.
+        Text("AeroPanelGroup (horizontal)", color = colors.labelText, style = typography.bodyMedium)
+        Box(Modifier.fillMaxWidth().height(320.dp)) {
+            AeroPanelGroup(
+                modifier = Modifier.fillMaxSize(),
+                orientation = Orientation.Horizontal,
+            ) {
+                section(
+                    key = "tree",
+                    title = "Explorer",
+                    leadingIcon = AeroIcons.Folder,
+                ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        repeat(10) { idx ->
+                            Text("src/file_${idx + 1}.kt", color = colors.onSurface, style = typography.bodyMedium)
+                        }
+                    }
+                }
+                section(
+                    key = "editor",
+                    title = "Editor",
+                    headerActions = {
+                        AeroIconButton(onClick = {}) {
+                            Icon(
+                                imageVector = AeroIcons.File,
+                                contentDescription = "New file",
+                                tint = AeroTheme.colors.onSurface,
+                                modifier = Modifier.size(14.dp),
+                            )
+                        }
+                    },
+                ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Text("fun main() {", color = colors.onSurface, style = typography.bodyMedium)
+                        Text("    println(\"Aero\")", color = colors.onSurface, style = typography.bodyMedium)
+                        Text("}", color = colors.onSurface, style = typography.bodyMedium)
+                    }
+                }
+                section(
+                    key = "props",
+                    title = "Properties",
+                    leadingIcon = AeroIcons.Gear,
+                    resizable = false,
+                ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Text("Width: 320", color = colors.onSurface, style = typography.bodyMedium)
+                        Text("Theme: Aero", color = colors.onSurface, style = typography.bodyMedium)
                     }
                 }
             }
