@@ -300,5 +300,92 @@ fun LayoutSection() {
                 }
             }
         }
+
+        // ── AeroPanelGroup horizontal — all collapsible + resizable (PNL-HORIZ-02) ──
+        // Every section has collapsible = true and resizable = true (explicit for clarity).
+        // All dividers between adjacent expanded columns are live drag grips (E/W cursor,
+        // vertical dots). Any column can be collapsed to its 36dp header strip and re-expanded.
+        Text("AeroPanelGroup (horizontal — all collapsible + resizable)", color = colors.labelText, style = typography.bodyMedium)
+        Box(Modifier.fillMaxWidth().height(320.dp)) {
+            AeroPanelGroup(
+                modifier = Modifier.fillMaxSize(),
+                orientation = Orientation.Horizontal,
+            ) {
+                section(
+                    key = "cr-navigator",
+                    title = "Navigator",
+                    collapsible = true,
+                    resizable = true,
+                    leadingIcon = AeroIcons.House,
+                ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Text("Dashboard", color = colors.onSurface, style = typography.bodyMedium)
+                        Text("Reports", color = colors.onSurface, style = typography.bodyMedium)
+                        Text("Settings", color = colors.onSurface, style = typography.bodyMedium)
+                        Text("Help", color = colors.onSurface, style = typography.bodyMedium)
+                    }
+                }
+                section(
+                    key = "cr-sources",
+                    title = "Sources",
+                    collapsible = true,
+                    resizable = true,
+                    leadingIcon = AeroIcons.Database,
+                    headerActions = {
+                        AeroIconButton(onClick = {}) {
+                            Icon(
+                                imageVector = AeroIcons.Folder,
+                                contentDescription = "Add source",
+                                tint = AeroTheme.colors.onSurface,
+                                modifier = Modifier.size(14.dp),
+                            )
+                        }
+                    },
+                ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Text("users (42 rows)", color = colors.onSurface, style = typography.bodyMedium)
+                        Text("orders (128 rows)", color = colors.onSurface, style = typography.bodyMedium)
+                        Text("products (56 rows)", color = colors.onSurface, style = typography.bodyMedium)
+                        Text("sessions (1 024 rows)", color = colors.onSurface, style = typography.bodyMedium)
+                    }
+                }
+                section(
+                    key = "cr-activity",
+                    title = "Activity",
+                    collapsible = true,
+                    resizable = true,
+                    headerActions = {
+                        AeroIconButton(onClick = {}) {
+                            Icon(
+                                imageVector = AeroIcons.Trash,
+                                contentDescription = "Clear activity",
+                                tint = AeroTheme.colors.onSurface,
+                                modifier = Modifier.size(14.dp),
+                            )
+                        }
+                    },
+                ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Text("[INFO] Build succeeded", color = colors.onSurface, style = typography.bodyMedium)
+                        Text("[WARN] Unused import", color = colors.onSurface, style = typography.bodyMedium)
+                        Text("[INFO] Tests passed (37/37)", color = colors.onSurface, style = typography.bodyMedium)
+                        Text("[ERROR] Lint: 2 issues", color = colors.onSurface, style = typography.bodyMedium)
+                    }
+                }
+                section(
+                    key = "cr-alerts",
+                    title = "Alerts",
+                    collapsible = true,
+                    resizable = true,
+                    leadingIcon = AeroIcons.Bell,
+                ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Text("CPU above 80 %", color = colors.onSurface, style = typography.bodyMedium)
+                        Text("Disk at 92 %", color = colors.onSurface, style = typography.bodyMedium)
+                        Text("3 failed logins", color = colors.onSurface, style = typography.bodyMedium)
+                    }
+                }
+            }
+        }
     }
 }
