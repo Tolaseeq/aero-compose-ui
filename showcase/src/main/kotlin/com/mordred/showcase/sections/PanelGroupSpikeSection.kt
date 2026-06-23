@@ -8,6 +8,7 @@ package com.mordred.showcase.sections
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,8 +24,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
@@ -57,6 +60,9 @@ fun PanelGroupSpikeSection() {
         // State: no key on remember — stable across window resize (PITFALL-A guard).
         val sizePx = remember { mutableStateListOf(300f, 300f, 300f) }
         val expanded = remember { mutableStateListOf(true, true, true) }
+        // Drag flag: true while a pointer is pressed on any divider. Switches animationSpec to snap()
+        // so the displayed height tracks the drag instantly. Resets to false on pointer release.
+        var isDragging by remember { mutableStateOf(false) }
 
         // Derived each recompose (NOT stored):
         val density = LocalDensity.current
@@ -77,10 +83,14 @@ fun PanelGroupSpikeSection() {
             else availableForExpanded
 
         // animateFloatAsState READS renderHeight(i) as target — NEVER writes sizePx (PITFALL-01 key rule).
+        // animationSpec switches to snap() while a drag is active so the displayed height equals
+        // renderHeight instantly (1:1 divider tracking). On pointer release isDragging → false;
+        // renderHeight already equals animatedHeight at that moment so there is no catch-up jump.
+        // Collapse/expand toggles (no drag) still animate over 200ms.
         val animatedHeight = sizePx.indices.map { i ->
             animateFloatAsState(
                 targetValue = renderHeight(i),
-                animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
+                animationSpec = if (isDragging) snap() else tween(durationMillis = 200, easing = FastOutSlowInEasing),
                 label = "spikeHeight_$i"
             ).value
         }
@@ -153,15 +163,20 @@ fun PanelGroupSpikeSection() {
                                 awaitPointerEventScope {
                                     while (true) {
                                         awaitFirstDown(requireUnconsumed = false)
-                                        while (true) {
-                                            val event = awaitPointerEvent()
-                                            val change = event.changes.firstOrNull() ?: break
-                                            if (!change.pressed) break
-                                            val delta = change.positionChange().y
-                                            if (delta != 0f) {
-                                                onDragBetween(iCapture, iCapture + 1, delta)
-                                                change.consume()
+                                        isDragging = true
+                                        try {
+                                            while (true) {
+                                                val event = awaitPointerEvent()
+                                                val change = event.changes.firstOrNull() ?: break
+                                                if (!change.pressed) break
+                                                val delta = change.positionChange().y
+                                                if (delta != 0f) {
+                                                    onDragBetween(iCapture, iCapture + 1, delta)
+                                                    change.consume()
+                                                }
                                             }
+                                        } finally {
+                                            isDragging = false
                                         }
                                     }
                                 }
