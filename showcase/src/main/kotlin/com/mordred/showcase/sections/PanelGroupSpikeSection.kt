@@ -63,8 +63,12 @@ fun PanelGroupSpikeSection() {
         val headerHeightPx = with(density) { 36.dp.toPx() }
         val dividerThicknessPx = with(density) { 8.dp.toPx() }
         val activeDividerCount = expanded.zipWithNext().count { (a, b) -> a && b }
-        val collapsedCount = expanded.count { !it }
-        val availableForExpanded = totalPx - collapsedCount * headerHeightPx - activeDividerCount * dividerThicknessPx
+        // BUG-1 FIX (PNL-PITFALL-01 spike finding): every section renders a header regardless of
+        // expanded state, so reserve one headerHeightPx per section, not just per collapsed section.
+        // Previously: collapsedCount * headerHeightPx — wrong, left expanded headers unaccounted for.
+        val totalHeaderPx = sizePx.size * headerHeightPx
+        val availableForExpanded = (totalPx - totalHeaderPx - activeDividerCount * dividerThicknessPx)
+            .coerceAtLeast(0f)
         val expandedSizeSum = sizePx.indices.filter { expanded[it] }.sumOf { sizePx[it].toDouble() }.toFloat()
 
         fun renderHeight(i: Int): Float =
@@ -87,10 +91,21 @@ fun PanelGroupSpikeSection() {
         val liveTotalPx by rememberUpdatedState(totalPx)
         val onDragBetween: (Int, Int, Float) -> Unit = { above, below, delta ->
             val combined = sizePx[above] + sizePx[below]
-            val minPx = with(density) { 60.dp.toPx() }
-            // Inline clampDividerPx: safeMax guard prevents coerceIn throw when combined < 2*minPx (PITFALL-B)
-            val safeMax = (combined - minPx).coerceAtLeast(minPx)
-            val newAbove = (sizePx[above] + delta).coerceIn(minPx, safeMax)
+            // BUG-2 FIX (PNL-PITFALL-01 spike finding): `delta` arrives in rendered pixels but sizePx
+            // is in abstract units. The rendered height of a section is:
+            //   renderHeight(i) = (sizePx[i] / expandedSizeSum) * availableForExpanded
+            // So 1 rendered pixel == (expandedSizeSum / availableForExpanded) sizePx units.
+            // Scaling delta before applying ensures the divider tracks the cursor 1:1.
+            // `combined` (above + below) is constant during the gesture, so expandedSizeSum is
+            // unchanged by this drag — the scale factor is stable for the whole gesture.
+            val scale = if (availableForExpanded > 0f) expandedSizeSum / availableForExpanded else 1f
+            val scaledDelta = delta * scale
+            // Min clamp must also be in sizePx units (rendered minPx converted by the same scale).
+            val minRenderedPx = with(density) { 60.dp.toPx() }
+            val minSizeUnits = minRenderedPx * scale
+            // Inline clampDividerPx: safeMax guard prevents coerceIn throw when combined < 2*minSizeUnits (PITFALL-B)
+            val safeMax = (combined - minSizeUnits).coerceAtLeast(minSizeUnits)
+            val newAbove = (sizePx[above] + scaledDelta).coerceIn(minSizeUnits, safeMax)
             sizePx[above] = newAbove
             sizePx[below] = combined - newAbove
         }
