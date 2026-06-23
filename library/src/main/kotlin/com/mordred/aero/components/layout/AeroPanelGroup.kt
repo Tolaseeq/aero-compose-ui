@@ -235,8 +235,11 @@ public fun AeroPanelGroup(
  * Internal core implementation for [AeroPanelGroup]. Contains all layout/state/drag logic.
  * The public wrapper collects DSL sections and forwards them here along with [orientation].
  *
- * In this plan [orientation] is received and threaded to [PanelGroupDivider] but the layout
- * body remains the existing vertical [Column] path verbatim — horizontal branching is Plan 02.
+ * Orientation branch: [Orientation.Vertical] renders a [Column] of horizontal header strips +
+ * content boxes (Phase 13 shipped model). [Orientation.Horizontal] renders a [Row] of full-height
+ * section columns, each with a ~36dp-wide vertical header strip (rotated title, 0°/180° chevron)
+ * and a drag-resizable content area (PNL-HORIZ-01). All shared state/drag/animation logic is
+ * orientation-agnostic — only the container, axis, and size modifiers differ per orientation.
  */
 @Composable
 internal fun AeroPanelGroupImpl(
@@ -315,10 +318,12 @@ internal fun AeroPanelGroupImpl(
     }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        val totalPx = constraints.maxHeight.toFloat()
+        // Axis switch: horizontal reads width, vertical reads height (AeroSplitPane pattern, lines 99-102).
+        val isHorizontal = orientation == Orientation.Horizontal
+        val totalPx = if (isHorizontal) constraints.maxWidth.toFloat() else constraints.maxHeight.toFloat()
 
         // rememberUpdatedState(totalPx) so any drag lambda that was captured once always reads
-        // the live container height — prevents snap-back after a window resize mid-drag (FIXSP-01).
+        // the live container dimension — prevents snap-back after a window resize mid-drag (FIXSP-01).
         val liveTotalPx by rememberUpdatedState(totalPx)
 
         val expandedArr = expandedState.toBooleanArray()
@@ -411,10 +416,16 @@ internal fun AeroPanelGroupImpl(
             animated
         }
 
-        // --- Per-section caret rotations (Win7 Aero: 0 -> 90 degrees on expand) ---
+        // --- Per-section caret rotations ---
+        // Vertical: CaretRight rotates 0->90° on expand (Win7 Aero, points down when expanded).
+        // Horizontal: CaretRight at 0° points ► (expanded), 180° points ◄ (collapsed). (Pitfall 4)
         val caretRotations = sections.indices.map { i ->
             val rotation by animateFloatAsState(
-                targetValue = if (expandedState.getOrElse(i) { false }) 90f else 0f,
+                targetValue = if (isHorizontal) {
+                    if (expandedState.getOrElse(i) { false }) 0f else 180f   // expanded ►, collapsed ◄
+                } else {
+                    if (expandedState.getOrElse(i) { false }) 90f else 0f    // existing vertical
+                },
                 animationSpec = tween(durationMillis = 160, easing = FastOutSlowInEasing),
                 label = "caret_${sections[i].key}",
             )
@@ -424,113 +435,259 @@ internal fun AeroPanelGroupImpl(
         // --- Find the last expanded section index for weight(1f) assignment ---
         val lastExpandedIdx = expandedState.indexOfLast { it }
 
-        Column(modifier = Modifier.fillMaxSize()) {
-            sections.forEachIndexed { i, section ->
-                key(section.key) {
-                    val isExpandedNow = expandedState.getOrElse(i) { false }
-                    val animatedHeightPx = animatedHeights[i]
-                    val animatedHeightDp = with(density) { animatedHeightPx.toDp() }
-                    val caretRotation = caretRotations[i]
+        if (isHorizontal) {
+            // ── HORIZONTAL BRANCH: N side-by-side columns ──────────────────────────────
+            // Each section is a Row(header strip | content area) sized along the X axis.
+            // animatedHeights[i] is REINTERPRETED as animated WIDTH-px in this branch —
+            // the same state, shared logic, and distributePx math are fully orientation-agnostic.
+            // Do not collapse to one branch — both paths are intentional (PNL-08).
+            Row(modifier = Modifier.fillMaxSize()) {
+                sections.forEachIndexed { i, section ->
+                    key(section.key) {
+                        val isExpandedNow = expandedState.getOrElse(i) { false }
+                        val animatedMainPx = animatedHeights[i]   // main-axis px (width in horizontal)
+                        val caretRotation = caretRotations[i]
+                        val headerWidthDp = with(density) { headerPx.toDp() }
 
-                    // Header strip — fixed 36dp, always rendered.
-                    // glassPanel(8.dp) for Win7 Aero gloss/gradient surface; clip before clickable
-                    // so hover/press highlight clips to the rounded glass surface (F-ACCORDION-HOVER).
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(HEADER_HEIGHT)
-                            .glassPanel(cornerRadius = 8.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .then(
-                                if (section.collapsible) Modifier.clickable { onToggle(i) }
-                                else Modifier
-                            )
-                            .padding(horizontal = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        // CaretRight: only when collapsible (PNL-11 — collapsible=false hides chevron).
-                        // Rotates 0->90 degrees on expand (Win7 Aero caret — AeroAccordion pattern).
-                        if (section.collapsible) {
-                            Icon(
-                                imageVector = AeroIcons.CaretRight,
-                                contentDescription = null,
-                                tint = AeroTheme.colors.onSurface,
+                        // ── Section outer Row: full-height, width = animated main-axis ──────
+                        // Last expanded section uses weight(1f) to absorb float rounding (PNL-PITFALL-11).
+                        Row(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .then(
+                                    if (i == lastExpandedIdx && isExpandedNow) Modifier.weight(1f)
+                                    else Modifier.width(with(density) { animatedMainPx.toDp() })
+                                ),
+                        ) {
+                            // ── Header strip: full-height, HEADER_HEIGHT-wide (36dp) ──────────
+                            // glassPanel for Win7 Aero gloss surface; clip before clickable so
+                            // hover/press highlight clips to rounded glass (F-ACCORDION-HOVER).
+                            Column(
                                 modifier = Modifier
-                                    .size(18.dp)
-                                    .graphicsLayer { rotationZ = caretRotation },
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                        }
+                                    .fillMaxHeight()
+                                    .width(HEADER_HEIGHT)       // reuse 36dp constant as WIDTH
+                                    .glassPanel(cornerRadius = 8.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .then(
+                                        if (section.collapsible) Modifier.clickable { onToggle(i) }
+                                        else Modifier
+                                    ),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                // Chevron at strip top: only when collapsible (PNL-11).
+                                // 0° = ► (expanded), 180° = ◄ (collapsed) — horizontal model.
+                                if (section.collapsible) {
+                                    Spacer(Modifier.height(8.dp))
+                                    Icon(
+                                        imageVector = AeroIcons.CaretRight,
+                                        contentDescription = null,
+                                        tint = AeroTheme.colors.onSurface,
+                                        modifier = Modifier
+                                            .size(18.dp)
+                                            .graphicsLayer { rotationZ = caretRotation },
+                                    )
+                                }
 
-                        // leadingIcon: rendered with explicit tint (v1.1 rule).
-                        section.leadingIcon?.let { icon ->
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = null,
-                                tint = AeroTheme.colors.onSurface,
-                                modifier = Modifier.size(16.dp),
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                        }
+                                // Rotated title — fills remaining height, reads bottom-to-top.
+                                // softWrap=false: prevents text wrapping on the unrotated 36dp
+                                // measurement axis. clipToBounds on the parent Box prevents the
+                                // drawn (rotated) text from leaking into the content area. (Pitfall 1)
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxWidth()
+                                        .clipToBounds(),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = section.title,
+                                        style = AeroTheme.typography.bodyMedium,
+                                        color = AeroTheme.colors.onSurface,
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        modifier = Modifier.graphicsLayer { rotationZ = -90f },
+                                    )
+                                }
 
-                        // Title fills remaining space so headerActions sit at the far right.
-                        Text(
-                            text = section.title,
-                            style = AeroTheme.typography.bodyMedium,
-                            color = AeroTheme.colors.onSurface,
-                            modifier = Modifier.weight(1f),
-                        )
+                                // leadingIcon below title (v1.1 rule: tint always explicit).
+                                section.leadingIcon?.let { icon ->
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = null,
+                                        tint = AeroTheme.colors.onSurface,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                }
 
-                        // headerActions: rendered in BOTH collapsed and expanded states (always in header strip).
-                        // Non-bubbling: the actions Row does not have the toggle clickable on it —
-                        // action clicks are consumed by each action's own onClick handler and do NOT
-                        // propagate to the outer Row toggle (PNL-14 / VS Code model).
-                        section.headerActions?.let { actions ->
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                actions()
+                                // headerActions at bottom of strip.
+                                // headerActions is @Composable RowScope.() -> Unit — hosted in Row.
+                                // Non-bubbling: actions consumed by their own onClick, not toggle (PNL-14).
+                                section.headerActions?.let { actions ->
+                                    Spacer(Modifier.height(6.dp))
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Row { actions() }
+                                    }
+                                    Spacer(Modifier.height(8.dp))
+                                }
+                            }
+
+                            // ── Content area — only when expanded (or mid-animation) ──────────
+                            // Content width = total animated column width minus the 36dp header strip.
+                            // Last expanded section uses weight(1f); others use explicit .width(dp).
+                            if (isExpandedNow || animatedMainPx > headerPx) {
+                                if (i == lastExpandedIdx && isExpandedNow) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxHeight()
+                                            .weight(1f)
+                                            .clipToBounds(),
+                                    ) { section.content() }
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxHeight()
+                                            .width(with(density) { animatedMainPx.toDp() } - headerWidthDp)
+                                            .clipToBounds(),
+                                    ) { section.content() }
+                                }
                             }
                         }
-                    }
 
-                    // Expanded content — height driven by animatedHeightPx (not raw renderHeights).
-                    // Last expanded section uses weight(1f) to absorb float rounding (PNL-PITFALL-11);
-                    // all others use explicit .height(dp).
-                    if (isExpandedNow || animatedHeightPx > headerPx) {
-                        if (i == lastExpandedIdx && isExpandedNow) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f)
-                                    .clipToBounds(),
-                            ) { section.content() }
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(animatedHeightDp - HEADER_HEIGHT)
-                                    .clipToBounds(),
-                            ) { section.content() }
+                        // Vertical drag divider — only between two adjacent EXPANDED sections (PNL-06, PNL-PITFALL-09).
+                        // Passes Orientation.Horizontal so aeroDragSplitter uses E_RESIZE cursor
+                        // and X-axis positionChange().x delta. Drag disabled when either neighbor
+                        // has resizable=false (PNL-12).
+                        val nextExpanded = expandedState.getOrElse(i + 1) { false }
+                        if (isExpandedNow && i < sections.lastIndex && nextExpanded) {
+                            val dragEnabled = section.resizable && sections[i + 1].resizable
+                            PanelGroupDivider(
+                                orientation = Orientation.Horizontal,  // vertical grip, E/W cursor, X-axis delta
+                                onDrag = { delta ->
+                                    isDragging = true
+                                    onDragBetween(i, i + 1, delta)
+                                },
+                                onDragEnd = {
+                                    isDragging = false
+                                    // onLayoutChange fires at drag-end (PNL-09) — NOT per drag frame.
+                                    onLayoutChange?.invoke(sizePx.toList())
+                                },
+                                enabled = dragEnabled,
+                            )
                         }
                     }
+                }
+            }
+        } else {
+            // ── VERTICAL BRANCH (existing — untouched from Plan 01) ─────────────────────
+            // Do not collapse to one branch — both paths are intentional (PNL-08).
+            Column(modifier = Modifier.fillMaxSize()) {
+                sections.forEachIndexed { i, section ->
+                    key(section.key) {
+                        val isExpandedNow = expandedState.getOrElse(i) { false }
+                        val animatedHeightPx = animatedHeights[i]
+                        val animatedHeightDp = with(density) { animatedHeightPx.toDp() }
+                        val caretRotation = caretRotations[i]
 
-                    // Drag divider — only between two adjacent EXPANDED sections (PNL-06, PNL-PITFALL-09).
-                    // Drag is disabled when either neighbor has resizable = false (PNL-12).
-                    val nextExpanded = expandedState.getOrElse(i + 1) { false }
-                    if (isExpandedNow && i < sections.lastIndex && nextExpanded) {
-                        val dragEnabled = section.resizable && sections[i + 1].resizable
-                        PanelGroupDivider(
-                            orientation = Orientation.Vertical,
-                            onDrag = { delta ->
-                                isDragging = true
-                                onDragBetween(i, i + 1, delta)
-                            },
-                            onDragEnd = {
-                                isDragging = false
-                                // onLayoutChange fires at drag-end (PNL-09) — NOT per drag frame.
-                                onLayoutChange?.invoke(sizePx.toList())
-                            },
-                            enabled = dragEnabled,
-                        )
+                        // Header strip — fixed 36dp, always rendered.
+                        // glassPanel(8.dp) for Win7 Aero gloss/gradient surface; clip before clickable
+                        // so hover/press highlight clips to the rounded glass surface (F-ACCORDION-HOVER).
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(HEADER_HEIGHT)
+                                .glassPanel(cornerRadius = 8.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .then(
+                                    if (section.collapsible) Modifier.clickable { onToggle(i) }
+                                    else Modifier
+                                )
+                                .padding(horizontal = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            // CaretRight: only when collapsible (PNL-11 — collapsible=false hides chevron).
+                            // Rotates 0->90 degrees on expand (Win7 Aero caret — AeroAccordion pattern).
+                            if (section.collapsible) {
+                                Icon(
+                                    imageVector = AeroIcons.CaretRight,
+                                    contentDescription = null,
+                                    tint = AeroTheme.colors.onSurface,
+                                    modifier = Modifier
+                                        .size(18.dp)
+                                        .graphicsLayer { rotationZ = caretRotation },
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                            }
+
+                            // leadingIcon: rendered with explicit tint (v1.1 rule).
+                            section.leadingIcon?.let { icon ->
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = null,
+                                    tint = AeroTheme.colors.onSurface,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                            }
+
+                            // Title fills remaining space so headerActions sit at the far right.
+                            Text(
+                                text = section.title,
+                                style = AeroTheme.typography.bodyMedium,
+                                color = AeroTheme.colors.onSurface,
+                                modifier = Modifier.weight(1f),
+                            )
+
+                            // headerActions: rendered in BOTH collapsed and expanded states (always in header strip).
+                            // Non-bubbling: the actions Row does not have the toggle clickable on it —
+                            // action clicks are consumed by each action's own onClick handler and do NOT
+                            // propagate to the outer Row toggle (PNL-14 / VS Code model).
+                            section.headerActions?.let { actions ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    actions()
+                                }
+                            }
+                        }
+
+                        // Expanded content — height driven by animatedHeightPx (not raw renderHeights).
+                        // Last expanded section uses weight(1f) to absorb float rounding (PNL-PITFALL-11);
+                        // all others use explicit .height(dp).
+                        if (isExpandedNow || animatedHeightPx > headerPx) {
+                            if (i == lastExpandedIdx && isExpandedNow) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .weight(1f)
+                                        .clipToBounds(),
+                                ) { section.content() }
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(animatedHeightDp - HEADER_HEIGHT)
+                                        .clipToBounds(),
+                                ) { section.content() }
+                            }
+                        }
+
+                        // Drag divider — only between two adjacent EXPANDED sections (PNL-06, PNL-PITFALL-09).
+                        // Drag is disabled when either neighbor has resizable = false (PNL-12).
+                        val nextExpanded = expandedState.getOrElse(i + 1) { false }
+                        if (isExpandedNow && i < sections.lastIndex && nextExpanded) {
+                            val dragEnabled = section.resizable && sections[i + 1].resizable
+                            PanelGroupDivider(
+                                orientation = Orientation.Vertical,
+                                onDrag = { delta ->
+                                    isDragging = true
+                                    onDragBetween(i, i + 1, delta)
+                                },
+                                onDragEnd = {
+                                    isDragging = false
+                                    // onLayoutChange fires at drag-end (PNL-09) — NOT per drag frame.
+                                    onLayoutChange?.invoke(sizePx.toList())
+                                },
+                                enabled = dragEnabled,
+                            )
+                        }
                     }
                 }
             }
