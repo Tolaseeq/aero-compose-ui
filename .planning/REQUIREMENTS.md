@@ -27,7 +27,7 @@
 
 ### Behavior & API (PNL — configuration)
 
-- [ ] **PNL-07**: Collapse/expand анимируется за 200ms FastOutSlowInEasing; drag пишет размер напрямую без анимации (риск-спайк: совмещение анимации и drag без конфликта two-writer)
+- [x] **PNL-07**: Collapse/expand анимируется за 200ms FastOutSlowInEasing; drag пишет размер напрямую без анимации (риск-спайк: совмещение анимации и drag без конфликта two-writer)
 - [ ] **PNL-08**: Состояние раскрытия — гибрид controlled/uncontrolled (`onExpandedChange == null` → uncontrolled; non-null → controlled pure renderer), строго по паттерну `AeroAccordion`
 - [ ] **PNL-09**: Внутреннее состояние размеров — uncontrolled; наружу экспонируется через `onLayoutChange` (срабатывает на drag-end и на collapse/expand) для персиста/восстановления
 - [ ] **PNL-10**: Каждая секция задаёт свой `minSize` (дефолт-константа), кламп ресайза учитывает Σ минимумов всех секций ниже разделителя (N-section clamp, не только сосед)
@@ -75,7 +75,7 @@
 | PNL-04 | Phase 13 | Pending |
 | PNL-05 | Phase 13 | Pending |
 | PNL-06 | Phase 13 | Pending |
-| PNL-07 | Phase 13 | Pending |
+| PNL-07 | Phase 13 | Complete |
 | PNL-08 | Phase 13 | Pending |
 | PNL-09 | Phase 13 | Pending |
 | PNL-10 | Phase 13 | Pending |

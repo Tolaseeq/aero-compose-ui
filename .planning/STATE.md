@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Phase 13 not started
-stopped_at: Phase 13 context gathered
-last_updated: "2026-06-22T17:55:26.139Z"
+status: Phase 13 in progress (1/5 plans)
+stopped_at: Completed 13-aeropanelgroup-01 (spike gate APPROVED, plan 13-01 done)
+last_updated: "2026-06-23T05:25:46.896Z"
 last_activity: 2026-06-22 — Roadmap created, Phase 13 defined
 progress:
   total_phases: 1
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 5
+  completed_plans: 1
 ---
 
 # Project State
@@ -24,16 +24,17 @@ See: .planning/PROJECT.md (updated 2026-06-22 — after v2.0.1 milestone)
 
 ## Current Position
 
-Phase: 13 — AeroPanelGroup (not started)
-Plan: —
-Status: Phase 13 not started
-Last activity: 2026-06-22 — Roadmap created, Phase 13 defined
+Phase: 13 — AeroPanelGroup (in progress)
+Plan: 01 complete — next: 13-02 (Pure-logic TDD, PanelDistribution.kt)
+Status: Phase 13 in progress — 1/5 plans complete
+Last activity: 2026-06-23 — Plan 13-01 spike gate APPROVED (PNL-PITFALL-01 resolved)
 
 ```
-v2.0.1 ✅ SHIPPED → v2.0.2 AeroPanelGroup [Phase 13: not started] ◆ awaiting plan-phase
+v2.0.1 ✅ SHIPPED → v2.0.2 AeroPanelGroup [Phase 13: 1/5 plans] ◆ spike gate passed
+[██░░░░░░░░] 20%
 ```
 
-Progress: 0/1 phases complete (0/TBD plans)
+Progress: 0/1 phases complete (1/5 plans)
 
 ## Shipped Milestones
 
@@ -171,6 +172,10 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
   2. DRAG DELTA SCALING: Raw pixel delta from pointer events is in rendered pixels; `sizePx` values are abstract proportion units. Before applying: `val scale = expandedSizeSum / availableForExpanded` (constant during a single drag gesture since combined=above+below is invariant). Apply `scaledDelta = delta * scale`. Min-clamp must also use sizePx units: `minSizeUnits = minRenderedPx * scale`. The PITFALL-B safeMax guard pattern (coerceAtLeast) is preserved, now in sizePx unit space.
   3. `availableForExpanded` must be guarded with `.coerceAtLeast(0f)` to prevent negative heights when all sections are collapsed.
   4. DRAG ANIMATION DISABLE (required in plan 13-04 AeroPanelGroup drag path): `animateFloatAsState` must switch to `snap()` while a drag is active, and revert to `tween(200ms, FastOutSlowInEasing)` otherwise. Pattern: `var isDragging by remember { mutableStateOf(false) }` flag; set true on `awaitFirstDown`, reset false in `try/finally` around the inner drag loop so all exit paths (release or `change == null`) clear it. With `snap()`, `animatedHeight == renderHeight` instantly during drag — the divider tracks the cursor 1:1. On release `renderHeight` already equals `animatedHeight`, so there is no catch-up tween or positional jump. Collapse/expand toggles (no drag) still animate over 200ms. The `tween(durationMillis = 200` branch must be retained (else branch) so the required-token gate still passes.
+- [Phase 13-aeropanelgroup]: PNL-PITFALL-01 RESOLVED: animateFloatAsState reads renderHeight as target; drag writes sizePx directly (Pattern 3). No snap-back, no oscillation confirmed by human gate.
+- [Phase 13-aeropanelgroup]: HEADER RESERVATION: availableForExpanded = totalPx - (sectionCount * headerHeightPx) - (activeDividerCount * dividerThicknessPx). All sections always render a header strip.
+- [Phase 13-aeropanelgroup]: DRAG DELTA SCALING: scale = expandedSizeSum / availableForExpanded; apply scaledDelta = delta * scale; min-clamp also in sizePx units.
+- [Phase 13-aeropanelgroup]: DRAG ANIMATION DISABLE (required in 13-04): snap() animationSpec while isDragging=true, tween(200ms, FastOutSlowInEasing) otherwise. isDragging set on awaitFirstDown, cleared in try/finally.
 
 ### Pending Todos
 
@@ -184,7 +189,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-22T17:55:26.135Z
-Stopped at: Phase 13 context gathered
-Resume file: .planning/phases/13-aeropanelgroup/13-CONTEXT.md
+Last session: 2026-06-23T05:25:46.893Z
+Stopped at: Completed 13-aeropanelgroup-01 (spike gate APPROVED, plan 13-01 done)
+Resume file: None
 Next action: `/gsd:plan-phase 13`
