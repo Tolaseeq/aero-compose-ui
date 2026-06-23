@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mordred.aero.components.internal.drag.aeroDragSplitter
@@ -522,23 +523,29 @@ internal fun AeroPanelGroupImpl(
                                         text = section.title,
                                         style = AeroTheme.typography.bodyMedium,
                                         color = AeroTheme.colors.onSurface,
-                                        maxLines = 1,
                                         modifier = Modifier.layout { measurable, constraints ->
-                                            // Measure text with maxWidth = available height so the full
-                                            // title fits without truncation along the rotation axis.
-                                            val relaxed = constraints.copy(
-                                                minWidth = 0,
-                                                maxWidth = if (constraints.maxHeight == Int.MAX_VALUE)
-                                                    constraints.maxWidth else constraints.maxHeight,
+                                            // Measure the text with the column's available HEIGHT as its
+                                            // max WIDTH so the full title fits before rotation. Relax
+                                            // height so it is never truncated.
+                                            val placeable = measurable.measure(
+                                                constraints.copy(
+                                                    minWidth = 0,
+                                                    maxWidth = constraints.maxHeight,
+                                                    minHeight = 0,
+                                                    maxHeight = Constraints.Infinity,
+                                                )
                                             )
-                                            val placeable = measurable.measure(relaxed)
-                                            // Report swapped layout dimensions so the Column accounts
-                                            // for the rotated element's footprint correctly.
+                                            // After a -90 rotation the footprint is swapped: report height x width.
                                             layout(placeable.height, placeable.width) {
                                                 placeable.placeRelativeWithLayer(
-                                                    x = -(placeable.width - placeable.height) / 2,
-                                                    y = -(placeable.height - placeable.width) / 2,
-                                                ) { rotationZ = -90f }
+                                                    // Compensating offset: re-centers the placeable (W x H) so that,
+                                                    // after rotating -90 about its own center, the rotated box (H x W)
+                                                    // is centered in the reported (H x W) layout box.
+                                                    x = -(placeable.width / 2 - placeable.height / 2),
+                                                    y = -(placeable.height / 2 - placeable.width / 2),
+                                                ) {
+                                                    rotationZ = -90f
+                                                }
                                             }
                                         },
                                     )
