@@ -2,9 +2,14 @@ package com.mordred.aero.components.layout
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -21,7 +26,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -30,6 +38,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.mordred.aero.components.internal.drag.aeroDragSplitter
+import com.mordred.aero.components.layout.internal.panelgroup.clampPanelDividerPx
 import com.mordred.aero.components.layout.internal.panelgroup.computeAvailablePx
 import com.mordred.aero.components.layout.internal.panelgroup.distributePx
 import com.mordred.aero.components.layout.internal.panelgroup.lastExpandedFraction
@@ -80,14 +90,15 @@ public class AeroPanelGroupScope internal constructor() {
      *   REQ: PNL-13.
      * @param title header text displayed in the section header strip.
      * @param minSize minimum rendered height of the expanded content area. REQ: PNL-10.
-     * @param collapsible when false the section header does not respond to clicks.
-     * @param resizable when true a drag divider can resize adjacent expanded sections (13-04).
+     * @param collapsible when false the section header does not respond to clicks. REQ: PNL-11.
+     * @param resizable when true a drag divider can resize this section against an adjacent
+     *   expanded neighbor. Both neighbors must be resizable for drag to activate. REQ: PNL-12.
      * @param defaultExpanded initial expanded state when no [AeroPanelGroup.initiallyExpanded]
-     *   override is present.
+     *   override is present. Also the default when [AeroPanelGroup.expandedKeys] is null.
      * @param defaultSize if non-null, the section's initial sizePx seed is derived from this Dp
      *   value rather than an equal share. Useful to pre-weight sections differently.
      * @param leadingIcon optional icon displayed left of [title] in the header.
-     * @param headerActions optional trailing content placed at the end of the header row (13-05).
+     * @param headerActions optional trailing content placed at the end of the header row. REQ: PNL-14.
      * @param content composable content rendered inside the expanded area.
      */
     public fun section(
@@ -120,44 +131,77 @@ public class AeroPanelGroupScope internal constructor() {
 }
 
 /**
- * A vertical panel group with N sections that can be collapsed/expanded and optionally resized.
+ * PNL-01: A scope-DSL vertical panel group with N independently collapsible and resizable sections.
  *
- * ## Layout model
- * - Each section always renders a [HEADER_HEIGHT] strip (36dp).
- * - Expanded sections divide the remaining height proportionally via fraction-based [sizePx] state.
- * - Window resize recalculates pixel heights from the current container height every recompose
- *   without resetting proportions — fraction state has no totalPx remember-key (PITFALL-A).
- * - Collapse/expand toggles redistribute shares to/from neighbors via
- *   [shareTransferOnCollapse]/[shareTransferOnExpand]. Re-expanding restores the section's prior
- *   proportional size from [lastExpandedFraction] (PNL-PITFALL-06).
- * - A 1dp divider is rendered only between adjacent pairs of **expanded** sections; collapsed
- *   boundaries never get a divider (PNL-PITFALL-09).
+ * ## Expansion ownership model
  *
- * ## Uncontrolled expansion
- * This composable manages expansion state internally. A controlled path (onExpandedChange /
- * expandedKeys params) lands in plan 13-04.
+ * When [onExpandedChange] is `null`, the component manages expansion state internally
+ * (uncontrolled). The [initiallyExpanded] set seeds the initial state; the caller is not
+ * involved in subsequent toggles. REQ: PNL-08.
  *
- * ## Deferred features
- * - Drag-resize between sections (plan 13-04).
- * - Visual polish: glassPanel header, CaretRight animation, grip dots (plan 13-05).
+ * When [onExpandedChange] is non-null, the component is a **controlled pure renderer**:
+ * it reads [expandedKeys] on every recompose and calls [onExpandedChange] on every toggle,
+ * but does not update any internal set — the caller must respond by updating [expandedKeys].
+ * REQ: PNL-08.
  *
- * REQ: PNL-01, PNL-02, PNL-03, PNL-04, PNL-13, PNL-15.
+ * Do not collapse to one branch — both paths are intentional (matches AeroAccordion
+ * hybrid-ownership convention) (PNL-08).
+ *
+ * ## Sizing model
+ *
+ * Section heights are stored as abstract proportion weights in `sizePx`
+ * ([androidx.compose.runtime.SnapshotStateList]). Absolute pixel heights are derived every
+ * recompose from the current container height, so window resize re-anchors proportions
+ * without resetting state — the fraction coordinate has no totalPx remember-key (PITFALL-A).
+ * REQ: PNL-04.
+ *
+ * Re-expanding a collapsed section restores its last proportional size from a saved fraction
+ * (PNL-03, PNL-PITFALL-06).
+ *
+ * ## Divider and drag resize
+ *
+ * A drag grip is placed **only between two adjacent expanded sections** via a zipWithNext-style
+ * render condition (PNL-06, PNL-PITFALL-09). Collapsed boundaries never receive a grip.
+ *
+ * Drag writes `sizePx` directly — no animation wrapper — so the boundary tracks the cursor 1:1.
+ * While a drag is active the per-section animation spec switches to `snap()` to prevent the
+ * `animateFloatAsState` tween from lagging behind. On release the spec reverts to
+ * `tween(200ms, FastOutSlowInEasing)` for collapse/expand transitions (PNL-05, PITFALL-A).
+ *
+ * N-section drag clamp: the minimum allowed size for the section above the divider is its
+ * own [AeroPanelGroupScope.section] minSize; the minimum for the section below is the
+ * sum of minSizes of all expanded sections at or below the divider. Clamp math is delegated
+ * to [clampPanelDividerPx] which carries the PITFALL-B `coerceAtLeast` guard (PNL-10,
+ * PNL-PITFALL-04).
+ *
+ * Drag is disabled when either neighbor has `resizable = false` (PNL-12).
+ *
+ * ## onLayoutChange firing contract
+ *
+ * [onLayoutChange] fires exactly at drag-end and at each collapse/expand toggle. It does NOT
+ * fire on every drag frame (PNL-09).
  *
  * @param modifier applied to the outermost [BoxWithConstraints].
  * @param initiallyExpanded if non-null, overrides [AeroPanelGroupScope.section] defaultExpanded
- *   flags; only keys present in this set start expanded. If null, each section uses its own
- *   defaultExpanded value.
- * @param onLayoutChange optional callback receiving the list of current render heights (in px)
- *   after each recompose — useful for external layout mirroring.
+ *   flags on first composition; only keys present in this set start expanded. If null, each
+ *   section uses its own defaultExpanded value. Used in uncontrolled mode only.
+ * @param expandedKeys controlled expansion set. Must be non-null when [onExpandedChange] is
+ *   non-null. Each section whose [AeroPanelGroupScope.section] key is present in this set is
+ *   rendered expanded; the component does not hold any internal expansion state in controlled mode.
+ * @param onExpandedChange when non-null the component becomes controlled: this callback is
+ *   invoked after every toggle with the new desired set of expanded keys. The caller must
+ *   respond by updating [expandedKeys]. When null the component manages expansion internally.
+ * @param onLayoutChange optional callback fired at drag-end and at each collapse/expand toggle
+ *   with the current list of render heights in pixels (one entry per section in declaration
+ *   order). REQ: PNL-09.
  * @param content DSL scope where sections are declared via [AeroPanelGroupScope.section].
- *
- * TODO(13-04): add onExpandedChange: ((Set<String>) -> Unit)? = null and
- *   expandedKeys: Set<String>? = null for the controlled expansion path.
  */
 @Composable
 public fun AeroPanelGroup(
     modifier: Modifier = Modifier,
     initiallyExpanded: Set<String>? = null,
+    expandedKeys: Set<String>? = null,
+    onExpandedChange: ((Set<String>) -> Unit)? = null,
     onLayoutChange: ((List<Float>) -> Unit)? = null,
     content: @Composable AeroPanelGroupScope.() -> Unit,
 ) {
@@ -170,71 +214,162 @@ public fun AeroPanelGroup(
     val headerPx = with(density) { HEADER_HEIGHT.toPx() }
     val dividerPx = with(density) { DIVIDER_THICKNESS.toPx() }
 
-    // --- Fraction-based state — NO totalPx remember-key (PITFALL-A) ---
+    // Hybrid-ownership derivation (PNL-08).
+    // Do not collapse to one branch — both paths are intentional
+    // (matches AeroAccordion hybrid-ownership convention) (PNL-08).
+    val controlled = onExpandedChange != null
+
+    // --- Uncontrolled internal expansion state ---
+    // Only written in the uncontrolled branch; ignored when controlled == true.
+    var internalExpanded by remember { mutableStateOf(emptySet<String>()) }
+
+    // --- Fraction-based size state — NO totalPx remember-key (PITFALL-A) ---
     // sizePx stores abstract proportion weights, not absolute pixels.
     // Absolute pixel heights are derived every recompose from totalPx.
     val sizePx = remember { mutableStateListOf<Float>() }
     val expandedState = remember { mutableStateListOf<Boolean>() }
     val lastExpandedFractionState = remember { mutableStateListOf<Float>() }
 
-    // Seed state lists when sections count changes (first composition or DSL change).
+    // isDragging flag: true while a pointer is held on a divider. Switches animationSpec
+    // to snap() so the per-section animateFloatAsState does not lag the cursor (spike finding 4,
+    // DRAG ANIMATION DISABLE). Cleared in onDragEnd so all exit paths reset it.
+    var isDragging by remember { mutableStateOf(false) }
+
+    // Seed state lists on first composition or when DSL structure changes.
     if (sizePx.size != sections.size) {
         sizePx.clear()
         expandedState.clear()
         lastExpandedFractionState.clear()
         sections.forEach { sec ->
-            // defaultSize in Dp → seed sizePx with its px value; else use 1f (equal share).
             sizePx.add(if (sec.defaultSize != null) with(density) { sec.defaultSize.toPx() } else 1f)
-            val exp = if (initiallyExpanded != null) sec.key in initiallyExpanded else sec.defaultExpanded
+            val exp = when {
+                initiallyExpanded != null -> sec.key in initiallyExpanded
+                else -> sec.defaultExpanded
+            }
             expandedState.add(exp)
             lastExpandedFractionState.add(0f)
         }
+        // Also seed the internal uncontrolled set.
+        internalExpanded = sections
+            .filter { sec ->
+                when {
+                    initiallyExpanded != null -> sec.key in initiallyExpanded
+                    else -> sec.defaultExpanded
+                }
+            }
+            .map { it.key }
+            .toSet()
+    }
+
+    // --- Expansion helpers ---
+
+    // isExpanded: derived from controlled params or internal state (PNL-08).
+    // Do not collapse to one branch — both paths are intentional
+    // (matches AeroAccordion hybrid-ownership convention) (PNL-08).
+    fun isExpanded(sec: AeroPanelSectionConfig): Boolean =
+        if (controlled) expandedKeys?.contains(sec.key) == true
+        else sec.key in internalExpanded
+
+    // Sync expandedState list from the effective expansion set so size math stays consistent.
+    sections.forEachIndexed { i, sec ->
+        val exp = isExpanded(sec)
+        if (expandedState.getOrElse(i) { exp } != exp) expandedState[i] = exp
     }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val totalPx = constraints.maxHeight.toFloat()
 
+        // rememberUpdatedState(totalPx) so any drag lambda that was captured once always reads
+        // the live container height — prevents snap-back after a window resize mid-drag (FIXSP-01).
+        val liveTotalPx by rememberUpdatedState(totalPx)
+
         val expandedArr = expandedState.toBooleanArray()
         val availableForExpanded = computeAvailablePx(totalPx, expandedArr, headerPx, dividerPx)
         val renderHeights = distributePx(sizePx.toFloatArray(), expandedArr, totalPx, headerPx, dividerPx)
 
-        // Notify caller of current layout (optional).
-        onLayoutChange?.invoke(renderHeights.toList())
-
-        // --- Collapse/expand toggle (uncontrolled) ---
+        // --- Collapse/expand toggle ---
+        // Dispatches to controlled or uncontrolled branch (PNL-08).
+        // Do not collapse to one branch — both paths are intentional
+        // (matches AeroAccordion hybrid-ownership convention) (PNL-08).
         fun onToggle(i: Int) {
             if (!sections[i].collapsible) return
+            if (isDragging) return  // PNL-PITFALL-03: guard mid-drag collapse race
+
             val currentExpanded = expandedState.toBooleanArray()
             val currentSizePx = sizePx.toFloatArray()
-            val currentAvailable = computeAvailablePx(totalPx, currentExpanded, headerPx, dividerPx)
+            val currentAvailable = computeAvailablePx(liveTotalPx, currentExpanded, headerPx, dividerPx)
+            val secKey = sections[i].key
 
-            if (currentExpanded[i]) {
-                // Collapsing: save fraction before collapse, transfer share to neighbors.
-                lastExpandedFractionState[i] = lastExpandedFraction(currentSizePx[i], currentAvailable)
-                val newSizes = shareTransferOnCollapse(currentSizePx, currentExpanded, i)
-                newSizes.forEachIndexed { idx, v -> sizePx[idx] = v }
-                expandedState[i] = false
+            if (controlled) {
+                // Controlled branch: pure renderer — compute next set and notify caller.
+                val currentKeys = expandedKeys ?: emptySet()
+                val nextKeys = if (secKey in currentKeys) currentKeys - secKey else currentKeys + secKey
+                onExpandedChange!!(nextKeys)
             } else {
-                // Expanding: restore prior fraction, take share from donors.
-                expandedState[i] = true
-                val newExpanded = expandedState.toBooleanArray()
-                val newAvailable = computeAvailablePx(totalPx, newExpanded, headerPx, dividerPx)
-                val restorePx = restoreFromFraction(lastExpandedFractionState[i], newAvailable)
-                val newSizes = shareTransferOnExpand(currentSizePx, newExpanded, i, restorePx)
-                newSizes.forEachIndexed { idx, v -> sizePx[idx] = v }
+                // Uncontrolled branch: update internal state and size weights.
+                if (currentExpanded[i]) {
+                    lastExpandedFractionState[i] = lastExpandedFraction(currentSizePx[i], currentAvailable)
+                    val newSizes = shareTransferOnCollapse(currentSizePx, currentExpanded, i)
+                    newSizes.forEachIndexed { idx, v -> sizePx[idx] = v }
+                    expandedState[i] = false
+                    internalExpanded = internalExpanded - secKey
+                } else {
+                    expandedState[i] = true
+                    internalExpanded = internalExpanded + secKey
+                    val newExpanded = expandedState.toBooleanArray()
+                    val newAvailable = computeAvailablePx(liveTotalPx, newExpanded, headerPx, dividerPx)
+                    val restorePx = restoreFromFraction(lastExpandedFractionState[i], newAvailable)
+                    val newSizes = shareTransferOnExpand(currentSizePx, newExpanded, i, restorePx)
+                    newSizes.forEachIndexed { idx, v -> sizePx[idx] = v }
+                }
             }
+
+            // onLayoutChange fires at toggle (PNL-09) — NOT per drag frame.
+            onLayoutChange?.invoke(sizePx.toList())
         }
 
-        // --- Per-section animated heights (Plan 13-03 Task 2: 200ms FastOutSlowInEasing) ---
-        // animateFloatAsState READS the derived renderHeight as its target — it NEVER writes
-        // sizePx (Pattern 3 from 13-01 spike, PNL-PITFALL-01).
-        // isDragging / snap() support lands in plan 13-04 alongside the drag gesture.
-        @Suppress("UNCHECKED_CAST")
+        // --- Drag resize lambda (live-state, FIXSP-01 / PITFALL-A) ---
+        // onDragBetween reads sizePx[above]/sizePx[below] via SnapshotStateList — always live.
+        // Delta scaling: raw pointer delta is in rendered pixels; sizePx is in abstract proportion
+        // units. Scale = expandedSizeSum / availableForExpanded (spike finding 2, STATE.md).
+        // clampPanelDividerPx handles N-section Σ-minima clamp with PITFALL-B guard (PNL-10).
+        val onDragBetween: (Int, Int, Float) -> Unit = { above, below, delta ->
+            val currentExpandedArr = expandedState.toBooleanArray()
+            val currentAvailable = computeAvailablePx(liveTotalPx, currentExpandedArr, headerPx, dividerPx)
+                .coerceAtLeast(1f)
+
+            // expandedSizeSum = combined sizePx weight of the two neighbors (invariant during drag)
+            val expandedIndicesAll = sizePx.indices.filter { currentExpandedArr.getOrElse(it) { false } }
+            val expandedSizeSum = expandedIndicesAll.sumOf { sizePx[it].toDouble() }.toFloat()
+
+            // Scale: convert rendered-pixel delta into sizePx proportion-unit delta.
+            val scale = if (currentAvailable > 0f) expandedSizeSum / currentAvailable else 1f
+            val scaledDelta = delta * scale
+
+            // minAbovePx: above section's own minSize converted to sizePx units.
+            val minAbovePx = with(density) { sections[above].minSize.toPx() } * scale
+
+            // minBelowPx: Σ minSizes of all expanded sections at or below the divider (PNL-10, PNL-PITFALL-04).
+            val minBelowPx = (below..sizePx.lastIndex)
+                .filter { currentExpandedArr.getOrElse(it) { false } }
+                .sumOf { with(density) { sections[it].minSize.toPx() }.toDouble() }
+                .toFloat() * scale
+
+            val totalBudgetPx = sizePx[above] + sizePx[below]
+            val newAbove = clampPanelDividerPx(sizePx[above], scaledDelta, minAbovePx, minBelowPx, totalBudgetPx)
+            sizePx[above] = newAbove
+            sizePx[below] = totalBudgetPx - newAbove
+        }
+
+        // --- Per-section animated heights (Pattern 3, PNL-PITFALL-01) ---
+        // animateFloatAsState READS renderHeight as its target — it NEVER writes sizePx.
+        // animationSpec = snap() while isDragging so the border tracks the cursor 1:1 (spike finding 4).
+        // animationSpec = tween(200ms) for collapse/expand when isDragging is false.
         val animatedHeights = sections.indices.map { i ->
             val targetPx = if (expandedState.getOrElse(i) { false }) renderHeights[i] else headerPx
             val animated by animateFloatAsState(
                 targetValue = targetPx,
-                animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
+                animationSpec = if (isDragging) snap() else tween(durationMillis = 200, easing = FastOutSlowInEasing),
                 label = "panelHeight_${sections[i].key}",
             )
             animated
@@ -246,7 +381,7 @@ public fun AeroPanelGroup(
         Column(modifier = Modifier.fillMaxSize()) {
             sections.forEachIndexed { i, section ->
                 key(section.key) {
-                    val isExpanded = expandedState.getOrElse(i) { false }
+                    val isExpandedNow = expandedState.getOrElse(i) { false }
                     val animatedHeightPx = animatedHeights[i]
                     val animatedHeightDp = with(density) { animatedHeightPx.toDp() }
 
@@ -284,8 +419,8 @@ public fun AeroPanelGroup(
                     // Expanded content — height driven by animatedHeightPx (not raw renderHeights).
                     // Last expanded section uses weight(1f) to absorb float rounding (PNL-PITFALL-11);
                     // all others use explicit .height(dp).
-                    if (isExpanded || animatedHeightPx > headerPx) {
-                        if (i == lastExpandedIdx && isExpanded) {
+                    if (isExpandedNow || animatedHeightPx > headerPx) {
+                        if (i == lastExpandedIdx && isExpandedNow) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -302,18 +437,73 @@ public fun AeroPanelGroup(
                         }
                     }
 
-                    // Static 1dp divider — only between adjacent EXPANDED sections (PNL-PITFALL-09).
+                    // Drag divider — only between two adjacent EXPANDED sections (PNL-06, PNL-PITFALL-09).
+                    // Drag is disabled when either neighbor has resizable = false (PNL-12).
                     val nextExpanded = expandedState.getOrElse(i + 1) { false }
-                    if (isExpanded && i < sections.lastIndex && nextExpanded) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(1.dp)
-                                .background(AeroTheme.colors.borderDefault),
+                    if (isExpandedNow && i < sections.lastIndex && nextExpanded) {
+                        val dragEnabled = section.resizable && sections[i + 1].resizable
+                        PanelGroupDivider(
+                            onDrag = { delta ->
+                                isDragging = true
+                                onDragBetween(i, i + 1, delta)
+                            },
+                            onDragEnd = {
+                                isDragging = false
+                                // onLayoutChange fires at drag-end (PNL-09) — NOT per drag frame.
+                                onLayoutChange?.invoke(sizePx.toList())
+                            },
+                            enabled = dragEnabled,
                         )
                     }
                 }
             }
         }
+    }
+}
+
+/**
+ * Internal horizontal drag divider rendered between two adjacent expanded sections.
+ *
+ * Renders an 8dp-tall hit-area Box with a centered 1dp visual line and hover tint.
+ * The [aeroDragSplitter] Modifier (locked v2.0 pattern, PITFALL-03) handles cursor change,
+ * `pointerHoverIcon`, and the `awaitPointerEventScope` manual loop without touchSlop delay.
+ *
+ * When [enabled] is false (either neighbor has `resizable = false`, PNL-12) the hit-area
+ * renders the static 1dp line with no drag effect and no cursor change.
+ *
+ * Grip dots (visual polish) are deferred to plan 13-05.
+ */
+@Composable
+private fun PanelGroupDivider(
+    onDrag: (deltaPx: Float) -> Unit,
+    onDragEnd: () -> Unit,
+    enabled: Boolean,
+) {
+    val colors = AeroTheme.colors
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(DIVIDER_THICKNESS)
+            .hoverable(interactionSource)
+            .aeroDragSplitter(
+                orientation = Orientation.Vertical,
+                onDrag = onDrag,
+                onDragEnd = onDragEnd,
+                enabled = enabled,
+            )
+            .background(if (hovered) colors.buttonHover else Color.Transparent),
+        contentAlignment = Alignment.Center,
+    ) {
+        // 1dp Aero visual line — centered within the 8dp hit-area.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(colors.borderDefault),
+        )
+        // Grip dots row deferred to plan 13-05.
     }
 }
