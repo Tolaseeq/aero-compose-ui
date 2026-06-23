@@ -125,7 +125,7 @@ Details: `.planning/milestones/v2.0.1-ROADMAP.md` · Summary: `.planning/MILESTO
 | 11. Showcase + v2.0 Visual Sign-off | v2.0 | 11/11 | Complete | 2026-06-18 |
 | 12. Seconds Fix + SplitPane Fix + AeroDateTimeRangePicker | v2.0.1 | 4/4 | Complete | 2026-06-22 |
 | 13. AeroPanelGroup | v2.0.2 | Complete    | 2026-06-23 | 2026-06-23 |
-| 13.1. AeroPanelGroup horizontal orientation variant | 3/3 | Complete | 2026-06-23 | 2026-06-23 |
+| 13.1. AeroPanelGroup horizontal orientation variant | 3/3 | Complete    | 2026-06-23 | 2026-06-23 |
 
 ---
 
