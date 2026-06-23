@@ -166,6 +166,10 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 12]: orderDateTimeRange applied at sole emit site: LocalDateTime Comparable a<=b swap for same-day reversed times (DTR-04); no Instant conversion needed in kotlinx-datetime 0.6.2
 - [Phase 12]: Both TimeFields rows rendered unconditionally; enabled=false until rangeState is Selected — stable popup height for AeroCalendarPositionProvider flip logic (DTR-08, PITFALL-I)
 - [Phase 12]: Three-theme visual sign-off (SHW-11/12/13) approved on AeroBlue/AeroDark/Classic; SplitPane drag regression (stale captured state) found during sign-off and fixed in 7f38c0c
+- [Phase 13-01 spike findings for 13-02 PanelDistribution.kt]: TWO layout-math bugs found in spike and fixed (commit 0167e7c). Port-safe rules for PanelDistribution:
+  1. HEADER RESERVATION: `availableForExpanded = totalPx - (sectionCount * headerHeightPx) - (activeDividerCount * dividerThicknessPx)`. Reserve one header per section, not one per collapsed section. Every section always renders its header regardless of expanded state.
+  2. DRAG DELTA SCALING: Raw pixel delta from pointer events is in rendered pixels; `sizePx` values are abstract proportion units. Before applying: `val scale = expandedSizeSum / availableForExpanded` (constant during a single drag gesture since combined=above+below is invariant). Apply `scaledDelta = delta * scale`. Min-clamp must also use sizePx units: `minSizeUnits = minRenderedPx * scale`. The PITFALL-B safeMax guard pattern (coerceAtLeast) is preserved, now in sizePx unit space.
+  3. `availableForExpanded` must be guarded with `.coerceAtLeast(0f)` to prevent negative heights when all sections are collapsed.
 
 ### Pending Todos
 
