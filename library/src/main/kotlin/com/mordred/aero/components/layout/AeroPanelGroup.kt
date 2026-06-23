@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -190,6 +191,8 @@ public class AeroPanelGroupScope internal constructor() {
  * fire on every drag frame (PNL-09).
  *
  * @param modifier applied to the outermost [BoxWithConstraints].
+ * @param orientation layout axis. [Orientation.Vertical] (default) stacks sections top-to-bottom
+ *   with horizontal dividers. Existing callers that omit this parameter are unaffected.
  * @param initiallyExpanded if non-null, overrides [AeroPanelGroupScope.section] defaultExpanded
  *   flags on first composition; only keys present in this set start expanded. If null, each
  *   section uses its own defaultExpanded value. Used in uncontrolled mode only.
@@ -207,6 +210,7 @@ public class AeroPanelGroupScope internal constructor() {
 @Composable
 public fun AeroPanelGroup(
     modifier: Modifier = Modifier,
+    orientation: Orientation = Orientation.Vertical,   // NEW — default = zero breaking change
     initiallyExpanded: Set<String>? = null,
     expandedKeys: Set<String>? = null,
     onExpandedChange: ((Set<String>) -> Unit)? = null,
@@ -216,8 +220,34 @@ public fun AeroPanelGroup(
     // Collect sections fresh each recompose (AeroSidebar pattern).
     val scope = AeroPanelGroupScope()
     scope.content()
-    val sections = scope.sections
+    AeroPanelGroupImpl(
+        orientation = orientation,
+        sections = scope.sections,
+        modifier = modifier,
+        initiallyExpanded = initiallyExpanded,
+        expandedKeys = expandedKeys,
+        onExpandedChange = onExpandedChange,
+        onLayoutChange = onLayoutChange,
+    )
+}
 
+/**
+ * Internal core implementation for [AeroPanelGroup]. Contains all layout/state/drag logic.
+ * The public wrapper collects DSL sections and forwards them here along with [orientation].
+ *
+ * In this plan [orientation] is received and threaded to [PanelGroupDivider] but the layout
+ * body remains the existing vertical [Column] path verbatim — horizontal branching is Plan 02.
+ */
+@Composable
+internal fun AeroPanelGroupImpl(
+    orientation: Orientation,
+    sections: List<AeroPanelSectionConfig>,
+    modifier: Modifier,
+    initiallyExpanded: Set<String>?,
+    expandedKeys: Set<String>?,
+    onExpandedChange: ((Set<String>) -> Unit)?,
+    onLayoutChange: ((List<Float>) -> Unit)?,
+) {
     val density = LocalDensity.current
     val headerPx = with(density) { HEADER_HEIGHT.toPx() }
     val dividerPx = with(density) { DIVIDER_THICKNESS.toPx() }
@@ -489,6 +519,7 @@ public fun AeroPanelGroup(
                     if (isExpandedNow && i < sections.lastIndex && nextExpanded) {
                         val dragEnabled = section.resizable && sections[i + 1].resizable
                         PanelGroupDivider(
+                            orientation = Orientation.Vertical,
                             onDrag = { delta ->
                                 isDragging = true
                                 onDragBetween(i, i + 1, delta)
@@ -508,36 +539,51 @@ public fun AeroPanelGroup(
 }
 
 /**
- * Internal horizontal drag divider rendered between two adjacent expanded sections.
+ * Internal orientation-aware drag divider rendered between two adjacent expanded sections.
  *
- * Renders an 8dp-tall hit-area Box with a centered 1dp visual line, 3 grip dots, and hover tint.
+ * For [Orientation.Vertical] (default vertical group): renders an 8dp-tall hit-area Box with a
+ * centered 1dp horizontal visual line and a [Row] of 3 grip dots — identical to the shipped
+ * Phase 13 divider.
+ *
+ * For [Orientation.Horizontal] (horizontal group — Plan 02): renders an 8dp-wide hit-area Box
+ * with a centered 1dp vertical visual line and a [Column] of 3 grip dots.
+ *
  * The [aeroDragSplitter] Modifier (locked v2.0 pattern, PITFALL-03) handles cursor change,
  * `pointerHoverIcon`, and the `awaitPointerEventScope` manual loop without touchSlop delay.
  *
  * When [enabled] is false (either neighbor has `resizable = false`, PNL-12) the hit-area
  * renders the static 1dp line with no grip dots and no drag effect and no cursor change.
  *
- * Grip dots mirror the AeroSplitPane vertical-orientation Row of 3 x Box(3.dp) separated by
- * Box(width 4.dp) in labelText color (PNL-05).
+ * Grip dots mirror the AeroSplitPane SplitPaneDivider orientation-aware pattern (PNL-05).
  */
 @Composable
 private fun PanelGroupDivider(
+    orientation: Orientation,
     onDrag: (deltaPx: Float) -> Unit,
     onDragEnd: () -> Unit,
     enabled: Boolean,
 ) {
+    val isHorizontal = orientation == Orientation.Horizontal
     val colors = AeroTheme.colors
     val interactionSource = remember { MutableInteractionSource() }
     val hovered by interactionSource.collectIsHoveredAsState()
 
+    val hitAreaModifier = if (isHorizontal)
+        Modifier.fillMaxHeight().width(DIVIDER_THICKNESS)
+    else
+        Modifier.fillMaxWidth().height(DIVIDER_THICKNESS)   // EXISTING vertical — unchanged
+
+    val lineModifier = if (isHorizontal)
+        Modifier.fillMaxHeight().width(1.dp)
+    else
+        Modifier.fillMaxWidth().height(1.dp)   // EXISTING vertical — unchanged
+
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(DIVIDER_THICKNESS)
+        modifier = hitAreaModifier
             .hoverable(interactionSource)
             .then(
                 if (enabled) Modifier.aeroDragSplitter(
-                    orientation = Orientation.Vertical,
+                    orientation = orientation,
                     onDrag = onDrag,
                     onDragEnd = onDragEnd,
                     enabled = true,
@@ -546,28 +592,43 @@ private fun PanelGroupDivider(
             .background(if (hovered && enabled) colors.buttonHover else Color.Transparent),
         contentAlignment = Alignment.Center,
     ) {
-        // 1dp Aero visual line — centered within the 8dp hit-area.
+        // 1dp Aero visual line — centered within the hit-area.
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(colors.borderDefault),
+            modifier = lineModifier.background(colors.borderDefault),
         )
 
-        // Grip dots: 3 x Box(3.dp) separated by Box(width 4.dp), labelText color.
-        // Only rendered when enabled (resizable=true on both neighbors, PNL-05 / PNL-12).
+        // Grip dots: orientation-aware, only rendered when enabled (resizable=true on both neighbors,
+        // PNL-05 / PNL-12). Vertical path: Row of 3 dots (horizontal grip visual — unchanged).
+        // Horizontal path: Column of 3 dots (vertical grip visual — pre-wired for Plan 02).
         if (enabled) {
-            Row(
-                modifier = Modifier.align(Alignment.Center),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                repeat(3) { idx ->
-                    if (idx > 0) Box(modifier = Modifier.width(4.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(3.dp)
-                            .background(colors.labelText),
-                    )
+            if (isHorizontal) {
+                Column(
+                    modifier = Modifier.align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    repeat(3) { idx ->
+                        if (idx > 0) Box(modifier = Modifier.height(4.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(3.dp)
+                                .background(colors.labelText),
+                        )
+                    }
+                }
+            } else {
+                // EXISTING vertical grip — Row of 3 dots, unchanged
+                Row(
+                    modifier = Modifier.align(Alignment.Center),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    repeat(3) { idx ->
+                        if (idx > 0) Box(modifier = Modifier.width(4.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(3.dp)
+                                .background(colors.labelText),
+                        )
+                    }
                 }
             }
         }
