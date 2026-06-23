@@ -31,16 +31,16 @@
 - [x] **PNL-08**: Состояние раскрытия — гибрид controlled/uncontrolled (`onExpandedChange == null` → uncontrolled; non-null → controlled pure renderer), строго по паттерну `AeroAccordion`
 - [x] **PNL-09**: Внутреннее состояние размеров — uncontrolled; наружу экспонируется через `onLayoutChange` (срабатывает на drag-end и на collapse/expand) для персиста/восстановления
 - [x] **PNL-10**: Каждая секция задаёт свой `minSize` (дефолт-константа), кламп ресайза учитывает Σ минимумов всех секций ниже разделителя (N-section clamp, не только сосед)
-- [ ] **PNL-11**: Секция с `collapsible = false` не имеет шеврона и не сворачивается, но участвует в ресайзе
-- [ ] **PNL-12**: При `resizable = false` разделители рендерятся без грипа и drag отключён (чистый collapse/expand)
+- [x] **PNL-11**: Секция с `collapsible = false` не имеет шеврона и не сворачивается, но участвует в ресайзе
+- [x] **PNL-12**: При `resizable = false` разделители рендерятся без грипа и drag отключён (чистый collapse/expand)
 - [x] **PNL-13**: Идентичность секции задаётся явным `key` (устойчиво к дублирующимся title и переупорядочиванию)
 
 ### Visual, Tests & Integration (PNL)
 
-- [ ] **PNL-14**: Полоска-заголовок — `glassPanel`-поверхность с шевроном `AeroIcons.CaretRight` (0°→90° при раскрытии), опциональным `leadingIcon` и опциональным правым слотом `headerActions`; эстетика строго Win7 Aero (gloss/gradient/rounded/depth)
+- [x] **PNL-14**: Полоска-заголовок — `glassPanel`-поверхность с шевроном `AeroIcons.CaretRight` (0°→90° при раскрытии), опциональным `leadingIcon` и опциональным правым слотом `headerActions`; эстетика строго Win7 Aero (gloss/gradient/rounded/depth)
 - [x] **PNL-15**: Краевые случаи: все секции свёрнуты → стопка заголовков сверху, остаток контейнера пустой; одна раскрыта → занимает весь `availableForExpanded`
 - [x] **PNL-16**: Чистая логика (распределение px, N-section кламп, перенос доли при collapse/expand, нормализация при ресайзе) покрыта юнит-тестами по образцу `SplitClampTest`/`AccordionToggleTest` (TDD: RED → GREEN до Compose-кода)
-- [ ] **PNL-17**: Showcase `LayoutSection` получает демо `AeroPanelGroup`; three-theme visual sign-off PASSED на AeroBlue / AeroDark / Classic
+- [x] **PNL-17**: Showcase `LayoutSection` получает демо `AeroPanelGroup`; three-theme visual sign-off PASSED на AeroBlue / AeroDark / Classic
 - [x] **PNL-18**: KDoc со ссылками на REQ-ID и PITFALL, единообразно с соседними layout-компонентами
 
 ## Future Requirements
@@ -79,13 +79,13 @@
 | PNL-08 | Phase 13 | Complete |
 | PNL-09 | Phase 13 | Complete |
 | PNL-10 | Phase 13 | Complete |
-| PNL-11 | Phase 13 | Pending |
-| PNL-12 | Phase 13 | Pending |
+| PNL-11 | Phase 13 | Complete |
+| PNL-12 | Phase 13 | Complete |
 | PNL-13 | Phase 13 | Complete |
-| PNL-14 | Phase 13 | Pending |
+| PNL-14 | Phase 13 | Complete |
 | PNL-15 | Phase 13 | Complete |
 | PNL-16 | Phase 13 | Complete |
-| PNL-17 | Phase 13 | Pending |
+| PNL-17 | Phase 13 | Complete |
 | PNL-18 | Phase 13 | Complete |
 
 **Coverage:**

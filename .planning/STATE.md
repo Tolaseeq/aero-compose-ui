@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 13-aeropanelgroup-04 (AeroPanelGroup drag resize + controlled expansion + KDoc)
-last_updated: "2026-06-23T05:46:37.700Z"
-last_activity: 2026-06-23 — Plan 13-01 spike gate APPROVED (PNL-PITFALL-01 resolved)
+stopped_at: Completed 13-aeropanelgroup-05 (Aero visual polish + showcase demo + three-theme sign-off)
+last_updated: "2026-06-23T06:10:00.901Z"
+last_activity: 2026-06-23 — Plan 13-05 three-theme sign-off APPROVED; Phase 13 AeroPanelGroup complete
 progress:
   total_phases: 1
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # Project State
@@ -24,17 +24,17 @@ See: .planning/PROJECT.md (updated 2026-06-22 — after v2.0.1 milestone)
 
 ## Current Position
 
-Phase: 13 — AeroPanelGroup (in progress)
-Plan: 01 complete — next: 13-02 (Pure-logic TDD, PanelDistribution.kt)
-Status: Phase 13 in progress — 1/5 plans complete
-Last activity: 2026-06-23 — Plan 13-01 spike gate APPROVED (PNL-PITFALL-01 resolved)
+Phase: 13 — AeroPanelGroup (COMPLETE)
+Plan: 05 complete — Phase 13 all 5 plans done
+Status: Phase 13 complete — 5/5 plans complete; v2.0.2 ready for milestone tagging
+Last activity: 2026-06-23 — Plan 13-05 three-theme sign-off APPROVED (PNL-14, PNL-17 closed); phase 13 complete
 
 ```
-v2.0.1 ✅ SHIPPED → v2.0.2 AeroPanelGroup [Phase 13: 1/5 plans] ◆ spike gate passed
-[██░░░░░░░░] 20%
+v2.0.1 ✅ SHIPPED → v2.0.2 AeroPanelGroup [Phase 13: 5/5 plans] ✅ three-theme sign-off PASSED
+[██████████] 100%
 ```
 
-Progress: 0/1 phases complete (1/5 plans)
+Progress: 1/1 phases complete (5/5 plans)
 
 ## Shipped Milestones
 
@@ -183,6 +183,9 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 13-aeropanelgroup]: AeroPanelGroupScope fresh each recompose; seed guard on sizePx.size != sections.size re-inits all three parallel state lists
 - [Phase 13-aeropanelgroup]: AeroPanelGroup drag resize: aeroDragSplitter + clampPanelDividerPx + isDragging->snap() + rememberUpdatedState(totalPx); hybrid expansion: val controlled = onExpandedChange != null; both branches intentional (PNL-08)
 - [Phase 13-aeropanelgroup]: onLayoutChange fires at drag-end and collapse/expand toggle only — NOT per drag frame (PNL-09)
+- [Phase 13-aeropanelgroup]: Section target height is headerPx + renderHeights[i]: distributePx returns content-only heights; header must be re-added to the animated total Box target; content sub-box subtracts HEADER_HEIGHT so content area equals renderHeights[i]
+- [Phase 13-aeropanelgroup]: Drag clamp is pairwise: minBelowPx uses only the directly-adjacent below section's own minSize * scale; sigma-sum over-reserved the budget and pinned the divider; each divider clamped independently
+- [Phase 13-aeropanelgroup]: Three-theme visual sign-off PASS (PNL-14, PNL-17): AeroBlue / AeroDark / Classic all pass seven-item checklist — Aero gloss header, CaretRight 0->90 animation, leadingIcon + headerActions, grip dots, collapsible=false, resizable=false, re-expand restores size
 
 ### Pending Todos
 
@@ -196,7 +199,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-23T05:46:37.696Z
-Stopped at: Completed 13-aeropanelgroup-04 (AeroPanelGroup drag resize + controlled expansion + KDoc)
+Last session: 2026-06-23T06:09:40.850Z
+Stopped at: Completed 13-aeropanelgroup-05 (Aero visual polish + showcase demo + three-theme sign-off)
 Resume file: None
 Next action: `/gsd:plan-phase 13`

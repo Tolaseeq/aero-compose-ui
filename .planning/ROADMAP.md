@@ -57,11 +57,11 @@ Details: `.planning/milestones/v2.0-ROADMAP.md` · Audit: `.planning/milestones/
 Details: `.planning/milestones/v2.0.1-ROADMAP.md` · Summary: `.planning/MILESTONES.md`
 </details>
 
-### 🚧 v2.0.2 AeroPanelGroup (In Progress)
+### ✅ v2.0.2 AeroPanelGroup (Phase 13 Complete — ready for tagging)
 
 **Milestone Goal:** Add one additive layout component `AeroPanelGroup` (+ `AeroPanelSection`) — N vertical sections that fill the parent container height, collapse to a header strip on click (neighbors absorb freed height), and support drag-resize between adjacent expanded sections (VS Code Side Bar model). Strictly one phase, no breaking changes to v2.x API.
 
-- [ ] **Phase 13: AeroPanelGroup** — Full `AeroPanelGroup` + `AeroPanelSection` with collapse/expand animation, drag-resize between expanded neighbors, fraction-based size state, hybrid controlled/uncontrolled API, Win7 Aero header styling, unit tests, and showcase sign-off (PNL-01..PNL-18)
+- [x] **Phase 13: AeroPanelGroup** — Full `AeroPanelGroup` + `AeroPanelSection` with collapse/expand animation, drag-resize between expanded neighbors, fraction-based size state, hybrid controlled/uncontrolled API, Win7 Aero header styling, unit tests, and showcase sign-off (PNL-01..PNL-18) (completed 2026-06-23)
 
 ## Phase Details
 
@@ -124,8 +124,8 @@ Details: `.planning/milestones/v2.0.1-ROADMAP.md` · Summary: `.planning/MILESTO
 | 10. Layout | v2.0 | 4/4 | Complete | 2026-06-18 |
 | 11. Showcase + v2.0 Visual Sign-off | v2.0 | 11/11 | Complete | 2026-06-18 |
 | 12. Seconds Fix + SplitPane Fix + AeroDateTimeRangePicker | v2.0.1 | 4/4 | Complete | 2026-06-22 |
-| 13. AeroPanelGroup | 4/5 | In Progress|  | - |
+| 13. AeroPanelGroup | v2.0.2 | 5/5 | Complete | 2026-06-23 |
 
 ---
 
-*Roadmap last updated: 2026-06-22 — v2.0.2 AeroPanelGroup milestone started, Phase 13 added*
+*Roadmap last updated: 2026-06-23 — Phase 13 AeroPanelGroup complete; v2.0.2 ready for tagging*
