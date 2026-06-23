@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -17,11 +19,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.mordred.aero.components.buttons.AeroButton
+import com.mordred.aero.components.buttons.AeroIconButton
 import com.mordred.aero.components.containers.AeroCard
 import com.mordred.aero.components.input.AeroTextField
 import com.mordred.aero.components.layout.AeroAccordion
 import com.mordred.aero.components.layout.AeroAccordionMode
 import com.mordred.aero.components.layout.AeroAccordionSection
+import com.mordred.aero.components.layout.AeroPanelGroup
 import com.mordred.aero.components.layout.AeroSidebar
 import com.mordred.aero.components.layout.AeroSidebarMode
 import com.mordred.aero.components.layout.AeroSplitOrientation
@@ -32,8 +36,12 @@ import com.mordred.aero.components.layout.rememberAeroSidebarState
 import com.mordred.aero.components.selection.AeroCheckbox
 import com.mordred.aero.icons.AeroIcons
 import com.mordred.aero.icons.`internal`.Bell
+import com.mordred.aero.icons.`internal`.Database
+import com.mordred.aero.icons.`internal`.File
+import com.mordred.aero.icons.`internal`.Folder
 import com.mordred.aero.icons.`internal`.Gear
 import com.mordred.aero.icons.`internal`.House
+import com.mordred.aero.icons.`internal`.Trash
 import com.mordred.aero.theme.AeroTheme
 
 @Composable
@@ -167,6 +175,74 @@ fun LayoutSection() {
                     ),
                     onFinish = {}
                 )
+            }
+        }
+
+        // ── AeroPanelGroup — Win7 Aero vertical sections (PNL-01..PNL-18) ──
+        // Bounded parent (360.dp) required: AeroPanelGroup fills its constraints (F-WIZARD precedent).
+        // Demonstrates: leadingIcon, headerActions (non-bubbling), collapsible=false, resizable=false,
+        // overflowing content (clip), drag-resize between adjacent expanded sections.
+        Text("AeroPanelGroup", color = colors.labelText, style = typography.bodyMedium)
+        Box(Modifier.fillMaxWidth().height(360.dp)) {
+            AeroPanelGroup(modifier = Modifier.fillMaxSize()) {
+                section(
+                    key = "files",
+                    title = "Files",
+                    leadingIcon = AeroIcons.Folder,
+                    headerActions = {
+                        AeroIconButton(onClick = {}) {
+                            Icon(
+                                imageVector = AeroIcons.File,
+                                contentDescription = "New file",
+                                tint = AeroTheme.colors.onSurface,
+                                modifier = Modifier.size(14.dp),
+                            )
+                        }
+                    },
+                ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        repeat(12) { idx ->
+                            Text(
+                                text = "document_${idx + 1}.txt",
+                                color = colors.onSurface,
+                                style = typography.bodyMedium,
+                            )
+                        }
+                    }
+                }
+                section(
+                    key = "database",
+                    title = "Database",
+                    leadingIcon = AeroIcons.Database,
+                    collapsible = false,
+                ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Text("users (42 rows)", color = colors.onSurface, style = typography.bodyMedium)
+                        Text("orders (128 rows)", color = colors.onSurface, style = typography.bodyMedium)
+                        Text("products (56 rows)", color = colors.onSurface, style = typography.bodyMedium)
+                    }
+                }
+                section(
+                    key = "logs",
+                    title = "Logs",
+                    headerActions = {
+                        AeroIconButton(onClick = {}) {
+                            Icon(
+                                imageVector = AeroIcons.Trash,
+                                contentDescription = "Clear logs",
+                                tint = AeroTheme.colors.onSurface,
+                                modifier = Modifier.size(14.dp),
+                            )
+                        }
+                    },
+                    resizable = false,
+                ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Text("[INFO] Application started", color = colors.onSurface, style = typography.bodyMedium)
+                        Text("[WARN] Config missing, using defaults", color = colors.onSurface, style = typography.bodyMedium)
+                        Text("[ERROR] Connection timeout", color = colors.onSurface, style = typography.bodyMedium)
+                    }
+                }
             }
         }
     }
