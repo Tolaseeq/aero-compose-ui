@@ -176,10 +176,10 @@ public class AeroPanelGroupScope internal constructor() {
  * `animateFloatAsState` tween from lagging behind. On release the spec reverts to
  * `tween(200ms, FastOutSlowInEasing)` for collapse/expand transitions (PNL-05, PITFALL-A).
  *
- * N-section drag clamp: the minimum allowed size for the section above the divider is its
- * own [AeroPanelGroupScope.section] minSize; the minimum for the section below is the
- * sum of minSizes of all expanded sections at or below the divider. Clamp math is delegated
- * to [clampPanelDividerPx] which carries the PITFALL-B `coerceAtLeast` guard (PNL-10,
+ * N-section drag clamp (pairwise model): the minimum allowed size for the section above the
+ * divider is its own [AeroPanelGroupScope.section] minSize; the minimum for the section below
+ * is the directly-adjacent below section's own minSize. Clamp math is delegated to
+ * [clampPanelDividerPx] which carries the PITFALL-B `coerceAtLeast` guard (PNL-10,
  * PNL-PITFALL-04).
  *
  * Drag is disabled when either neighbor has `resizable = false` (PNL-12).
@@ -357,11 +357,9 @@ public fun AeroPanelGroup(
             // minAbovePx: above section's own minSize converted to sizePx units.
             val minAbovePx = with(density) { sections[above].minSize.toPx() } * scale
 
-            // minBelowPx: Σ minSizes of all expanded sections at or below the divider (PNL-10, PNL-PITFALL-04).
-            val minBelowPx = (below..sizePx.lastIndex)
-                .filter { currentExpandedArr.getOrElse(it) { false } }
-                .sumOf { with(density) { sections[it].minSize.toPx() }.toDouble() }
-                .toFloat() * scale
+            // minBelowPx: directly-adjacent below section's own minSize (pairwise model — PNL-10, PNL-PITFALL-04).
+            // Summing all expanded sections at or below would over-reserve the clamp budget, pinning the divider.
+            val minBelowPx = with(density) { sections[below].minSize.toPx() } * scale
 
             val totalBudgetPx = sizePx[above] + sizePx[below]
             val newAbove = clampPanelDividerPx(sizePx[above], scaledDelta, minAbovePx, minBelowPx, totalBudgetPx)
@@ -374,7 +372,7 @@ public fun AeroPanelGroup(
         // animationSpec = snap() while isDragging so the border tracks the cursor 1:1 (spike finding 4).
         // animationSpec = tween(200ms) for collapse/expand when isDragging is false.
         val animatedHeights = sections.indices.map { i ->
-            val targetPx = if (expandedState.getOrElse(i) { false }) renderHeights[i] else headerPx
+            val targetPx = if (expandedState.getOrElse(i) { false }) headerPx + renderHeights[i] else headerPx
             val animated by animateFloatAsState(
                 targetValue = targetPx,
                 animationSpec = if (isDragging) snap() else tween(durationMillis = 200, easing = FastOutSlowInEasing),
