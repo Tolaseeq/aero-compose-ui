@@ -30,6 +30,7 @@ import com.mordred.showcase.sections.ListSection
 import com.mordred.showcase.sections.DataSection
 import com.mordred.showcase.sections.LayoutSection
 import com.mordred.showcase.sections.NavigationSection
+import com.mordred.showcase.sections.PanelGroupSpikeSection
 import com.mordred.showcase.sections.OverlaysSection
 import com.mordred.showcase.sections.PickersSection
 import com.mordred.showcase.sections.RangeSection
@@ -98,6 +99,8 @@ fun ShowcaseApp(
                 DataSection()
                 PickersSection()
                 LayoutSection()
+                // THROWAWAY: spike section for PNL-PITFALL-01 gate — remove in plan 13-05
+                PanelGroupSpikeSection()
 
                 Spacer(Modifier.height(24.dp))
             }
