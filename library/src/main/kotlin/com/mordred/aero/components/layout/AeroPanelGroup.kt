@@ -185,6 +185,15 @@ public class AeroPanelGroupScope internal constructor() {
  *
  * Drag is disabled when either neighbor has `resizable = false` (PNL-12).
  *
+ * ## Orientation
+ *
+ * Both orientations share a single internal core (`AeroPanelGroupImpl`) and the same
+ * orientation-agnostic `PanelDistribution.kt` logic (state, animation, drag clamp, fraction
+ * sizing). Only three things differ per orientation: the `BoxWithConstraints` measurement axis,
+ * the container composable (Row vs Column), and the section/divider size modifiers. The vertical
+ * behavior from Phase 13 is therefore fully preserved when `orientation = Orientation.Horizontal`
+ * is used. REQ: PNL-HORIZ-01.
+ *
  * ## onLayoutChange firing contract
  *
  * [onLayoutChange] fires exactly at drag-end and at each collapse/expand toggle. It does NOT
@@ -192,7 +201,12 @@ public class AeroPanelGroupScope internal constructor() {
  *
  * @param modifier applied to the outermost [BoxWithConstraints].
  * @param orientation layout axis. [Orientation.Vertical] (default) stacks sections top-to-bottom
- *   with horizontal dividers. Existing callers that omit this parameter are unaffected.
+ *   with horizontal dividers and drag resizing height. [Orientation.Horizontal] lays sections out
+ *   as side-by-side columns with vertical dividers and drag resizing width; each header becomes a
+ *   ~36dp-wide full-height strip with a bottom-to-top rotated title and a chevron pointing
+ *   ► when expanded, ◄ when collapsed. The expansion, sizing, clamp, and onLayoutChange
+ *   semantics are identical to the vertical model — a 90° rotation of the same VS Code Side Bar
+ *   behavior. Existing callers that omit this parameter are unaffected. REQ: PNL-HORIZ-01.
  * @param initiallyExpanded if non-null, overrides [AeroPanelGroupScope.section] defaultExpanded
  *   flags on first composition; only keys present in this set start expanded. If null, each
  *   section uses its own defaultExpanded value. Used in uncontrolled mode only.
