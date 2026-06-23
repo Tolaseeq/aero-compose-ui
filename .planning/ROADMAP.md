@@ -99,7 +99,12 @@ Details: `.planning/milestones/v2.0.1-ROADMAP.md` · Summary: `.planning/MILESTO
 
 **No new Gradle dependencies required.** All APIs (`BoxWithConstraints`, `aeroDragSplitter`, `clampDividerPx`, `animateFloatAsState`, `glassPanel`, `AeroIcons.*`) are already on the compile classpath.
 
-**Plans**: TBD (planner derives plans from build-order steps above)
+**Plans**: 5 plans (one per build-order spine; spike + pure-logic GREEN gate all Compose work)
+- [ ] 13-01-PLAN.md — Animation-vs-drag SPIKE (mandatory gate, PNL-PITFALL-01)
+- [ ] 13-02-PLAN.md — Pure-logic TDD: PanelDistribution.kt + PanelGroupLogicTest.kt (RED→GREEN)
+- [ ] 13-03-PLAN.md — Layout skeleton + 200ms collapse/expand animation (scope-DSL, fraction state)
+- [ ] 13-04-PLAN.md — Drag resize (N-section clamp) + hybrid controlled/uncontrolled + KDoc
+- [ ] 13-05-PLAN.md — Aero visual polish + showcase demo + three-theme sign-off
 
 ## Progress
 
@@ -119,7 +124,7 @@ Details: `.planning/milestones/v2.0.1-ROADMAP.md` · Summary: `.planning/MILESTO
 | 10. Layout | v2.0 | 4/4 | Complete | 2026-06-18 |
 | 11. Showcase + v2.0 Visual Sign-off | v2.0 | 11/11 | Complete | 2026-06-18 |
 | 12. Seconds Fix + SplitPane Fix + AeroDateTimeRangePicker | v2.0.1 | 4/4 | Complete | 2026-06-22 |
-| 13. AeroPanelGroup | v2.0.2 | 0/TBD | Not started | - |
+| 13. AeroPanelGroup | v2.0.2 | 0/5 | Planned | - |
 
 ---
 
