@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,12 +39,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mordred.aero.components.internal.drag.aeroDragSplitter
@@ -507,47 +508,29 @@ internal fun AeroPanelGroupImpl(
                                 }
 
                                 // Rotated title — fills remaining strip height, reads bottom-to-top.
-                                // Uses a layout modifier to swap width/height measurement constraints
-                                // so the Text is measured against the available column height (not the
-                                // 36dp strip width). graphicsLayer rotationZ is draw-phase only and does
-                                // NOT change the bounding box, which is why this layout swap is required
-                                // to prevent truncation to 36dp. (Pitfall 1 — measurement axis swap)
-                                Box(
+                                // requiredWidth(maxHeight) gives the Text the column's available HEIGHT
+                                // as its measured WIDTH so the full title fits on one line; rotate(-90)
+                                // then turns that long horizontal line into a centered vertical strip.
+                                // (Pitfall 1 — the Text must be sized along the rotation axis, not the
+                                // 36dp strip width, or it truncates.)
+                                BoxWithConstraints(
                                     modifier = Modifier
                                         .weight(1f)
                                         .fillMaxWidth()
                                         .clipToBounds(),
                                     contentAlignment = Alignment.Center,
                                 ) {
+                                    val titleSpan = maxHeight
                                     Text(
                                         text = section.title,
                                         style = AeroTheme.typography.bodyMedium,
                                         color = AeroTheme.colors.onSurface,
-                                        modifier = Modifier.layout { measurable, constraints ->
-                                            // Measure the text with the column's available HEIGHT as its
-                                            // max WIDTH so the full title fits before rotation. Relax
-                                            // height so it is never truncated.
-                                            val placeable = measurable.measure(
-                                                constraints.copy(
-                                                    minWidth = 0,
-                                                    maxWidth = constraints.maxHeight,
-                                                    minHeight = 0,
-                                                    maxHeight = Constraints.Infinity,
-                                                )
-                                            )
-                                            // After a -90 rotation the footprint is swapped: report height x width.
-                                            layout(placeable.height, placeable.width) {
-                                                placeable.placeRelativeWithLayer(
-                                                    // Compensating offset: re-centers the placeable (W x H) so that,
-                                                    // after rotating -90 about its own center, the rotated box (H x W)
-                                                    // is centered in the reported (H x W) layout box.
-                                                    x = -(placeable.width / 2 - placeable.height / 2),
-                                                    y = -(placeable.height / 2 - placeable.width / 2),
-                                                ) {
-                                                    rotationZ = -90f
-                                                }
-                                            }
-                                        },
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier
+                                            .requiredWidth(titleSpan)
+                                            .rotate(-90f),
                                     )
                                 }
 
