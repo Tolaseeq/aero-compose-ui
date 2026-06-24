@@ -37,6 +37,8 @@ import androidx.compose.ui.window.PopupProperties
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.material3.Text
+import com.mordred.aero.components.dropdown.internal.shouldAutoOpen
+import com.mordred.aero.components.dropdown.internal.textAfterSelect
 import com.mordred.aero.components.popup.AeroDropdownItem
 import com.mordred.aero.components.popup.AeroDropdownPopup
 import com.mordred.aero.components.popup.AeroPopupPositionProvider
@@ -55,6 +57,7 @@ import com.mordred.aero.theme.AeroTheme
  * @param modifier Modifier for the outer container.
  * @param enabled Whether the field is interactive.
  * @param placeholder Placeholder shown when text is empty.
+ * @param clearOnSelect When true, clears the field after a selection instead of filling it with the chosen label.
  * @param width Width of the component.
  */
 @Composable
@@ -66,18 +69,21 @@ public fun AeroComboBox(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     placeholder: String = "Type or select...",
+    clearOnSelect: Boolean = false,
     width: Dp = 240.dp
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val focused by interactionSource.collectIsFocusedAsState()
     var expanded by remember { mutableStateOf(false) }
+    var justSelected by remember { mutableStateOf(false) }
 
     // Case-insensitive filter
     val filtered = options.filter { it.contains(text, ignoreCase = true) }
 
     // Auto-open popup when focused and there are matching options
     LaunchedEffect(focused, text) {
-        expanded = focused && options.any { it.contains(text, ignoreCase = true) }
+        expanded = shouldAutoOpen(focused, text, options, justSelected)
+        justSelected = false
     }
 
     val colors = AeroTheme.colors
@@ -151,9 +157,10 @@ public fun AeroComboBox(
                                 selected = opt == text,
                                 highlighted = false,
                                 onClick = {
-                                    onOptionSelect(opt)
-                                    onTextChange(opt)
+                                    justSelected = true
                                     expanded = false
+                                    onOptionSelect(opt)
+                                    onTextChange(textAfterSelect(opt, clearOnSelect))
                                 }
                             )
                         }
