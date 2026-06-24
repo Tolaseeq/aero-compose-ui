@@ -5,7 +5,7 @@ milestone_name: AeroPanelGroup
 status: completed
 stopped_at: Completed 13.1-03-PLAN.md — phase 13.1 all 3/3 plans done
 last_updated: "2026-06-23T08:31:19.981Z"
-last_activity: 2026-06-23 — Plan 13.1-03 three-theme horizontal sign-off APPROVED (PNL-HORIZ-01, PNL-17 closed); phase 13.1 complete
+last_activity: 2026-06-24 — Completed quick task 260624-k4d: AeroComboBox не очищается после выбора пункта
 progress:
   total_phases: 2
   completed_phases: 2
@@ -191,6 +191,12 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 - PNL-PITFALL-01 (animation-vs-drag coexistence): architecture is sound, empirically unverified in this codebase. Resolved by the mandatory Step 1 spike. If spike fails, the fallback (split intent-state from display-state; disable drag during animation-in-flight) adds ~20 lines and is documented in research SUMMARY.md.
 - Phase 13 does NOT need `/gsd:research-phase` — all patterns are direct ports of shipped code per SUMMARY.md.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260624-k4d | AeroComboBox не очищается после выбора пункта (clearOnSelect + не переоткрывать попап при полном совпадении) | 2026-06-24 | d371e72 | [260624-k4d-aerocombobox-ontextchange-label-onoption](./quick/260624-k4d-aerocombobox-ontextchange-label-onoption/) |
 
 ## Session Continuity
 
