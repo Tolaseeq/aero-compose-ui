@@ -9,6 +9,7 @@ A Compose Desktop UI component library styled after Windows Aero (Windows 7): gl
 - ✅ **v2.0 Stateful + Layout** — Phases 7–11 (shipped 2026-06-18) — 12 stateful + layout components, showcase sign-off
 - ✅ **v2.0.1 Picker & SplitPane Fixes** — Phase 12 (shipped 2026-06-22) — 2 bug fixes + `AeroDateTimeRangePicker`
 - ✅ **v2.0.2 AeroPanelGroup** — Phases 13 + 13.1 (shipped 2026-06-23) — N-section collapsible+resizable layout, vertical + horizontal orientations
+- 🚧 **v2.0.3 PanelGroup Recompose Fix** — Phase 14 (in progress) — horizontal-controlled recompose-during-drag duplication fix + JitPack release
 
 Full ship-time snapshots (milestone goal, all phase details, decisions, tech debt) are archived per milestone:
 - `.planning/milestones/v1.1-ROADMAP.md` (also captures v1.0 phase definitions)
@@ -67,6 +68,29 @@ Details: `.planning/milestones/v2.0.1-ROADMAP.md` · Summary: `.planning/MILESTO
 Details: `.planning/milestones/v2.0.2-ROADMAP.md` · Summary: `.planning/MILESTONES.md`
 </details>
 
+### 🚧 v2.0.3 PanelGroup Recompose Fix (In Progress)
+
+**Milestone Goal:** A patch release that eliminates section duplication in `AeroPanelGroup` when `Orientation.Horizontal` + controlled mode coincides with a section's content recomposing during an active divider drag — the root cause being an in-composition write to observed snapshot-state (`expandedState`) that is read in the same `BoxWithConstraints` pass. Then ship v2.0.3 on JitPack. Single phase (user-scoped). No breaking changes to the v2.x API; zero new dependencies; Compose stays 1.7.3.
+
+- [ ] **Phase 14: PanelGroup Recompose Fix + v2.0.3 Release** — Compute `expandedArr` from `isExpanded()` each composition; move `expandedState` sync into `SideEffect`; ensure the seed-block doesn't mutate read-in-same-composition state; minimal showcase repro; vertical + uncontrolled regression-guarded; bump + tag + JitPack release (RCMP-01..04, REG-01..02, REL-01..02)
+
+## Phase Details
+
+### Phase 14: PanelGroup Recompose Fix + v2.0.3 Release
+**Goal**: Eliminate horizontal-controlled section duplication under recompose-during-drag by removing the in-composition write to observed snapshot-state, with the vertical/uncontrolled paths byte-identical, then release v2.0.3 on JitPack.
+**Depends on**: Phase 13.1 (the horizontal `AeroPanelGroupImpl` core this fix edits)
+**Requirements**: RCMP-01, RCMP-02, RCMP-03, RCMP-04, REG-01, REG-02, REL-01, REL-02
+**Success Criteria** (what must be TRUE):
+  1. In `Orientation.Horizontal` + controlled mode, with a section's content recomposing during an active divider drag, sections do NOT duplicate — `N` declared `section(...)` render as exactly `N` header strips (previously `N`→×`N`, e.g. 3→9).
+  2. No in-composition write to observed snapshot-state (`expandedState`/`sizePx`) that the same `BoxWithConstraints` pass reads: size-math reads `isExpanded()` directly each composition, `expandedState` sync is moved to `SideEffect`, and the seed-block does not mutate read-in-same-composition state (statically verifiable).
+  3. Vertical + uncontrolled showcase behavior is byte-identical — drag-resize, collapse/expand animations (`snap()` during drag, `tween(200ms, FastOutSlowInEasing)` after), `onLayoutChange` on drag-end + toggle only, window-resize proportion preservation; the 12 `PanelGroupLogicTest` JVM tests stay GREEN; Compose stays 1.7.3 with zero new dependencies.
+  4. A minimal showcase repro in `LayoutSection.kt` (horizontal controlled `AeroPanelGroup` whose one section's content reads an external `mutableStateOf` that changes during a divider drag) reproduces the duplication before the fix and renders clean after.
+  5. Release: `build.gradle.kts` version bumped `2.0.2`→`2.0.3`, tag `v2.0.3` created and pushed to `Tolaseeq/aero-compose-ui`, and JitPack resolves `com.github.Tolaseeq:aero-compose-ui:2.0.3`.
+**Plans**: TBD
+
+Plans:
+- [ ] 14-01: TBD (planned via `/gsd:plan-phase 14`)
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -85,11 +109,12 @@ Details: `.planning/milestones/v2.0.2-ROADMAP.md` · Summary: `.planning/MILESTO
 | 12. Seconds Fix + SplitPane Fix + AeroDateTimeRangePicker | v2.0.1 | 4/4 | Complete | 2026-06-22 |
 | 13. AeroPanelGroup | v2.0.2 | 5/5 | Complete | 2026-06-23 |
 | 13.1. AeroPanelGroup horizontal orientation variant | v2.0.2 | 3/3 | Complete | 2026-06-23 |
+| 14. PanelGroup Recompose Fix + v2.0.3 Release | v2.0.3 | 0/TBD | Not started | - |
 
 ## Next Milestone
 
-No active milestone. Start the next one with `/gsd:new-milestone` (questioning → research → requirements → roadmap).
+🚧 **v2.0.3 PanelGroup Recompose Fix** is active (Phase 14). Next: `/gsd:plan-phase 14`.
 
 ---
 
-*Roadmap last updated: 2026-06-23 — v2.0.2 AeroPanelGroup shipped (Phases 13 + 13.1); milestone archived to `.planning/milestones/v2.0.2-ROADMAP.md`.*
+*Roadmap last updated: 2026-06-25 — v2.0.3 PanelGroup Recompose Fix scoped; Phase 14 added (8 requirements, 100% coverage).*

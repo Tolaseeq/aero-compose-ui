@@ -56,20 +56,20 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| RCMP-01 | Phase 14 | Pending |
-| RCMP-02 | Phase 14 | Pending |
-| RCMP-03 | Phase 14 | Pending |
-| RCMP-04 | Phase 14 | Pending |
-| REG-01 | Phase 14 | Pending |
-| REG-02 | Phase 14 | Pending |
-| REL-01 | Phase 14 | Pending |
-| REL-02 | Phase 14 | Pending |
+| RCMP-01 | Phase 14 | Roadmapped |
+| RCMP-02 | Phase 14 | Roadmapped |
+| RCMP-03 | Phase 14 | Roadmapped |
+| RCMP-04 | Phase 14 | Roadmapped |
+| REG-01 | Phase 14 | Roadmapped |
+| REG-02 | Phase 14 | Roadmapped |
+| REL-01 | Phase 14 | Roadmapped |
+| REL-02 | Phase 14 | Roadmapped |
 
 **Coverage:**
 - v1 requirements: 8 total
-- Mapped to phases: 8 (pending roadmap)
+- Mapped to phases: 8 (Phase 14, 100%)
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-06-25*
-*Last updated: 2026-06-25 after initial definition*
+*Last updated: 2026-06-25 after roadmap creation (all 8 → Phase 14)*

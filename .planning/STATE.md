@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v2.0.3
 milestone_name: PanelGroup Recompose Fix
-status: defining_requirements
-stopped_at: Milestone v2.0.3 started — defining requirements
+status: roadmap_complete
+stopped_at: Roadmap created — Phase 14 defined (8 requirements, 100% coverage); ready to plan
 last_updated: "2026-06-25"
-last_activity: 2026-06-25 — Milestone v2.0.3 PanelGroup Recompose Fix started
+last_activity: 2026-06-25 — Roadmap created for v2.0.3; single Phase 14 maps all 8 requirements
 progress:
-  total_phases: 0
+  total_phases: 1
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,21 +20,30 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-23 — after v2.0.2 milestone)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, typed `AeroIcons`, and a showcase — no manual style work or icon-pack hunting required.
-**Current focus:** Between milestones. v2.0.2 AeroPanelGroup shipped + tagged 2026-06-23. Next: `/gsd:new-milestone` (questioning → research → requirements → roadmap).
+**Current focus:** v2.0.3 PanelGroup Recompose Fix — Phase 14 (single-phase patch). Fix horizontal-controlled section duplication under recompose-during-drag (move observed-state write out of the composition pass), add a showcase repro, regression-guard vertical/uncontrolled, then release v2.0.3 on JitPack.
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-06-25 — Milestone v2.0.3 PanelGroup Recompose Fix started
+Phase: 14 of 14 (PanelGroup Recompose Fix + v2.0.3 Release) — single-phase milestone
+Plan: — (not yet planned)
+Status: Ready to plan
+Last activity: 2026-06-25 — Roadmap created; Phase 14 defined, all 8 requirements mapped (100% coverage)
 
 ```
-v2.0.2 ✅ SHIPPED → v2.0.3 PanelGroup Recompose Fix ◆ DEFINING REQUIREMENTS
-[░░░░░░░░░░] requirements → roadmap → 1 phase
+v2.0.2 ✅ SHIPPED → v2.0.3 PanelGroup Recompose Fix ◆ ROADMAP COMPLETE
+[░░░░░░░░░░] roadmap ✓ → /gsd:plan-phase 14 → execute → release
 ```
 
-Progress: v2.0.3 — defining requirements (single-phase patch milestone: horizontal-controlled recompose dup fix + JitPack release).
+Progress: v2.0.3 — roadmap complete (Phase 14: RCMP-01..04 + REG-01..02 + REL-01..02). Next: `/gsd:plan-phase 14`. No research needed — direct edit to existing horizontal `AeroPanelGroupImpl` core (mirrors Phase 13 precedent).
+
+## Phase 14 Scope (v2.0.3)
+
+Single phase covering all 8 v1 requirements (100% coverage):
+- **RCMP-01..04** — horizontal controlled recompose-during-drag duplication fix (`N`→×`N` eliminated); `expandedArr` from `isExpanded()` each composition; `expandedState` sync moved to `SideEffect`; seed-block stops mutating read-in-same-composition state; minimal showcase repro in `LayoutSection.kt`.
+- **REG-01..02** — vertical + uncontrolled byte-identical; 12 `PanelGroupLogicTest` stay GREEN; Compose 1.7.3, zero new deps.
+- **REL-01..02** — bump `2.0.2`→`2.0.3` in `build.gradle.kts`; tag `v2.0.3`; JitPack resolves `com.github.Tolaseeq:aero-compose-ui:2.0.3`.
+
+Target file: `library/src/main/kotlin/com/mordred/aero/components/layout/AeroPanelGroup.kt` (seed block ~297-320, sync block ~331-335, read ~346). Showcase repro: `LayoutSection.kt`. Release: `build.gradle.kts`. JitPack infra already exists (jitpack.yml, maven-publish, tags through v2.0.2).
 
 ## Shipped Milestones
 
@@ -73,17 +82,26 @@ Phases 13 + 13.1 (8 plans, 18 v1 + PNL-HORIZ-01) — `AeroPanelGroup` + `AeroPan
 
 <!-- v2.0.1 key technical decisions are now realized — see PROJECT.md "Key Decisions" (v2.0.1 rows) and the [Phase 12] entries under Accumulated Context below. -->
 
+## v2.0.2 Locked Decisions (carried forward — relevant to Phase 14)
+
+- **Pattern 3 (PNL-PITFALL-01):** `animateFloatAsState` reads `renderHeight` as a target-only value; drag writes `sizePx` directly; `isDragging` flips the spec to `snap()` during a gesture and back to `tween(200ms, FastOutSlowInEasing)` after. The locked answer to "animate vs. drag the same value." Phase 14 must preserve this.
+- **Header reservation:** `availableForExpanded = totalPx − sectionCount*headerPx − activeDividers*thickness`, one header per section. Phase 14 size-math must keep this.
+- **Public-wrapper + internal-core `AeroPanelGroupImpl(orientation)`:** all layout/state/drag logic lives in the internal core; only 3 orientation branch points differ. Phase 14 edits this core.
+- **`onLayoutChange` fires on drag-end + toggle only** — not per frame. Regression-guarded by REG-01.
+
 ## Performance Metrics
 
 **v1.0:** 26 plans, ~3 days, average ~7–25 min per plan.
 **v1.1:** 11 plans, single-day push (2026-04-29, ~10 h), 60 commits, 340 files changed, +20,212 / −477 lines.
 **v2.0:** 55 plans, ~49 days, 145 commits, 152 files changed, +27,406 / −2,285 lines.
 **v2.0.1:** 4 plans, single-day push (2026-06-22, ~2h20m), 25 commits, 9 code files changed, +520 / −14 lines.
+**v2.0.2:** 8 plans (Phases 13 + 13.1), ~1-day push (2026-06-22→23), 49 commits, 4 code files, +1,516 lines.
 
 ## Accumulated Context
 
 ### Roadmap Evolution
 
+- Phase 14 added for v2.0.3 (patch milestone, single phase per user scope): horizontal-controlled recompose-during-drag duplication fix + JitPack release. All 8 requirements (RCMP-01..04, REG-01..02, REL-01..02) map to Phase 14 — 100% coverage. No `/gsd:research-phase` — direct edit to existing code, mirrors Phase 13/v2.0.1 patch precedent. (ROADMAP created 2026-06-25)
 - Phase 13.1 inserted after Phase 13: AeroPanelGroup horizontal orientation variant (PNL-HORIZ-01) — side-by-side columns, vertical dividers, drag resizes width; orthogonal to the vertical/stacked AeroPanelGroup shipped in Phase 13. Reuses Phase 13 patterns (PanelDistribution pure logic, aeroDragSplitter Orientation.Horizontal, Pattern 3 + snap()-during-drag, pairwise clamp, headerPx+content target). (INSERTED 2026-06-23)
 
 ### Decisions
@@ -183,14 +201,14 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ### Pending Todos
 
-- Gap-close: AeroDropdown popup offset regression (v1.0 carry-over) — explicitly OUT of v2.0.2 scope; candidate for future milestone (DROP-FIX-01)
-- Deferred to future milestones: inline pickers, DataTable cell-edit/reorder/filter, TreeView DnD, ColorPicker eyedropper, StepperWizard branching, Sidebar drag-resize, AeroDateTimeRangePicker hover-preview (DTR-HOVER-01), AeroPanelGroup drag-to-reorder (PNL-REORDER-01), keyboard resize (PNL-KBD-01)
+- Gap-close: AeroDropdown popup offset regression (v1.0 carry-over) — explicitly OUT of v2.0.3 scope; candidate for future milestone (DROP-FIX-01)
+- Deferred to future milestones: inline pickers, DataTable cell-edit/reorder/filter, TreeView DnD, ColorPicker eyedropper, StepperWizard branching, Sidebar drag-resize, AeroDateTimeRangePicker hover-preview (DTR-HOVER-01), AeroPanelGroup drag-to-reorder (PNL-REORDER-01), nested AeroPanelGroup first-class API (PNL-NEST-01), keyboard resize (PNL-KBD-01)
 - [CLOSED Phase 13.1]: AeroPanelGroup horizontal orientation (PNL-HORIZ-01) — DELIVERED and signed off
 
 ### Blockers/Concerns
 
-- PNL-PITFALL-01 (animation-vs-drag coexistence): architecture is sound, empirically unverified in this codebase. Resolved by the mandatory Step 1 spike. If spike fails, the fallback (split intent-state from display-state; disable drag during animation-in-flight) adds ~20 lines and is documented in research SUMMARY.md.
-- Phase 13 does NOT need `/gsd:research-phase` — all patterns are direct ports of shipped code per SUMMARY.md.
+- None blocking Phase 14. The fix is fully specified by the user (compute `expandedArr` from `isExpanded()` each composition; move `expandedState` sync into `SideEffect`; ensure the seed-block doesn't mutate read-in-same-composition state). Direct edit to existing code; no research phase needed (mirrors Phase 13 / v2.0.1 patch precedent).
+- Watch-out for Phase 14: the SideEffect-based `expandedState` sync must not reintroduce the per-frame `onLayoutChange` regression (REG-01) — `onLayoutChange` stays drag-end + toggle only.
 
 ### Quick Tasks Completed
 
@@ -200,7 +218,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-23T07:46:36.000Z
-Stopped at: Completed 13.1-03-PLAN.md — phase 13.1 all 3/3 plans done
+Last session: 2026-06-25
+Stopped at: Roadmap created for v2.0.3 — Phase 14 defined, all 8 requirements mapped (100% coverage); ROADMAP.md + REQUIREMENTS.md traceability + STATE.md updated
 Resume file: None
-Next action: `/gsd:complete-milestone` (v2.0.2)
+Next action: `/gsd:plan-phase 14`
