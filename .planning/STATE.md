@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0.2
-milestone_name: AeroPanelGroup
-status: completed
-stopped_at: Completed 13.1-03-PLAN.md — phase 13.1 all 3/3 plans done
-last_updated: "2026-06-23T08:31:19.981Z"
-last_activity: 2026-06-24 — Completed quick task 260624-k4d: AeroComboBox не очищается после выбора пункта
+milestone: v2.0.3
+milestone_name: PanelGroup Recompose Fix
+status: defining_requirements
+stopped_at: Milestone v2.0.3 started — defining requirements
+last_updated: "2026-06-25"
+last_activity: 2026-06-25 — Milestone v2.0.3 PanelGroup Recompose Fix started
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 8
-  completed_plans: 8
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
@@ -24,17 +24,17 @@ See: .planning/PROJECT.md (updated 2026-06-23 — after v2.0.2 milestone)
 
 ## Current Position
 
-Phase: — (between milestones)
-Plan: — (no active milestone; v2.0.2 archived)
-Status: v2.0.2 AeroPanelGroup SHIPPED 2026-06-23 — 2 phases (13 + 13.1), 8 plans, 18 v1 + PNL-HORIZ-01 requirements, three-theme sign-off APPROVED both orientations. Archived + tagged.
-Last activity: 2026-06-23 — v2.0.2 milestone completed: archived (ROADMAP + REQUIREMENTS), PROJECT.md evolved, RETROSPECTIVE updated, version bumped to 2.0.2, tag v2.0.2.
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-06-25 — Milestone v2.0.3 PanelGroup Recompose Fix started
 
 ```
-v2.0.1 ✅ → v2.0.2 AeroPanelGroup ✅ SHIPPED [Phase 13: 5/5 + Phase 13.1: 3/3] — archived & tagged
-[██████████] milestone complete · awaiting /gsd:new-milestone
+v2.0.2 ✅ SHIPPED → v2.0.3 PanelGroup Recompose Fix ◆ DEFINING REQUIREMENTS
+[░░░░░░░░░░] requirements → roadmap → 1 phase
 ```
 
-Progress: v2.0.2 complete (2/2 phases, 8/8 plans). No active milestone.
+Progress: v2.0.3 — defining requirements (single-phase patch milestone: horizontal-controlled recompose dup fix + JitPack release).
 
 ## Shipped Milestones
 

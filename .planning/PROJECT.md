@@ -18,11 +18,17 @@
 
 **Codebase:** Kotlin / Compose Desktop 1.7.3, Kotlin 2.1.21, Gradle 8.14.3, JDK 17. v2.0 added 152 files changed (+27,406 / −2,285) across phases 7–11; v2.0.1 added 9 code files (+520 / −14) in Phase 12; v2.0.2 added 4 code files (+1,516: `AeroPanelGroup.kt` 818, `PanelDistribution.kt` 245, `PanelGroupLogicTest.kt` 235, `LayoutSection.kt` +218) across Phases 13 + 13.1. Project version bumped to `2.0.2` (`build.gradle.kts`).
 
-## Current Milestone
+## Current Milestone: v2.0.3 PanelGroup Recompose Fix
 
-**Нет активного milestone.** v2.0.2 AeroPanelGroup завершён и заархивирован 2026-06-23. Следующий цикл — `/gsd:new-milestone` (questioning → research → requirements → roadmap).
+**Goal:** Patch milestone — устранить дублирование секций в `AeroPanelGroup` при сочетании `Orientation.Horizontal` + controlled-режим + рекомпозиция контента секции во время активного drag разделителя. Первопричина — запись наблюдаемого snapshot-state (`expandedState`) в теле композиции, которое читается в той же композиции внутри `BoxWithConstraints` (SubcomposeLayout). Затем релиз v2.0.3 на JitPack. Без breaking changes к v2.x API.
 
-**Открытые кандидаты на следующий milestone** (из v2.0.2 deferred + carry-over):
+**Target features:**
+- **Фикс рекомпозиции:** `expandedArr` для size-математики считается напрямую из `isExpanded(sec)` каждую композицию; sync `expandedState` вынесен в `SideEffect`; seed-блок не мутирует читаемый в той же композиции state. Инвариант: ни один проход композиции `BoxWithConstraints` не пишет в `expandedState`/`sizePx`, которые он же читает.
+- **Минимальный repro в showcase** (`LayoutSection.kt`): горизонтальный controlled `AeroPanelGroup`, контент одной секции читает внешний `mutableStateOf`, меняющийся одновременно с drag разделителя — до фикса ловит дубли (N→×N), после фикса N остаётся N.
+- **Регрессии:** Vertical-путь (Phase 13) и uncontrolled-режим byte-identical; drag-resize, collapse/expand-анимации (snap() при drag, tween(200ms) после), `onLayoutChange` (drag-end + toggle), сохранение пропорций при resize окна — без изменений. Compose остаётся 1.7.3.
+- **Релиз:** bump до `2.0.3` в `build.gradle.kts`, commit, tag `v2.0.3`, push на GitHub → JitPack build.
+
+**Открытые кандидаты на будущие milestone** (НЕ в scope v2.0.3):
 - AeroPanelGroup: drag-to-reorder секций (PNL-REORDER-01), вложенные `AeroPanelGroup` как first-class API (PNL-NEST-01), клавиатурный ресайз разделителей (PNL-KBD-01).
 - Carry-over: AeroDropdown popup-offset regression (DROP-FIX-01, v1.0).
 - Прежний candidate-список: inline pickers, DataTable cell-edit/reorder/filter, TreeView DnD, ColorPicker eyedropper, StepperWizard branching, Sidebar drag-resize, AeroDateTimeRangePicker hover-preview.
@@ -129,9 +135,12 @@
 
 ### Active
 
-<!-- Нет активного milestone. v2.0.2 завершён 2026-06-23. Следующий цикл: /gsd:new-milestone определит фресовые требования. -->
+<!-- v2.0.3 PanelGroup Recompose Fix — scoped 2026-06-25. См. .planning/REQUIREMENTS.md. -->
 
-(Нет активных требований — между milestone. Запустить `/gsd:new-milestone` для определения требований следующего цикла.)
+**v2.0.3 PanelGroup Recompose Fix:**
+- [ ] **RCMP-01..04** — устранить дублирование секций в horizontal controlled при рекомпозиции-во-время-drag; size-math из `isExpanded`; sync в `SideEffect`; repro в showcase
+- [ ] **REG-01..02** — Vertical + uncontrolled byte-identical; 12 JVM-тестов GREEN; Compose 1.7.3
+- [ ] **REL-01..02** — bump `2.0.3`, tag `v2.0.3`, push на JitPack
 
 ### Out of Scope
 
@@ -218,4 +227,4 @@
 | **v2.0.2:** Rotated header strip через `BoxWithConstraints` + `requiredWidth(maxHeight)` + `rotate(-90f)` | `graphicsLayer`-only и `placeRelativeWithLayer` подходы давали неправильную ширину/позицию вертикального заголовка (GAP-1, пойман на sign-off) | ✓ Good — корректный bottom-to-top заголовок в 36dp полоске; подходы-кандидаты отброшены |
 
 ---
-*Last updated: 2026-06-23 — after v2.0.2 AeroPanelGroup milestone*
+*Last updated: 2026-06-25 — after starting v2.0.3 PanelGroup Recompose Fix milestone*
