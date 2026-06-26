@@ -86,10 +86,12 @@ Details: `.planning/milestones/v2.0.2-ROADMAP.md` · Summary: `.planning/MILESTO
   3. Vertical + uncontrolled showcase behavior is byte-identical — drag-resize, collapse/expand animations (`snap()` during drag, `tween(200ms, FastOutSlowInEasing)` after), `onLayoutChange` on drag-end + toggle only, window-resize proportion preservation; the 12 `PanelGroupLogicTest` JVM tests stay GREEN; Compose stays 1.7.3 with zero new dependencies.
   4. A minimal showcase repro in `LayoutSection.kt` (horizontal controlled `AeroPanelGroup` whose one section's content reads an external `mutableStateOf` that changes during a divider drag) reproduces the duplication before the fix and renders clean after.
   5. Release: `build.gradle.kts` version bumped `2.0.2`→`2.0.3`, tag `v2.0.3` created and pushed to `Tolaseeq/aero-compose-ui`, and JitPack resolves `com.github.Tolaseeq:aero-compose-ui:2.0.3`.
-**Plans**: TBD
+**Plans**: 3 plans (3 waves)
 
 Plans:
-- [ ] 14-01: TBD (planned via `/gsd:plan-phase 14`)
+- [ ] 14-01-PLAN.md — Core fix: move `expandedState` sync to `SideEffect`, derive `expandedArr` from `isExpanded()`; 12 JVM tests stay GREEN (Wave 1) [RCMP-01, RCMP-02, RCMP-03, REG-01, REG-02]
+- [ ] 14-02-PLAN.md — Permanent RCMP-04 recompose-during-drag repro demo in `LayoutSection.kt` (Wave 2) [RCMP-04, RCMP-01, REG-01]
+- [ ] 14-03-PLAN.md — Release: bump `2.0.2`→`2.0.3`, update docs, tag + push `v2.0.3`, confirm JitPack (Wave 3) [REL-01, REL-02]
 
 ## Progress
 
@@ -109,12 +111,12 @@ Plans:
 | 12. Seconds Fix + SplitPane Fix + AeroDateTimeRangePicker | v2.0.1 | 4/4 | Complete | 2026-06-22 |
 | 13. AeroPanelGroup | v2.0.2 | 5/5 | Complete | 2026-06-23 |
 | 13.1. AeroPanelGroup horizontal orientation variant | v2.0.2 | 3/3 | Complete | 2026-06-23 |
-| 14. PanelGroup Recompose Fix + v2.0.3 Release | v2.0.3 | 0/TBD | Not started | - |
+| 14. PanelGroup Recompose Fix + v2.0.3 Release | v2.0.3 | 0/3 | Planned | - |
 
 ## Next Milestone
 
-🚧 **v2.0.3 PanelGroup Recompose Fix** is active (Phase 14). Next: `/gsd:plan-phase 14`.
+🚧 **v2.0.3 PanelGroup Recompose Fix** is active (Phase 14, 3 plans planned). Next: `/gsd:execute-phase 14`.
 
 ---
 
-*Roadmap last updated: 2026-06-25 — v2.0.3 PanelGroup Recompose Fix scoped; Phase 14 added (8 requirements, 100% coverage).*
+*Roadmap last updated: 2026-06-26 — Phase 14 planned: 3 plans across 3 waves (fix → repro → release).*
