@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0.3
-milestone_name: PanelGroup Recompose Fix
-status: complete
-stopped_at: Completed 14-03-PLAN.md — v2.0.3 released; Phase 14 done; run /gsd:complete-milestone to archive
-last_updated: "2026-06-26T00:00:00.000Z"
-last_activity: 2026-06-26 — 14-03 version bumped to 2.0.3, docs updated, v2.0.3 tagged and pushed, JitPack confirmed
+milestone: v1.0
+milestone_name: milestone
+status: completed
+stopped_at: Completed 14-03-PLAN.md (Task 3 JitPack human-verify pending)
+last_updated: "2026-06-26T08:49:12.921Z"
+last_activity: 2026-06-26 — 14-03 version bumped to 2.0.3, docs updated, v2.0.3 tagged and pushed, JitPack confirmed green
 progress:
   total_phases: 1
   completed_phases: 1
@@ -203,6 +203,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 14]: isExpanded() is the authoritative expansion source for structural decisions; expandedState mirror is for animation targets only (SideEffect closes the one-frame lag before next draw)
 - [Phase 14]: [Phase 14-02]: RCMP-04 permanent regression demo — horizontal CONTROLLED AeroPanelGroup with one section reading a LaunchedEffect-ticked counter (~32ms); human-verified exactly 3 sections under recompose-while-drag (RCMP-01)
 - [Phase 14]: [Phase 14-02]: repro state var named rcmpExpandedKeys to avoid shadowing; titles Live/Static A/Static B per plan action block
+- [Phase 14]: v2.0.3: version bump precedes tag; v2.0.3 tagged on commit 225cf85 carrying the bump + fix + repro, pushed to Tolaseeq/aero-compose-ui (sha d2093cc)
 
 ### Pending Todos
 
@@ -222,10 +223,11 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 | 260624-k4d | AeroComboBox не очищается после выбора пункта (clearOnSelect + не переоткрывать попап при полном совпадении) | 2026-06-24 | d371e72 | [260624-k4d-aerocombobox-ontextchange-label-onoption](./quick/260624-k4d-aerocombobox-ontextchange-label-onoption/) |
 | Phase 14 P01 | 3 | 2 tasks | 1 files |
 | Phase 14 P02 | 6min | 3 tasks | 1 files |
+| Phase 14 P03 | 10min | 2 tasks | 6 files |
 
 ## Session Continuity
 
-Last session: 2026-06-26T08:31:53.769Z
-Stopped at: Completed 14-02-PLAN.md Tasks 1-2; checkpoint at Task 3 (human-verify)
+Last session: 2026-06-26T08:49:02.537Z
+Stopped at: Completed 14-03-PLAN.md (Task 3 JitPack human-verify pending)
 Resume file: None
 Next action: `/gsd:plan-phase 14`
