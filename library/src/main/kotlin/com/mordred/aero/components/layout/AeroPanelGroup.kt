@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
@@ -328,10 +329,15 @@ internal fun AeroPanelGroupImpl(
         if (controlled) expandedKeys?.contains(sec.key) == true
         else sec.key in internalExpanded
 
-    // Sync expandedState list from the effective expansion set so size math stays consistent.
-    sections.forEachIndexed { i, sec ->
-        val exp = isExpanded(sec)
-        if (expandedState.getOrElse(i) { exp } != exp) expandedState[i] = exp
+    // Sync expandedState mirror from the effective expansion source AFTER a successful commit.
+    // Deferred to SideEffect so this composition pass never writes a state it also reads
+    // (the write-during-composition loop that caused horizontal-controlled ×N duplication).
+    // MUST NOT call onLayoutChange — that stays on drag-end + toggle only (REG-01).
+    SideEffect {
+        sections.forEachIndexed { i, sec ->
+            val exp = isExpanded(sec)
+            if (expandedState.getOrElse(i) { exp } != exp) expandedState[i] = exp
+        }
     }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -343,7 +349,9 @@ internal fun AeroPanelGroupImpl(
         // the live container dimension — prevents snap-back after a window resize mid-drag (FIXSP-01).
         val liveTotalPx by rememberUpdatedState(totalPx)
 
-        val expandedArr = expandedState.toBooleanArray()
+        // Size-math reads the authoritative expansion source directly each composition
+        // (NOT the SideEffect-synced mirror, which lags one frame) — RCMP-02.
+        val expandedArr = BooleanArray(sections.size) { i -> isExpanded(sections[i]) }
         val availableForExpanded = computeAvailablePx(totalPx, expandedArr, headerPx, dividerPx)
         val renderHeights = distributePx(sizePx.toFloatArray(), expandedArr, totalPx, headerPx, dividerPx)
 
