@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 14 context gathered
-last_updated: "2026-06-25T15:57:35.397Z"
+stopped_at: "14-01-PLAN.md checkpoint:human-verify (Task 3)"
+last_updated: "2026-06-26T08:22:47.599Z"
 last_activity: 2026-06-25 — Roadmap created; Phase 14 defined, all 8 requirements mapped (100% coverage)
 progress:
   total_phases: 1
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 3
+  completed_plans: 1
 ---
 
 # Project State
@@ -198,6 +198,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 13.1-03]: Horizontal-section vertical titles: BoxWithConstraints + requiredWidth(maxHeight) + rotate(-90f) is the approved pattern; graphicsLayer-only and placeRelativeWithLayer approaches were abandoned (GAP-1 sign-off defect)
 - [Phase 13.1-03]: GAP-2 column distribution: removed weight(1f) from outer section Row; explicit distributePx width for non-last columns; last column absorbs float rounding with weight(1f) at content level
 - [Phase 13.1-03]: Three-theme sign-off APPROVED — AeroBlue / AeroDark / Classic — on both vertical (regression) and horizontal (PNL-HORIZ-01) demos; PNL-17 Aero fidelity confirmed across both orientations
+- [Phase 14]: RCMP-02+03: SideEffect-deferred expandedState sync + isExpanded()-derived expandedArr are both required together; neither alone is sufficient
+- [Phase 14]: isExpanded() is the authoritative expansion source for structural decisions; expandedState mirror is for animation targets only (SideEffect closes the one-frame lag before next draw)
 
 ### Pending Todos
 
@@ -215,10 +217,11 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260624-k4d | AeroComboBox не очищается после выбора пункта (clearOnSelect + не переоткрывать попап при полном совпадении) | 2026-06-24 | d371e72 | [260624-k4d-aerocombobox-ontextchange-label-onoption](./quick/260624-k4d-aerocombobox-ontextchange-label-onoption/) |
+| Phase 14 P01 | 3 | 2 tasks | 1 files |
 
 ## Session Continuity
 
-Last session: 2026-06-25T15:57:35.389Z
-Stopped at: Phase 14 context gathered
-Resume file: .planning/phases/14-panelgroup-recompose-fix-v2-0-3-release/14-CONTEXT.md
+Last session: 2026-06-26T08:22:47.596Z
+Stopped at: 14-01-PLAN.md checkpoint:human-verify (Task 3)
+Resume file: None
 Next action: `/gsd:plan-phase 14`

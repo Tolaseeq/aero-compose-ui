@@ -111,7 +111,7 @@ Plans:
 | 12. Seconds Fix + SplitPane Fix + AeroDateTimeRangePicker | v2.0.1 | 4/4 | Complete | 2026-06-22 |
 | 13. AeroPanelGroup | v2.0.2 | 5/5 | Complete | 2026-06-23 |
 | 13.1. AeroPanelGroup horizontal orientation variant | v2.0.2 | 3/3 | Complete | 2026-06-23 |
-| 14. PanelGroup Recompose Fix + v2.0.3 Release | v2.0.3 | 0/3 | Planned | - |
+| 14. PanelGroup Recompose Fix + v2.0.3 Release | 1/3 | In Progress|  | - |
 
 ## Next Milestone
 
