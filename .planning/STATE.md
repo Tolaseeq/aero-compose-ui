@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in_progress
-stopped_at: v2.0.4 release prep — real RCMP root cause fixed, awaiting push approval
+status: completed
+stopped_at: v2.0.4 SHIPPED — real RCMP fix tagged, pushed, JitPack build ok
 last_updated: "2026-06-26T08:49:12.921Z"
 last_activity: 2026-06-26 — RCMP duplication STILL reproduced in a real consumer after v2.0.3; real root cause found (@Composable DSL lambda accumulating scope.sections during recompose-while-dragging), fixed via non-@Composable DSL, deterministic UI test added; v2.0.4 release prepped
 progress:
@@ -26,13 +26,15 @@ See: .planning/PROJECT.md (updated 2026-06-23 — after v2.0.2 milestone)
 
 Phase: 14 of 14 (PanelGroup Recompose Fix) — v2.0.4 release prep
 Plan: 14-01/02/03 done for v2.0.3, but v2.0.3 did NOT fix the bug; real fix committed (8d2170f)
-Status: v2.0.4 RELEASE PREP — version bumped 2.0.3→2.0.4, docs updating; awaiting explicit approval to push master + tag v2.0.4
-Last activity: 2026-06-26 — real RCMP root cause found + fixed (non-@Composable DSL); deterministic Compose UI drag test added; v2.0.4 prepped
+Status: v2.0.4 SHIPPED — tag v2.0.4 pushed (1db2b57), JitPack build status "ok", `com.github.Tolaseeq:aero-compose-ui:2.0.4` resolves
+Last activity: 2026-06-26 — real RCMP root cause found + fixed (non-@Composable DSL); deterministic Compose UI drag test added; v2.0.4 tagged, pushed, JitPack green
 
 ```
-v2.0.2 ✅ SHIPPED → v2.0.3 ⚠ SHIPPED-BUT-BROKEN → v2.0.4 ◆ real RCMP fix (push pending)
-[█████████░] 90% → fix ✓ → UI test ✓ → docs ◆ → tag/push ○
+v2.0.2 ✅ SHIPPED → v2.0.3 ⚠ SHIPPED-BUT-BROKEN → v2.0.4 ✅ real RCMP fix SHIPPED
+[██████████] 100% → fix ✓ → UI test ✓ → docs ✓ → tag/push ✓ → JitPack ✓
 ```
+
+Recommended next: confirm 2.0.4 in the real consumer app (bump dependency to 2.0.4), then `/gsd:complete-milestone`.
 
 Progress: v2.0.3 shipped a wrong-cause fix (SideEffect); bug persisted in a real consumer. Root cause found, fixed, verified by a new programmatic-drag UI test. Releasing v2.0.4.
 
