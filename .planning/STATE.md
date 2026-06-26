@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Completed 14-03-PLAN.md (Task 3 JitPack human-verify pending)
+status: in_progress
+stopped_at: v2.0.4 release prep — real RCMP root cause fixed, awaiting push approval
 last_updated: "2026-06-26T08:49:12.921Z"
-last_activity: 2026-06-26 — 14-03 version bumped to 2.0.3, docs updated, v2.0.3 tagged and pushed, JitPack confirmed green
+last_activity: 2026-06-26 — RCMP duplication STILL reproduced in a real consumer after v2.0.3; real root cause found (@Composable DSL lambda accumulating scope.sections during recompose-while-dragging), fixed via non-@Composable DSL, deterministic UI test added; v2.0.4 release prepped
 progress:
   total_phases: 1
   completed_phases: 1
@@ -20,21 +20,35 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-23 — after v2.0.2 milestone)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, typed `AeroIcons`, and a showcase — no manual style work or icon-pack hunting required.
-**Current focus:** v2.0.3 PanelGroup Recompose Fix — Phase 14 (single-phase patch). Fix horizontal-controlled section duplication under recompose-during-drag (move observed-state write out of the composition pass), add a showcase repro, regression-guard vertical/uncontrolled, then release v2.0.3 on JitPack.
+**Current focus:** v2.0.4 PanelGroup Recompose Fix (real root cause) — Phase 14. v2.0.3 shipped a wrong-cause fix; the real cause is the `@Composable` section-DSL lambda accumulating `scope.sections` during recompose-while-dragging. Fixed via non-`@Composable` DSL + a deterministic programmatic-drag UI test; releasing v2.0.4 on JitPack.
 
 ## Current Position
 
-Phase: 14 of 14 (PanelGroup Recompose Fix + v2.0.3 Release) — COMPLETE
-Plan: 3 of 3 complete (14-01 fix, 14-02 repro, 14-03 release)
-Status: SHIPPED — v2.0.3 tagged and pushed; JitPack confirmed; run `/gsd:complete-milestone` to archive
-Last activity: 2026-06-26 — 14-03 version bumped to 2.0.3, docs updated, v2.0.3 tagged and pushed, JitPack confirmed green
+Phase: 14 of 14 (PanelGroup Recompose Fix) — v2.0.4 release prep
+Plan: 14-01/02/03 done for v2.0.3, but v2.0.3 did NOT fix the bug; real fix committed (8d2170f)
+Status: v2.0.4 RELEASE PREP — version bumped 2.0.3→2.0.4, docs updating; awaiting explicit approval to push master + tag v2.0.4
+Last activity: 2026-06-26 — real RCMP root cause found + fixed (non-@Composable DSL); deterministic Compose UI drag test added; v2.0.4 prepped
 
 ```
-v2.0.2 ✅ SHIPPED → v2.0.3 PanelGroup Recompose Fix ✅ SHIPPED
-[██████████] 100% → 14-01 ✓ fix → 14-02 ✓ repro → 14-03 ✓ release
+v2.0.2 ✅ SHIPPED → v2.0.3 ⚠ SHIPPED-BUT-BROKEN → v2.0.4 ◆ real RCMP fix (push pending)
+[█████████░] 90% → fix ✓ → UI test ✓ → docs ◆ → tag/push ○
 ```
 
-Progress: v2.0.3 — All 3 plans complete. Phase 14 done. Milestone shipped 2026-06-26.
+Progress: v2.0.3 shipped a wrong-cause fix (SideEffect); bug persisted in a real consumer. Root cause found, fixed, verified by a new programmatic-drag UI test. Releasing v2.0.4.
+
+## v2.0.4 — Real RCMP Root Cause (2026-06-26)
+
+**Symptom:** horizontal CONTROLLED `AeroPanelGroup` rendered each section's header strip ×N (3 sections → 9+ "tabs") when a divider was dragged in a real consumer app — i.e. v2.0.3 did not fix it.
+
+**Why v2.0.3 missed it:** the 14-01 fix (move `expandedState` sync to `SideEffect`, derive `expandedArr` from `isExpanded()`) addressed a *write-during-composition* theory that was not the cause. The 14-02 showcase repro read its ticking counter *inside* `section.content()` (deep), which only recomposes that content Box — it never re-ran the DSL lambda, so it could never reproduce the bug. Both human sign-offs were therefore false-positives.
+
+**Real root cause (confirmed by instrumented `enters/disposes` + `sections.size` logging):** `AeroPanelGroup`'s DSL lambda `content` was `@Composable`, so it had its own recompose scope. During an active drag (continuous re-measure as `.width` changes) any parent recompose re-ran that lambda *independently*, re-appending `section()` into the SAME persisted `AeroPanelGroupScope`. `scope.sections` grew 3 → 9 → 12 → … → 33; the `key(section.key)` render loop emitted ever more header strips and none were disposed. `AeroPanelGroupImpl` and `BoxWithConstraints` each composed exactly once — only the section list grew.
+
+**Trigger requires BOTH:** (a) an active drag *with movement* (sizePx write → re-measure), AND (b) a recompose of `AeroPanelGroup`/its content lambda. Recompose-without-drag and drag-without-recompose are both fine — which is why it only showed in a real app whose hosting screen recomposes mid-drag (VM observables, animations).
+
+**Fix (commit 8d2170f):** make the DSL lambda non-`@Composable` (`content: AeroPanelGroupScope.() -> Unit`), mirroring `LazyListScope`. The collection pass runs exactly once per `AeroPanelGroup` recompose and cannot accumulate. Each section's own `content` slot stays `@Composable`. Source-compatible for existing `section(){...}` usage.
+
+**Guard:** new `AeroPanelGroupRecomposeUiTest` (Compose-desktop `runComposeUiTest` + programmatic `performMouseInput` drag interleaved with mid-drag recompose) asserts exactly 1 header per section — it observed 11 before the fix, 1 after. This is the real regression guard 14-02 could not be. Added `compose.uiTest` + `compose.desktop.currentOs` test deps. 232 library tests pass; 12 `PanelGroupLogicTest` GREEN (REG-02); showcase compiles; RCMP-04 showcase demo rewritten to read the tick in the demo body so it genuinely reproduces.
 
 ## Phase 14 Scope (v2.0.3)
 
