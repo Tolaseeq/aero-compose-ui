@@ -33,6 +33,12 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(kotlin("reflect"))
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // Compose UI testing — programmatic drag/click to reproduce recompose-during-drag
+    // duplication (RCMP) that pure-logic tests cannot catch.
+    @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
+    testImplementation(compose.uiTest)
+    testImplementation(compose.desktop.currentOs)
 }
 
 tasks.test {

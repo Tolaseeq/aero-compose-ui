@@ -391,11 +391,14 @@ fun LayoutSection() {
         }
 
         // ── AeroPanelGroup horizontal CONTROLLED — recompose-during-drag guard (RCMP-04) ──
-        // PERMANENT regression demo. A LaunchedEffect ticks a counter ~32ms; ONE section's
-        // content reads it, so that section recomposes on its own during a divider drag.
-        // Before the v2.0.3 fix this surfaced ×N duplication (3 sections rendered as 9 header
-        // strips) because the composition body wrote to expandedState while reading it.
-        // After the fix: dragging the divider while the counter ticks shows exactly 3 sections.
+        // PERMANENT regression demo. A LaunchedEffect ticks a counter ~32ms. The counter is read
+        // in THIS demo body (the caption below), so the AeroPanelGroup call itself recomposes
+        // continuously — exactly the real-world trigger where a consumer's hosting screen
+        // recomposes mid-drag (VM observables, animations). Combined with dragging a divider this
+        // surfaced the RCMP ×N duplication (3 sections rendered as 9+ header strips) because the
+        // @Composable DSL lambda re-ran independently and re-appended sections into a persisted
+        // scope. After the fix (non-@Composable DSL) the section list is rebuilt once per recompose
+        // and dragging while the counter ticks shows exactly 3 sections.
         var recomposeDriveCounter by remember { mutableStateOf(0) }
         LaunchedEffect(Unit) {
             while (true) {
@@ -412,7 +415,9 @@ fun LayoutSection() {
             style = typography.bodyMedium,
         )
         Text(
-            "Drag the dividers while the counter ticks. Must show exactly 3 sections, never 9.",
+            // Reading recomposeDriveCounter HERE recomposes the demo body (and the AeroPanelGroup
+            // call) on every tick — the real RCMP trigger. Must show exactly 3 sections, never 9.
+            "Drag the dividers while this counter ticks ($recomposeDriveCounter). Must stay 3 sections, never 9.",
             color = colors.labelText,
             style = typography.bodySmall,
         )
@@ -424,9 +429,8 @@ fun LayoutSection() {
                 onExpandedChange = { rcmpExpandedKeys = it },
             ) {
                 section(key = "rcmp-left", title = "Live") {
-                    // Reads the live counter → this section recomposes independently during a drag.
                     Text(
-                        "Counter: $recomposeDriveCounter",
+                        "Live section",
                         color = colors.onSurface,
                         style = typography.bodyMedium,
                     )

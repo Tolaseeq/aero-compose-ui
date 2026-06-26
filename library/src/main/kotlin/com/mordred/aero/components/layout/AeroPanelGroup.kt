@@ -224,6 +224,14 @@ public class AeroPanelGroupScope internal constructor() {
  *   with the current list of render heights in pixels (one entry per section in declaration
  *   order). REQ: PNL-09.
  * @param content DSL scope where sections are declared via [AeroPanelGroupScope.section].
+ *   This lambda is intentionally **not** `@Composable` (it mirrors `LazyListScope`): it is a pure
+ *   collection pass that registers sections into a fresh scope on every recompose. Each section's
+ *   own `content` slot IS `@Composable` and is composed later in the render. Making this DSL lambda
+ *   `@Composable` previously gave it an independent recompose scope that re-ran (e.g. during a
+ *   divider drag while a parent recomposed) and re-appended sections into the same persisted scope,
+ *   duplicating every section's header strip (RCMP — N sections rendered as N×). Keeping it
+ *   non-composable means the section list is always rebuilt exactly once per AeroPanelGroup
+ *   recompose and cannot accumulate.
  */
 @Composable
 public fun AeroPanelGroup(
@@ -233,9 +241,10 @@ public fun AeroPanelGroup(
     expandedKeys: Set<String>? = null,
     onExpandedChange: ((Set<String>) -> Unit)? = null,
     onLayoutChange: ((List<Float>) -> Unit)? = null,
-    content: @Composable AeroPanelGroupScope.() -> Unit,
+    content: AeroPanelGroupScope.() -> Unit,
 ) {
-    // Collect sections fresh each recompose (AeroSidebar pattern).
+    // Collect sections once per recompose. The DSL lambda is non-@Composable so it has no
+    // independent recompose scope and cannot re-run on its own and re-append (RCMP root cause).
     val scope = AeroPanelGroupScope()
     scope.content()
     AeroPanelGroupImpl(
