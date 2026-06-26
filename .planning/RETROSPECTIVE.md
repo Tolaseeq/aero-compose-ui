@@ -170,6 +170,39 @@
 
 ---
 
+## Milestone: v2.0.3 — PanelGroup Recompose Fix
+
+**Shipped:** 2026-06-26
+**Phases:** 1 (14) | **Plans:** 3 | **Sessions:** single-day push; 3 plans (fix, repro, release); fix commit `fbba375` → v2.0.3 tag
+
+### What Was Built
+- **Core fix (Phase 14-01, RCMP-01..03):** Eliminated all in-composition writes to observed snapshot-state in `AeroPanelGroupImpl`. `expandedArr` (used for size-math throughout the composable) now computed directly from `isExpanded(sec)` each composition. `expandedState` sync deferred to `SideEffect`. Seed block rewritten to not mutate state read in the same composition pass.
+- **Showcase repro (Phase 14-02, RCMP-04):** Permanent horizontal controlled `AeroPanelGroup` demo (`rcmpExpandedKeys`) in `LayoutSection.kt` — Live / Static A / Static B sections, Live reads a `LaunchedEffect`-ticked counter (~32 ms). Human-verified: exactly 3 sections under recompose-while-drag after fix.
+- **Release (Phase 14-03, REL-01..02):** `build.gradle.kts` version bumped `2.0.2`→`2.0.3`; annotated tag `v2.0.3` pushed to `Tolaseeq/aero-compose-ui`; JitPack build confirmed green.
+
+### What Worked
+- **Direct fix scope.** The root cause (in-composition write to observed state inside `BoxWithConstraints`) was well-specified before any plan was written, so plan 14-01 was a pure targeted edit with no spike needed — the earlier `SideEffect` / `isExpanded()` pattern from the research phase mapped directly to the production code.
+- **Minimal repro gates the outcome.** The plan 14-02 repro (a controlled group with one `LaunchedEffect`-ticked section) exercises the exact failure mode cheaply and will catch any future regression that re-introduces in-composition writes to `expandedState`.
+- **No regression to other paths.** The two-step fix (derive `expandedArr` from `isExpanded()`, defer `expandedState` sync to `SideEffect`) affected only the controlled-mode recompose path; vertical and uncontrolled paths are byte-identical, and all 12 `PanelGroupLogicTest` JVM tests stayed GREEN without any test changes.
+
+### What Was Inefficient
+- **The root cause (`SubcomposeLayout` ×N loop on in-composition state write) is a Compose invariant that could have been caught at the `AeroPanelGroupImpl` write time in Phase 13.** The `expandedState` seed block was written during Phase 13.1 composition — the pattern of writing to a `SnapshotStateList` inside `BoxWithConstraints` was not flagged as a PITFALL at the time. A write-during-composition rule ("no `mutableStateList.add/set` inside `BoxWithConstraints` body") added to PITFALLS.md at Phase 13 would have prevented v2.0.3 from being needed.
+
+### Patterns Established
+- **`SideEffect` for snapshot-state sync inside `SubcomposeLayout`** — if a composable both reads and writes a `SnapshotStateList`/`SnapshotStateMap` inside `BoxWithConstraints` (or any `SubcomposeLayout`), the write MUST be deferred to a `SideEffect`. Writing during composition creates a ×N recompose loop.
+- **`isExpanded()` as structural source of truth** — when the component has a controlled API (`expandedKeys: Set<Any>`), derive all layout-critical booleans (`expandedArr`) from that source of truth each composition. Keep the observed-state mirror (`expandedState`) for animation targets only; update it in a `SideEffect` so it never feeds back into the same composition pass.
+
+### Key Lessons
+1. **`BoxWithConstraints`/`SubcomposeLayout` amplifies in-composition state writes into ×N loops.** A state write that is merely "one extra recompose" in a simple composable becomes a recompose-until-stable cascade inside `SubcomposeLayout`, producing visible ×N section duplication. The rule: any `SnapshotStateList.add/set` or `SnapshotStateMap.put` inside `BoxWithConstraints` must be moved to a `SideEffect`, `LaunchedEffect`, or callback. It is never safe during the composition pass inside a sub-compose layout.
+2. **Record write-during-composition as a PITFALL at the phase that introduces it.** The pattern was introduced in Phase 13.1 and went undetected until a controlled-mode + recompose-during-drag stress test. A PITFALL note ("no snapshot-state writes inside `BoxWithConstraints` composition body") at Phase 13 write-time would have prevented this milestone.
+3. **A `SideEffect` + `isExpanded()` split is the correct answer for controlled-mode Compose layout components.** The controlled API (`expandedKeys`) is the source of truth for structural decisions (which sections are expanded, how to distribute sizes). The observed-state mirror (`expandedState`) exists only to feed animation targets. These two concerns must not be conflated in the same composition pass.
+
+### Cost Observations
+- Model mix: opus for planning/research, sonnet for execution (`model_profile: balanced`); unchanged from prior milestones.
+- 3 plans: fix (~2 min), repro + human-verify (~6 min), release. The fix itself was small; cost concentrated in the human verification gate (JitPack build wait).
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -181,6 +214,7 @@
 | v2.0 | concentrated | 5 (7–11) | Established enabling-phase-first for shared primitives, pure-logic-then-Compose (sealed state machines unit-tested without Compose), front-loaded PITFALLS catalog, silent-failure checklist as sign-off gate, grep-gates for banned APIs, hybrid controlled/uncontrolled component API |
 | v2.0.1 | ~2h20m | 1 (12) | First patch milestone — single phase, verification-only gate (no separate audit); established nullable-formatter dispatch, fraction-as-stable-coordinate dividers, and verbatim state-machine reuse; confirmed that documented lessons must be applied at write-time (v2.0 lesson #3 regressed before the sign-off caught it) |
 | v2.0.2 | ~1 day | 2 (13 + 13.1) | Single additive layout component + inserted orientation variant; established mandatory-spike-before-component for the highest-risk interaction (Pattern 3 two-writer coexistence), public-wrapper + internal-core for orientation symmetry, and refactor-then-extend (core extraction as its own zero-regression plan); confirmed "strictly one phase" is a soft boundary (deferred horizontal re-entered as Phase 13.1) |
+| v2.0.3 | single-day | 1 (14) | Smallest patch milestone — 3 plans (fix, repro, release); established `SideEffect`-for-snapshot-state-sync rule for `BoxWithConstraints`/`SubcomposeLayout` context and `isExpanded()`-as-structural-source-of-truth; confirmed that write-during-composition inside `SubcomposeLayout` amplifies to ×N recompose loops |
 
 ### Cumulative Quality
 
@@ -191,6 +225,7 @@
 | v2.0 | ~62 (+12: 6 pickers, 2 data, 4 layout) | 138 (unchanged) | 3 (unchanged) | 12 (+ DataSection, PickersSection, LayoutSection) | +`kotlinx-datetime:0.6.2` (only new dependency) |
 | v2.0.1 | ~63 (+1: `AeroDateTimeRangePicker`) | 138 (unchanged) | 3 (unchanged) | 12 (PickersSection + LayoutSection demos extended) | unchanged (zero new dependencies) |
 | v2.0.2 | ~64 (+1: `AeroPanelGroup`, vertical + horizontal orientations) | 138 (unchanged) | 3 (unchanged) | 12 (LayoutSection: + vertical + 2 horizontal AeroPanelGroup demos) | unchanged (zero new dependencies) |
+| v2.0.3 | ~64 (no new components — bug fix only) | 138 (unchanged) | 3 (unchanged) | 12 (LayoutSection: + RCMP-04 permanent recompose-during-drag repro) | unchanged (zero new dependencies) |
 
 ### Top Lessons (Verified Across Milestones)
 

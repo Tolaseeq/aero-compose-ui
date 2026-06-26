@@ -9,7 +9,7 @@ A Compose Desktop UI component library styled after Windows Aero (Windows 7): gl
 - ✅ **v2.0 Stateful + Layout** — Phases 7–11 (shipped 2026-06-18) — 12 stateful + layout components, showcase sign-off
 - ✅ **v2.0.1 Picker & SplitPane Fixes** — Phase 12 (shipped 2026-06-22) — 2 bug fixes + `AeroDateTimeRangePicker`
 - ✅ **v2.0.2 AeroPanelGroup** — Phases 13 + 13.1 (shipped 2026-06-23) — N-section collapsible+resizable layout, vertical + horizontal orientations
-- 🚧 **v2.0.3 PanelGroup Recompose Fix** — Phase 14 (in progress) — horizontal-controlled recompose-during-drag duplication fix + JitPack release
+- ✅ **v2.0.3 PanelGroup Recompose Fix** — Phase 14 (shipped 2026-06-26) — horizontal-controlled recompose-during-drag duplication fix + JitPack release
 
 Full ship-time snapshots (milestone goal, all phase details, decisions, tech debt) are archived per milestone:
 - `.planning/milestones/v1.1-ROADMAP.md` (also captures v1.0 phase definitions)
@@ -68,11 +68,11 @@ Details: `.planning/milestones/v2.0.1-ROADMAP.md` · Summary: `.planning/MILESTO
 Details: `.planning/milestones/v2.0.2-ROADMAP.md` · Summary: `.planning/MILESTONES.md`
 </details>
 
-### 🚧 v2.0.3 PanelGroup Recompose Fix (In Progress)
+### ✅ v2.0.3 PanelGroup Recompose Fix — SHIPPED 2026-06-26
 
 **Milestone Goal:** A patch release that eliminates section duplication in `AeroPanelGroup` when `Orientation.Horizontal` + controlled mode coincides with a section's content recomposing during an active divider drag — the root cause being an in-composition write to observed snapshot-state (`expandedState`) that is read in the same `BoxWithConstraints` pass. Then ship v2.0.3 on JitPack. Single phase (user-scoped). No breaking changes to the v2.x API; zero new dependencies; Compose stays 1.7.3.
 
-- [ ] **Phase 14: PanelGroup Recompose Fix + v2.0.3 Release** — Compute `expandedArr` from `isExpanded()` each composition; move `expandedState` sync into `SideEffect`; ensure the seed-block doesn't mutate read-in-same-composition state; minimal showcase repro; vertical + uncontrolled regression-guarded; bump + tag + JitPack release (RCMP-01..04, REG-01..02, REL-01..02)
+- [x] **Phase 14: PanelGroup Recompose Fix + v2.0.3 Release** — Compute `expandedArr` from `isExpanded()` each composition; move `expandedState` sync into `SideEffect`; ensure the seed-block doesn't mutate read-in-same-composition state; minimal showcase repro; vertical + uncontrolled regression-guarded; bump + tag + JitPack release (RCMP-01..04, REG-01..02, REL-01..02)
 
 ## Phase Details
 
@@ -111,12 +111,12 @@ Plans:
 | 12. Seconds Fix + SplitPane Fix + AeroDateTimeRangePicker | v2.0.1 | 4/4 | Complete | 2026-06-22 |
 | 13. AeroPanelGroup | v2.0.2 | 5/5 | Complete | 2026-06-23 |
 | 13.1. AeroPanelGroup horizontal orientation variant | v2.0.2 | 3/3 | Complete | 2026-06-23 |
-| 14. PanelGroup Recompose Fix + v2.0.3 Release | 2/3 | In Progress|  | - |
+| 14. PanelGroup Recompose Fix + v2.0.3 Release | v2.0.3 | 3/3 | Complete | 2026-06-26 |
 
 ## Next Milestone
 
-🚧 **v2.0.3 PanelGroup Recompose Fix** is active (Phase 14, 3 plans planned). Next: `/gsd:execute-phase 14`.
+✅ **v2.0.3 PanelGroup Recompose Fix** shipped 2026-06-26. Phase 14 complete (3/3 plans). Run `/gsd:complete-milestone` to archive v2.0.3.
 
 ---
 
-*Roadmap last updated: 2026-06-26 — Phase 14 planned: 3 plans across 3 waves (fix → repro → release).*
+*Roadmap last updated: 2026-06-26 — Phase 14 complete: v2.0.3 shipped (fix → repro → release). Run `/gsd:complete-milestone` to archive.*

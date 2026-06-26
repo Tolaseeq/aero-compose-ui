@@ -1,5 +1,29 @@
 # Milestones
 
+## v2.0.3 PanelGroup Recompose Fix (Shipped: 2026-06-26)
+
+**Phase:** 14 (1 phase) | **Plans:** 3 (Phase 14: 3) | **Requirements:** 8/8 (RCMP-01..04, REG-01..02, REL-01..02)
+
+**Timeline:** 2026-06-25 → 2026-06-26 (single-day push)
+**Git range:** `fbba375` (fix commit) → v2.0.3 tag — 3 plans (fix, repro, release)
+**Sign-off:** ✅ APPROVED — human-verified repro shows exactly N sections under recompose-while-drag after fix; 12 PanelGroupLogicTest GREEN.
+
+**Delivered:** A patch release eliminating section duplication in `AeroPanelGroup` when `Orientation.Horizontal` + controlled mode coincides with a section's content recomposing during an active divider drag. Root cause: in-composition write to observed snapshot-state (`expandedState`) inside `BoxWithConstraints`/`SubcomposeLayout`. Fix: `expandedArr` for size-math now computed directly from `isExpanded()` each composition; `expandedState` sync moved to `SideEffect`. Vertical and uncontrolled paths are byte-identical; 12 JVM unit tests remain GREEN. A minimal showcase repro in `LayoutSection.kt` (horizontal controlled `AeroPanelGroup` with one section reading a `LaunchedEffect`-ticked counter) demonstrates the fix. Zero new dependencies; Compose stays 1.7.3. Released as `com.github.Tolaseeq:aero-compose-ui:2.0.3` on JitPack.
+
+**Key accomplishments:**
+1. **Write-during-composition root cause identified and eliminated (RCMP-01..03, Phase 14-01)** — `expandedArr` was computed from `expandedState` (a `SnapshotStateList` written by the seed block during composition), causing `BoxWithConstraints`/`SubcomposeLayout` to loop: each recompose wrote new values which triggered another recompose. Fix removes all in-composition writes: size-math reads `isExpanded()` directly from the controlled-API `expandedKeys` set each composition; `expandedState` is updated in a `SideEffect` (runs after layout, before next composition). The seed block no longer mutates any state that the current composition pass reads.
+2. **Permanent showcase repro (RCMP-04, Phase 14-02)** — A permanent horizontal controlled `AeroPanelGroup` demo (`rcmpExpandedKeys`) with titles Live / Static A / Static B, where the Live section's content reads a `LaunchedEffect`-ticked counter (~32 ms), exercises the exact failure mode. Human-verified: exactly 3 sections render cleanly under recompose-while-drag after the fix.
+3. **Regression guard (REG-01..02)** — Vertical orientation and uncontrolled mode are byte-identical; all 12 `PanelGroupLogicTest` JVM tests stay GREEN; Compose 1.7.3, zero new dependencies.
+4. **Release (REL-01..02)** — `build.gradle.kts` version bumped `2.0.2`→`2.0.3`; annotated tag `v2.0.3` pushed to `Tolaseeq/aero-compose-ui`; JitPack resolves `com.github.Tolaseeq:aero-compose-ui:2.0.3`.
+
+**Patterns established:**
+- **SideEffect for snapshot-state sync** — when a composable both reads and writes a `SnapshotStateList`/`SnapshotStateMap` inside a `SubcomposeLayout` (e.g. `BoxWithConstraints`), the write must be deferred to a `SideEffect`. Writing during composition creates a ×N recompose loop.
+- **`isExpanded()` as structural source of truth** — derive layout-critical booleans directly from the controlled API's source of truth each composition rather than from an intermediate observed-state mirror. The mirror (`expandedState`) serves animation targets only.
+
+**Technical debt incurred:** None. No deferred items; all 8 requirements satisfied.
+
+---
+
 ## v2.0.2 AeroPanelGroup (Shipped: 2026-06-23)
 
 **Phases:** 13 + 13.1 (2 phases) | **Plans:** 8 (Phase 13: 5, Phase 13.1: 3) | **Requirements:** 18/18 v1 (PNL-01..PNL-18) + PNL-HORIZ-01 (delivered via inserted Phase 13.1)

@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: executing
-stopped_at: Completed 14-02-PLAN.md (Task 3 human-verify checkpoint APPROVED)
-last_updated: "2026-06-26T08:39:11.621Z"
-last_activity: 2026-06-26 — 14-02 RCMP-04 showcase repro added + human-verified (exactly 3 sections under recompose-while-drag)
+milestone: v2.0.3
+milestone_name: PanelGroup Recompose Fix
+status: complete
+stopped_at: Completed 14-03-PLAN.md — v2.0.3 released; Phase 14 done; run /gsd:complete-milestone to archive
+last_updated: "2026-06-26T00:00:00.000Z"
+last_activity: 2026-06-26 — 14-03 version bumped to 2.0.3, docs updated, v2.0.3 tagged and pushed, JitPack confirmed
 progress:
   total_phases: 1
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -24,17 +24,17 @@ See: .planning/PROJECT.md (updated 2026-06-23 — after v2.0.2 milestone)
 
 ## Current Position
 
-Phase: 14 of 14 (PanelGroup Recompose Fix + v2.0.3 Release) — single-phase milestone
-Plan: 2 of 3 complete (14-01 fix landed, 14-02 RCMP-04 repro APPROVED)
-Status: In Progress — Plan 03 (v2.0.3 release) unblocked
-Last activity: 2026-06-26 — 14-02 RCMP-04 showcase repro added + human-verified (exactly 3 sections under recompose-while-drag)
+Phase: 14 of 14 (PanelGroup Recompose Fix + v2.0.3 Release) — COMPLETE
+Plan: 3 of 3 complete (14-01 fix, 14-02 repro, 14-03 release)
+Status: SHIPPED — v2.0.3 tagged and pushed; JitPack confirmed; run `/gsd:complete-milestone` to archive
+Last activity: 2026-06-26 — 14-03 version bumped to 2.0.3, docs updated, v2.0.3 tagged and pushed, JitPack confirmed green
 
 ```
-v2.0.2 ✅ SHIPPED → v2.0.3 PanelGroup Recompose Fix ◆ IN PROGRESS
-[███████░░░] 67% → 14-01 ✓ fix → 14-02 ✓ repro → 14-03 release
+v2.0.2 ✅ SHIPPED → v2.0.3 PanelGroup Recompose Fix ✅ SHIPPED
+[██████████] 100% → 14-01 ✓ fix → 14-02 ✓ repro → 14-03 ✓ release
 ```
 
-Progress: v2.0.3 — Plan 01 (fix: SideEffect sync + isExpanded()-derived expandedArr) and Plan 02 (RCMP-04 showcase repro, human-verified) complete. Next: Plan 03 — bump version 2.0.2→2.0.3, tag v2.0.3, JitPack release.
+Progress: v2.0.3 — All 3 plans complete. Phase 14 done. Milestone shipped 2026-06-26.
 
 ## Phase 14 Scope (v2.0.3)
 
@@ -54,6 +54,7 @@ Target file: `library/src/main/kotlin/com/mordred/aero/components/layout/AeroPan
 | v2.0 | Stateful + Layout | 7–11 | 27 | 27 | 2026-06-18 |
 | v2.0.1 | Picker & SplitPane Fixes | 12 | 4 | 18 | 2026-06-22 |
 | v2.0.2 | AeroPanelGroup | 13–13.1 | 8 | 18 + PNL-HORIZ-01 | 2026-06-23 |
+| v2.0.3 | PanelGroup Recompose Fix | 14 | 3 | RCMP-01..04, REG-01..02, REL-01..02 | 2026-06-26 |
 
 See `.planning/MILESTONES.md` for full accomplishments.
 
