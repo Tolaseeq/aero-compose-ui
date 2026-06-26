@@ -53,7 +53,7 @@ completed: 2026-06-26
 - **Duration:** 3 min
 - **Started:** 2026-06-26T08:18:25Z
 - **Completed:** 2026-06-26T08:21:25Z
-- **Tasks:** 2 (Task 3 is a human-verify checkpoint — awaiting sign-off)
+- **Tasks:** 3 (Task 3 human-verify checkpoint — APPROVED)
 - **Files modified:** 1
 
 ## Accomplishments
@@ -68,6 +68,9 @@ completed: 2026-06-26
 
 1. **Task 1: Move expandedState sync into SideEffect and derive expandedArr from isExpanded()** - `fbba375` (fix)
 2. **Task 2: Compile and run PanelGroupLogicTest JVM gate** - no new commit (verification only; code compiled as part of test run confirming Task 1 commit)
+3. **Task 3: Human visual sign-off (checkpoint:human-verify)** - APPROVED. Vertical + horizontal drag, collapse/expand, and proportions unchanged vs v2.0.2; no duplication during drag (REG-01 + RCMP-01 first signal confirmed).
+
+**Plan metadata:** `a55d904` (docs: complete plan)
 
 ## Files Created/Modified
 
@@ -104,9 +107,9 @@ None — no external service configuration required.
 
 ## Next Phase Readiness
 
-- Fix is in place; awaiting human visual sign-off at Task 3 checkpoint (vertical + horizontal drag/collapse/expand regression check)
-- After sign-off: Plan 14-02 adds the horizontal controlled showcase repro (RCMP-04)
-- Plan 14-03 bumps version to 2.0.3 and releases
+- Fix is in place and human-verified (Task 3 checkpoint APPROVED): vertical + horizontal drag/collapse/expand and proportions unchanged vs v2.0.2; no duplication during drag.
+- Plan 14-02 adds the horizontal controlled showcase repro (RCMP-04) with the live-counter recompose-during-drag guard.
+- Plan 14-03 bumps version to 2.0.3 and releases on JitPack.
 
 ---
 *Phase: 14-panelgroup-recompose-fix-v2-0-3-release*
