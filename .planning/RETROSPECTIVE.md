@@ -170,36 +170,37 @@
 
 ---
 
-## Milestone: v2.0.3 — PanelGroup Recompose Fix
+## Milestone: v2.0.4 — PanelGroup Recompose Fix (real root cause)
 
 **Shipped:** 2026-06-26
-**Phases:** 1 (14) | **Plans:** 3 | **Sessions:** single-day push; 3 plans (fix, repro, release); fix commit `fbba375` → v2.0.3 tag
+**Phases:** 1 (14) | **Plans:** 3 + a post-release root-cause fix | **Sessions:** single-day push, including a corrective release. `fbba375` (v2.0.3 wrong-cause attempt) → `8d2170f` (real fix) → v2.0.4 tag.
 
 ### What Was Built
-- **Core fix (Phase 14-01, RCMP-01..03):** Eliminated all in-composition writes to observed snapshot-state in `AeroPanelGroupImpl`. `expandedArr` (used for size-math throughout the composable) now computed directly from `isExpanded(sec)` each composition. `expandedState` sync deferred to `SideEffect`. Seed block rewritten to not mutate state read in the same composition pass.
-- **Showcase repro (Phase 14-02, RCMP-04):** Permanent horizontal controlled `AeroPanelGroup` demo (`rcmpExpandedKeys`) in `LayoutSection.kt` — Live / Static A / Static B sections, Live reads a `LaunchedEffect`-ticked counter (~32 ms). Human-verified: exactly 3 sections under recompose-while-drag after fix.
-- **Release (Phase 14-03, REL-01..02):** `build.gradle.kts` version bumped `2.0.2`→`2.0.3`; annotated tag `v2.0.3` pushed to `Tolaseeq/aero-compose-ui`; JitPack build confirmed green.
+- **v2.0.3 (superseded, wrong cause):** moved `expandedState` sync to `SideEffect`, derived `expandedArr` from `isExpanded()`. Theory was a write-during-composition `SubcomposeLayout` ×N loop. Shipped, tagged, JitPack green — and the bug STILL reproduced in a real consumer app.
+- **v2.0.4 (real fix, commit 8d2170f):** made `AeroPanelGroup`'s section-DSL lambda non-`@Composable` (`content: AeroPanelGroupScope.() -> Unit`, like `LazyListScope`). Root cause: the `@Composable` DSL lambda had its own recompose scope; during an active drag a parent recompose re-ran it independently, re-appending `section()` into the persisted `AeroPanelGroupScope` (`scope.sections` grew 3→9→…→33), so the `key()` loop emitted ever more header strips. The non-composable lambda rebuilds the list once per recompose and cannot accumulate.
+- **Deterministic guard:** `AeroPanelGroupRecomposeUiTest` (`runComposeUiTest` + programmatic `performMouseInput` drag interleaved with a mid-drag recompose) — 11 headers before the fix, 1 after. Added `compose.uiTest` test deps. 232 tests pass; 12 `PanelGroupLogicTest` GREEN.
 
 ### What Worked
-- **Direct fix scope.** The root cause (in-composition write to observed state inside `BoxWithConstraints`) was well-specified before any plan was written, so plan 14-01 was a pure targeted edit with no spike needed — the earlier `SideEffect` / `isExpanded()` pattern from the research phase mapped directly to the production code.
-- **Minimal repro gates the outcome.** The plan 14-02 repro (a controlled group with one `LaunchedEffect`-ticked section) exercises the exact failure mode cheaply and will catch any future regression that re-introduces in-composition writes to `expandedState`.
-- **No regression to other paths.** The two-step fix (derive `expandedArr` from `isExpanded()`, defer `expandedState` sync to `SideEffect`) affected only the controlled-mode recompose path; vertical and uncontrolled paths are byte-identical, and all 12 `PanelGroupLogicTest` JVM tests stayed GREEN without any test changes.
+- **Instrumentation over guessing.** Once the showcase repro failed to reproduce, a `runComposeUiTest` + programmatic drag gave a deterministic red. `DisposableEffect` enter/dispose counters + `sections.size` logging then pinpointed the exact mechanism (list accumulation), ruling out SubcomposeLayout and animation hypotheses by experiment, not opinion.
+- **Confirming in the real consumer app** was the only check that caught v2.0.3's failure — the ultimate acceptance gate for a UI-interaction bug.
 
 ### What Was Inefficient
-- **The root cause (`SubcomposeLayout` ×N loop on in-composition state write) is a Compose invariant that could have been caught at the `AeroPanelGroupImpl` write time in Phase 13.** The `expandedState` seed block was written during Phase 13.1 composition — the pattern of writing to a `SnapshotStateList` inside `BoxWithConstraints` was not flagged as a PITFALL at the time. A write-during-composition rule ("no `mutableStateList.add/set` inside `BoxWithConstraints` body") added to PITFALLS.md at Phase 13 would have prevented v2.0.3 from being needed.
+- **v2.0.3 was a wrong-cause release.** The original diagnosis (write-during-composition) was plausible but unverified, and shipped behind two human visual sign-offs that were FALSE POSITIVES — the 14-02 showcase repro read its counter inside `section.content()` (deep), so it never re-ran the DSL lambda and could never reproduce the bug. A full release cycle (tag, JitPack) was spent on a fix that did nothing.
+- **The bug had been latent since the DSL was first written** as `@Composable` (Phase 13). It only surfaced under drag-with-movement + parent recompose.
 
 ### Patterns Established
-- **`SideEffect` for snapshot-state sync inside `SubcomposeLayout`** — if a composable both reads and writes a `SnapshotStateList`/`SnapshotStateMap` inside `BoxWithConstraints` (or any `SubcomposeLayout`), the write MUST be deferred to a `SideEffect`. Writing during composition creates a ×N recompose loop.
-- **`isExpanded()` as structural source of truth** — when the component has a controlled API (`expandedKeys: Set<Any>`), derive all layout-critical booleans (`expandedArr`) from that source of truth each composition. Keep the observed-state mirror (`expandedState`) for animation targets only; update it in a `SideEffect` so it never feeds back into the same composition pass.
+- **Builder/DSL lambdas that side-effect into a collection must NOT be `@Composable`.** A `@Composable` collection lambda gets its own recompose scope and can re-run independently, re-appending into a persisted accumulator. Mirror `LazyListScope` (non-composable). → memory `project_panelgroup_composable_dsl_pitfall`.
+- **A regression guard must provably fail on the unfixed code (red→green).** A repro that cannot reproduce is worse than none — it manufactures false confidence. Prefer a deterministic automated test driving the real trigger over a manual visual demo. → memory `feedback_repro_must_exercise_path`.
+- **For UI-interaction bugs, confirm in a real consumer before declaring done.** Internal demos and even passing tests can miss the trigger combination (here: drag movement + parent recompose).
 
 ### Key Lessons
-1. **`BoxWithConstraints`/`SubcomposeLayout` amplifies in-composition state writes into ×N loops.** A state write that is merely "one extra recompose" in a simple composable becomes a recompose-until-stable cascade inside `SubcomposeLayout`, producing visible ×N section duplication. The rule: any `SnapshotStateList.add/set` or `SnapshotStateMap.put` inside `BoxWithConstraints` must be moved to a `SideEffect`, `LaunchedEffect`, or callback. It is never safe during the composition pass inside a sub-compose layout.
-2. **Record write-during-composition as a PITFALL at the phase that introduces it.** The pattern was introduced in Phase 13.1 and went undetected until a controlled-mode + recompose-during-drag stress test. A PITFALL note ("no snapshot-state writes inside `BoxWithConstraints` composition body") at Phase 13 write-time would have prevented this milestone.
-3. **A `SideEffect` + `isExpanded()` split is the correct answer for controlled-mode Compose layout components.** The controlled API (`expandedKeys`) is the source of truth for structural decisions (which sections are expanded, how to distribute sizes). The observed-state mirror (`expandedState`) exists only to feed animation targets. These two concerns must not be conflated in the same composition pass.
+1. **Verify the root cause before shipping a fix.** v2.0.3 shipped a theory. The disciplined sequence — reproduce deterministically → instrument to confirm the mechanism → fix → re-verify — would have caught it pre-release. Three fix hypotheses were falsified by experiment before the real one (non-`@Composable` DSL) was found.
+2. **A passing sign-off is only as good as whether the repro exercises the trigger.** Two human approvals passed on a demo that structurally could not fail.
+3. **`@Composable` on a DSL collection lambda is an accumulation hazard** — the cause of the duplication, fixed by making it non-composable.
 
 ### Cost Observations
-- Model mix: opus for planning/research, sonnet for execution (`model_profile: balanced`); unchanged from prior milestones.
-- 3 plans: fix (~2 min), repro + human-verify (~6 min), release. The fix itself was small; cost concentrated in the human verification gate (JitPack build wait).
+- Model mix: opus for the debugging/orchestration, sonnet for plan execution. The corrective debugging used systematic-debugging discipline (instrument, don't guess) after the first wrong-cause release.
+- Cost concentrated in the deterministic-repro build-out (new Compose UI-test infra) and iterative diagnostic runs — well spent: it produced the permanent guard the milestone had been missing.
 
 ---
 

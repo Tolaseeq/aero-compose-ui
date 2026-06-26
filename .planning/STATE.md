@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: v2.0.4 SHIPPED — real RCMP fix tagged, pushed, JitPack build ok
-last_updated: "2026-06-26T08:49:12.921Z"
-last_activity: 2026-06-26 — RCMP duplication STILL reproduced in a real consumer after v2.0.3; real root cause found (@Composable DSL lambda accumulating scope.sections during recompose-while-dragging), fixed via non-@Composable DSL, deterministic UI test added; v2.0.4 release prepped
+status: milestone_complete
+stopped_at: v2.0.4 milestone archived; real RCMP fix confirmed in consumer app
+last_updated: "2026-06-26T11:56:19.079Z"
+last_activity: 2026-06-26 — v2.0.4 PanelGroup Recompose Fix milestone completed and archived (real root cause: non-@Composable DSL); confirmed working in consumer app
 progress:
   total_phases: 1
   completed_phases: 1
@@ -20,23 +20,20 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-23 — after v2.0.2 milestone)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, typed `AeroIcons`, and a showcase — no manual style work or icon-pack hunting required.
-**Current focus:** v2.0.4 PanelGroup Recompose Fix (real root cause) — Phase 14. v2.0.3 shipped a wrong-cause fix; the real cause is the `@Composable` section-DSL lambda accumulating `scope.sections` during recompose-while-dragging. Fixed via non-`@Composable` DSL + a deterministic programmatic-drag UI test; releasing v2.0.4 on JitPack.
+**Current focus:** Between milestones — v2.0.4 shipped and archived. Next: `/gsd:new-milestone` when new work is scoped.
 
 ## Current Position
 
-Phase: 14 of 14 (PanelGroup Recompose Fix) — v2.0.4 release prep
-Plan: 14-01/02/03 done for v2.0.3, but v2.0.3 did NOT fix the bug; real fix committed (8d2170f)
-Status: v2.0.4 SHIPPED — tag v2.0.4 pushed (1db2b57), JitPack build status "ok", `com.github.Tolaseeq:aero-compose-ui:2.0.4` resolves
-Last activity: 2026-06-26 — real RCMP root cause found + fixed (non-@Composable DSL); deterministic Compose UI drag test added; v2.0.4 tagged, pushed, JitPack green
+Milestone: v2.0.4 PanelGroup Recompose Fix — ✅ COMPLETE & ARCHIVED (2026-06-26)
+Status: Confirmed working in the real consumer app; tag v2.0.4 pushed (1db2b57), JitPack `ok`, `com.github.Tolaseeq:aero-compose-ui:2.0.4` resolves.
+Last activity: 2026-06-26 — v2.0.4 milestone archived (real root cause: non-@Composable section DSL lambda)
 
 ```
-v2.0.2 ✅ SHIPPED → v2.0.3 ⚠ SHIPPED-BUT-BROKEN → v2.0.4 ✅ real RCMP fix SHIPPED
-[██████████] 100% → fix ✓ → UI test ✓ → docs ✓ → tag/push ✓ → JitPack ✓
+v2.0.2 ✅ → v2.0.3 ⚠ SHIPPED-BUT-BROKEN (wrong-cause fix) → v2.0.4 ✅ real RCMP fix SHIPPED & CONFIRMED
+[██████████] milestone complete → archived → next: /gsd:new-milestone
 ```
 
-Recommended next: confirm 2.0.4 in the real consumer app (bump dependency to 2.0.4), then `/gsd:complete-milestone`.
-
-Progress: v2.0.3 shipped a wrong-cause fix (SideEffect); bug persisted in a real consumer. Root cause found, fixed, verified by a new programmatic-drag UI test. Releasing v2.0.4.
+Next: `/gsd:new-milestone` to scope the next version.
 
 ## v2.0.4 — Real RCMP Root Cause (2026-06-26)
 
@@ -70,7 +67,7 @@ Target file: `library/src/main/kotlin/com/mordred/aero/components/layout/AeroPan
 | v2.0 | Stateful + Layout | 7–11 | 27 | 27 | 2026-06-18 |
 | v2.0.1 | Picker & SplitPane Fixes | 12 | 4 | 18 | 2026-06-22 |
 | v2.0.2 | AeroPanelGroup | 13–13.1 | 8 | 18 + PNL-HORIZ-01 | 2026-06-23 |
-| v2.0.3 | PanelGroup Recompose Fix | 14 | 3 | RCMP-01..04, REG-01..02, REL-01..02 | 2026-06-26 |
+| v2.0.4 | PanelGroup Recompose Fix (real root cause; v2.0.3 was a superseded wrong-cause release) | 14 | 3 | RCMP-01..04, REG-01..02, REL-01..02 | 2026-06-26 |
 
 See `.planning/MILESTONES.md` for full accomplishments.
 

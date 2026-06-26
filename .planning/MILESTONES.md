@@ -1,26 +1,28 @@
 # Milestones
 
-## v2.0.3 PanelGroup Recompose Fix (Shipped: 2026-06-26)
+## v2.0.4 PanelGroup Recompose Fix (Shipped: 2026-06-26)
 
-**Phase:** 14 (1 phase) | **Plans:** 3 (Phase 14: 3) | **Requirements:** 8/8 (RCMP-01..04, REG-01..02, REL-01..02)
+**Phase:** 14 (1 phase) | **Plans:** 3 + post-release root-cause fix | **Requirements:** 8/8 (RCMP-01..04, REG-01..02, REL-01..02)
 
-**Timeline:** 2026-06-25 → 2026-06-26 (single-day push)
-**Git range:** `fbba375` (fix commit) → v2.0.3 tag — 3 plans (fix, repro, release)
-**Sign-off:** ✅ APPROVED — human-verified repro shows exactly N sections under recompose-while-drag after fix; 12 PanelGroupLogicTest GREEN.
+**Timeline:** 2026-06-25 → 2026-06-26 (single-day push, including a corrective release)
+**Git range:** `fbba375` (v2.0.3 fix attempt) → `8d2170f` (real fix) → v2.0.4 tag
+**Sign-off:** ✅ CONFIRMED in the real consumer app (exactly 3 sections under recompose-while-drag); 232 library tests pass incl. a deterministic programmatic-drag UI test; 12 PanelGroupLogicTest GREEN.
 
-**Delivered:** A patch release eliminating section duplication in `AeroPanelGroup` when `Orientation.Horizontal` + controlled mode coincides with a section's content recomposing during an active divider drag. Root cause: in-composition write to observed snapshot-state (`expandedState`) inside `BoxWithConstraints`/`SubcomposeLayout`. Fix: `expandedArr` for size-math now computed directly from `isExpanded()` each composition; `expandedState` sync moved to `SideEffect`. Vertical and uncontrolled paths are byte-identical; 12 JVM unit tests remain GREEN. A minimal showcase repro in `LayoutSection.kt` (horizontal controlled `AeroPanelGroup` with one section reading a `LaunchedEffect`-ticked counter) demonstrates the fix. Zero new dependencies; Compose stays 1.7.3. Released as `com.github.Tolaseeq:aero-compose-ui:2.0.3` on JitPack.
+**Delivered:** Eliminated header-strip duplication in horizontal CONTROLLED `AeroPanelGroup` when a divider is dragged while the hosting screen recomposes. NOTE: the first attempt shipped as **v2.0.3** but fixed the WRONG cause (a write-during-composition theory: moved `expandedState` sync to `SideEffect`, derived `expandedArr` from `isExpanded()`) — the bug still reproduced in a real consumer. The real fix shipped as **v2.0.4**. v2.0.3 remains tagged but superseded; consumers use 2.0.4.
+
+**Real root cause (confirmed by instrumented enters/disposes + sections.size logging):** `AeroPanelGroup`'s section-DSL lambda `content` was `@Composable`, so it had its own recompose scope. During an active drag (continuous re-measure) any parent recompose re-ran that lambda independently, re-appending `section()` into the SAME persisted `AeroPanelGroupScope` — `scope.sections` grew 3→9→12→…→33 and the `key(section.key)` loop emitted ever more header strips (none disposed). `AeroPanelGroupImpl` and `BoxWithConstraints` each composed exactly once; only the list grew. Trigger needs BOTH active-drag-with-movement AND an AeroPanelGroup recompose.
 
 **Key accomplishments:**
-1. **Write-during-composition root cause identified and eliminated (RCMP-01..03, Phase 14-01)** — `expandedArr` was computed from `expandedState` (a `SnapshotStateList` written by the seed block during composition), causing `BoxWithConstraints`/`SubcomposeLayout` to loop: each recompose wrote new values which triggered another recompose. Fix removes all in-composition writes: size-math reads `isExpanded()` directly from the controlled-API `expandedKeys` set each composition; `expandedState` is updated in a `SideEffect` (runs after layout, before next composition). The seed block no longer mutates any state that the current composition pass reads.
-2. **Permanent showcase repro (RCMP-04, Phase 14-02)** — A permanent horizontal controlled `AeroPanelGroup` demo (`rcmpExpandedKeys`) with titles Live / Static A / Static B, where the Live section's content reads a `LaunchedEffect`-ticked counter (~32 ms), exercises the exact failure mode. Human-verified: exactly 3 sections render cleanly under recompose-while-drag after the fix.
-3. **Regression guard (REG-01..02)** — Vertical orientation and uncontrolled mode are byte-identical; all 12 `PanelGroupLogicTest` JVM tests stay GREEN; Compose 1.7.3, zero new dependencies.
-4. **Release (REL-01..02)** — `build.gradle.kts` version bumped `2.0.2`→`2.0.3`; annotated tag `v2.0.3` pushed to `Tolaseeq/aero-compose-ui`; JitPack resolves `com.github.Tolaseeq:aero-compose-ui:2.0.3`.
+1. **Real root cause found & fixed (RCMP-01..04, commit 8d2170f)** — made the DSL lambda non-`@Composable` (`content: AeroPanelGroupScope.() -> Unit`, mirroring `LazyListScope`). The collection pass runs exactly once per recompose and cannot accumulate; each section's own `content` slot stays `@Composable`. Source-compatible for existing `section(){...}` usage.
+2. **Deterministic regression guard (the guard 14-02 could not be)** — new `AeroPanelGroupRecomposeUiTest` drives a real `performMouseInput` drag interleaved with a mid-drag recompose via `runComposeUiTest`; asserts exactly 1 header per section (observed 11 before the fix, 1 after). Added `compose.uiTest` + `compose.desktop.currentOs` test deps.
+3. **Regression guard (REG-01..02)** — vertical + uncontrolled unaffected; 12 `PanelGroupLogicTest` GREEN; Compose 1.7.3, zero new runtime dependencies. Showcase compiles; RCMP-04 demo rewritten to read its tick in the demo body so it genuinely reproduces.
+4. **Release (REL-01..02)** — `build.gradle.kts` bumped `2.0.3`→`2.0.4`; annotated tag `v2.0.4` pushed; JitPack build `ok`, resolves `com.github.Tolaseeq:aero-compose-ui:2.0.4`.
 
 **Patterns established:**
-- **SideEffect for snapshot-state sync** — when a composable both reads and writes a `SnapshotStateList`/`SnapshotStateMap` inside a `SubcomposeLayout` (e.g. `BoxWithConstraints`), the write must be deferred to a `SideEffect`. Writing during composition creates a ×N recompose loop.
-- **`isExpanded()` as structural source of truth** — derive layout-critical booleans directly from the controlled API's source of truth each composition rather than from an intermediate observed-state mirror. The mirror (`expandedState`) serves animation targets only.
+- **Builder/DSL lambdas that side-effect into a collection must NOT be `@Composable`** — a `@Composable` collection lambda gets its own recompose scope and can re-run independently, re-appending into a persisted accumulator (mirrors why `LazyListScope` is non-composable). See `project_panelgroup_composable_dsl_pitfall` memory.
+- **A regression guard must provably fail on the unfixed code** — the v2.0.3 showcase repro read its counter inside `section.content()` (deep), so it never re-ran the DSL lambda and could never reproduce the bug; both human sign-offs were false-positives. Prefer a deterministic automated test driving the real trigger (red→green).
 
-**Technical debt incurred:** None. No deferred items; all 8 requirements satisfied.
+**Lessons / debt:** v2.0.3 was a wrong-cause release caught only by a real consumer. Diagnosis was fixed by instrumentation (counters/logs) rather than guess-and-swap. No outstanding debt; all 8 requirements satisfied in 2.0.4.
 
 ---
 
