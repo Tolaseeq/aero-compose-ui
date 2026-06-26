@@ -13,10 +13,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.mordred.aero.components.buttons.AeroButton
@@ -384,6 +386,56 @@ fun LayoutSection() {
                         Text("Disk at 92 %", color = colors.onSurface, style = typography.bodyMedium)
                         Text("3 failed logins", color = colors.onSurface, style = typography.bodyMedium)
                     }
+                }
+            }
+        }
+
+        // ── AeroPanelGroup horizontal CONTROLLED — recompose-during-drag guard (RCMP-04) ──
+        // PERMANENT regression demo. A LaunchedEffect ticks a counter ~32ms; ONE section's
+        // content reads it, so that section recomposes on its own during a divider drag.
+        // Before the v2.0.3 fix this surfaced ×N duplication (3 sections rendered as 9 header
+        // strips) because the composition body wrote to expandedState while reading it.
+        // After the fix: dragging the divider while the counter ticks shows exactly 3 sections.
+        var recomposeDriveCounter by remember { mutableStateOf(0) }
+        LaunchedEffect(Unit) {
+            while (true) {
+                delay(32L) // ~30 fps tick — fast enough to drive recompose during a manual drag
+                recomposeDriveCounter++
+            }
+        }
+        var rcmpExpandedKeys by remember {
+            mutableStateOf(setOf("rcmp-left", "rcmp-center", "rcmp-right"))
+        }
+        Text(
+            "AeroPanelGroup (horizontal controlled — recompose-during-drag guard [RCMP-04])",
+            color = colors.labelText,
+            style = typography.bodyMedium,
+        )
+        Text(
+            "Drag the dividers while the counter ticks. Must show exactly 3 sections, never 9.",
+            color = colors.labelText,
+            style = typography.bodySmall,
+        )
+        Box(Modifier.fillMaxWidth().height(240.dp)) {
+            AeroPanelGroup(
+                modifier = Modifier.fillMaxSize(),
+                orientation = Orientation.Horizontal,
+                expandedKeys = rcmpExpandedKeys,
+                onExpandedChange = { rcmpExpandedKeys = it },
+            ) {
+                section(key = "rcmp-left", title = "Live") {
+                    // Reads the live counter → this section recomposes independently during a drag.
+                    Text(
+                        "Counter: $recomposeDriveCounter",
+                        color = colors.onSurface,
+                        style = typography.bodyMedium,
+                    )
+                }
+                section(key = "rcmp-center", title = "Static A") {
+                    Text("Static content", color = colors.onSurface, style = typography.bodyMedium)
+                }
+                section(key = "rcmp-right", title = "Static B") {
+                    Text("Static content", color = colors.onSurface, style = typography.bodyMedium)
                 }
             }
         }
