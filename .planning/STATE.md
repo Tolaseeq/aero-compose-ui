@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: Completed 14-02-PLAN.md Tasks 1-2; checkpoint at Task 3 (human-verify)
-last_updated: "2026-06-26T08:31:53.787Z"
-last_activity: 2026-06-25 — Roadmap created; Phase 14 defined, all 8 requirements mapped (100% coverage)
+status: executing
+stopped_at: Completed 14-02-PLAN.md (Task 3 human-verify checkpoint APPROVED)
+last_updated: "2026-06-26T08:39:11.621Z"
+last_activity: 2026-06-26 — 14-02 RCMP-04 showcase repro added + human-verified (exactly 3 sections under recompose-while-drag)
 progress:
   total_phases: 1
   completed_phases: 0
@@ -25,16 +25,16 @@ See: .planning/PROJECT.md (updated 2026-06-23 — after v2.0.2 milestone)
 ## Current Position
 
 Phase: 14 of 14 (PanelGroup Recompose Fix + v2.0.3 Release) — single-phase milestone
-Plan: — (not yet planned)
-Status: Ready to plan
-Last activity: 2026-06-25 — Roadmap created; Phase 14 defined, all 8 requirements mapped (100% coverage)
+Plan: 2 of 3 complete (14-01 fix landed, 14-02 RCMP-04 repro APPROVED)
+Status: In Progress — Plan 03 (v2.0.3 release) unblocked
+Last activity: 2026-06-26 — 14-02 RCMP-04 showcase repro added + human-verified (exactly 3 sections under recompose-while-drag)
 
 ```
-v2.0.2 ✅ SHIPPED → v2.0.3 PanelGroup Recompose Fix ◆ ROADMAP COMPLETE
-[░░░░░░░░░░] roadmap ✓ → /gsd:plan-phase 14 → execute → release
+v2.0.2 ✅ SHIPPED → v2.0.3 PanelGroup Recompose Fix ◆ IN PROGRESS
+[███████░░░] 67% → 14-01 ✓ fix → 14-02 ✓ repro → 14-03 release
 ```
 
-Progress: v2.0.3 — roadmap complete (Phase 14: RCMP-01..04 + REG-01..02 + REL-01..02). Next: `/gsd:plan-phase 14`. No research needed — direct edit to existing horizontal `AeroPanelGroupImpl` core (mirrors Phase 13 precedent).
+Progress: v2.0.3 — Plan 01 (fix: SideEffect sync + isExpanded()-derived expandedArr) and Plan 02 (RCMP-04 showcase repro, human-verified) complete. Next: Plan 03 — bump version 2.0.2→2.0.3, tag v2.0.3, JitPack release.
 
 ## Phase 14 Scope (v2.0.3)
 
@@ -200,6 +200,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 13.1-03]: Three-theme sign-off APPROVED — AeroBlue / AeroDark / Classic — on both vertical (regression) and horizontal (PNL-HORIZ-01) demos; PNL-17 Aero fidelity confirmed across both orientations
 - [Phase 14]: RCMP-02+03: SideEffect-deferred expandedState sync + isExpanded()-derived expandedArr are both required together; neither alone is sufficient
 - [Phase 14]: isExpanded() is the authoritative expansion source for structural decisions; expandedState mirror is for animation targets only (SideEffect closes the one-frame lag before next draw)
+- [Phase 14]: [Phase 14-02]: RCMP-04 permanent regression demo — horizontal CONTROLLED AeroPanelGroup with one section reading a LaunchedEffect-ticked counter (~32ms); human-verified exactly 3 sections under recompose-while-drag (RCMP-01)
+- [Phase 14]: [Phase 14-02]: repro state var named rcmpExpandedKeys to avoid shadowing; titles Live/Static A/Static B per plan action block
 
 ### Pending Todos
 
@@ -218,6 +220,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 |---|-------------|------|--------|-----------|
 | 260624-k4d | AeroComboBox не очищается после выбора пункта (clearOnSelect + не переоткрывать попап при полном совпадении) | 2026-06-24 | d371e72 | [260624-k4d-aerocombobox-ontextchange-label-onoption](./quick/260624-k4d-aerocombobox-ontextchange-label-onoption/) |
 | Phase 14 P01 | 3 | 2 tasks | 1 files |
+| Phase 14 P02 | 6min | 3 tasks | 1 files |
 
 ## Session Continuity
 
