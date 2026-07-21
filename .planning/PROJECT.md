@@ -19,11 +19,14 @@
 
 **Codebase:** Kotlin / Compose Desktop 1.7.3, Kotlin 2.1.21, Gradle 8.14.3, JDK 17. v2.0 added 152 files changed (+27,406 / −2,285) across phases 7–11; v2.0.1 added 9 code files (+520 / −14) in Phase 12; v2.0.2 added 4 code files (+1,516: `AeroPanelGroup.kt` 818, `PanelDistribution.kt` 245, `PanelGroupLogicTest.kt` 235, `LayoutSection.kt` +218) across Phases 13 + 13.1. Project version bumped to `2.0.2` (`build.gradle.kts`).
 
-## Current Milestone: v2.1 Glass Refinement
+## Current Milestone: v3.0 Glass Refinement
 
-**Goal:** Переделать визуал восьми компонентов, которые сейчас читаются как Material3, в узнаваемо-стеклянный Aero-облик — опираясь на расширенный и починенный общий слой Aero-примитивов. Функционал и публичный API не меняются.
+**Goal:** Переделать визуал восьми компонентов, которые сейчас читаются как Material3, в узнаваемо-стеклянный Aero-облик — опираясь на расширенный и починенный общий слой Aero-примитивов, поверх мигрированного на актуальный стабильный Compose Multiplatform тулчейна. Функционал и публичный API компонентов не меняются.
+
+**Major-версия, потому что:** обязательная миграция тулчейна поднимает нижнюю границу Kotlin/Compose для всех потребителей — подключиться к новой версии на старом Compose нельзя. Плюс заметная смена внешнего вида восьми компонентов. Линия 2.x остаётся рабочей на Compose 1.7.3 (последняя — `2.0.4`).
 
 **Target features:**
+- **Миграция тулчейна (обязательно, первой фазой)** — подъём на актуальный стабильный Compose Multiplatform с сопутствующим подъёмом Kotlin/Gradle/JDK. Разблокирует `Modifier.dropShadow` / `Modifier.innerShadow` (появились в CMP 1.9.0, на 1.7.3 отсутствуют) — штатные тени и внутренний rim вместо ручных приближений. Совместимость со старыми потребителями сознательно не поддерживается.
 - **Фундамент Aero-примитивов** — починить существующие `GlassModifiers` (мёртвый `elevation`, хардкод 100px-градиента в `glassSurface`, обрезаемый `clip`'ом бордер) и расширить набор визуальных приёмов Aero (двухтоновая заливка, пропорциональный верхний глянец, внутренний бевел/rim light, тень/свечение, желобок-трек). Новые токены в `AeroColorScheme` для трёх тем.
 - **Кнопки** — `AeroButton`, `AeroOutlinedButton`: собственная отрисовка вместо плоской M3-заливки; полноценные hover/press/focus/disabled состояния в Aero-логике.
 - **Селекторы** — `AeroSwitch` (сейчас полностью плоский, без hover/press/focus), `AeroSegmentedControl` (нет объёма у выбранного сегмента, нет hover).
@@ -31,7 +34,7 @@
 - **Списки** — `AeroListItem`: сейчас неклипованный прямоугольник сплошного цвета; нужен Aero-подсвет выделения/ховера.
 - **Приёмка** — showcase-демонстрации и визуальный sign-off на AeroBlue / AeroDark / Classic.
 
-**Явно НЕ в scope:** ревизия остальных ~40 компонентов библиотеки; изменение поведения, сигнатур и размеров-по-умолчанию сверх необходимого для нового визуала.
+**Явно НЕ в scope:** ревизия остальных ~40 компонентов библиотеки; изменение поведения, сигнатур и размеров-по-умолчанию сверх необходимого для нового визуала; обратная совместимость с потребителями на Compose 1.7.3 (`aska`, `satellite-control` мигрируют отдельно или остаются на `2.0.4`).
 
 **Ключевые решения, принятые при постановке:**
 - Собственная отрисовка допустима там, где M3-геометрия мешает Aero — публичный API и поведение сохраняются 1:1.
@@ -149,9 +152,10 @@ Patch milestone (Phase 14). Eliminated header-strip duplication in horizontal CO
 
 ### Active
 
-<!-- v2.1 Glass Refinement — scoped 2026-07-21. Требования с REQ-ID будут в .planning/REQUIREMENTS.md после стадии research. -->
+<!-- v3.0 Glass Refinement — scoped 2026-07-21. Требования с REQ-ID будут в .planning/REQUIREMENTS.md после стадии research. -->
 
-**v2.1 Glass Refinement** (требования определяются — research → REQUIREMENTS.md):
+**v3.0 Glass Refinement** (требования определяются — research → REQUIREMENTS.md):
+- [ ] Миграция на актуальный стабильный Compose Multiplatform (+ Kotlin/Gradle/JDK), зелёный тест-сьют как гейт
 - [ ] Слой Aero-примитивов: починка `GlassModifiers` + новые визуальные приёмы + токены тем
 - [ ] `AeroButton`, `AeroOutlinedButton` — Aero-облик и состояния
 - [ ] `AeroSwitch`, `AeroSegmentedControl` — объём, состояния

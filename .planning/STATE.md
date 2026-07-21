@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.1
+milestone: v3.0
 milestone_name: Glass Refinement
 status: defining_requirements
-stopped_at: Milestone v2.1 started — research pending, then requirements
+stopped_at: Milestone v3.0 started — research pending, then requirements
 last_updated: "2026-07-21T00:00:00.000Z"
-last_activity: 2026-07-21 — Milestone v2.1 Glass Refinement started
+last_activity: 2026-07-21 — Milestone v3.0 Glass Refinement started
 progress:
   total_phases: 0
   completed_phases: 0
@@ -17,20 +17,20 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v2.1 Glass Refinement)
+See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refinement)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, typed `AeroIcons`, and a showcase — no manual style work or icon-pack hunting required.
-**Current focus:** v2.1 Glass Refinement — make eight Material3-looking components read as Win7 Aero glass, on top of a repaired + extended Aero primitives layer. Behaviour and public API unchanged.
+**Current focus:** v3.0 Glass Refinement — make eight Material3-looking components read as Win7 Aero glass, on top of a repaired + extended Aero primitives layer. Behaviour and public API unchanged.
 
 ## Current Position
 
-Milestone: v2.1 Glass Refinement
+Milestone: v3.0 Glass Refinement
 Phase: Not started (defining requirements)
 Plan: —
 Status: Defining requirements (research stage next)
-Last activity: 2026-07-21 — Milestone v2.1 started
+Last activity: 2026-07-21 — Milestone v3.0 started
 
-## v2.1 Scoping Decisions (2026-07-21)
+## v3.0 Scoping Decisions (2026-07-21)
 
 Locked during `/gsd:new-milestone` questioning:
 
@@ -39,6 +39,15 @@ Locked during `/gsd:new-milestone` questioning:
 - **Custom drawing is allowed** where Material3 geometry blocks the Aero look — `AeroButton`/`AeroOutlinedButton`/`AeroSlider` are currently thin M3 wrappers whose two-tone fill, gloss, inner bevel and track groove cannot be expressed through `ButtonColors`/`SliderColors`. Public API + behaviour stay 1:1.
 - **Foundation first:** extend `GlassModifiers` + `AeroColorScheme` tokens, then migrate components onto that layer (mirrors the successful Phase 7 enabling-phase pattern from v2.0).
 - **Fidelity target:** "Aero spirit, modern execution" — clearly glassy and dimensional, recognisably Aero, without literally copying Win7 proportions.
+
+### Toolchain upgrade — MANDATORY (decided 2026-07-21)
+
+- **Upgrade to the latest STABLE Compose Multiplatform is a required part of this milestone**, not optional and not deferred. User decision, explicit: first "миграцию на CMP 1.9.0 делаем обязательно", then widened to "мигрируем даже не на 1.9.0 а самую актуальную стабильную".
+- **Motivation:** `Modifier.dropShadow` / `Modifier.innerShadow` landed in CMP 1.9.0 and are unavailable at 1.7.3; they give real shadow + inset-rim primitives for the Aero work instead of hand-rolled double-stroke approximations. See `.planning/research/STACK.md` (which recommended NOT upgrading — that recommendation is **overridden** by this decision) and `.planning/research/UPGRADE.md`.
+- **Consumer compatibility is explicitly NOT a constraint.** User: "Не надо заботиться о совместимости программ, написанных под старый compose, им тоже необходима миграция и я ей обязательно позже займусь. В крайнем случае смогут дальше использовать 2.0.4." Known consumers pinned to the current toolchain — `C:\1A_WORK\aska` (kotlin 2.1.21 / compose 1.7.3, commented "pinned to lib ABI") and `C:\1A_WORK\satellite-control` (kotlin 2.1.21) — will be migrated separately by the user, or stay on `2.0.4`. Do NOT add scope, shims, or compatibility branches for them.
+- **Reference point:** `C:\1A_WORK\lastver_131\mordred` (the original style-donor app, NOT a consumer of this library) already builds on compose-plugin **1.10.3** with Kotlin 2.1.20 — evidence the newer CMP line works in this environment.
+- **Open at the time of writing:** exact target version string, the Kotlin/Gradle/JDK floor it forces, and the breaking-change list — being resolved by the UPGRADE research pass.
+- **Sequencing implication:** the upgrade should almost certainly be its own phase (15) landing BEFORE any visual work, so that the visual phases are authored against the final API surface and a green test suite.
 
 ## Baseline Findings — why these eight look Material (surveyed 2026-07-21)
 
@@ -272,6 +281,6 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 ## Session Continuity
 
 Last session: 2026-07-21
-Stopped at: Milestone v2.1 Glass Refinement scoped; PROJECT.md + STATE.md updated; research stage next
+Stopped at: Milestone v3.0 Glass Refinement scoped; PROJECT.md + STATE.md updated; research stage next
 Resume file: None
 Next action: research → `.planning/REQUIREMENTS.md` → `/gsd:plan-phase 15`
