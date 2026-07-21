@@ -19,6 +19,25 @@
 
 **Codebase:** Kotlin / Compose Desktop 1.7.3, Kotlin 2.1.21, Gradle 8.14.3, JDK 17. v2.0 added 152 files changed (+27,406 / −2,285) across phases 7–11; v2.0.1 added 9 code files (+520 / −14) in Phase 12; v2.0.2 added 4 code files (+1,516: `AeroPanelGroup.kt` 818, `PanelDistribution.kt` 245, `PanelGroupLogicTest.kt` 235, `LayoutSection.kt` +218) across Phases 13 + 13.1. Project version bumped to `2.0.2` (`build.gradle.kts`).
 
+## Current Milestone: v2.1 Glass Refinement
+
+**Goal:** Переделать визуал восьми компонентов, которые сейчас читаются как Material3, в узнаваемо-стеклянный Aero-облик — опираясь на расширенный и починенный общий слой Aero-примитивов. Функционал и публичный API не меняются.
+
+**Target features:**
+- **Фундамент Aero-примитивов** — починить существующие `GlassModifiers` (мёртвый `elevation`, хардкод 100px-градиента в `glassSurface`, обрезаемый `clip`'ом бордер) и расширить набор визуальных приёмов Aero (двухтоновая заливка, пропорциональный верхний глянец, внутренний бевел/rim light, тень/свечение, желобок-трек). Новые токены в `AeroColorScheme` для трёх тем.
+- **Кнопки** — `AeroButton`, `AeroOutlinedButton`: собственная отрисовка вместо плоской M3-заливки; полноценные hover/press/focus/disabled состояния в Aero-логике.
+- **Селекторы** — `AeroSwitch` (сейчас полностью плоский, без hover/press/focus), `AeroSegmentedControl` (нет объёма у выбранного сегмента, нет hover).
+- **Range** — `AeroSlider` (M3 `Slider`), `AeroRangeSlider` (плоский Canvas), `AeroProgressBar` (плоские Box'ы без градиента и желобка).
+- **Списки** — `AeroListItem`: сейчас неклипованный прямоугольник сплошного цвета; нужен Aero-подсвет выделения/ховера.
+- **Приёмка** — showcase-демонстрации и визуальный sign-off на AeroBlue / AeroDark / Classic.
+
+**Явно НЕ в scope:** ревизия остальных ~40 компонентов библиотеки; изменение поведения, сигнатур и размеров-по-умолчанию сверх необходимого для нового визуала.
+
+**Ключевые решения, принятые при постановке:**
+- Собственная отрисовка допустима там, где M3-геометрия мешает Aero — публичный API и поведение сохраняются 1:1.
+- Сначала слой примитивов, затем перевод компонентов на него (повторяет удачную схему Phase 7 в v2.0).
+- Вернность: «дух Aero, современное исполнение» — узнаваемо стеклянно и объёмно, без буквального копирования пропорций Win7.
+
 ## Last Milestone: v2.0.4 PanelGroup Recompose Fix — SHIPPED 2026-06-26
 
 Patch milestone (Phase 14). Eliminated header-strip duplication in horizontal CONTROLLED `AeroPanelGroup` under drag-while-recompose. **v2.0.3 shipped a wrong-cause fix** (`SideEffect`/`isExpanded()`, a write-during-composition theory) and the bug persisted in a real consumer; the real cause was the `@Composable` section-DSL lambda accumulating `scope.sections` (3→9→…→33) when re-run independently during an active drag. **v2.0.4 fix:** non-`@Composable` DSL lambda (like `LazyListScope`), guarded by a deterministic `runComposeUiTest` programmatic-drag test. See MILESTONES.md / RETROSPECTIVE.md and the `project_panelgroup_composable_dsl_pitfall` + `feedback_repro_must_exercise_path` memories. Confirmed working in the consumer app. Released as `com.github.Tolaseeq:aero-compose-ui:2.0.4`; v2.0.3 remains tagged but superseded.
@@ -130,12 +149,15 @@ Patch milestone (Phase 14). Eliminated header-strip duplication in horizontal CO
 
 ### Active
 
-<!-- v2.0.3 PanelGroup Recompose Fix — scoped 2026-06-25. См. .planning/REQUIREMENTS.md. -->
+<!-- v2.1 Glass Refinement — scoped 2026-07-21. Требования с REQ-ID будут в .planning/REQUIREMENTS.md после стадии research. -->
 
-**v2.0.3 PanelGroup Recompose Fix:**
-- [ ] **RCMP-01..04** — устранить дублирование секций в horizontal controlled при рекомпозиции-во-время-drag; size-math из `isExpanded`; sync в `SideEffect`; repro в showcase
-- [ ] **REG-01..02** — Vertical + uncontrolled byte-identical; 12 JVM-тестов GREEN; Compose 1.7.3
-- [ ] **REL-01..02** — bump `2.0.3`, tag `v2.0.3`, push на JitPack
+**v2.1 Glass Refinement** (требования определяются — research → REQUIREMENTS.md):
+- [ ] Слой Aero-примитивов: починка `GlassModifiers` + новые визуальные приёмы + токены тем
+- [ ] `AeroButton`, `AeroOutlinedButton` — Aero-облик и состояния
+- [ ] `AeroSwitch`, `AeroSegmentedControl` — объём, состояния
+- [ ] `AeroSlider`, `AeroRangeSlider`, `AeroProgressBar` — желобок, градиентная заливка, объёмные ручки
+- [ ] `AeroListItem` — клипованное Aero-выделение
+- [ ] Showcase + three-theme visual sign-off
 
 ### Out of Scope
 
@@ -224,4 +246,4 @@ Patch milestone (Phase 14). Eliminated header-strip duplication in horizontal CO
 | **v2.0.4:** section-DSL-лямбда `content` сделана НЕ-`@Composable` (`content: AeroPanelGroupScope.() -> Unit`, как `LazyListScope`) | Реальная первопричина RCMP: `@Composable` DSL-лямбда имела свой recompose-scope → при активном drag рекомпоз родителя перезапускал её независимо, дописывая `section()` в persisted `scope` (3→9→…→33), `key()`-цикл рендерил всё больше header-полос | ✓ Good — подтверждено инструментированием; детерминированный `runComposeUiTest` drag-тест 11→1; 232 теста GREEN; подтверждено в реальном приложении. Builder/DSL-лямбды с side-effect в коллекцию НИКОГДА не должны быть `@Composable` |
 
 ---
-*Last updated: 2026-06-26 — after shipping v2.0.4 PanelGroup Recompose Fix (real root cause)*
+*Last updated: 2026-07-21 — after scoping milestone v2.1 Glass Refinement*

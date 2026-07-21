@@ -1,39 +1,70 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: milestone_complete
-stopped_at: v2.0.4 milestone archived; real RCMP fix confirmed in consumer app
-last_updated: "2026-06-26T11:56:19.079Z"
-last_activity: 2026-06-26 — v2.0.4 PanelGroup Recompose Fix milestone completed and archived (real root cause: non-@Composable DSL); confirmed working in consumer app
+milestone: v2.1
+milestone_name: Glass Refinement
+status: defining_requirements
+stopped_at: Milestone v2.1 started — research pending, then requirements
+last_updated: "2026-07-21T00:00:00.000Z"
+last_activity: 2026-07-21 — Milestone v2.1 Glass Refinement started
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-23 — after v2.0.2 milestone)
+See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v2.1 Glass Refinement)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, typed `AeroIcons`, and a showcase — no manual style work or icon-pack hunting required.
-**Current focus:** Between milestones — v2.0.4 shipped and archived. Next: `/gsd:new-milestone` when new work is scoped.
+**Current focus:** v2.1 Glass Refinement — make eight Material3-looking components read as Win7 Aero glass, on top of a repaired + extended Aero primitives layer. Behaviour and public API unchanged.
 
 ## Current Position
 
-Milestone: v2.0.4 PanelGroup Recompose Fix — ✅ COMPLETE & ARCHIVED (2026-06-26)
-Status: Confirmed working in the real consumer app; tag v2.0.4 pushed (1db2b57), JitPack `ok`, `com.github.Tolaseeq:aero-compose-ui:2.0.4` resolves.
-Last activity: 2026-06-26 — v2.0.4 milestone archived (real root cause: non-@Composable section DSL lambda)
+Milestone: v2.1 Glass Refinement
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements (research stage next)
+Last activity: 2026-07-21 — Milestone v2.1 started
 
-```
-v2.0.2 ✅ → v2.0.3 ⚠ SHIPPED-BUT-BROKEN (wrong-cause fix) → v2.0.4 ✅ real RCMP fix SHIPPED & CONFIRMED
-[██████████] milestone complete → archived → next: /gsd:new-milestone
-```
+## v2.1 Scoping Decisions (2026-07-21)
 
-Next: `/gsd:new-milestone` to scope the next version.
+Locked during `/gsd:new-milestone` questioning:
+
+- **In scope — exactly eight components:** `AeroButton`, `AeroOutlinedButton`, `AeroSwitch`, `AeroSegmentedControl`, `AeroSlider`, `AeroRangeSlider`, `AeroProgressBar`, `AeroListItem`. Plus repairing/extending the shared glass layer itself.
+- **Out of scope:** a sweep of the remaining ~40 components; any behaviour/signature change beyond what the new visuals require.
+- **Custom drawing is allowed** where Material3 geometry blocks the Aero look — `AeroButton`/`AeroOutlinedButton`/`AeroSlider` are currently thin M3 wrappers whose two-tone fill, gloss, inner bevel and track groove cannot be expressed through `ButtonColors`/`SliderColors`. Public API + behaviour stay 1:1.
+- **Foundation first:** extend `GlassModifiers` + `AeroColorScheme` tokens, then migrate components onto that layer (mirrors the successful Phase 7 enabling-phase pattern from v2.0).
+- **Fidelity target:** "Aero spirit, modern execution" — clearly glassy and dimensional, recognisably Aero, without literally copying Win7 proportions.
+
+## Baseline Findings — why these eight look Material (surveyed 2026-07-21)
+
+**None of the eight uses any glass modifier for its own surface.** The only glass in these files is the drag tooltip pill in the two sliders.
+
+| Component | Current surface | Aero gaps |
+|-----------|-----------------|-----------|
+| `AeroButton` | M3 `Button`, flat `primary@0.8f`, `RoundedCornerShape(4.dp)` | no gradient, no border at rest, no gloss; hover = flat `0x40FFFFFF` `drawRect` over the **whole unclipped rect** (corners included) |
+| `AeroOutlinedButton` | M3 `OutlinedButton`, transparent, 1.dp `glassBorder` | no fill, no gradient, no gloss |
+| `AeroSwitch` | two plain Boxes (no M3 `Switch`) | fully flat; no border, no thumb shadow, no gloss; **no hover/press/focus at all** |
+| `AeroSegmentedControl` | plain `Row` + 1.dp border | selected segment is flat `primary@0.3f`; no raised/pressed bevel; **no hover, no focus** |
+| `AeroSlider` | M3 `Slider` + `SliderColors` | entirely M3-drawn track/thumb; no groove, no gloss, no hover/focus |
+| `AeroRangeSlider` | custom `Canvas` (M3 banned per PITFALL-03) | flat 4.dp `drawLine` tracks, flat `drawCircle` thumbs + ring; no gradient/shadow/rim; no hover/press |
+| `AeroProgressBar` | plain nested Boxes | entirely flat; no gradient fill, no trough inner shadow, no border, no animated sheen |
+| `AeroListItem` | plain `Row`, `.background(animatedBg)`, **not clipped** | hard-edged full-bleed flat highlight; no rounded selection pill, no gradient, no focus visual |
+
+**Glass layer defects to fix (part of this milestone):**
+- `glassEffect(elevation = …)` — parameter is **dead**; `shadow` is imported but never applied. Every `elevation = 2.dp` call site is a no-op.
+- `glassSurface` — gloss gradient is hardcoded `endY = 100f` **pixels**, not proportional, so it never completes on short controls and is a thin band on tall ones.
+- `glassSurface` — `drawBehind` runs before `.clip(shape)` and the 1.dp stroke is bounds-centred, so its outer half is clipped away → effectively a 0.5.dp border.
+
+**Aero devices already available:** proportional top gloss (`glassPanel`, 55% height), vertical body gradient (`glassEffect`), 1.dp rim (`glassEffect`/`glassSurface`), theme tokens `glassSurface`/`glassBorder`/`glassHighlight`/`panelBackground`, plus `titleBarGradientStart/End` (used only by `AeroTitleBar`).
+
+**Aero devices missing entirely:** drop shadow / outer glow, bottom reflection (two-tone split), inner bevel / inset rim light, specular curved gloss, noise texture, real backdrop blur (glass is alpha-simulated only), any horizontal gradient variant.
+
+Next: research (4 parallel agents) → REQUIREMENTS.md → ROADMAP.md. Phase numbering continues from **15**.
 
 ## v2.0.4 — Real RCMP Root Cause (2026-06-26)
 
@@ -240,7 +271,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-06-26T08:49:02.537Z
-Stopped at: Completed 14-03-PLAN.md (Task 3 JitPack human-verify pending)
+Last session: 2026-07-21
+Stopped at: Milestone v2.1 Glass Refinement scoped; PROJECT.md + STATE.md updated; research stage next
 Resume file: None
-Next action: `/gsd:plan-phase 14`
+Next action: research → `.planning/REQUIREMENTS.md` → `/gsd:plan-phase 15`
