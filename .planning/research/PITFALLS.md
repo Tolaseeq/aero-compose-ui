@@ -1,534 +1,404 @@
-# Pitfalls Research
+# Pitfalls Research — v2.1 Glass Refinement
 
-**Domain:** Compose Desktop UI library — v2.0.2 milestone: AeroPanelGroup vertical collapsible+resizable N-panel layout
-**Researched:** 2026-06-22
-**Confidence:** HIGH (all claims grounded in actual source files and shipped project history)
+**Domain:** Adding Windows-Aero gradient/gloss/bevel/shadow ornamentation to an existing Compose Desktop component library, and replacing Material3 internals with custom drawing (aero-compose-ui, Kotlin 2.1.21 / Compose Desktop 1.7.3 / JDK 17)
+**Researched:** 2026-07-21
+**Confidence:** HIGH for pitfalls grounded directly in this repo's code (cited file:line); MEDIUM for general Compose/Skia platform behavior verified against official docs; LOW flagged inline where only WebSearch supports a claim.
 
-> **Scope note:** This file covers pitfalls specific to building `AeroPanelGroup` / `AeroPanelSection`. The v2.0.1 pitfalls (PITFALL-A through PITFALL-J) are NOT re-documented here but are explicitly carried forward where they apply. The v2.0 pitfalls (PITFALL-01 through PITFALL-15) are referenced by ID only.
-
----
-
-## Carried-Forward Mandatory Rules
-
-These rules from prior milestones apply directly to AeroPanelGroup. Violating any of them is a regression, not a new bug.
-
-| ID | Rule | Where It Bites AeroPanelGroup |
-|----|------|-------------------------------|
-| PITFALL-03 | `detectDragGestures` BANNED on Compose Desktop (touchSlop=18dp). Use `Modifier.aeroDragSplitter`. | Every drag-resize divider between expanded sections. |
-| PITFALL-A | `remember(totalPx)` re-keys state on every outer drag frame. Store a stable coordinate (fraction / normalized px), derive pixels each recompose. | `AeroPanelGroup` uses `BoxWithConstraints → totalPx`. If section `sizePx` is stored raw and `remember`ed on `totalPx`, it resets on every window resize. Carry-forward of v2.0.1 FIXSP root-cause. |
-| PITFALL-B | `coerceIn(min, max)` throws `IllegalArgumentException` when `min > max`. Always guard with `safeMax = max.coerceAtLeast(min)`. | With 3+ sections the cascading-squeeze case is even more likely than in 2-pane SplitPane. Use the same `clampDividerPx` helper or a new equivalent for multi-section. |
-| FIXSP-01 | Drag loop must read live state (`rememberUpdatedState` pattern). Stale-captured `sizePx` causes snap-back. | Every section's size is live state — the drag lambda must read it fresh every frame, not capture a copy from the `pointerInput` lambda closure. |
-| No SubcomposeLayout | No height-measurement per frame. `BoxWithConstraints → totalPx` only. | Section heights must be derived from stored fractions and `availableForExpandedPx`, NOT measured from content. |
+This catalog assumes the reader already knows the project's five locked cross-milestone lessons (`detectDragGestures` ban, single-`drawBehind` overdraw rule, `undecorated` without `transparent` crash, `rememberUpdatedState` for `pointerInput` captures, non-`@Composable` DSL lambdas). It does not repeat them — it extends them into the specific failure modes of *adding heavier ornamentation to 8 named components and dropping M3 internals from 3 of them*.
 
 ---
 
 ## Critical Pitfalls
 
-### PNL-PITFALL-01: animateFloatAsState target fighting direct drag writes (animation vs. drag coexistence)
-
-**This is the #1 risk. Build order: implement the spike that resolves this BEFORE writing any visible AeroPanelGroup code.**
+### Pitfall 1: Draw-time object allocation inside `drawBehind` (not `drawWithCache`)
 
 **What goes wrong:**
-
-`animateFloatAsState` works by interpolating toward a *target value* every frame. If a drag handler writes to the same `sizePx` state that `animateFloatAsState` is also trying to drive toward its own target, you get two writers competing:
-
-1. Frame N: user drags, `sizePx` written to `600f`.
-2. Frame N+1: `animateFloatAsState` spring/tween produces an intermediate value (say `580f`) toward its internal target and writes it, overriding the drag.
-3. Result: section height oscillates. Dragging feels like fighting rubber-band resistance. Worse, if the animation target is the *pre-drag* value, the section snaps back to where it was before the drag began.
-
-The symmetric case: while an animation is running (collapse in progress), a simultaneous drag on an adjacent divider is trying to resize the same section. The animation's `target` and the drag's direct write fight every frame.
+Every `Brush`, `Path`, or `Shape` object constructed *inside* a `drawBehind {}` lambda is reallocated on every single draw pass — every frame during any animation (hover fade, press scale, shimmer), and every recomposition that touches the draw scope. This is not hypothetical for this codebase: `GlassModifiers.kt` already does it. `glassPanel` (`GlassModifiers.kt:64-69`) and `glassSurface` (`GlassModifiers.kt:91-97`) both call `Brush.verticalGradient(...)` *inside* their `drawBehind` block, uncached, on every draw. The milestone plan adds a two-tone fill, a proportional gloss, an inner bevel/rim, and a shadow/glow *on top of* this pattern — potentially 4-5 `Brush`/`Path` allocations per draw call, per component, repeated for every visible `AeroListItem` row if a consumer puts dozens of them in a `LazyColumn`.
 
 **Why it happens:**
-
-`animateFloatAsState` is designed for the pattern where `targetValue` is a function of snapshot state (e.g. `if (expanded) fullSizePx else headerPx`). If `sizePx` IS the state, and both the drag AND the animation are trying to update it, you have violated the single-writer discipline.
+`drawBehind` is the simplest API and "it already works" for the current 1-2 layer version. Nobody notices the allocation cost until the layer count and the instance count both go up at once — which is exactly what this milestone does (more layers × a list-shaped consumer, `AeroListItem`).
 
 **How to avoid:**
-
-Split the state into two variables with clearly separated write ownership:
-
-```kotlin
-// The stable, user-set size (drag and layout logic write here):
-var sizeFraction by remember { mutableStateOf(initialFraction) }
-
-// Animation target for collapse/expand transitions only:
-val animTargetFraction: Float = if (expanded) sizeFraction else 0f
-
-// Animated display value — read-only in layout:
-val displayFraction by animateFloatAsState(
-    targetValue = animTargetFraction,
-    animationSpec = tween(200, easing = FastOutSlowInEasing),
-    label = "section_${index}_size",
-)
-```
-
-**The drag handler writes only to `sizeFraction` (the user-intent state). The layout reads only `displayFraction` (the animated view of that intent).** When no animation is running (expanded and animation settled), `displayFraction == sizeFraction` and drag updates are reflected immediately with zero latency.
-
-During a collapse, `animTargetFraction` switches to `0f`. The animation interpolates `displayFraction` toward `0f`. At no point does the animation try to write back to `sizeFraction` — it only reads it as the source of `animTargetFraction`. Drags on neighboring sections that change `sizeFraction` recalculate `animTargetFraction` correctly on the next frame.
-
-Additionally: **disable divider drag while an animation is running on either neighbor.** Check `displayFraction != sizeFraction` (animation in progress) and short-circuit the drag handler. This prevents the user from starting a drag during a collapse animation that would corrupt the target.
-
-```kotlin
-// In the divider's onDrag lambda:
-val upperAnimDone = upperDisplay.value == upperSection.sizeFraction
-val lowerAnimDone = lowerDisplay.value == lowerSection.sizeFraction
-if (!upperAnimDone || !lowerAnimDone) return@onDrag  // animation in flight — skip drag
-```
+Any gradient/path/shape that depends only on `size` (not per-frame animated color) belongs in `Modifier.drawWithCache { ... onDrawBehind { ... } }`, which recomputes the cached objects only when layout size changes, not every frame (confirmed current official guidance: "Objects are re-created only when the drawing area size changes or state objects change" — developer.android.com/develop/ui/compose/graphics/draw/modifiers). Animated *colors* still have to be read at draw time (that's correct — reading state in the draw phase, not layout/composition, is the existing intended pattern per `AeroListItem`'s `animateColorAsState`), but the `Brush` *shape* (gradient stops, angle, corner radius geometry) should be built once and reused, with only its color arguments swapped. Concretely: build the gradient inside `drawWithCache`, and if the *colors* also animate, capture them via a `State<Color>` read inside `onDrawBehind` rather than rebuilding `Brush.verticalGradient` from scratch on every frame — or accept a rebuild but never a `Path`/`Paint` rebuild, since `Path` construction is the more expensive of the two.
 
 **Warning signs:**
-- Section height oscillates or vibrates when dragging immediately after a collapse/expand toggle.
-- A section that was being animated snaps to an unexpected size when the user drags a neighboring divider.
-- Dragging a divider during a running animation causes both sections to jump to their pre-animation sizes.
+- Frame drops/stutter specifically when many `AeroListItem`s are visible at once, or during hover-fade on a dense list, that don't reproduce with 1-2 items.
+- Any new primitive function in the extended `GlassModifiers.kt` that constructs a `Brush.linearGradient`/`verticalGradient`/`Path` literal directly inside a `drawBehind {}` body rather than inside `drawWithCache { ... }`.
+- iGPU (Intel/AMD integrated) profiling shows GC pressure or allocation-heavy draw frames — this project's own locked lesson ("Glass effect in single `drawBehind`... iGPU performance collapse") was about *overdraw*, not allocation; this is the adjacent trap that a single-`drawBehind` fix does NOT solve by itself.
 
-**Recommended unit test:** None directly (this is Compose animation state, not pure logic). Verify via manual smoke test during spike: collapse a section, immediately drag the next divider — no snap-back, no oscillation. Also verify: complete an animation, then drag — `displayFraction` matches `sizeFraction` instantly.
-
-**Phase to address:** Phase 13, step 1 — animation-vs-drag spike. This must be resolved before any other AeroPanelGroup implementation step. The spike should produce a minimal testable composable that exercises the exact state split described above.
+**Phase to address:** Foundation/primitives phase — this is where `GlassModifiers.kt` is repaired and extended; fix the existing two `drawBehind`-allocated brushes while adding the new layers, and set `drawWithCache` as the pattern for every new primitive so per-component phases inherit it for free.
 
 ---
 
-### PNL-PITFALL-02: Float drift / rounding when normalizing px shares across window resize
+### Pitfall 2: `graphicsLayer`/`alpha` forcing offscreen compositing, stacked with the new draw layers
 
 **What goes wrong:**
-
-`availableForExpandedPx = totalPx - Σ(collapsedHeaderPx) - Σ(dividerPx)` is computed in floating-point. Each expanded section holds a `sizeFraction` in `[0f..1f]` relative to `availableForExpandedPx`. On window resize, the fractions are restored: `sizePx_i = sizeFraction_i * availableForExpandedPx`. With N sections, floating-point rounding accumulates: `Σ(sizePx_i)` may differ from `availableForExpandedPx` by 0.5–2px depending on N and the exact fractions.
-
-This 2px gap or overflow causes either a visible gap below the last section or an invisible 2px overflow that causes the group to exceed its container by a sub-pixel, which Compose silently clips.
-
-A more severe variant: after several resize + collapse + expand cycles, fractions drift away from summing to 1.0 due to repeated `pxToFraction(clampedPx, newAvailable)` calls on different `available` values. After enough cycles the sections collectively represent 98% or 102% of available space.
+`AeroButton` and `AeroOutlinedButton` already apply `Modifier.graphicsLayer { scaleX = scale; scaleY = scale }` for the press-scale animation (`AeroButton.kt:76`), and `AeroListItem` already applies `Modifier.alpha(if (enabled) 1f else 0.4f)` (`AeroListItem.kt:80`). Per Compose's own documented compositing model, `alpha` usage on a `graphicsLayer` forces an **offscreen buffer** to rasterize content before compositing it back ("because of alpha usage here creates an offscreen buffer to rasterize content into first" — developer.android.com/develop/ui/compose/graphics/draw/modifiers). Once these components carry a multi-layer glass `drawBehind`/`drawWithCache` fill *underneath* that `graphicsLayer`, every animated frame re-rasterizes the entire glass stack into an offscreen layer, not just the (cheap) scale transform. This compounds directly with Pitfall 1: an uncached `Brush` rebuilt every frame *and* forced through an offscreen buffer every frame.
 
 **Why it happens:**
-
-`sizeFraction_i = sizePx_i / availableForExpandedPx` is called every drag frame and after every collapse/expand. Each call introduces a tiny rounding error. Over time these errors compound — the same drift pattern seen in ColorPicker HSV/RGB round-trips (PITFALL-15, v2.0).
-
-**How to avoid:**
-
-1. **Last-section remainder rule:** Never compute `sizePx` for the last expanded section from its fraction. Instead: `lastSizePx = availableForExpandedPx - Σ(sizePx_0..N-2)`. This makes the last section absorb all rounding error and guarantees `Σ = totalAvailable` exactly.
-
-2. **Re-normalize after every structural change:** After any collapse, expand, or drag-commit, re-compute all fractions from the current pixel values and then re-normalize so `Σ(fractions) == 1.0f`. A cheap re-normalize: `val sum = fractions.sum(); fractions = fractions.map { it / sum }`.
-
-3. **Integer pixel arithmetic for layout:** When passing sizes to `Modifier.height(...)`, use `(sizePx).roundToInt().dp` converted with `density.toDp()` rather than raw `Float.dp`. Sub-pixel heights in `Modifier.height` cause hairline gaps on non-integer dp values.
-
-**Recommended unit test:**
-
-```
-PanelDistributionTest.kt:
-- "sum of section sizes equals totalAvailable after 100 random resize events" — generate random totalPx in [400..1200], random fractions normalized to 1.0, compute sizePx for each, assert abs(Σ - available) < 1.0f
-- "last-section remainder exactly fills remaining space" — fixed fractions [0.3f, 0.3f, last=remainder], assert lastSizePx == available - first - second exactly
-- "fractions stay normalized after 50 collapse/expand cycles" — toggle sections randomly, assert Σfractions stays in [0.99..1.01] throughout
-```
-
-**Phase to address:** Phase 13, step 2 — core layout logic (PanelDistribution.kt pure-logic file), written and TDD-locked before composable scaffolding.
-
----
-
-### PNL-PITFALL-03: Divider placement bug when a neighbor collapses mid-drag
-
-**What goes wrong:**
-
-While the user is mid-drag on the divider between sections A and B, section C collapses (e.g., via a keyboard shortcut or programmatic toggle). The collapse removes C's share from `availableForExpandedPx`. Section B (the lower neighbor of the dragged divider) is now being re-measured against a smaller `available`. The divider's drag delta is still being applied in terms of the OLD `available`. Result: the divider position is physically wrong — it is placed outside the updated layout coordinates.
-
-A related variant: the user drags the A/B divider while section B's collapse animation is still running. The animate target for B is moving toward `headerPx` while the drag is trying to assign B a larger size. One of two bad outcomes: B keeps collapsing despite the drag (animation wins), or B expands to the drag position and then the animation snaps it back (drag wins temporarily, animation corrects wrong).
-
-**Why it happens:**
-
-The drag delta is a pixel offset in the coordinate space of the group at drag-start. If the layout geometry changes mid-drag (collapse of any section), the coordinate space shifts but the delta does not compensate.
+`graphicsLayer { scaleX = ...}` and `Modifier.alpha(...)` look like innocuous, cheap transform modifiers — and in isolation they are. The cost only appears once there's substantial paint work underneath them, which is precisely what this milestone adds.
 
 **How to avoid:**
-
-1. **Cancel any in-flight divider drag when a toggle event fires.** In `awaitPointerEventScope`, check a `dragEnabled` flag before applying each delta. The toggle handler sets `dragEnabled = false` and the pointer loop exits at its next frame. This is equivalent to how touch cancel works in mobile scroll conflict resolution.
-
-2. **Lock toggles while a drag is active.** Use a `dragging: Boolean` state flag set to `true` on `AwaitFirstDown` and `false` on drag end or pointer up. The toggle button's `clickable` is disabled (or the toggle lambda is guarded) while `dragging`. This is the simpler approach and preferred for this component.
-
-3. **Re-compute available space from scratch on every drag frame** (not once at drag-start). The drag lambda must call `computeAvailablePx(totalPx, sections)` every frame, not capture it at drag-start. This ensures if a structural change fires concurrently, the next drag delta uses the updated space.
-
-Recommendation: use approach #3 (live computation of available space every frame) because it handles both race conditions generically. The `computeAvailablePx` function is cheap (N multiplications, no allocation).
+Keep `graphicsLayer` scale/alpha transforms as high (outermost) in the modifier chain as possible so they wrap the *smallest* amount of expensive paint work — for the button press-scale case this is already correct (it wraps the whole `Button`, unavoidable). Where alpha is used purely for a *disabled* dim rather than an animated fade, prefer baking the alpha into the specific color tokens read by the glass draw calls (`color.copy(alpha = ...)`) instead of a blanket `Modifier.alpha()` over the whole composable — this avoids the offscreen-buffer path entirely for the disabled state, which is static (no animation) and doesn't need it. Reserve `Modifier.alpha()` for genuinely animated fades where the offscreen cost is already accepted.
 
 **Warning signs:**
-- After collapsing section C while dragging A/B divider, the divider jumps to an incorrect position.
-- The bottom section overflows the group container (visible clip) after a mid-drag structural change.
+- Disabled-state list items or buttons feel disproportionately expensive to render compared to enabled ones with identical geometry.
+- Any new glass primitive whose call sites are wrapped in `Modifier.alpha()` for a *static* disabled look rather than color-level alpha.
 
-**Recommended unit test:** Pure-logic unit test is not directly applicable (this is a Compose concurrency concern). Smoke-test in showcase: collapse a section programmatically via a button while dragging a divider in the same group.
-
-**Phase to address:** Phase 13, step 3 — drag-resize logic implementation. Use `dragging` flag to guard toggles as a primary safety mechanism.
+**Phase to address:** Foundation/primitives phase (establish the color-level-alpha-for-disabled convention as a written rule); enforced per-component in each component's own phase.
 
 ---
 
-### PNL-PITFALL-04: Min-size clamp failures with 3+ sections — cascading squeeze and inverted ranges
-
-**This is the N-section generalization of PITFALL-B from v2.0.1.**
+### Pitfall 3: Shadow/glow primitives adopted naively — `Modifier.shadow()` or per-pixel blur multiplied across a list
 
 **What goes wrong:**
-
-With 3+ expanded sections, dragging the divider between sections 1 and 2 downward squeezes section 2. Section 2 reaches its `minSize`. The remaining squeeze must be absorbed by section 3. But section 3 also has a `minSize`. If the user continues dragging past the point where `section2.size + section3.size == minSize2 + minSize3`, the multi-section clamp must refuse to move the divider further, but a naive clamp of each section independently fails:
-
-- `maxPx_for_divider_1_2 = availableForExpanded - minSize2 - minSize3`
-- If `availableForExpanded < minSize1 + minSize2 + minSize3` (window shrunk), `maxPx < minPx` → crash, exactly like PITFALL-B.
-
-With N sections the cascading squeeze is more complex: dragging divider i can potentially violate min-sizes of sections i+1 through N-1.
-
-Additionally, the multi-section clamp must not just protect the directly adjacent sections — it must compute the **total minimum remaining below the divider** (`Σ minSize_j for j = i+1..N-1`) and use that as the upper bound for divider i.
+The milestone's target feature list explicitly adds "тень/свечение" (drop shadow / glow) as a new Aero device — something the current `GlassModifiers.kt` does not actually render anywhere despite importing `androidx.compose.ui.draw.shadow` (see Pitfall 7). The two straightforward ways to add it are `Modifier.shadow(elevation, shape)` or a `BlurMaskFilter`/Skia blur inside a `Canvas`. Both allocate their own offscreen/blur buffer per call site. Multiplied across every visible `AeroListItem` selection pill, or every `AeroButton` on a toolbar, this is the same class of cost as Pitfall 2 but specifically blur-shaped: blur passes are proportionally more expensive than a flat rasterization because they read a neighborhood of pixels, not one.
 
 **Why it happens:**
-
-Two-pane SplitPane only ever looks at one neighbor per side. N-panel divider between sections i and i+1 must be aware of ALL sections on each side of it. Applying the SplitPane clamp directly to adjacent sections only is a natural but incorrect simplification.
-
-**How to avoid:**
-
-Define a `clampSectionDividerPx` function that takes the full sections array and the divider index:
-
-```kotlin
-internal fun clampPanelDividerPx(
-    dividerIndex: Int,  // divider between section[dividerIndex] and section[dividerIndex+1]
-    currentPx: Float,
-    deltaPx: Float,
-    sections: List<PanelSectionState>,  // only expanded sections
-    availablePx: Float,
-): Float {
-    // min from above: all expanded sections ABOVE the divider have their own minimums
-    val minPx = sections.take(dividerIndex + 1).sumOf { it.minSizePx.toDouble() }.toFloat()
-    // max from below: all expanded sections BELOW (including direct lower neighbor)
-    val minBelowPx = sections.drop(dividerIndex + 1).sumOf { it.minSizePx.toDouble() }.toFloat()
-    val maxPx = (availablePx - minBelowPx).coerceAtLeast(minPx)  // PITFALL-B guard
-    return (currentPx + deltaPx).coerceIn(minPx, maxPx)
-}
-```
-
-The `coerceAtLeast(minPx)` guard (identical to PITFALL-B's fix) prevents the inverted-range crash when the window is squeezed below `Σ minSizes`.
-
-**Recommended unit test:**
-
-```
-PanelClampTest.kt (analogous to SplitClampTest.kt):
-- "clamp divider 1 in 3-section: dragging past section-2 minimum stops at section-2 minSize" — 3 sections, drag divider 1 to push section 2 below minimum, assert result == section2.minSize
-- "clamp divider 1 in 3-section: dragging past both section-2 and section-3 combined minimum stops at min1 boundary" — available = 200px, min1=60, min2=60, min3=60, assert no throw and result clamped
-- "inverted range (window too narrow for all minimums) does not throw" — available=100px, three sections each with minSizePx=60, assert no IllegalArgumentException
-- "divider 0 upper bound accounts for all sections below" — 4 expanded sections, drag divider 0 to maximum, assert minPx below = Σ(min1..min3)
-```
-
-**Phase to address:** Phase 13, step 2 — PanelClamp.kt pure-logic file, written and TDD-locked before composable scaffolding. Mirror the SplitClamp/SplitClampTest pattern exactly.
-
----
-
-### PNL-PITFALL-05: Share-transfer rounding so Σheights ≠ totalPx (gap or overflow)
-
-**What goes wrong:**
-
-When a section collapses, its `sizePx` is redistributed among the remaining expanded sections proportionally. If redistribution is done by dividing the freed pixels equally or proportionally and accumulating them section by section using floating-point arithmetic, the final Σ will differ from `availableForExpandedPx` by 0–2px due to rounding.
-
-This is distinct from the window-resize drift in PNL-PITFALL-02: that pitfall is about fraction-px round-trips across resizes. This pitfall is about the single redistribution event: collapse section C, distribute `C.sizePx` to A and B. `A.sizePx + B.sizePx` should exactly equal the old `A.sizePx + B.sizePx + C.sizePx`, but floating-point prevents this.
-
-The visual result is a 1–2px hairline gap after the last expanded section, or the last section overflowing by 1px.
-
-**Why it happens:**
-
-```kotlin
-val share = collapsedSizePx / expandedNeighbors.size  // floating-point division
-expandedNeighbors.forEach { it.sizePx += share }       // each += loses a sub-pixel
-```
-
-After N sections receive `share`, `Σ(share * N) < collapsedSizePx` by rounding error.
+"Add a shadow" reads as a one-line API call; the per-instance multiplication cost across a list is invisible until there's a real list of them on screen, which showcase demos with 3-5 sample rows will not reveal.
 
 **How to avoid:**
-
-Use the **largest-remainder method**: distribute the integer portion first, then give the remainder to the last recipient:
-
-```kotlin
-internal fun distributeCollapsedPx(
-    collapsedPx: Float,
-    recipients: List<PanelSectionState>,
-): List<Float> {
-    if (recipients.isEmpty()) return emptyList()
-    val baseShare = collapsedPx / recipients.size
-    val sizes = recipients.map { it.sizePx + baseShare }.toMutableList()
-    // Correct rounding error: last section absorbs residual
-    val distributed = sizes.sum() - recipients.sumOf { it.sizePx.toDouble() }.toFloat()
-    sizes[sizes.lastIndex] += (collapsedPx - distributed)
-    return sizes
-}
-```
-
-Alternatively, after every structural change, apply the re-normalization + last-section remainder rule from PNL-PITFALL-02. These two mitigations together guarantee `Σ = available` to floating-point precision.
-
-**Recommended unit test:**
-
-```
-PanelDistributionTest.kt:
-- "distributeCollapsedPx: sum of new sizes == original Σ + collapsedPx exactly" — 3 recipients with random sizes, collapse one, assert Σ_new == Σ_old + collapsedPx within Float.EPSILON
-- "share-transfer conserves px: collapse and immediate re-expand returns to within 1px" — collapse section B (transfers to A+C), expand B with lastExpandedPx, assert A+B+C sizes ≈ original within 1px tolerance
-```
-
-**Phase to address:** Phase 13, step 2 — PanelDistribution.kt pure-logic file, TDD-locked alongside PanelClamp.kt.
-
----
-
-### PNL-PITFALL-06: `lastExpandedPx` restore when available height has shrunk
-
-**What goes wrong:**
-
-`lastExpandedPx` is the section's size at the moment it was collapsed. When expanded again, it is restored as the initial size. But between collapse and re-expand, the window may have been resized (shrunk). If `lastExpandedPx > availableForExpandedPx_at_restore`, restoring it would push the section above the available space and the layout overflows.
-
-Additionally, if two sections are simultaneously collapsed and then re-expanded in different order, restoring both `lastExpandedPx` values may together exceed `availableForExpandedPx` even if each individually would not.
-
-**Why it happens:**
-
-`lastExpandedPx` is captured as an absolute pixel value at collapse time. It is not a fraction of `available`. The available space at re-expand time may differ from available space at collapse time.
-
-**How to avoid:**
-
-1. **Store `lastExpandedFraction`** (ratio to `availableForExpandedPx` at collapse time), not `lastExpandedPx`. On re-expand, `restoredPx = lastExpandedFraction * currentAvailableForExpandedPx`. This mirrors the fraction-based state discipline of AeroSplitPane (PITFALL-A fix).
-
-2. **Clamp the restored size to the current available:** even with fractions, after restoring multiple sections simultaneously, do one full re-normalize pass so `Σ(restoredFractions) ≤ 1.0`.
-
-3. **Minimum viable restore:** if `currentAvailableForExpandedPx < all_minSizes_combined`, restore each section at its `minSizePx` and distribute any remainder evenly. Never restore a section below its `minSizePx`.
-
-**Recommended unit test:**
-
-```
-PanelDistributionTest.kt:
-- "restore after shrunk window: restoredPx does not exceed availableForExpandedPx" — collapse at available=800px, shrink to 400px, re-expand, assert restored sizePx <= 400px - otherSectionsMin
-- "restore lastExpandedFraction: restored fraction * new available gives proportionally correct size" — collapse at fraction 0.4f in 800px available, re-expand at 600px available, assert restoredPx == 0.4f * 600px ≈ 240px
-- "multi-restore: two sections restored simultaneously do not overflow" — two collapsed sections with lastExpandedFraction 0.6f each, re-expand both, assert Σ == 1.0f after normalize
-```
-
-**Phase to address:** Phase 13, step 2 — PanelDistribution.kt / PanelSectionState.kt. Use `lastExpandedFraction`, not `lastExpandedPx`, as the stored value.
-
----
-
-### PNL-PITFALL-07: Off-by-one with collapsed-header and divider height accounting
-
-**What goes wrong:**
-
-`availableForExpandedPx = totalPx - Σ(collapsedHeaderPx) - Σ(dividerPx)`.
-
-The off-by-one class:
-- A divider exists ONLY between two expanded sections. A divider between an expanded section and a collapsed section is replaced by a static visual join (no drag, no height consumption). If all dividers are counted unconditionally regardless of collapse state, `availableForExpandedPx` is over-subtracted, causing the expanded sections to collectively be shorter than they should be.
-- When the last section is collapsed, the header is at the bottom of the group. If the group is `Column` with no explicit bottom padding, there is no divider after it and no extra space — but if the group tries to draw a post-last-section divider (wrong loop boundary), it draws one extra 1dp line at the very bottom.
-- Header height in dp must be converted to px using the current `density` ONCE, not re-converted each frame (float drift if density rounds differently under different recompose paths).
-
-**Why it happens:**
-
-Loop-boundary errors when computing "how many dividers exist given N sections in various collapsed states" are subtle. The correct count is: number of pairs of adjacent EXPANDED sections. This is NOT `expandedCount - 1` in general — if two expanded sections are separated by a collapsed section, they do NOT share a draggable divider (the collapsed header sits between them).
-
-Correct formula:
-```kotlin
-// Count dividers = number of i where section[i] is expanded AND section[i+1] is expanded
-val activeDividerCount = sections.zipWithNext().count { (a, b) -> a.expanded && b.expanded }
-```
-
-**How to avoid:**
-
-Compute `availableForExpandedPx` using the active-divider count above. Convert all dp constants to px once, outside the hot recompose path. Store `headerHeightPx: Float` as a `remember`ed value computed once at first composition from `density` and `headerHeightDp`.
-
-Additionally: render dividers only between pairs of adjacent expanded sections. Iterate over `sections.zipWithNext()` and conditionally render the drag divider or the static join based on the pair's expansion state.
-
-**Recommended unit test:**
-
-```
-PanelDistributionTest.kt:
-- "activeDividerCount: EECE pattern gives 1 divider (between E1 and E2, not E2 and E3 because C separates them)" — 4 sections [E, E, C, E], assert count == 1 (only pair 0-1)
-- "availableForExpandedPx never negative for any collapse combination" — exhaustive test over all 2^N collapse combinations for N=4, assert available >= 0 in all cases
-- "header height px is consistent across calls" — same density, same headerDp, call twice, assert equal
-```
-
-**Phase to address:** Phase 13, step 2 — `computeAvailablePx` pure-logic function, TDD-locked. Step 3 — conditional divider rendering in composable.
-
----
-
-### PNL-PITFALL-08: Recomposition and re-key resets of section state
-
-**This is the N-section generalization of PITFALL-A and PITFALL-D from v2.0.1.**
-
-**What goes wrong:**
-
-Several patterns cause Compose to reset per-section state:
-
-1. **`remember(totalPx)` re-key** (direct carry from PITFALL-A): if `sizeFraction` is initialized in a `remember(totalPx)` block, every window resize resets all section fractions to their initial values. The PITFALL-A fix applies: `remember { mutableStateOf(initialFraction) }` with no key.
-
-2. **Sections list structural change**: if `AeroPanelGroup` receives `sections: List<AeroPanelSectionConfig>` and the caller reorders or re-creates the list (e.g., wrapping in `remember` incorrectly on the caller side), Compose will consider it a new list and re-key the `forEachIndexed` loop's composable. All section state resets. Mitigation: document that section configs must be stable (`remember`ed by the caller), or use `key(section.id)` inside the loop.
-
-3. **`key(index)` vs `key(id)` for section loops**: if the composable loop uses positional keys `key(index)` and the caller inserts a section at position 0, all existing sections shift index and their remembered state (sizeFraction, expanded) is rebound to the wrong section. Use `key(section.id)` (a stable, caller-supplied identifier).
-
-4. **`pointerInput` re-creation invalidates in-flight drag**: `Modifier.pointerInput(key1, key2)` recreates the pointer handler when keys change. If `onDrag` lambda or `orientation` is used as a key, any recomposition that changes `onDrag` (e.g., because `onDrag` captures state that changed) cancels the current drag. Use `Modifier.pointerInput(Unit)` with `rememberUpdatedState` for all values read inside the handler (same discipline as AeroSplitPane line 116–124).
-
-**Why it happens:**
-
-All four variants stem from the same root: Compose's remember key system treats any change to a key as "this is a new invocation, reset state." The PITFALL-A fix for SplitPane solved case #1 for a single component. AeroPanelGroup has N components sharing a group-level `BoxWithConstraints`, making cases #2, #3, and #4 new surfaces.
-
-**How to avoid:**
-
-- Fraction state: `remember { mutableStateOf(...) }` with no key everywhere, mirroring AeroSplitPane.
-- Section loop: `key(section.id)` not `key(index)`. Define `AeroPanelSectionConfig.id: String` in the public API.
-- Drag modifier: `Modifier.pointerInput(Unit)` + `rememberUpdatedState` for all captured values. No lambda closures on drag-critical state.
-- Document in KDoc that the `sections` list passed to `AeroPanelGroup` must be stable across recompositions (use `remember` at the call site).
+Scope shadow/glow to *interactive-state-only* rendering (hover/press/selected), not the resting state of every item — an `AeroListItem` at rest should have zero shadow-shaped paint work; only the selected/hovered row pays the blur cost, and there is normally at most one of those per list at a time. For `AeroButton`/`AeroOutlinedButton` where every instance is potentially visible simultaneously (a toolbar of 10 buttons), keep any shadow a *cheap* approximation (a solid low-alpha ring/rim drawn without a real blur pass, matching the existing "1.dp rim" device already in `glassEffect`) rather than a true Gaussian blur, and reserve genuine blur for one-off surfaces (popups, dialogs) where instance count is always 1.
 
 **Warning signs:**
-- All section sizes reset to initial fractions on window resize (PITFALL-A variant).
-- Collapsing section 0 causes section 1 to forget its size (index re-key variant).
-- Dragging a divider snaps back when any other state changes during the drag (stale-capture variant).
+- A shadow/glow primitive is applied unconditionally in a component's base (non-hover, non-selected) render path.
+- Frame time scales with the number of rendered instances of a component that carries the new shadow primitive, specifically when profiled against a synthetic 50-row `AeroListItem` list even though the milestone itself does not target `AeroDataTable`.
 
-**Phase to address:** Phase 13, step 1 (spike) — confirm `remember { }` discipline. Step 3 — use `key(section.id)` in composable loop. Step 3 — `pointerInput(Unit)` + `rememberUpdatedState`.
-
----
-
-## Moderate Pitfalls
-
-### PNL-PITFALL-09: Divider rendered between a collapsed and an expanded section
-
-**What goes wrong:**
-
-A collapsed section has a fixed header height (~36dp). Its boundary with an adjacent expanded section is a static visual join — NOT a draggable divider. If a drag divider is rendered here anyway, the user gets a cursor change and drag affordance on a boundary they cannot meaningfully resize (dragging would change the header height, which is fixed by design).
-
-**How to avoid:**
-
-Render the `AeroDragSplitter` divider only between pairs of adjacent EXPANDED sections. Between an expanded section and a collapsed header (either order), render a static 1dp separator with no drag modifier and no cursor change. This follows the VS Code sidebar model: collapsed items are fixed-height entries in a list; drag handles only appear between resizable items.
-
-**Phase to address:** Phase 13, step 3 — composable rendering loop.
+**Phase to address:** Foundation/primitives phase (design the shadow/glow primitive with a cheap default and a state-gated expensive variant); verification phase should include a scaled-list smoke check even though `AeroListItem` itself ships in its own component phase.
 
 ---
 
-### PNL-PITFALL-10: `animateContentSize` used instead of explicit `sizeFraction`-driven height
+### Pitfall 4: Hardcoded pixel gradient stops that don't scale with component size (already present, will spread if copied)
 
 **What goes wrong:**
+`glassSurface`'s gloss gradient uses `endY = 100f` as a **literal pixel** value (`GlassModifiers.kt:95`), not `size.height * fraction` like the already-correct `glassPanel` sibling three functions above it (`GlassModifiers.kt:68`, using `size.height * 0.55f`). On any component shorter than 100px-worth-of-actual-pixels (which, at typical desktop DPI, includes essentially every one of the eight target components — `AeroButton` is 30.dp tall, `AeroSwitch` 18.dp, `AeroListItem` 36.dp), the gloss band never reaches its second color stop and reads as a hard color band, not a fade. On anything *taller*, it's a thin useless sliver at the top. This is a documented existing defect (STATE.md baseline finding) — the risk for this milestone is copying the same `endY = <literal>` shape into any of the new bevel/rim/two-tone-fill primitives being authored fresh.
 
-`AeroAccordion` uses `animateContentSize` for its content area — appropriate because the accordion content has unknown/dynamic height determined by its children. If `AeroPanelGroup` uses `animateContentSize` for section height, it re-introduces height measurement per frame for the animation, violating the no-SubcomposeLayout / no-height-measurement-per-frame rule.
-
-More concretely: `animateContentSize` works by measuring the content before and after the state change and interpolating. For AeroPanelGroup sections, the section height is NOT determined by content height — it is determined by the explicit `sizePx` stored in state. Using `animateContentSize` would make the height content-driven and break the explicit px control that drag-resize requires.
+**Why it happens:**
+`glassSurface` was very likely written by literally copy-adjusting `glassPanel`'s pattern and losing the `size.height *` multiplier in the edit, or by eyeballing a specific reference component's pixel height during development and hardcoding what looked right for that one case.
 
 **How to avoid:**
+Every gradient stop expressed as a distance along the drawn shape must be `size.height * fraction` or `size.width * fraction` (fraction, not px), computed *inside* the `DrawScope` where `size` is the actual laid-out pixel size at the current density — never a bare Float literal. When mixing dp-based reasoning (a bevel that should always be "2dp thick" regardless of component height) with proportional reasoning (gloss that should always cover "the top 40% of whatever height this is"), keep the two explicitly separate in the code: `val bevelPx = 2.dp.toPx()` (density-based, constant across sizes) vs `val glossEndY = size.height * 0.4f` (proportional, scales with size) — never conflate a dp-derived px value with a fraction-of-size value in the same expression.
 
-Use `Modifier.height(with(density) { displayFraction * availableForExpandedPx }.toDp())` driven by the `animateFloatAsState` display fraction (PNL-PITFALL-01 pattern). The section height is always explicit. No `animateContentSize`. The content inside the section should use `Modifier.fillMaxHeight()` and scroll internally if needed.
+**Warning signs:**
+- Any `Brush.verticalGradient`/`horizontalGradient` call with a numeric literal (not `size.height`, `size.width`, or `.toPx()` off a `Dp`) for `startY`/`endY`/`startX`/`endX`.
+- Visual sign-off: gloss/gradient band looks proportionally different (thicker relative to the shape) on `AeroSwitch` (18.dp) vs `AeroButton` (30.dp) vs `AeroListItem` selection pill (36.dp) — since the milestone touches all of these, this is a fast three-way comparison to run during Foundation-phase spike testing.
 
-**Phase to address:** Phase 13, step 3 — section composable.
+**Phase to address:** Foundation/primitives phase — fix the existing `endY = 100f` bug as part of this milestone's own scope, and adopt "gradient stops are `size.*` fractions, never literals" as a written rule the per-component phases inherit.
 
 ---
 
-### PNL-PITFALL-11: `Modifier.weight` used for section heights in the group Column
+### Pitfall 5: Triple source-of-truth for corner radius across `.background(shape)`, `.border(shape)`, and hand-drawn `drawRoundRect`
 
 **What goes wrong:**
+Three of the eight target components (`AeroButton`, `AeroOutlinedButton`, `AeroSlider`) are explicitly slated to drop M3 internals for custom drawing. The moment a component mixes a Compose-standard `.background(shape)`/`.border(shape)` (which use `RoundedCornerShape` outline math) with a hand-drawn `drawRoundRect(cornerRadius = CornerRadius(px, px))` for the new gloss/bevel/rim layers, any mismatch between the `cornerRadius` value fed to each — a different `Dp` constant, a rounding difference between `RoundedCornerShape`'s outline generation and `CornerRadius(px,px)`'s literal px, or an accidental omission of the `Density`-aware `.toPx()` conversion on one of the three — produces a visible double-edge/seam where the two roundings disagree by a pixel or two. `glassSurface` already has exactly this shape: it computes `RoundedCornerShape(cornerRadius)` (line 84) for the `.clip(shape)` call at the bottom, but computes `CornerRadius(cornerPx, cornerPx)` (line 89-90) independently for the hand-drawn `drawRoundRect` calls above it — currently these happen to agree because both derive from the same `cornerRadius: Dp` parameter, but there is no shared single computation; the two math paths are separately re-derived from the same input, which is exactly the shape that drifts the next time someone edits one call site and not the other.
 
-`Modifier.weight(fraction)` in a `Column` recalculates ALL weighted children's heights on every recomposition. During a drag (which recomposes every pointer event), every section in the group recomposes its height measurement. For N=5+ sections this creates N unnecessary layout passes per drag frame.
-
-The SplitPane solved this by giving the FIRST pane an explicit `Modifier.height(dividerPx.toDp())` and the SECOND pane `Modifier.weight(1f)` — only one weighted item. For N sections, the same pattern is: give sections 0 through N-2 explicit heights (`Modifier.height(sizePx.toDp())`), and give only the last section `Modifier.weight(1f)`. This also naturally implements the last-section remainder rule from PNL-PITFALL-02.
+**Why it happens:**
+Compose has two different roundedness representations at the API surface — `Shape`/`RoundedCornerShape` for `.background()`/`.border()`/`.clip()`, and `CornerRadius`/`androidx.compose.ui.geometry.CornerRadius` for raw `DrawScope.drawRoundRect()` — and there's no built-in conversion between them that a component author reaches for automatically; each call site derives its own.
 
 **How to avoid:**
+For any component mixing `.clip(shape)`-based layers with hand-drawn `drawRoundRect`/`Path` layers, compute the corner radius **once** as a single `val cornerPx = cornerRadius.toPx()` (or a single `RoundedCornerShape` instance) at the top of the draw scope / composable, and derive both the `Shape` used for `.clip()`/`.background()`/`.border()` and the `CornerRadius` used for hand-drawn calls from that one value — never two independent `.toPx()`/`RoundedCornerShape(...)` calls for what should be the same geometry. For the three components dropping M3 entirely (`AeroButton`, `AeroOutlinedButton`, `AeroSlider`'s track), prefer drawing *everything* (fill, gloss, bevel, rim, border) as hand-drawn `drawRoundRect`/`Path` calls sharing one `cornerPx`, and reserve `.clip(shape)` only for clipping hover/press overlays and content — this avoids the two-representation problem entirely for the parts that matter most (visible edges).
 
-Give sections [0..N-2] explicit `Modifier.height(displaySizeDp)` and section [N-1] `Modifier.weight(1f)`. The last section's visual size will be exactly the remaining space — no overflow, no gap, no drift.
+**Warning signs:**
+- A component's code has both a `RoundedCornerShape(x.dp)` value and a separately-computed `CornerRadius(y, y)` value where `x` and `y` are meant to represent the same visual radius but are independent literals/expressions.
+- Visual sign-off: a thin 1-2px seam or double-line at the rounded corners, most visible at higher DPI scaling (125%/150%/200%) where the rounding-error absolute pixel size is smaller relative to the corner but the anti-aliasing difference between the two math paths becomes more visible.
 
-Exception: when the last section is COLLAPSED, it must have an explicit header height, not `weight(1f)`. In that case, give the last EXPANDED section `weight(1f)` (which may not be the array-last section). Implementation: find `lastExpandedIndex`, give it `weight(1f)`, give all others explicit heights.
+**Phase to address:** Foundation/primitives phase for the shared-`cornerPx` convention; Buttons phase and Range phase (the three M3-dropping components) are where this bites hardest and must apply the rule.
 
-**Phase to address:** Phase 13, step 3 — section layout in composable.
+---
+
+### Pitfall 6: Draw-before-clip ordering — bounds-centred strokes losing their outer half, and unclipped hover overlays painting past rounded corners
+
+**What goes wrong:**
+This is a confirmed, already-present bug with two concrete instances in the current codebase, and the exact failure mode a "clip and stroke ordering" question is really asking about:
+
+1. **`glassSurface`'s border loses its outer half.** The function does `.drawBehind { ...drawRoundRect(style = Stroke(1dp))... }.clip(shape)` (`GlassModifiers.kt:87-105`) — the stroke is drawn *before* the clip is applied, and `Stroke`-style strokes in Compose are bounds-*centred* (half the stroke width sits outside the path, half inside). Because `.clip(shape)` runs afterward and clips to the *exact* shape bounds, the outer 0.5dp of every 1dp stroke is clipped away, leaving an effective 0.5dp border — half of what was specified.
+2. **`AeroButton`'s hover overlay paints past the rounded corners.** `AeroButton.kt:83-90` applies `.drawWithContent { drawContent(); if (hovered) drawRect(buttonHoverColor) }` as the `modifier` parameter passed into M3's `Button(...)`. M3's `Button`/`OutlinedButton` composables apply the caller-supplied `modifier` **outside** their own internal `Surface(shape = ...)` clip — so this `drawRect` paints a full, unclipped rectangle, including the four corners that the button's `RoundedCornerShape(4.dp)` is supposed to round off. Visually this means hover-state corners look square while the rest-state corners are rounded — a state-dependent shape mismatch, worst on Aero's characteristic saturated/gloss hover colors where the squared-off corner reads clearly against the rounded card underneath.
+3. **`AeroListItem` has no `.clip()` at all.** `AeroListItem.kt:69-80` builds its `Row` with `.background(animatedBg)` and never clips — currently harmless because the background is a plain unrounded rect filling a plain unrounded row, but the milestone's own target explicitly calls for a "клипованное Aero-выделение" (clipped Aero highlight) — a rounded selection pill — which cannot be added without introducing a `.clip()` this component does not currently have anywhere in its chain.
+
+**Why it happens:**
+Compose's modifier chain executes outer-to-inner for layout/measurement but the *draw* order follows the same outer-to-inner nesting, and `.clip()` only affects draw calls that happen *inside* (nested within) it in the chain — a `drawBehind`/`drawWithContent` positioned before (outer to) a `.clip()` call is genuinely unaffected by that clip, and a caller-supplied `Modifier` parameter passed into a pre-built M3 component is *always* outside that component's own internal clip unless the M3 component explicitly documents otherwise (it does not, for `Button`/`OutlinedButton`).
+
+**How to avoid:**
+Lock a modifier-ordering rule for this milestone: **`.clip(shape)` must be the outermost modifier that can affect a component's own paint (background, border, drawBehind, drawWithContent, hover/press/focus overlays) — everything that should respect the rounded shape goes *after* (inside) the `.clip()` call in the chain.** Concretely: `Modifier.clip(shape).background(...).drawWithContent { ...overlay... }`, not `Modifier.drawWithContent { ...overlay... }.clip(shape)`. For bounds-centred strokes specifically, either draw the stroke *inset* by half its width (`drawRoundRect(..., topLeft = Offset(strokeWidthPx/2, strokeWidthPx/2), size = size - Offset(strokeWidthPx, strokeWidthPx))`) so the full width lands inside the clip, or (simpler, and how `glassEffect`'s `.border()` modifier already behaves correctly by using the standard `Modifier.border()` API instead of a hand-drawn stroke) prefer the standard `.border(width, color, shape)` modifier wherever a plain single-color rim is all that's needed, since it already handles inset correctly — reserve hand-drawn strokes for cases needing a gradient/multi-tone rim that `.border()` cannot express. For the M3-wrapper components (`AeroButton`, `AeroOutlinedButton` while any M3 wrapping remains, and any transitional state during the Buttons phase), never rely on the modifier parameter passed *into* M3's `Button`/`OutlinedButton` for anything that must respect rounding — wrap the M3 component itself in an outer `Box` with its own `.clip(shape)` matching the button's own `shape` parameter exactly, so the overlay draws inside that outer clip regardless of what M3 does internally with the inner one. For `AeroListItem`, add `.clip(shape)` as part of introducing the new selection-pill background — this is a required, not optional, addition for that component's phase.
+
+**Warning signs:**
+- Hover/press/focus overlays that look correctly rounded at rest but square at the corners the instant the state triggers (visible fastest at low zoom/high DPI where corner radius is only a few px).
+- A hand-drawn `Stroke`-style border that looks thinner than its declared `width` value, especially on `AeroDark`/`Classic` where border colors are lower-contrast and a halved width reads as "washed out" rather than obviously wrong.
+- Any component whose modifier chain has a `drawBehind`/`drawWithContent`/`background`/`border` call with no `.clip()` anywhere before it in the *same* chain, when that component's shape is not itself a plain rectangle filling its full bounds.
+
+**Phase to address:** Foundation/primitives phase (fix `glassSurface`'s existing draw-before-clip bug, and write the clip-ordering rule down as a locked decision); Buttons phase (fix the M3-modifier-outside-clip hover bug specifically — this is the concrete AeroButton/AeroOutlinedButton defect); Lists phase (add the missing `.clip()` to `AeroListItem` as part of the new selection-pill work).
+
+---
+
+### Pitfall 7: Dead/no-op API parameters surviving code review
+
+**What goes wrong:**
+`glassEffect(elevation: Dp = 4.dp)` imports `androidx.compose.ui.draw.shadow` (`GlassModifiers.kt:10`) and accepts an `elevation` parameter (line 28), but the function body never calls `.shadow(...)` — the parameter is read nowhere. Every call site that passes `elevation = 2.dp` (confirmed at `AeroSlider.kt:65` and `AeroRangeSlider.kt:286`, both tooltip pills) is a silent no-op: the code compiles, the parameter looks meaningful in an IDE tooltip, and nothing renders differently whether it's `0.dp` or `20.dp`. This survived two prior milestones (v2.0 pickers, v2.0.1 range picker addition) without being caught, specifically *because* it produces no compiler warning, no test failure, and no visually obvious absence (a missing shadow on a small tooltip pill is easy to miss against a gradient-and-border surface that already looks "finished enough").
+
+**Why it happens:**
+An unused *local variable* triggers an IDE/compiler warning; an unused *function parameter whose value is silently discarded inside a used code path* does not, because the parameter genuinely is read into scope — it's simply never passed to any drawing call. Nothing in Kotlin's type system or Compose's tooling distinguishes "parameter that does nothing" from "parameter that does something too subtle to eyeball."
+
+**How to avoid:**
+Two complementary defenses, since a naming/verification discipline alone is not suffient and a pure lint rule cannot generically detect "parameter is read but its value doesn't reach an actual draw call" without dataflow-specific tooling this project doesn't have:
+1. **Structural convention:** every visual parameter on a primitive in `GlassModifiers.kt` gets a one-line KDoc phrase naming the exact draw call it feeds (mirroring this project's existing "KDoc with REQ-ID + PITFALL" convention from `AeroPanelGroup`) — e.g. `@param elevation shadow depth, consumed by the drawScope.shadow(...) call below`. Writing that sentence during authoring is where "wait, there is no such call below" gets caught, because the reviewer (or the author, re-reading their own KDoc against the body) has to point at the specific line.
+2. **A grep-gate per new/changed primitive function**, in the same spirit as this project's existing zero-match grep-gates for banned APIs: for each parameter name declared on a `GlassModifiers.kt` public function, grep that the parameter's local `val` binding (or the parameter itself) is referenced at least once *inside a drawing call* (`drawRoundRect`, `.shadow(`, `Brush.*Gradient(`, etc.) in the function body — not merely bound to a local. This doesn't need to be a generic static-analysis tool; a per-function manual checklist item ("does every declared @param appear inside an actual draw/graphicsLayer call in this function's body, not just a `val x = colors.x` line?") run once when `GlassModifiers.kt` is repaired/extended, and once per new component's custom-draw function, catches exactly this class of bug at the point of highest leverage — authoring, not months-later discovery.
+3. Fix the two existing instances (`glassEffect`'s dead `elevation`) as part of this milestone's own foundation work — either make it real (apply `Modifier.shadow(elevation, shape)` or a hand-drawn glow matching Pitfall 3's cheap-default guidance) or remove the parameter and update both call sites; leaving it dead while adding a *second*, real elevation-consuming primitive alongside it in the same file would be actively confusing.
+
+**Warning signs:**
+- A component call site passes a non-default value for a visual parameter (`elevation = 2.dp`, `blur = 4.dp`, etc.) and changing that value to `0.dp` or removing it produces *zero* visible difference in a side-by-side screenshot.
+- A new `GlassModifiers.kt` function's parameter list is longer than the number of distinct visual effects visibly described in its own KDoc summary.
+- **Forward-looking instance to watch for specifically in this milestone:** `AeroSlider`'s existing `steps: Int = 0` parameter is currently real (forwarded to M3 `Slider(steps = steps)`, which performs actual snap-to-step positioning). If `AeroSlider`'s custom-drawn replacement (Range phase) does not reimplement step-snapping in its own drag/draw logic, `steps` silently becomes exactly this same class of dead parameter — compiles, documented, does nothing. See Pitfall 8 for the full M3-parity checklist this belongs to.
+
+**Phase to address:** Foundation/primitives phase (fix the existing dead `elevation`, establish the KDoc-names-the-draw-call convention); every per-component phase that adds a new visual parameter should apply the same one-line check before considering the parameter done.
+
+---
+
+### Pitfall 8: Silently regressing M3-provided behavior when replacing `Button`/`OutlinedButton`/`Slider` internals with hand-rolled drawing
+
+**What goes wrong:**
+`AeroButton`, `AeroOutlinedButton`, and `AeroSlider` currently get a long list of behavior for free from M3's `Button`/`OutlinedButton`/`Slider` composables: `Role.Button` semantics (screen-reader announces it as a button), keyboard activation (Enter/Space triggers `onClick` when focused), correct focus traversal order in a `FocusGroup`, ripple/indication tied to `LocalIndication`, and (for `Slider`) discrete step-snapping, arrow-key nudge when focused, and the `onValueChangeFinished` emission contract (fires once when a drag/step-change gesture completes, distinct from the continuous `onValueChange` stream). This project already has a working example of what happens when this is dropped: `AeroRangeSlider` (Phase 8, v2.0) is a from-scratch `Canvas` + `pointerInput` component with **zero** `Modifier.semantics{}`, no `Role`, not focusable, and no keyboard handling at all (`AeroRangeSlider.kt` — confirmed, no `semantics`/`focusable`/`onKeyEvent` anywhere in the file). That was an accepted, understood tradeoff for a brand-new dual-thumb component with no direct M3 equivalent to fall back to. `AeroSlider` is different: it is being *converted from* a fully-working M3 `Slider` (which already has all of the above) *to* presumably the same from-scratch `Canvas` pattern the milestone's own gap analysis implies (custom groove, gradient fill, volumetric thumb — the things `SliderColors` cannot express). If it's built the same way `AeroRangeSlider` was, it will *lose* working keyboard support, step-snap, and the `onValueChangeFinished` contract that currently exist and work, not merely fail to gain a new feature.
+
+**Which pieces are most often forgotten, in likely order:**
+1. **`onValueChangeFinished` contract** — easiest to forget entirely because the current `AeroSlider` signature doesn't even expose it (only `onValueChange`), so there's no compile-time reminder it existed as an M3 behavior consumers of M3 `Slider` may rely on indirectly through the shared `interactionSource`/state semantics; if any showcase or future consumer code assumed drag-end semantics via M3's internal state machine, a hand-rolled version needs its own explicit "drag ended" detection (mirroring `AeroRangeSlider`'s own `activeThumb = null` transition, which already tracks this internally but never surfaces it).
+2. **Keyboard arrow-key nudge** — requires the component to be `focusable()` and handle `onKeyEvent`/`onPreviewKeyEvent` explicitly; nothing in the custom-`Canvas`-drag pattern this project already uses (`awaitPointerEventScope` manual loop) provides this for free, and `AeroRangeSlider` proves the pattern currently ships without it.
+3. **`steps` snapping** — see Pitfall 7; currently forwarded to M3 for free, becomes dead weight if not reimplemented.
+4. **Semantics `Role`/`ProgressBarRangeInfo`** — M3 `Slider` exposes `SemanticsPropertyKey`s like `ProgressBarRangeInfo` that screen readers and UI-testing frameworks (including this project's own `runComposeUiTest` infrastructure, established in v2.0.4) depend on; a bare `Canvas` exposes none of it, meaning any future automated test for the new `AeroSlider` cannot query it the way `performMouseInput`/semantics-tree assertions currently work for M3-backed components.
+5. **Disabled-state pointer blocking** — M3 `Slider`/`Button` refuse pointer input automatically when `enabled = false`; a hand-rolled `pointerInput` block must explicitly early-return on `!enabled` the way `AeroRangeSlider.kt:181` already does (`if (!enabled) return@pointerInput`) — this exact line is the correct pattern to copy, but it must not be forgotten, since a `Canvas` has no implicit "disabled" pointer gate the way `Button(enabled = false)` provides automatically.
+6. **`LocalMinimumInteractiveComponentSize`** — note this one is *already* explicitly overridden to `Dp.Unspecified` in both `AeroButton.kt:79` and `AeroOutlinedButton.kt:79` (opting the buttons out of M3's built-in minimum-touch-target accessibility floor). This is a pre-existing decision, not new milestone scope — but it means Buttons already forgo one piece of M3 accessibility infrastructure today; be aware that dropping M3 internals entirely for these two components removes the *remaining* pieces (semantics/keyboard/focus/indication) on top of that already-accepted gap, compounding rather than introducing a fresh one.
+
+**Why it happens:**
+The milestone's own framing ("custom drawing is allowed where M3 geometry blocks the Aero look... public API + behaviour stay 1:1") focuses attention on the *visual* geometry problem (M3's `SliderColors`/`ButtonColors` genuinely cannot express a two-tone gradient thumb or an inner bevel) and away from the *invisible* behavior M3 was quietly also providing. "Behaviour stays 1:1" is easy to verify for the behavior everyone thinks about (click fires `onClick`, drag updates `value`) and easy to silently violate for the behavior nobody thinks about until a screen-reader user or keyboard-only user hits it.
+
+**How to avoid:**
+Before any of the three M3-dropping components (`AeroButton`, `AeroOutlinedButton`, `AeroSlider`) starts custom-drawing, write down the explicit list of M3-provided behavior being kept vs. intentionally dropped — treat it as a locked decision the same way `AeroRangeSlider`'s lack of keyboard support was an implicit (not written-down) accepted gap. Reuse `AeroRangeSlider`'s already-working patterns directly rather than re-deriving them: its `if (!enabled) return@pointerInput` disabled-gate (line 181) and its `awaitPointerEventScope` manual drag loop are both proven-safe to copy. For semantics specifically, add `Modifier.semantics { role = Role.Button }` (Buttons) or the `Slider`-equivalent progress semantics manually to the hand-drawn `Canvas`/`Box`, plus `Modifier.focusable()` and an `onKeyEvent` handler translating Enter/Space (Buttons) or Left/Right/Up/Down (Slider) into the same state changes the pointer path produces — this is additive work the milestone plan does not currently name but that "public API + behaviour stay 1:1" requires if taken literally for keyboard/screen-reader users, not just mouse users.
+
+**Warning signs:**
+- Tabbing through a showcase screen with the keyboard (no mouse) and reaching a converted `AeroButton`/`AeroSlider` that either can't be focused, or can be focused but pressing Enter/Space/arrow keys does nothing.
+- Any converted component whose new `Canvas`/`pointerInput` block has no `if (!enabled) return@pointerInput`-shaped guard — copy the exact pattern from `AeroRangeSlider.kt:181`.
+- A grep for `semantics`/`Role`/`focusable` across the three converted component files returning zero matches where the M3-wrapped predecessor had them for free.
+
+**Phase to address:** Buttons phase (`AeroButton`/`AeroOutlinedButton` — keyboard, focus, `Role.Button`, disabled-gate); Range phase (`AeroSlider` — step-snap, keyboard nudge, `onValueChangeFinished` contract question, disabled-gate); Foundation/primitives phase should at minimum flag this as a written risk before either phase starts, since it's easy to plan the *visual* work for these components without ever writing down the *behavioral* checklist above.
+
+---
+
+### Pitfall 9: Two-writer animation conflicts and hover state that doesn't clear, applied fresh to eight components at once
+
+**What goes wrong:**
+Two related but distinct traps, both already burned this project once each and both now multiplied by eight simultaneous components instead of one:
+1. **Animating a value also written directly during a gesture.** This project's own locked "Pattern 3" (animation reads a target-only value, drag writes state directly, `isDragging` flips the spec to `snap()`) exists specifically because `AeroPanelGroup`'s collapse animation and its drag-resize wrote the *same* `sizePx` value and produced snap-back/oscillation. The v2.1 milestone adds hover/press/focus *animations* (`animateColorAsState`, `animateFloatAsState`) to `AeroSwitch`, `AeroSegmentedControl`, `AeroListItem`'s new selection pill, and richer states on `AeroSlider`/`AeroRangeSlider`'s thumbs — any of which becomes a Pattern-3 hazard the moment a *drag* gesture on the same component also writes to a value that animation is targeting (e.g., an Aero "pressed" bevel depth on a slider thumb that both animates toward a target on press AND needs to track drag position pixel-for-pixel while dragging).
+2. **Hover state not clearing when it should.** `AeroListItem` already combines `Modifier.hoverable(interactionSource)` with `interactionSource.collectIsHoveredAsState()` off the *same* source (`AeroListItem.kt:57,74`) — this is the correct, working reference pattern to copy for the other seven components, several of which (`AeroSwitch`, `AeroSegmentedControl`) currently have **no hover state at all** per the milestone's own gap list and will be authoring this wiring fresh. Two specific desktop-only failure modes to watch for once hover is added everywhere: (a) the pointer leaves the component *while a drag is still in progress* (e.g., dragging an `AeroSlider` thumb past the component's own bounds) — `collectIsHoveredAsState` is expected to correctly report `false` once the pointer truly exits, but a naive custom hover implementation using raw pointer-position math instead of `Modifier.hoverable` can get stuck reporting `true` because the drag's `pointerInput` consumed the exit event before hover tracking saw it; (b) the window loses OS focus (e.g., alt-tab away) while the pointer happens to still be geometrically over a hovered element — Compose Desktop's hover tracking is driven by actual mouse-move events, which stop arriving once the window isn't receiving input, so a component can be left visually "stuck hovered" until the next real mouse movement inside the window, which is a real, known desktop-vs-mobile distinction (`hoverable`/`collectIsHoveredAsState` was designed knowing mouse/desktop is its primary use case, but the interaction between window-focus-loss and a mid-gesture hover has no automatic recovery — Compose does not synthesize an exit event on window blur).
+
+**Why it happens:**
+Hover, as a Compose Desktop-primary concept, is comparatively under-exercised by this project so far (only `AeroListItem` currently has real hover wiring among the eight target components); adding it to seven more components at once, several combined with drag (`AeroSlider`/`AeroRangeSlider` thumbs) or press-state color/scale animation (`AeroButton`), reproduces the two-writer shape at a new site each time rather than being caught once and generalized.
+
+**How to avoid:**
+For any new hover wiring: copy `AeroListItem`'s `Modifier.hoverable(interactionSource)` + `interactionSource.collectIsHoveredAsState()` pairing verbatim rather than inventing raw pointer-position tracking — this is the project's own proven pattern for this exact desktop distinction. For any component where hover/press animation and drag *both* touch the same visual value (most likely `AeroSlider`/`AeroRangeSlider` thumb depth/scale during simultaneous hover+drag), apply Pattern 3 explicitly and write down which value is animation-target-only vs. drag-writes-directly, the same way it's already documented for `AeroPanelGroup`. For the window-focus-loss case specifically, treat it as an accepted, known desktop limitation (matching this project's `AeroSplitPane`/`AeroPanelGroup` keyboard-nudge-deferred precedent for accepted-but-documented gaps) rather than attempting a bespoke `onWindowFocusChanged` reset hook unless a real defect during three-theme sign-off actually demonstrates a visually broken (not just theoretically imperfect) stuck-hover state.
+
+**Warning signs:**
+- A component visibly snaps or jitters when a press/hover animation is active *during* an active drag on the same component (the exact Pattern 3 symptom already diagnosed once for `AeroPanelGroup`).
+- Dragging a slider thumb out past the track's visual bounds and back, then checking whether the hover-tinted state correctly toggled off and back on rather than staying stuck.
+- Any new hover implementation that reads raw `pointerInput`/`Offset` math to decide "is the pointer over me" instead of `Modifier.hoverable` + `collectIsHoveredAsState`.
+
+**Phase to address:** Per-component phases (Selectors phase for `AeroSwitch`/`AeroSegmentedControl` — both currently zero hover; Range phase for `AeroSlider`/`AeroRangeSlider` thumb hover+drag interaction; Lists phase already has the reference pattern, lowest risk). Foundation/primitives phase should document the Pattern 3 reapplication rule and the `hoverable`+`collectIsHoveredAsState` pairing as the two things every per-component phase must check before considering hover/press "done."
+
+---
+
+### Pitfall 10: Infinite shimmer/sheen animations that never stop off-screen or on a minimized window
+
+**What goes wrong:**
+`AeroProgressBar`'s indeterminate variant already runs a `rememberInfiniteTransition` (`AeroProgressBar.kt:87-96`) driving a 1500ms `LinearEasing` shimmer loop with `RepeatMode.Restart`, unconditionally, for as long as the composable stays in composition. `rememberInfiniteTransition` in Compose runs its animation clock continuously regardless of whether the composable is actually visible on screen or whether the containing window is minimized — Compose's animation system does not automatically pause based on window/OS-level visibility state (that's outside Compose's own knowledge; it only knows about its own composition, not window manager state). If a consumer app leaves an indeterminate `AeroProgressBar` mounted (e.g., a background "syncing" indicator that stays composed even when its containing panel/window isn't visible, or the whole app window is minimized), this loop keeps re-triggering recomposition/redraw at roughly the animation's frame cadence indefinitely, burning CPU for a visual effect nobody is looking at. The Aero-refinement milestone's stated intent — a proportional gloss and possibly other sheen-style ornamentation across more components — makes it more likely a similar `rememberInfiniteTransition` pattern gets reached for again on a second component (a specular highlight sweep is a very Aero-native device, and the shimmer bar is the obvious template to copy).
+
+**Why it happens:**
+`rememberInfiniteTransition` is the natural, correct-looking API for "loop forever" animations, and nothing about writing it signals "this needs an off-screen/minimized guard" — that responsibility sits entirely with the caller, and Compose provides no automatic opt-out.
+
+**How to avoid:**
+This project cannot detect true window-minimize state without additional platform-specific plumbing that is out of scope for a visual-refinement milestone, so the practical guard is compositional: any infinite/looping animation should be gated so it only actually keeps running while the component is both composed *and* the relevant showcase/consumer semantics say it should be animating (e.g., `AeroProgressBar`'s indeterminate variant is inherently "supposed to always animate while visible" — that's correct and doesn't need a fix). The actionable guidance for this milestone is narrower: **do not add a second unconditional `rememberInfiniteTransition` sheen to a component that is not inherently "always animating" the way an indeterminate progress bar is** (e.g., a resting-state `AeroButton` or `AeroListItem` should never carry a permanent shimmer loop just for ornamental gloss — any specular-sweep-style effect on those must be gated to an explicit trigger, such as hover, not free-running). If a static-looking gloss is wanted, it should be a static gradient (drawn once, no animation clock), not an animated sheen — reserve `rememberInfiniteTransition` strictly for components whose whole purpose is continuous motion (progress indicators), which the milestone scope already limits to the one existing `AeroProgressBar` case.
+
+**Warning signs:**
+- A new `rememberInfiniteTransition` appears in any of the seven non-progress-bar target components.
+- Idle CPU usage in the showcase app (no user interaction, no visible progress bars) measurably higher after the milestone than before — a five-minute idle profile with the showcase window both focused and minimized is a cheap check.
+
+**Phase to address:** Range phase (guard applies directly to `AeroProgressBar`'s existing shimmer if it's touched at all for ornamentation); Foundation/primitives phase should record the "no new infinite-loop animations outside inherently-continuous components" rule so it's available before any per-component phase reaches for `rememberInfiniteTransition` as a shortcut.
+
+---
+
+### Pitfall 11: Ornamentation that reads correctly on one theme and wrong (not just "less pretty") on another
+
+**What goes wrong:**
+This is not a subtle contrast-tuning problem — the three built-in themes' glass tokens are architecturally different, not just differently-colored. `AeroColorScheme.Classic` (`AeroColorScheme.kt:91-115`) defines `glassSurface`, `glassBorder`, and `glassHighlight` as fully **opaque** literals (`Color(0xFF333333)`, `Color(0xFF555555)`, `Color(0xFF3A3A3A)`), while `AeroBlue` and `AeroDark` define the same three tokens as **alpha-composited** (`Color(0x30FFFFFF)`, `Color(0x50FFFFFF)`, `Color(0x20FFFFFF)` for `AeroBlue`; similarly low-alpha for `AeroDark`). A gloss/bevel/rim effect authored and visually tuned against `AeroBlue` or `AeroDark` — where `glassHighlight` fading `Brush.verticalGradient(listOf(glassHighlight, Color.Transparent), ...)` genuinely renders as a soft, semi-transparent sheen over whatever's underneath — will render on `Classic` as a **flat opaque dark-grey patch fading to transparent**, because `Classic`'s `glassHighlight` (`0xFF3A3A3A`) has no alpha to begin with; the visual character is categorically different (a solid color-block gradient vs. a translucent light sheen), not merely dimmer or higher-contrast. The same applies to the new two-tone fill, inner bevel, and rim-light primitives the milestone plans to add — every one of them needs to be checked against all three themes individually, not tuned once against the theme the author happens to be looking at (most likely `AeroBlue`, the visually "most Aero" of the three per its own gradient/glow design) and assumed to translate.
+
+Separately, **alpha stacking on an already-translucent surface** is a second, compounding instance of the same root issue: `AeroBlue`'s/`AeroDark`'s `glassSurface`/`buttonHover` tokens already carry partial alpha (`0x30`-`0x50` range, roughly 19%-31% opacity) by design (they're meant to be seen against a background, per the milestone's own "alpha-composited glass over an unknown consumer background" framing). Applying a *second*, composable-level `Modifier.alpha(0.4f)` for a disabled state on top of a surface whose base color is already ~25% opaque produces a *multiplied* effective opacity (roughly 0.25 × 0.4 ≈ 10%), which can round down to visually indistinguishable from "nothing rendered" depending on what's behind it in a real consumer window — especially since this library explicitly does not guarantee WCAG contrast (a stated constraint) but "unreadable" (not merely "low-contrast") is still a defect the milestone must avoid.
+
+**Why it happens:**
+`Classic` was designed as the deliberately non-glass, flat/opaque "classic" aesthetic option (its own token values show this is intentional, not a bug) — but nothing in the color-scheme *type* (`AeroColorScheme` is a flat `data class` of `Color` fields with no semantic distinction between "this token is meant to be translucent" and "this token is meant to be opaque") signals to a component author drawing against `colors.glassHighlight` that its opacity character varies by theme. Alpha-stacking is a classic compounding-multiplier mistake that's easy to miss because each individual `.alpha(0.4f)` call, read in isolation at its own call site, looks like a reasonable "40% dimmed for disabled" choice — the problem only appears once you know the *base* color it's being applied to already carries alpha.
+
+**How to avoid:**
+Every new glass/bevel/rim primitive must be visually checked against **all three themes independently** during the Foundation-phase spike (not deferred to the final sign-off checklist as a first look) — specifically checking whether a translucent-sheen effect degrades gracefully into `Classic`'s opaque-token design or needs a `Classic`-specific branch (e.g., rendering the highlight as a lighter *solid* tint step rather than a translucent gradient when running under a theme whose tokens are opaque — this can be tested cheaply by checking `glassHighlight.alpha >= 0.99f` at the primitive level and branching the gradient's second stop between `Color.Transparent` and a slightly-lighter opaque tone accordingly, or, simpler, by deliberately designing every new gradient to end at `baseColor.copy(alpha = 0f)` rather than a hardcoded `Color.Transparent`, so it always fades toward "less of itself" rather than assuming the base was translucent to start with). For alpha-stacking specifically: audit every new disabled-state implementation across the eight components for whether it applies a blanket `Modifier.alpha(x)` over a subtree whose base surface color already carries alpha, and where it does, replace it with alpha baked into the specific color tokens passed to the draw calls (`color.copy(alpha = color.alpha * factor)` computed explicitly once, so the multiplication is visible and intentional in the code rather than implicit from two independent alpha sources) — this is the same "bake alpha into color, don't stack `Modifier.alpha`" guidance as Pitfall 2, doing double duty here for correctness as well as performance.
+
+**Warning signs:**
+- A new primitive's gloss/highlight looks like a translucent sheen on `AeroBlue`/`AeroDark` screenshots and a flat color block on `Classic` screenshots in the same three-theme comparison.
+- Any disabled-state implementation combining a component-level `Modifier.alpha(...)` with a base color read from `colors.glassSurface`/`colors.buttonHover`/`colors.glassHighlight` (all of which are non-opaque in `AeroBlue`/`AeroDark`) without checking the resulting *multiplied* alpha value against a representative dark and light consumer background.
+- Disabled controls that are technically present in the composition tree (semantics/hit-testing still work) but effectively invisible in a screenshot against certain backgrounds — distinguishable from "acceptable low contrast" (which this library doesn't guarantee against WCAG) by asking "can I locate this control's boundary at all," not "is the contrast ratio good."
+
+**Phase to address:** Foundation/primitives phase (design every new primitive with the `Classic`-opacity-branch or `baseColor.copy(alpha=0f)` pattern from the start, not retrofit it later); verification phase (the three-theme sign-off checklist item must explicitly include "disabled state legible against a representative background" per theme, not just "component renders," since this class of defect is invisible unless specifically looked for).
+
+---
+
+### Pitfall 12: Cross-platform and cross-DPI rendering divergence for hairline strokes and blur/shadow primitives
+
+**What goes wrong:**
+Two related classes of platform divergence, one already proven to bite this project and one that's new territory for v2.1:
+1. **Sub-pixel stroke vanishing at certain DPI scales.** This project already has a directly analogous, documented incident: Phosphor icon glyphs at 10dp stroke width computed out to roughly 0.63dp at 96 DPI (the v1.1 retrospective's own "Key Lessons" #1, "Phosphor stroke = `dp × (16/256)` is deterministic"), thin enough to become sub-pixel and render inconsistently. The v2.1 milestone introduces multiple new hand-drawn hairline elements — a 1dp rim, an inner bevel, a rim-light — at fixed dp widths across components with very different intrinsic sizes (`AeroSwitch` at 18.dp tall down to `AeroSegmentedControl`'s thin 1dp dividers). At Windows DPI scaling other than 100% — this project's own constraints table lists 125%/150%/200% as scenarios to consider — a `1.dp.toPx()` value is not an integer number of physical pixels (`1.dp` at 125% scaling is 1.25px, at 150% is 1.5px), and Skia's anti-aliasing/pixel-snapping behavior for a `Stroke`-style `drawRoundRect`/`drawLine` at a non-integer pixel width can render as a soft blur, a visibly wavering line across a curve, or (at the thin end, combined with low-contrast border colors on `AeroDark`) effectively disappear — the same failure shape as the icon-stroke incident, now applied to hand-drawn rim/bevel geometry instead of vector icon paths.
+2. **Skia blur/shadow API surface differs between Android Compose and Compose Desktop, and third-party glass/blur libraries built for one do not reliably port to the other.** Compose Desktop's Skia backend does support GPU-accelerated blur effects, but reaching them from Compose Desktop code goes through `org.jetbrains.skia`'s `ImageFilter` API (e.g. `ImageFilter.makeBlur`) rather than the `androidx.compose.ui.graphics.RenderEffect`/`BlurEffect` surface most Android-focused Compose documentation and code snippets describe — a snippet or library found via general "Compose blur" search that targets Android's `RenderEffect.createBlurEffect()` is not guaranteed to compile or behave identically against Compose Desktop's JVM target without verifying the actual API surface for `compose.desktop.common`/`compose.desktop.currentOs` (this project's own module setup) specifically. (MEDIUM confidence — WebSearch-sourced; also worth noting third-party Compose Multiplatform blur libraries have recently broken across Skia API version bumps mid-release-cycle per public issue trackers, underscoring that any blur dependency choice for this project needs to be pinned and smoke-tested against the exact Compose Desktop 1.7.3 / Skiko version this project already builds against, not assumed stable.)
+
+**Why it happens:**
+Desktop DPI scaling and cross-platform Skia API differences are exactly the kind of environment variable that doesn't show up during same-machine, same-DPI, Windows-only development iteration — the project's stated primary platform is Windows, secondary Linux/macOS, and its own constraints table already names 125%/150%/200% scaling as an explicit concern, meaning this is a known-relevant risk surface, not a hypothetical one.
+
+**How to avoid:**
+For hairline strokes: apply the same deterministic-at-planning-time discipline the v1.1 retrospective already established for icon strokes — for every new fixed-dp hand-drawn stroke/rim width introduced in the Foundation phase, compute (or reason through) what that width becomes in physical pixels at 100%/125%/150%/200% scaling before writing the draw call, and where a computed width would fall meaningfully below 1 physical px at a supported scale factor, either floor it to a minimum `1.dp` (not sub-dp) design value or accept and document graceful degradation rather than discovering it during sign-off. Prefer the project's own already-correct pattern (`.border(width, color, shape)` standard modifier, which Skia/Compose's own rendering pipeline handles consistently) over hand-drawn `Stroke`-style `drawRoundRect` wherever a plain single-tone rim is sufficient — reserve hand-drawn strokes specifically for the cases needing a gradient/multi-tone rim that `.border()` cannot express (this is the same guidance as Pitfall 6, doing double duty for DPI-robustness as well as clip-correctness). For blur/shadow: verify any chosen approach (built-in `Modifier.shadow()`, hand-rolled Skia `ImageFilter` call, or a third-party library) compiles and renders correctly specifically under this project's own `compose.desktop.common`/`compose.desktop.currentOs` module split and pinned Compose Desktop 1.7.3 version before adopting it broadly — a small Foundation-phase spike against the actual target versions, not a generic Android-Compose code sample, is the appropriate verification step (mirroring this project's own established "spike the highest-risk interaction/primitive before building the component" pattern from `AeroPanelGroup`'s Pattern-3 spike and its separately-recommended-but-skipped rotated-header-strip spike).
+
+**Warning signs:**
+- A rim/bevel/border line that looks crisp at 100% Windows scaling but blurry, wavering, or thinner-than-designed when the same showcase is viewed at 150%/200% scaling (a cheap check: change Windows display scaling and re-launch the showcase, or resize between monitors with different scale factors if available).
+- Any blur/shadow implementation whose only verification was a code snippet or library README targeting Android, not run against this project's actual `:library`/`:showcase` Compose Desktop build.
+- Visual differences between a Windows screenshot and a Linux/macOS screenshot of the identical component/theme/state that go beyond expected font-rendering differences — specifically in gradient smoothness/banding or blur softness, which are the Skia-backend-version-sensitive primitives.
+
+**Phase to address:** Foundation/primitives phase (DPI-aware stroke-width reasoning for every new hairline primitive at design time, plus a blur/shadow spike against the real Compose Desktop target if any true blur is adopted rather than the cheap-rim approximation from Pitfall 3); verification phase (three-theme sign-off should be run at least once at non-100% DPI scaling, and ideally spot-checked on a second OS if available, given this is explicitly a secondary-platform-supported library).
+
+---
+
+### Pitfall 13: Ornamentation "breathing room" creeping into default sizes and silently shifting consumer layouts
+
+**What goes wrong:**
+The milestone's own constraint is explicit: "не менять... размеры-по-умолчанию сверх необходимого для нового визуала" (don't change default sizes beyond what the new visual strictly requires) — and yet the natural implementation instinct when adding a rim, bevel, or outer glow to a component is to want a few extra dp of margin around the existing content box so the new ornamentation doesn't feel cramped or clipped at the very edge. Every one of the eight components currently has fixed, hardcoded intrinsic dimensions that consumer layouts are already built against: `AeroButton`'s `height: Dp = 30.dp` default parameter, `AeroSwitch`'s hardcoded (not parameterized) `36.dp × 18.dp` track and `14.dp` thumb, `AeroListItem`'s hardcoded `36.dp` row height, `AeroSegmentedControl`'s hardcoded `28.dp` height. Bumping any of these — even by 2-4dp to "make room" for a new outer glow or thicker rim — changes every consumer layout that has rows, toolbars, or lists tuned against the current pixel heights, with no compile error and no obvious failure mode until a real consumer app is opened and things look subtly misaligned (a list of `AeroListItem`s no longer lining up with an adjacent fixed-height sidebar, a toolbar of `AeroButton`s now taller than a neighboring hand-sized icon).
+
+**Why it happens:**
+Ornamentation genuinely does often want space to render into — a drop shadow/glow that gets clipped exactly at the component's existing bounding box looks visibly cut off — and "just add a couple dp to the default height/size" is the path of least resistance compared to the more careful alternative of drawing the ornamentation so it renders *within* the existing bounds (insetting the "core" shape slightly to leave room for glow inside the unchanged outer box) or explicitly extending the *draw* bounds without changing the *layout* bounds.
+
+**How to avoid:**
+Any new outer glow/shadow/rim-light should be designed to render either (a) fully inside the component's existing declared size (inset the two-tone fill/bevel geometry a pixel or two from the edge, leaving the outermost pixel or two for the glow — this is the standard technique and does not require a size change), or (b) using `Modifier.drawWithContent`/`drawBehind`'s ability to draw *outside* the component's own layout bounds without affecting layout (Compose's draw phase is not clipped to layout bounds by default unless something explicitly clips it — see Pitfall 6's note re: `CompositingStrategy.Offscreen` forcing a clip; a plain `drawBehind` without an offscreen-forcing `graphicsLayer` can paint past its own bounds without changing what neighboring components measure it as) — this achieves a visually "escaping" glow with zero layout-size change, which is more consistent with the "don't change default sizes" constraint than the compromise (a) above. If, after attempting both, a size change is genuinely unavoidable for the visual to read correctly, that decision should be made explicit and written down as a locked decision (with before/after size noted) rather than happening as an incidental side effect of an ornamentation implementation detail — matching this project's own "every locked choice has an Outcome" documentation discipline.
+
+**Warning signs:**
+- Any diff to this milestone touching a numeric default-parameter value (`height: Dp = 30.dp` → a different literal) or a hardcoded internal dimension (`AeroSwitch`'s `36.dp`/`18.dp`/`14.dp`) without an explicit, separately-flagged decision recording why the size had to change.
+- A component's glow/shadow/rim visibly clips flat at the component's own edge in one theme's ornamentation design but not another's — often a sign the design was drawn assuming extra bounds that don't actually exist.
+- Showcase-only visual review passing while a real consumer app (if available for spot-checking, per this project's own "confirmed in the real consumer app" discipline from the v2.0.4 root-cause fix) shows visible row/column misalignment against the previous library version.
+
+**Phase to address:** Foundation/primitives phase (establish the inset-for-glow / draw-outside-layout-bounds techniques as the default approach); every per-component phase (each must explicitly confirm no default size/height/intrinsic-dimension changed, or explicitly flag and justify one that did) — this is a check for each of the four per-component phases (Buttons, Selectors, Range, Lists), not a one-time Foundation-phase concern.
+
+---
+
+### Pitfall 14: Human three-theme sign-off producing a false-positive pass, same failure shape as v2.0.3
+
+**What goes wrong:**
+This project has already shipped a release (v2.0.3) that passed two human visual sign-offs while shipping a wrong-cause fix, because the repro/demo used for sign-off never actually exercised the buggy code path — the retrospective's own stated lesson is "a regression guard must provably fail on unfixed code," and "a passing sign-off is only as good as whether the repro exercises the trigger." The v2.1 milestone's defects are specifically the kind that are easy for a human eyes-on checklist to miss even while looking directly at the affected component, because several of them (Pitfall 6's clipped hover corners, Pitfall 5's corner-radius seam, Pitfall 4's non-proportional gradient) are: (a) only visible at specific interaction states (hover, press, drag) that a static screenshot-style review might not trigger for every component in every theme; (b) only visible at specific pixel positions (a corner, a 0.5dp-vs-1dp border width difference) that are easy to visually round off to "looks fine" without a side-by-side pixel-level comparison; (c) only visible at non-default DPI scaling (Pitfall 12), which a sign-off session run at the reviewer's own default desktop scaling will never exercise unless explicitly instructed to change it.
+
+**Why it happens:**
+A three-theme × N-component visual checklist, run once at the end of a milestone (or even per-component-phase, per this project's own v2.0 "distribute visual verification per component-phase" lesson), is fundamentally a sampling process — a human looks at each cell for a bounded amount of time and forms a gestalt "looks right" judgment, which is exactly the judgment most vulnerable to missing a defect that requires deliberately provoking a specific interaction state or deliberately zooming into a specific few pixels.
+
+**How to avoid:**
+Pair the existing (valuable, keep it) three-theme human sign-off checklist with a small number of **structural, automatable assertions** that can't produce a false positive the way a human glance can, specifically targeting this milestone's known bug classes:
+- A grep-gate (matching this project's established pattern) asserting every `.drawBehind`/`.drawWithContent` call in the eight target component files that paints a state-dependent overlay (hover/press/selected) is preceded by a `.clip(` call earlier in the same modifier chain — this directly targets Pitfall 6 and is checkable without running the app at all.
+- A grep/regex check that no `Brush.*Gradient(...)` call inside a `GlassModifiers.kt` primitive (or any of the eight component files) uses a bare numeric literal for a `startY`/`endY`/`startX`/`endX` argument (only `size.*` expressions or `.toPx()`-derived `Dp` values) — directly targets Pitfall 4's exact bug shape, cheap to check mechanically.
+- For any new/changed drag-plus-animation interaction (Pitfall 9), a deterministic `runComposeUiTest` programmatic-drag test in the same style as `AeroPanelGroupRecomposeUiTest` (established v2.0.4) rather than relying purely on a human dragging a slider during sign-off and eyeballing whether it looked smooth.
+- Explicitly extend the human checklist itself to name the interaction states and DPI conditions that must be exercised, not just the components — e.g., "hover exactly at each rounded corner, not just the center," "check at 150% Windows scaling once per milestone even if the main pass is at 100%," "toggle disabled state against both a dark and a light hypothetical consumer background" — turning implicit reviewer judgment calls into an explicit list reduces (without eliminating) the sampling-miss risk the same way this project's own "16-item checklist" and "seven-item checklist" precedents already did for prior milestones' specific bug classes.
+
+**Warning signs:**
+- A sign-off checklist item phrased as a general "looks right?" rather than naming a specific state/pixel/condition to check.
+- Any milestone bug fix (like this milestone's known glass-layer defects) whose regression guard, if one is written, is a static screenshot or a description rather than something that demonstrably fails on the unfixed code and passes on the fixed code (the v2.0.4-established bar).
+- Sign-off performed only at the reviewer's own default DPI/OS, with no explicit note that a non-default-DPI or second-OS check was attempted (even if only spot-checked, not exhaustively).
+
+**Phase to address:** Verification phase — this is where the three-theme sign-off actually happens, and where the structural grep-gates/tests above should be written *alongside* (not instead of) the human checklist, following this project's own established grep-gate convention rather than inventing a new verification mechanism.
 
 ---
 
 ## Technical Debt Patterns
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
-|----------|-------------------|----------------|-----------------|
-| Store `lastExpandedPx` as absolute px (not fraction) | Simple, obvious | Re-expand after window shrink overflows the group | Never |
-| `remember(totalPx)` to initialize sizeFraction | "Resets on resize" reads like the right thing | Resets on every drag frame in any parent that resizes sections | Never |
-| Count all `N-1` dividers regardless of collapse state | Simple formula | Over-subtracts available space; sections collectively too short | Never |
-| `animateContentSize` for section height | Already exists in codebase for accordion | Measures content height per frame; breaks explicit px control for drag-resize | Never for AeroPanelGroup |
-| `Modifier.weight(fraction)` for ALL sections | Less code | N layout passes per drag frame | Never for drag-active sections |
-| `detectDragGestures` for divider drag | Standard API | touchSlop=18dp silently breaks drag on Compose Desktop (PITFALL-03) | Never on Compose Desktop |
-| Write sizePx directly from `animateFloatAsState` target | Single state variable | Animation and drag fight for ownership every frame (PNL-PITFALL-01) | Never |
-| Disable drag entirely during animations | Sidesteps conflict | Poor UX — user must wait 200ms between every action | Never as primary strategy; use as safety guard for animation-in-flight only |
+|----------|-------------------|-----------------|------------------|
+| Leave `AeroButton`/`AeroOutlinedButton` wrapping M3 `Button`/`OutlinedButton` and layer Aero visuals only via `drawWithContent` overlays (don't fully drop M3) | Keeps semantics/keyboard/focus/indication for free, zero Pitfall 8 risk | M3's own `Surface`/shape/ripple internals still constrain exactly how far the gloss/bevel geometry can diverge from a flat rounded rect — may not reach full "Aero spirit" fidelity target | Acceptable if the visual gap analysis (Foundation phase spike) shows M3's shape/ripple constraints don't actually block the target look for these two specific components; the milestone framing already anticipates this may not hold for `AeroSlider` |
+| Tune a new gloss/bevel primitive against `AeroBlue` only, defer `AeroDark`/`Classic` verification to the sign-off phase | Faster initial visual iteration on one theme | Repeats the exact "defer all visual verification to the end" tax this project's own v2.0 retrospective explicitly names as its biggest inefficiency (16-defect batch) | Never — Foundation-phase primitive design should spot-check all three themes from the first iteration, per this project's own learned lesson |
+| Use a blanket `Modifier.alpha(0.4f)` for every new disabled state rather than baking alpha into specific color tokens | Fewer lines, matches the existing `AeroListItem`/`AeroSwitch` pattern already in the codebase | Compounds with already-translucent `glassSurface`/`buttonHover` tokens (Pitfall 11) and forces offscreen compositing (Pitfall 2) on every disabled instance | Acceptable only for components whose base surface colors are already fully opaque (e.g., `Classic` theme, or any token confirmed `alpha >= 0.99f`) — otherwise switch to color-level alpha |
+| Approximate a shadow/glow with a cheap solid low-alpha rim instead of a true blur pass | Avoids Pitfall 3's per-instance blur cost entirely | Slightly less photorealistic "glow" than a true Gaussian blur would produce | Acceptable, and actively recommended, for any component that can appear in numbers (`AeroButton`, `AeroListItem`); reserve true blur for single-instance-at-a-time surfaces if adopted at all |
 
----
+## Integration Gotchas
+
+| Integration | Common Mistake | Correct Approach |
+|-------------|-----------------|-------------------|
+| Dropping M3 `Button`/`OutlinedButton`/`Slider` internals | Assuming "custom drawing is allowed" only trades visual geometry, not also semantics/keyboard/focus/indication/step-snap (Pitfall 8) | Write an explicit kept-vs-dropped M3-behavior checklist per converted component before starting the draw code; reuse `AeroRangeSlider`'s already-proven `if (!enabled) return@pointerInput` and manual-drag-loop patterns rather than re-deriving them |
+| Extending `AeroColorScheme` with new glass/bevel/rim tokens | Adding a token whose intended translucency character (opaque for `Classic`, translucent for `AeroBlue`/`AeroDark`) isn't obvious from the type system, then authoring a primitive that only reads correctly for the translucent case (Pitfall 11) | Design every new gradient to fade toward `baseColor.copy(alpha = 0f)` rather than a hardcoded `Color.Transparent`, so opaque and translucent base tokens both degrade sensibly; spot-check all three themes at first-iteration, not at sign-off |
+| Consumer apps built against the current flat/M3 visuals | A default-size or intrinsic-dimension bump (however small) to make room for new ornamentation silently reflows consumer layouts with no compile-time signal (Pitfall 13) | Draw ornamentation inset within existing bounds, or outside layout bounds via unclipped `drawBehind` (no size change); treat any actual size change as an explicit, separately-justified locked decision |
+| Publishing the updated JAR (Maven/JAR artifact, `com.mordred:aero-compose-ui`) | Assuming a purely-visual milestone can't introduce a transitive dependency leak the way v2.0's `kotlinx-datetime` `api`-vs-`implementation` lesson already flagged as "a real leak, not a convention detail" | If any new blur/shadow technique pulls in a third-party library (Pitfall 12) rather than using only `androidx.compose.ui`/Skia APIs already in the Compose Desktop BOM, declare it deliberately as `api`/`implementation` per the same discipline already applied to `kotlinx-datetime`, and prefer zero new dependencies if the cheap-rim approximation (Pitfall 3) suffices |
+
+## Performance Traps
+
+| Trap | Symptoms | Prevention | When It Breaks |
+|------|----------|------------|-----------------|
+| `Brush`/`Path` allocated inside `drawBehind` instead of `drawWithCache` (Pitfall 1) | Frame drops specifically scale with visible instance count, not with a single component in isolation | Move geometry-only (non-animated) draw objects into `drawWithCache`; keep only animated *color* reads inside the draw lambda | Noticeable once ~10-20+ `AeroListItem`s are visible in a consumer's `LazyColumn`, or a toolbar has several `AeroButton`s animating simultaneously (e.g. all hover-fading on rapid mouse movement) |
+| `graphicsLayer`/`Modifier.alpha` forcing offscreen compositing over a now-heavier glass draw stack (Pitfall 2) | Disabled-state or press-animated instances cost disproportionately more than idle instances with identical geometry | Bake static disabled-state alpha into color tokens; reserve `Modifier.alpha()`/offscreen-forcing `graphicsLayer` params for genuinely animated fades | Compounds with Pitfall 1; breaks first on iGPU hardware (this project's own already-documented risk class) under a dense list or toolbar |
+| Per-item shadow/blur (Pitfall 3) applied unconditionally to every instance's resting state | Frame time scales with rendered instance count specifically for the shadow-bearing component, more steeply than a flat-fill equivalent would | Gate shadow/glow to interactive states only (hover/press/selected), not the resting render path; use a cheap solid-rim approximation instead of a true blur for any component that can appear in numbers | Breaks at list-scale (dozens of `AeroListItem`s) even though `AeroDataTable` itself is out of this milestone's scope — a consumer can still put many `AeroListItem`s in their own `LazyColumn` |
+| Unconditional `rememberInfiniteTransition` sheen on a non-continuous component (Pitfall 10) | Idle CPU usage rises even with no visible progress indicator or with the window minimized | Reserve infinite-loop animations strictly for inherently-continuous components (progress indicators); use static gradients or gated (hover-triggered) animation elsewhere | Immediate — an infinite transition costs CPU from the moment it's composed, regardless of scale |
+
+## Security Mistakes
+
+Not a primary concern for a purely visual, desktop-local, no-network UI library milestone. The one adjacent risk worth naming: an unconditionally-running infinite animation (Pitfall 10) is a mild, unintentional resource-exhaustion pattern in any context where this library might be embedded in a long-running background/kiosk process — not a security vulnerability in the traditional sense, but worth the same "gate infinite loops to inherently-continuous components" discipline for resource-hygiene reasons in such deployments.
+
+## UX Pitfalls
+
+| Pitfall | User Impact | Better Approach |
+|---------|--------------|-------------------|
+| Hover/press overlay bleeding past rounded corners (Pitfall 6) | Interactive feedback looks broken/glitchy at exactly the moment a user is interacting with a control — the worst time for a visual defect to surface | `.clip(shape)` outermost in the modifier chain relative to any state-dependent overlay draw |
+| Disabled controls rendered unreadable by alpha-stacking (Pitfall 11) | Users can't tell a control is present-but-disabled vs. absent, especially against dark consumer backgrounds | Bake alpha into color tokens once, explicitly, rather than stacking a blanket `Modifier.alpha()` on an already-translucent base |
+| Keyboard-only users losing button/slider activation after M3 removal (Pitfall 8) | A previously keyboard-accessible control becomes mouse-only with no visual or error signal | Explicit kept-vs-dropped M3 behavior checklist before any M3-dropping conversion begins |
+| Gloss/gradient that reads as a jarring flat color block on `Classic` when tuned against `AeroBlue` (Pitfall 11) | Users on the `Classic` theme perceive the "refined" milestone as visually broken rather than refined, in the one theme explicitly *not* meant to look glassy | Design every gradient to fade toward its own base color's zero-alpha rather than a hardcoded transparent constant; verify all three themes from first iteration |
 
 ## "Looks Done But Isn't" Checklist
 
-Items that will appear complete in a demo but hide the listed failure in real use.
-
-- [ ] **Animation-vs-drag coexistence:** Demo works when actions are sequential (wait for animation, then drag). Test: collapse a section, IMMEDIATELY drag the adjacent divider — no snap-back, no oscillation.
-- [ ] **Multi-section clamp no-throw:** Demo works with large sections. Test: resize window to near minimum, verify no `IllegalArgumentException` in log.
-- [ ] **Σ heights == totalPx:** Demo looks correct at demo resolution. Test: resize window through a large range (200px to 1200px), inspect for hairline gaps or bottom overflow.
-- [ ] **lastExpandedFraction restore after shrink:** Demo tested at one window size. Test: collapse section, shrink window significantly, re-expand — section must not overflow the group.
-- [ ] **mid-drag collapse:** Demo only uses keyboard/clicks, not concurrent gestures. Test: press divider, hold drag, click collapse button — no divider teleport.
-- [ ] **Section ID stability:** Demo uses a fixed list. Test: reorder sections list at call site — verify section state (sizeFraction, expanded) follows the ID, not the position.
-- [ ] **Three-theme visual sign-off:** AeroBlue / AeroDark / Classic must all render headers with glassPanel modifier, chevron CaretRight, and correct color tokens.
-- [ ] **No `detectDragGestures`:** Grep all new files — zero results.
-- [ ] **No `SubcomposeLayout` or `MeasurePolicy` with content measurement:** Grep all new files — zero results.
-- [ ] **onLayoutChange fires once per structural event:** Not once per animation frame, not on every drag delta — only on user-committed size changes (drag end, expand, collapse).
-
----
+- [ ] **Any new gradient/gloss primitive:** Often verified only at one component's height — check the same primitive against `AeroButton` (30.dp), `AeroSwitch` (18.dp), and `AeroListItem`'s new selection pill (36.dp) side by side; a `size.height`-relative gradient should look *proportionally* identical across all three, not merely "present" on each.
+- [ ] **Hover/press/focus overlays on `AeroButton`/`AeroOutlinedButton`/any newly-hover-enabled component:** Often clipped correctly everywhere except exactly the four corners — hover deliberately at a corner pixel, not just the center, in each of the three themes.
+- [ ] **1dp rim/border on any hand-drawn surface:** Often renders as an effective 0.5dp border due to bounds-centred stroke + late clip — compare declared width against a screenshot pixel-measurement, not a glance.
+- [ ] **`elevation`/`blur`/`glow`-named parameters on any `GlassModifiers.kt` primitive or component:** Often accepted and stored but never reaching an actual draw call — toggle the parameter's value between two visually-distinct extremes and confirm the render actually changes.
+- [ ] **Disabled state on any of the eight components:** Often technically present (hit-testing correctly refuses input) but visually indistinguishable from "not rendered at all" against a plausible dark or light consumer background, once base-token alpha and disabled-alpha are both accounted for.
+- [ ] **Keyboard navigation on any M3-dropping component (`AeroButton`, `AeroOutlinedButton`, `AeroSlider`):** Often works fully with the mouse and is silently unreachable/unusable via Tab + Enter/Space/arrow keys — test with the mouse physically unplugged or simply not touched for one full pass.
+- [ ] **`AeroSlider`'s `steps` parameter after conversion to custom drawing:** Often compiles and is documented but the custom drag/draw logic never actually snaps to the discrete positions M3 used to provide for free.
+- [ ] **Any infinite/looping animation added beyond the existing `AeroProgressBar` shimmer:** Often runs correctly when visible and is never checked for whether it keeps running (and costing CPU) when the containing window is minimized or the component scrolled off-screen.
+- [ ] **Corner-radius consistency where `.clip()`/`.background()`/`.border()` and hand-drawn `drawRoundRect` coexist on the same component:** Often looks fine at 100% Windows scaling and shows a seam only at 125%/150%/200% scaling, where the two independent rounding-math paths' rasterization differences become proportionally more visible.
+- [ ] **Default height/size parameters across all eight components:** Often unintentionally bumped by 1-4dp "to make room" for new ornamentation — diff every numeric default-parameter value against the pre-milestone version and require an explicit justification for any that changed.
 
 ## Recovery Strategies
 
 | Pitfall | Recovery Cost | Recovery Steps |
-|---------|---------------|----------------|
-| PNL-PITFALL-01: animation vs drag conflict discovered mid-implementation | HIGH if state is entangled; LOW if spike resolved it upfront | Split into two state vars (intent vs. display) as described. This is a structural state change — all subsequent code assumes the split. Recover early (spike), not during step 3. |
-| PNL-PITFALL-02: float drift discovered in visual review | LOW | Add re-normalize pass + last-section remainder rule to PanelDistribution.kt. Pure-logic change, no composable edits. |
-| PNL-PITFALL-03: mid-drag collapse teleport discovered in QA | LOW-MEDIUM | Add `dragging` flag guard to toggle handler. One-line change per toggle site. |
-| PNL-PITFALL-04: 3-section clamp crash discovered in QA | LOW | Replace per-divider clamp with `clampPanelDividerPx` (uses full sections array). TDD-add the inverted-range test RED first. |
-| PNL-PITFALL-05: share-transfer gap discovered visually | LOW | Apply largest-remainder method to `distributeCollapsedPx`. Pure-logic change. |
-| PNL-PITFALL-06: lastExpandedPx overflow after shrink | LOW | Change stored type from `lastExpandedPx: Float` to `lastExpandedFraction: Float`. One structural type change in PanelSectionState, no API change. |
-| PNL-PITFALL-07: wrong divider count subtraction | LOW | Fix `computeAvailablePx` to use `activeDividerCount` (zipWithNext filter). One-line change + re-run unit tests. |
-| PNL-PITFALL-08: state re-key on section reorder | MEDIUM if IDs not in API | Add `id: String` to `AeroPanelSectionConfig` and replace `key(index)` with `key(section.id)`. API addition but non-breaking if `id` has a default (e.g., `title`). |
-
----
+|---------|----------------|------------------|
+| Draw-before-clip corner bleed (Pitfall 6) | LOW | Reorder the modifier chain so `.clip(shape)` precedes the offending `drawBehind`/`drawWithContent`; for M3-wrapped components, wrap in an outer `Box` with its own matching `.clip(shape)` — localized, single-file fix per component, same shape as this project's already-fixed `AeroAccordion` hover-clip fix (v2.0 F-ACCORDION-HOVER) |
+| Non-proportional hardcoded-px gradient (Pitfall 4) | LOW | Replace the literal with `size.height`/`size.width` times a fraction; single-line fix per occurrence, same shape as `glassPanel`'s already-correct sibling function provides as a direct template |
+| Dead API parameter discovered post-ship (Pitfall 7) | MEDIUM | If the parameter is genuinely unused at every call site, removing it is a breaking API change for a published library — either implement the effect it was meant to have (preferred, non-breaking) or deprecate-then-remove across a major version, not a silent removal mid-milestone |
+| M3 keyboard/semantics regression discovered late (Pitfall 8) | MEDIUM-HIGH | Retrofitting `Modifier.semantics`/`focusable`/`onKeyEvent` onto an already-shipped hand-drawn component is possible without an API break (additive internal change) but requires re-verifying every interaction state (hover+focus+keyboard combinations) that wasn't exercised the first time — cheaper to get right before first ship than to retrofit |
+| Consumer layout shift from a default-size change (Pitfall 13) | HIGH | Once shipped and adopted, reverting a default-size change is itself a second breaking visual change for any consumer who already adapted; the only clean recovery is to have caught it before release (this pitfall has effectively no cheap post-ship fix, which is why it's flagged as a per-phase check rather than a sign-off-only concern) |
 
 ## Pitfall-to-Phase Mapping
 
-All pitfalls for v2.0.2 are addressed in Phase 13 (single phase). The ordering within Phase 13 steps matters:
-
-| Pitfall | Build Step | Verification |
-|---------|------------|--------------|
-| PNL-PITFALL-01: animation vs drag | Step 1 — spike | Spike composable: collapse + immediate drag, no snap-back |
-| PNL-PITFALL-08: re-key resets | Step 1 — spike (confirm `remember{}` discipline) + Step 3 (`key(section.id)`) | Window resize: fractions preserved; section reorder: state follows ID |
-| PNL-PITFALL-04: N-section clamp crash | Step 2 — PanelClamp.kt (TDD, RED before GREEN) | Unit test: inverted-range no-throw for 3+ sections |
-| PNL-PITFALL-02: float drift on resize | Step 2 — PanelDistribution.kt (TDD) | Unit test: Σ sizes == available after 100 random resize events |
-| PNL-PITFALL-05: share-transfer rounding | Step 2 — PanelDistribution.kt (TDD) | Unit test: distributeCollapsedPx sum conserves px |
-| PNL-PITFALL-06: lastExpandedPx overflow | Step 2 — PanelSectionState.kt (store fraction, not px) | Unit test: restore after shrink does not exceed available |
-| PNL-PITFALL-07: divider count off-by-one | Step 2 — computeAvailablePx (TDD) | Unit test: EECE pattern gives 1 active divider, not 3 |
-| PNL-PITFALL-03: mid-drag collapse race | Step 3 — drag handler + toggle guard | Smoke test: hold drag + click collapse button concurrently |
-| PNL-PITFALL-09: drag divider on collapsed boundary | Step 3 — conditional divider rendering | Visual: no cursor change on collapsed/expanded boundary |
-| PNL-PITFALL-10: animateContentSize misuse | Step 3 — section composable (explicit height only) | Grep: zero `animateContentSize` in AeroPanelGroup files |
-| PNL-PITFALL-11: weight for all sections | Step 3 — section layout | Performance: N-section drag produces no per-section layout pass |
-| PITFALL-03 (carry-forward) | Step 3 — drag modifier | Grep: zero `detectDragGestures` in new files |
-| PITFALL-A (carry-forward) | Step 2 — fraction state | Window resize test: all fractions preserved |
-| PITFALL-B (carry-forward) | Step 2 — PanelClamp.kt | Inverted-range unit test (TDD, RED before GREEN) |
-| FIXSP-01 (carry-forward) | Step 3 — `pointerInput(Unit)` + `rememberUpdatedState` | Drag test: resize window during active drag, no snap-back |
-
----
-
-## Recommended Pure-Logic Unit Test File
-
-Create `PanelGroupLogicTest.kt` (analogous to `SplitClampTest.kt`) covering:
-
-```
-PanelClampTest (nested class or separate file):
-- clampPanelDividerPx: divider in 3-section, lower neighbor at minSize stops at boundary
-- clampPanelDividerPx: inverted range (available < Σ minSizes) does not throw
-- clampPanelDividerPx: divider 0 upper bound == available - Σ(min_1..min_N-1)
-
-PanelDistributionTest:
-- distributeCollapsedPx: sum conserves px within Float.EPSILON
-- re-normalize: Σ fractions == 1.0f after normalize
-- last-section remainder: Σ sizePx == availableForExpandedPx exactly
-- computeAvailablePx: EECE gives 1 active divider, not 3
-- computeAvailablePx: all-collapsed gives available == 0 (or total minus all headers)
-- computeAvailablePx: never negative for any 2^N collapse combination (N ≤ 5)
-
-PanelRestoreTest:
-- lastExpandedFraction restore: restoredPx = fraction * newAvailable, not fraction * oldAvailable
-- restore after shrink: restoredPx ≤ availableForExpandedPx - otherSectionsMinPx
-- multi-restore: Σ restored fractions ≤ 1.0f after normalize
-```
-
-All these functions must be pure JVM (no Compose imports) — same constraint as `SplitClamp.kt`. This enables fast unit tests without a Compose runtime.
-
----
+| Pitfall | Prevention Phase | Verification |
+|---------|-------------------|----------------|
+| 1. Draw-time `Brush`/`Path` allocation in `drawBehind` | Foundation/primitives | Profile a dense synthetic `AeroListItem` list (~30-50 rows) before/after; confirm no `Brush`/`Path` literal construction remains inside a bare `drawBehind {}` in `GlassModifiers.kt` |
+| 2. `graphicsLayer`/`alpha` forcing offscreen compositing | Foundation/primitives (convention); every per-component phase (application) | Grep for `Modifier.alpha(` applied to a static (non-animated) disabled state across the eight component files — should be zero, replaced by color-level alpha |
+| 3. Per-item shadow/blur cost at list scale | Foundation/primitives (design); Lists phase (`AeroListItem` specifically) | Same dense-list profile as Pitfall 1, specifically toggling selected/hover state on a subset of rows to confirm cost scales with active-state count, not total row count |
+| 4. Hardcoded-px, non-proportional gradients | Foundation/primitives | Grep for numeric literals (not `size.*`/`.toPx()`-derived) in `startY`/`endY`/`startX`/`endX` gradient arguments across `GlassModifiers.kt` and the eight component files; three-way visual comparison across differently-sized components |
+| 5. Triple corner-radius source-of-truth seam | Foundation/primitives (convention); Buttons + Range phases (M3-dropping components) | Visual check at 150%/200% DPI scaling specifically, where rounding-math divergence is most visible |
+| 6. Draw-before-clip / unclipped overlays | Foundation/primitives (fix `glassSurface`, write the rule); Buttons phase (fix `AeroButton`/`AeroOutlinedButton`); Lists phase (add missing `.clip()` to `AeroListItem`) | Grep-gate: every `drawBehind`/`drawWithContent` state overlay preceded by a `.clip(` in the same chain; hover deliberately at each rounded corner during sign-off |
+| 7. Dead/no-op API parameters | Foundation/primitives (fix existing `elevation`, establish KDoc-names-the-draw-call convention) | Manual per-parameter checklist at authoring time; toggle each visual parameter's value and confirm rendered output changes |
+| 8. Losing M3 semantics/keyboard/focus/step-snap | Buttons phase (`AeroButton`/`AeroOutlinedButton`); Range phase (`AeroSlider`) | Full keyboard-only pass (no mouse) over each converted component; grep for `semantics`/`Role`/`focusable` presence where M3 previously provided it for free |
+| 9. Two-writer animation conflicts / hover not clearing | Selectors phase (`AeroSwitch`/`AeroSegmentedControl`, first hover wiring); Range phase (thumb hover+drag); Foundation/primitives (document Pattern 3 reapplication + `hoverable`/`collectIsHoveredAsState` pairing rule) | Deliberately drag past bounds and release outside the component; check hover state correctly toggles; watch for snap/oscillation during simultaneous hover-animation + drag |
+| 10. Infinite animations never stopping | Range phase (`AeroProgressBar` if touched); Foundation/primitives (no-new-infinite-loops-outside-progress-indicators rule) | Idle CPU profile with showcase minimized/unfocused; grep for new `rememberInfiniteTransition` usages outside `AeroProgressBar` |
+| 11. Theme-dependent ornamentation breakage / alpha-stacking | Foundation/primitives (design against all three themes from iteration 1) | Verification phase | Three-theme side-by-side screenshot comparison per new primitive, done at first Foundation-phase iteration, not deferred; explicit disabled-state-against-representative-background check |
+| 12. Cross-platform / DPI rendering divergence | Foundation/primitives (DPI-aware stroke-width reasoning; blur/shadow spike against real target if adopted) | Verification phase: run three-theme sign-off at least once at non-100% Windows scaling; spot-check a second OS if available |
+| 13. Ornamentation-driven default-size creep | Foundation/primitives (establish inset/draw-outside-bounds techniques); every per-component phase (explicit no-size-change confirmation) | Diff every numeric default-parameter/hardcoded-dimension value against pre-milestone baseline per component phase close |
+| 14. Human sign-off false-positive risk | Verification phase | Grep-gates for Pitfalls 4 and 6 specifically (mechanically checkable); deterministic `runComposeUiTest` drag test for any new drag+animation interaction; explicit state/DPI/background conditions named in the sign-off checklist itself, not left to reviewer judgment |
 
 ## Sources
 
-- `AeroSplitPane.kt` (read 2026-06-22) — lines 107–124 confirm fraction-based state + `rememberUpdatedState` pattern; line 116 confirms `rememberUpdatedState(totalPx)` discipline; `aeroDragSplitter` confirmed as the drag modifier
-- `SplitClamp.kt` (read 2026-06-22) — confirms `safeMax = maxPx.coerceAtLeast(minFirstPx)` guard (PITFALL-B fix); `fractionToPx` / `pxToFraction` pure helpers
-- `SplitClampTest.kt` (read 2026-06-22) — confirms TDD pattern for pure-logic clamp tests; `clampInvertedRangeDoesNotThrow` test is the direct template for PNL-PITFALL-04 unit test
-- `AeroAccordion.kt` (read 2026-06-22) — confirms `animateFloatAsState` (caret rotation) + `animateContentSize` (height) pattern; confirms why `animateContentSize` is NOT appropriate for size-driven sections (content-height vs. explicit-px distinction)
-- `.planning/PROJECT.md` (read 2026-06-22) — Key Decisions table: PITFALL-03 (`detectDragGestures` ban), PITFALL-A (fraction-based SplitPane), PITFALL-B (inverted-range clamp), FIXSP-01 (live state in drag loop), no SubcomposeLayout rule; v2.0.2 AeroPanelGroup spec including spike-first mandate
-- `.planning/research/PITFALLS.md` prior version (read 2026-06-22) — PITFALL-A through PITFALL-J documented in detail for v2.0.1; all carry-forward rules inherited from this file
-- Kotlin stdlib KDoc: `Float.coerceIn(minimumValue, maximumValue)` — "Throws IllegalArgumentException if minimumValue is greater than maximumValue" — confirmed PITFALL-B and PNL-PITFALL-04 root cause
-- VS Code Side Bar layout model (design reference from milestone context) — collapse → fixed-height strip; drag handles only between expanded neighbors; share redistribution on collapse
+- Direct code inspection (HIGH confidence, this repo): `library/src/main/kotlin/com/mordred/aero/theme/GlassModifiers.kt`, `AeroColorScheme.kt`; `library/src/main/kotlin/com/mordred/aero/components/buttons/AeroButton.kt`, `AeroOutlinedButton.kt`, `InteractionStates.kt`; `.../selection/AeroSwitch.kt`, `AeroSegmentedControl.kt`; `.../range/AeroSlider.kt`, `AeroRangeSlider.kt`, `AeroProgressBar.kt`; `.../list/AeroListItem.kt`
+- `.planning/PROJECT.md`, `.planning/STATE.md`, `.planning/RETROSPECTIVE.md` — locked decisions, baseline glass-layer defects, cross-milestone lessons (HIGH confidence, this project's own recorded history)
+- Jetpack Compose official docs, "Drawing modifiers" and "Best practices" (developer.android.com/develop/ui/compose/graphics/draw/modifiers, developer.android.com/develop/ui/compose/performance/bestpractices) via Context7 `/websites/developer_android_develop_ui_compose` — `drawWithCache` caching semantics, `CompositingStrategy.Offscreen` clip/alpha behavior, draw-phase state reads (HIGH confidence, official/current)
+- WebSearch: Compose Desktop / Skia blur and `RenderEffect`/`ImageFilter` API surface differences, third-party blur library (Haze) breakage across Compose Multiplatform/Skia version bumps (MEDIUM/LOW confidence, WebSearch-only — flagged inline in Pitfall 12; recommend a Foundation-phase spike against this project's exact Compose Desktop 1.7.3 build before relying on any specific blur API claim)
 
 ---
-*Pitfalls research for: aero-compose-ui v2.0.2 AeroPanelGroup vertical collapsible+resizable N-panel layout*
-*Researched: 2026-06-22*
+*Pitfalls research for: aero-compose-ui v2.1 Glass Refinement (Windows-Aero ornamentation over existing Compose Desktop components; partial Material3-internals removal)*
+*Researched: 2026-07-21*
