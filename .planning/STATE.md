@@ -62,6 +62,27 @@ Locked during `/gsd:new-milestone` questioning:
   - Win11 `undecorated`+`transparent` crash (compose #3757) was fixed in 2024 and is moot here — this project never sets `transparent = true`. A newer open AMD/Direct3D skiko crash (SKIKO-1072) is in the same moot category.
 - **Sequencing implication:** the upgrade is its own phase (15) landing BEFORE any visual work, so the visual phases are authored against the final API surface and a green test suite. Exit criteria enumerated in `.planning/research/UPGRADE.md` Part 5 — compile gate → M3 stable pin → full test suite with a RE-PROVEN recompose-drag guard → showcase smoke pass → `dropShadow`/`innerShadow` scratch proof → JitPack build check.
 
+### Design decisions resolved 2026-07-21 (closing FEATURES.md open questions)
+
+- **`AeroProgressBar` sheen:** optional, **default OFF** (a `showSheen`-style param). Many always-animating bars read as "loading skeleton" and burn CPU.
+- **`AeroProgressBar` indeterminate:** keep the existing **1500ms restart** timing; restyle appearance only. No Win7 ping-pong bounce — avoids changing animation behaviour.
+- **`AeroSegmentedControl` selected segment:** **recessed / pressed** metaphor (inverted gradient + inner shadow), reusing pressed-button code. Explicitly NOT raised — do not mix the two.
+- **`AeroListItem` bottom mirror reflection:** **deferred, out of scope.** The clipped rounded gradient + rim highlight is the requirement; a per-row extra draw layer in long lists is not worth it.
+
+### Architecture finding that changes milestone risk (2026-07-21)
+
+**Material3's `Slider` exposes `thumb: @Composable (SliderState) -> Unit` and `track: @Composable (SliderState) -> Unit` slots** (verified via Context7 against the official androidx reference; both default to `SliderDefaults.Thumb`/`SliderDefaults.Track`).
+
+This **overturns** FEATURES.md's assumption that `AeroSlider` needs full M3 removal plus a custom drag rewrite — it was the milestone's one HIGH-complexity outlier. Supplying custom-drawn slots keeps drag, keyboard, step-snap, `onValueChangeFinished` and semantics for free, at near-zero behavioural risk. This also defuses PITFALLS.md's top-severity concern (silently regressing M3 behaviour) and its `AeroSlider.steps`-becomes-a-dead-parameter warning.
+
+Related architecture positions to carry into planning:
+- `AeroButton`/`AeroOutlinedButton`: drop M3's `Button`/`Surface` container but KEEP Foundation's `Modifier.clickable(role = Role.Button, indication = null, ...)` — lower risk than a from-scratch `Canvas` + `pointerInput` hand-roll (the `AeroRangeSlider` zero-semantics precedent).
+- Primitive API: ONE `internal fun DrawScope.drawAeroSurfaceCore(style, cornerPx)`, exposed both as `Modifier.aeroSurface(style, shape)` for Box-owning components and as direct calls for Canvas-owning ones. One implementation, not three.
+- `AeroColorScheme` extension: algorithmically derived `AeroOrnamentTokens.derive(base)` using **RGB lighten/darken** (Classic's tokens are opaque, so alpha manipulation does not work), plus one trailing `ornamentOverride: AeroOrnamentTokens? = null` field for source-compatible escape-hatch overrides — instead of ~10 hand-tuned literals × 3 themes.
+- **Wider blast radius than eight components:** fixing `GlassModifiers.kt` re-renders the ~40 out-of-scope components that share those modifiers. A full-library smoke pass belongs EARLY (foundation-phase exit), not at final sign-off.
+
+**Still to verify empirically (do not treat as settled):** the exact pinned Material3 version really exposes those slots; whether custom-sized slot composables fit inside M3 `Slider`'s internal layout math (needs a spike); and the `dropShadow`/`innerShadow` signatures against the real 1.11.1 jar.
+
 ## Baseline Findings — why these eight look Material (surveyed 2026-07-21)
 
 **None of the eight uses any glass modifier for its own surface.** The only glass in these files is the drag tooltip pill in the two sliders.

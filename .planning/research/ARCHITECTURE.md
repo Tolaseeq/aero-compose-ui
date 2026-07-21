@@ -1,508 +1,430 @@
-# Architecture Research: AeroPanelGroup
+# Architecture Research — v3.0 Glass Refinement
 
-**Domain:** Compose Desktop additive layout component (v2.0.2)
-**Researched:** 2026-06-22
-**Confidence:** HIGH — based on direct reading of shipped source: AeroSplitPane.kt, AeroAccordion.kt, SplitClamp.kt, AeroDragSplitter.kt, SidebarStateTest, SplitClampTest, AccordionToggle.kt.
+**Domain:** Compose Desktop UI component library — Aero visual layer architecture at Kotlin 2.4.10 / Compose Multiplatform 1.11.1
+**Researched:** 2026-07-21
+**Confidence:** HIGH for the M3 `Slider` thumb/track slot finding (Context7, official androidx reference, cross-checked against two independent doc entries — this is a long-stable M3 API shape, not new). HIGH for modifier-ordering/clip conventions (derived directly from this repo's own confirmed bugs in `GlassModifiers.kt` + PITFALLS.md's Pitfall 6 analysis). MEDIUM for exact `dropShadow`/`innerShadow` behavior under real load (UPGRADE.md already flags MEDIUM-HIGH, unresolved until a Foundation-phase jar-level spike). MEDIUM for the `AeroOrnamentTokens` derivation design (original synthesis, not sourced from a precedent) — flagged as a locked-at-Foundation-phase decision to validate against all three themes immediately, not deferred.
 
----
-
-## System Overview
-
-```
-+---------------------------------------------------------------------+
-|  AeroPanelGroup  (public, layout/AeroPanelGroup.kt)                 |
-|  BoxWithConstraints -> totalPx                                       |
-|  Hybrid controlled/uncontrolled expansion (AeroAccordion pattern)   |
-|  Uncontrolled size state + onLayoutChange                            |
-+---------------------------------------------------------------------+
-|  Internal state (SnapshotStateList, inside AeroPanelGroup)           |
-|  +----------------------------------------------------------+        |
-|  | sizePx[i]: Float    (weight in expanded pool)            |        |
-|  | lastExpandedPx[i]: Float   (restored on re-expand)       |        |
-|  | expanded[i]: Boolean   (controlled or internal)          |        |
-|  +----------------------------------------------------------+        |
-+---------------------------------------------------------------------+
-|  Derived layout pass  (pure math, no SubcomposeLayout)               |
-|  +----------------------------------------------------------+        |
-|  | availableForExpanded = totalPx                           |        |
-|  |     - sum(headerPx x collapsed sections)                 |        |
-|  |     - sum(dividerPx x adjacent-expanded pairs)           |        |
-|  | renderHeight[i] = sizePx[i] / sum(sizePx[expanded])      |        |
-|  |                   x availableForExpanded                  |        |
-|  +----------------------------------------------------------+        |
-+---------------------------------------------------------------------+
-|  Column render loop  (no weight on expanded sections)                |
-|  +----------------+  +----------------+  +-------------------+      |
-|  | SectionHeader  |  | Content Box    |  | PanelGroupDivider |      |
-|  | 36dp glassPanel|  | .height(dp)    |  | only between      |      |
-|  | caret anim     |  | clips content  |  | exp+exp pair      |      |
-|  +----------------+  +----------------+  +-------------------+      |
-+---------------------------------------------------------------------+
-|  Reused infrastructure  (zero new code for drag/clamp)               |
-|  +----------------------+  +------------------------------+         |
-|  | aeroDragSplitter     |  | clampDividerPx               |         |
-|  | internal/drag/       |  | internal/splitpane/          |         |
-|  +----------------------+  +------------------------------+         |
-+---------------------------------------------------------------------+
-```
+This document builds directly on `.planning/research/FEATURES.md` (device catalog, per-component treatment, dependency graph) and `.planning/research/PITFALLS.md` (14 named pitfalls). It does not re-derive those — it answers the specific structural question the milestone needs before Phase 16 (Foundation) can be planned: **what Kotlin types and modifier chains implement the device catalog, and in what order do the 8 components consume them.**
 
 ---
 
-## Component Responsibilities
+## Q1 — Shape of the Primitive API
 
-| Component | File | Responsibility |
-|-----------|------|----------------|
-| `AeroPanelGroup` | `layout/AeroPanelGroup.kt` | Public composable. Receives sections list. BoxWithConstraints -> totalPx. Derives heights. Renders Column of headers + content + dividers. |
-| `AeroPanelSection` | `layout/AeroPanelGroup.kt` (data class) | Caller-supplied descriptor: title, icon, collapsible, resizable, content lambda. No state inside — pure data, same pattern as AeroAccordionSection. |
-| `distributePx` | `layout/internal/panelgroup/PanelDistribution.kt` | Pure JVM function: `(sizePx, expanded, totalPx, headerPx, dividerPx) -> FloatArray` of rendered heights. No Compose imports. Unit-testable. |
-| `shareTransferOnCollapse` | `layout/internal/panelgroup/PanelDistribution.kt` | Pure JVM: given collapsing index, returns new `sizePx` array with released share redistributed to neighbors proportionally. |
-| `shareTransferOnExpand` | `layout/internal/panelgroup/PanelDistribution.kt` | Pure JVM: given expanding index and `lastExpandedPx`, returns new `sizePx` array taking share from neighbors proportionally. |
-| `clampDividerPx` | `layout/internal/splitpane/SplitClamp.kt` | **Reused verbatim.** Inverted-range guard already present (v2.0.1 fix PITFALL-B). |
-| `aeroDragSplitter` | `internal/drag/AeroDragSplitter.kt` | **Reused verbatim.** `Orientation.Vertical`. awaitPointerEventScope, no touchSlop. |
-| `PanelGroupDivider` | `layout/AeroPanelGroup.kt` (private composable) | 8dp hit-area + 1dp Aero line + grip dots. Only rendered between two adjacent expanded sections. Mirrors `SplitPaneDivider` structure. |
-| `LayoutSection.kt` | `showcase/.../sections/LayoutSection.kt` | Append AeroPanelGroup demo block. Modify existing file, no new file. |
+**Recommendation: (d) a mix, but a *narrow*, deliberate one — one core `DrawScope` function + one data-driven style object + one `Modifier` wrapper that is nothing but that function called from `drawWithCache`. Not three independent implementations; one implementation exposed three ways.**
 
----
-
-## File and Package Structure
-
-```
-library/src/main/kotlin/com/mordred/aero/
-  components/
-    layout/
-      AeroPanelGroup.kt                    NEW: public API + private composables
-      internal/
-        panelgroup/
-          PanelDistribution.kt             NEW: distributePx, shareTransfer (pure JVM)
-        splitpane/
-          SplitClamp.kt                    REUSED verbatim (no changes)
-    internal/
-      drag/
-        AeroDragSplitter.kt                REUSED verbatim (no changes)
-
-library/src/test/kotlin/com/mordred/aero/components/layout/
-  PanelDistributionTest.kt                 NEW: pure-logic tests
-  SplitClampTest.kt                        EXISTING (no changes needed)
-  AccordionToggleTest.kt                   EXISTING (no changes needed)
-
-showcase/src/main/kotlin/com/mordred/showcase/sections/
-  LayoutSection.kt                         MODIFIED: append AeroPanelGroup demo block
-```
-
-**Structure rationale:**
-- `internal/panelgroup/` mirrors `internal/splitpane/` and `internal/accordion/`: pure-JVM logic in `internal/`, public composable is the only entry point callers see.
-- No `PanelSizeState.kt` as a separate file unless test ergonomics require it — the state is simple enough to live as local `SnapshotStateList` values inside `AeroPanelGroup.kt`.
-- `AeroPanelGroup.kt` co-locates the public composable, private section row, and private divider — matching `AeroAccordion.kt` which co-locates `AeroAccordion` + `AccordionSectionRow` in one file.
-
----
-
-## Architectural Patterns
-
-### Pattern 1: Fraction-as-stable-coordinate (from AeroSplitPane v2.0.1)
-
-**What:** Store sizes as share weights in a pool, not as absolute px tied to a specific `totalPx`. When `totalPx` changes, derived heights recompute proportionally without any state reset.
-
-**Applied to AeroPanelGroup:** `sizePx[i]` is each section's raw px weight. On each recompose inside `BoxWithConstraints`, derive:
+### The core primitive
 
 ```kotlin
-val availableForExpanded = totalPx
-    - sections.indices.sumOf { i -> if (!expanded[i]) headerPx.toDouble() else 0.0 }.toFloat()
-    - expandedPairCount * dividerPx
-
-val expandedSizeSum = sections.indices
-    .filter { expanded[it] }
-    .sumOf { sizePx[it].toDouble() }.toFloat()
-
-val renderHeight: (Int) -> Float = { i ->
-    if (!expanded[i]) headerPx
-    else (sizePx[i] / expandedSizeSum) * availableForExpanded
-}
+// library/src/main/kotlin/com/mordred/aero/theme/AeroSurfaceStyle.kt  (NEW)
+@Immutable
+public data class AeroSurfaceStyle(
+    val cornerRadius: Dp,
+    val fillTop: Color,           // two-tone gradient, A1
+    val fillBottom: Color,
+    val seam: Boolean = true,     // A2
+    val glossAlpha: Float = 0f,   // A3, 0 = no gloss (grooves get none, per A10)
+    val bevelLight: Color,        // A4
+    val bevelShadow: Color,
+    val rimColor: Color,          // A5
+    val rimAlpha: Float,
+    val dropShadow: Shadow? = null,   // A9 — androidx.compose.ui.graphics.shadow.Shadow, CMP 1.9.0+
+    val innerShadow: Shadow? = null,  // A10 groove wall / A7 pressed inset
+)
 ```
 
-This is never stored in `remember` — it is recomputed each recompose. Window resize changes `totalPx`, which changes `availableForExpanded`, which rescales all `renderHeight[i]` proportionally. No state is reset.
-
-**What to avoid:** `var sizePx by remember(totalPx) { ... }` — this re-keys state on every `totalPx` change. This was PITFALL-A in AeroSplitPane; its fix (fraction-based state, no `remember(totalPx)` key) shipped in v2.0.1.
-
-### Pattern 2: Live-state read in drag loop (from AeroSplitPane v2.0.1 fix, commit 7f38c0c)
-
-**What:** The `onDrag` lambda passed to `aeroDragSplitter` must read `sizePx` values live at drag time, not from values captured at composition time.
-
-**Why it matters:** `aeroDragSplitter` keys its `pointerInput` on `(orientation, enabled)` only. The `onDrag` closure is captured once at first composition. If `sizePx[above]` changes between composition and drag (it will — that is what dragging does), a captured value is stale. This is the identical bug class as FIXSP-01.
-
-**Concrete structure:**
-
 ```kotlin
-val liveTotalPx by rememberUpdatedState(totalPx)
-// sizePx is a SnapshotStateList — reads through it are always live.
-// No rememberUpdatedState needed for SnapshotStateList itself.
+// library/src/main/kotlin/com/mordred/aero/theme/AeroSurfacePrimitives.kt  (NEW — separate file
+// from GlassModifiers.kt so the legacy-modifier bug-fix diff stays reviewable on its own)
 
-val onDragBetween: (above: Int, below: Int, delta: Float) -> Unit = { above, below, delta ->
-    val combined = sizePx[above] + sizePx[below]
-    val minPx = with(density) { minSectionSize.toPx() }
-    val clamped = clampDividerPx(sizePx[above], delta, minPx, combined - minPx)
-    sizePx[above] = clamped
-    sizePx[below] = combined - clamped
-    onLayoutChange?.invoke(sizePx.toList())
-}
-```
-
-`sizePx` is a `SnapshotStateList<Float>`. State list reads (`sizePx[i]`) inside the drag lambda are always live because `SnapshotStateList` reads go through Compose snapshot state — they do not capture a stale copy.
-
-`liveTotalPx` uses `rememberUpdatedState` for the same reason as AeroSplitPane — if the parent container resizes mid-drag, `totalPx` changes, and `clampDividerPx` must use the current value.
-
-### Pattern 3: px source-of-truth, animateFloatAsState for toggle only
-
-**What:** One `Float` per section (`sizePx[i]`) is the single source of truth for layout. Drag writes directly to it. Toggle (collapse/expand) writes a new target value. `animateFloatAsState` drives rendered height toward the current `sizePx[i]` each frame.
-
-**Concrete structure:**
-
-```kotlin
-// One animated float per section, targeting sizePx[i] if expanded, headerPx if collapsed
-val animatedHeight = sections.indices.map { i ->
-    val targetPx = if (expanded[i]) renderHeight(i) else headerPx
-    animateFloatAsState(
-        targetValue = targetPx,
-        animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
-        label = "panelHeight_$i",
-    ).value
-}
-```
-
-**Why drag + animation coexist without conflict:**
-
-When drag fires, `sizePx[above]` and `sizePx[below]` change every pointer event. `renderHeight(above)` and `renderHeight(below)` recalculate from the new `sizePx` values. `animateFloatAsState` receives a new `targetValue` every frame equal to the just-written drag position. Because the animation spec is `tween(200ms)` but the target changes every frame at ~60fps, the animation always snaps to the current target immediately — there is no lag accumulation.
-
-When toggle fires, `expanded[i]` flips. `targetPx` for section `i` jumps from `renderHeight(i)` to `headerPx` (collapse) or from `headerPx` to `renderHeight(i)` (expand). `animateFloatAsState` smoothly interpolates over 200ms. Other sections' `sizePx` are updated by `shareTransferOnCollapse`/`shareTransferOnExpand`, so their `renderHeight` changes and their animations also trigger.
-
-**Key spike question:** Does `animateFloatAsState` introduce any visible lag when `targetValue` changes every frame during drag? Architecturally no — `animateFloatAsState` with a `tween` spec immediately starts animating toward the new target on each frame, and since drag events arrive faster than the animation window, the rendered value tracks the target with sub-frame lag. But this must be confirmed empirically in the spike (Step 1 of build order).
-
-**Fallback if spike fails:** Use `sizePx[i].toDp()` directly for drag rendering (no animation) and only invoke `animateFloatAsState` when `expanded[i]` changes. This requires a mode flag or a separate `isAnimating` boolean per section, adding complexity. Prefer the simpler unified approach unless the spike disproves it.
-
-### Pattern 4: Hybrid controlled/uncontrolled expansion (from AeroAccordion)
-
-**What:** Two explicit code paths — controlled (caller owns `expandedIndices`, component is a pure renderer) and uncontrolled (component manages internal state seeded from `initiallyExpanded`). Not collapsed into one branch.
-
-**Applied to AeroPanelGroup:**
-
-```kotlin
-val controlled = onExpandedChange != null
-
-val isExpanded: (Int) -> Boolean = { i ->
-    if (controlled) expandedIndices?.contains(i) == true
-    else i in internalExpanded
+internal fun DrawScope.drawAeroSurfaceCore(style: AeroSurfaceStyle, cornerPx: Float) {
+    val cr = CornerRadius(cornerPx, cornerPx)
+    // 1. two-tone fill (A1) — Brush built here, NOT allocated per-frame (see Q2)
+    // 2. seam (A2)
+    // 3. gloss oval, clipped to own shape (A3) — only if style.glossAlpha > 0
+    // 4. bevel rim, single inset stroke w/ vertical gradient (A4, LOW-complexity fallback per FEATURES.md)
+    // 5. outer contour stroke, INSET by half stroke width so it survives clip (A5 — the confirmed bug fix)
 }
 
-val onToggle: (Int) -> Unit = { i ->
-    if (controlled) {
-        val next = if (i in (expandedIndices ?: emptySet()))
-            (expandedIndices ?: emptySet()) - i
-        else
-            (expandedIndices ?: emptySet()) + i
-        onExpandedChange!!(next)
-    } else {
-        internalExpanded = if (i in internalExpanded)
-            internalExpanded - i
-        else
-            internalExpanded + i
+public fun Modifier.aeroSurface(style: AeroSurfaceStyle, shape: Shape): Modifier = this
+    .let { if (style.dropShadow != null) it.dropShadow(shape, style.dropShadow) else it }
+    .clip(shape)
+    .drawWithCache {
+        val cornerPx = style.cornerRadius.toPx()
+        onDrawBehind { drawAeroSurfaceCore(style, cornerPx) }
     }
-}
+    .let { if (style.innerShadow != null) it.innerShadow(shape, style.innerShadow) else it }
 ```
 
-**KDoc must state:** "Do not collapse to one branch — both paths are intentional (matches AeroAccordion hybrid-ownership convention)."
+`Modifier.aeroSurface(style, shape)` is the primary API for every component that **owns a `Box`**: `AeroSwitch` track, `AeroSwitch`/`AeroSlider` thumb wrapper, `AeroListItem` selection pill, `AeroSegmentedControl` per-segment background, `AeroProgressBar` groove + fill, `AeroButton`/`AeroOutlinedButton` container (once M3's `Button`/`OutlinedButton` container is dropped — see Q5).
 
-**Size state is always uncontrolled.** Only expansion is hybrid. Sizes are exposed via `onLayoutChange: ((List<Float>) -> Unit)?` for the caller to persist and restore — but the caller never feeds sizes back in per-frame. This avoids the round-trip drag performance problem noted in AeroSplitPane KDoc ("A controlled drag would fire onSplitChange every frame, requiring the caller to hold and re-apply the split position on every mouse move").
+`internal fun DrawScope.drawAeroSurfaceCore(...)` is the **exception seam** named in the question: components that already own a `Canvas` (`AeroRangeSlider`, and `AeroSlider`'s custom `track =` slot if it draws via `Canvas`) call this function **directly inside their existing `DrawScope`**, bypassing the `Modifier` wrapper entirely — no extra `Box`/layer, no extra `clip()`, same exact rendering code as every `Modifier.aeroSurface()` call site. This is the answer to "some own a Canvas, some are Boxes": **one function, two call conventions, zero duplicated drawing logic.**
 
-### Pattern 5: Divider placement as derived index pairs (no divider state)
+Two small sibling primitives, each with a *different* composition rule than `aeroSurface`, get their own thin wrapper rather than being folded into the general style object:
 
-**What:** Divider positions are never stored. They are derived each recompose by walking the section list and rendering a divider only where `isExpanded(i) && isExpanded(i + 1)`.
+- **`Modifier.aeroGlowRing(color: Color, shape: Shape, intensity: Float): Modifier`** (A6/A8) — must draw **outside** the shape's own clip (FEATURES.md A6/A8: "drawn just outside contour, not clipped"). It is therefore applied **before** `.aeroSurface()`'s own `.clip(shape)` in a component's chain, never merged into `AeroSurfaceStyle` (which is deliberately clip-scoped).
+- **`internal fun DrawScope.drawAeroThumb(style: AeroSurfaceStyle, radiusPx: Float)`** (A12) — a circle-shape special case of the same core (`CornerRadius` becomes `radiusPx` both axes); exposed as `Modifier.aeroThumbSurface(style)` for `Box`-based thumbs (`AeroSwitch`) and as the raw function for Canvas-based thumbs (`AeroRangeSlider`, `AeroSlider`'s `thumb =` slot if Canvas-drawn).
 
-**Concrete render loop:**
+### Why not (a) or (b) alone
+
+- **Pure Modifier-extension family (a)** — the *current* `GlassModifiers.kt` shape — breaks down the moment a component already owns a `Canvas` (`AeroRangeSlider`): wrapping Canvas content in an extra `Modifier`-decorated `Box` just to reuse a gradient would add a layer and contradict the single-drawBehind performance baseline for no benefit.
+- **Pure data object + one mega-modifier (b) with no `DrawScope` escape hatch** — forces every Canvas-owning consumer to either duplicate the drawing math or restructure around an extra Box, which is exactly the "shared visual coincidence, not shared code" drift this project's own memory (`project_panelgroup_composable_dsl_pitfall`) warns about.
+- **Pure per-component `DrawScope` helpers (c) with no shared style type** — reintroduces the parameter-explosion problem PITFALLS.md's Pitfall 7 already diagnoses (bare positional Dp/Color/Boolean arguments are how a dead `elevation` parameter went unnoticed for two milestones). A named `AeroSurfaceStyle` with presets (`AeroSurfaceStyle.raised(...)`, `.pressed(...)`, `.groove(...)`) makes every call site self-documenting and every parameter's consumer traceable by construction.
+
+### How `dropShadow`/`innerShadow` force the layering decision
+
+They are `Modifier`s, not `DrawScope` calls (UPGRADE.md Part 4, confirmed signature: `fun Modifier.dropShadow(shape, shadow)`, `fun Modifier.innerShadow(shape, shadow)`). This **does** force a layering decision, and it is the one embedded in `aeroSurface()` above: `dropShadow` must sit **outside** `.clip(shape)` (a shadow clipped to its own shape would just disappear), and `innerShadow` must sit **inside**/**after** the fill (it draws recessed, on top). Because both are real `Modifier` chain nodes (not draw calls inside `drawWithCache`), they **cannot** be folded into the single cached `onDrawBehind` block — they are two additional, unavoidable modifier-chain nodes per surface that has them. `aeroSurface()` centralizes this ordering in one place so no per-component call site has to re-derive it (directly forecloses PITFALLS.md Pitfall 6's failure mode by construction, not by convention alone).
+
+**Exceptions to `aeroSurface()`:** `AeroRangeSlider`'s track segments (draws two `drawLine`-style groove/fill strips directly in its existing `Canvas`, calling `drawAeroSurfaceCore`-adjacent line-drawing helpers, not the rounded-rect version), and any M3-slot-based component (see Q5) where M3 itself is drawing the outer container and only the slot's own content needs `aeroSurface`/`aeroThumbSurface` at a smaller scope.
+
+---
+
+## Q2 — Draw-Pass Economy
+
+**Convention locked: exactly one `drawWithCache { onDrawBehind { ... } }` block per surface carries fill + two-tone gradient + seam + gloss + bevel + rim. `dropShadow`/`innerShadow`, when used, are two *additional*, unavoidable Modifier-chain nodes — not part of the cached block, and not optional overhead to try to fold in.**
+
+### `drawBehind` vs `drawWithCache` vs `drawWithContent`
+
+- **`drawWithCache` is the correct default for the fill/gradient/gloss/bevel/rim block**, replacing the current `drawBehind`-only pattern in `glassPanel`/`glassSurface` (PITFALLS.md Pitfall 1 — confirmed existing bug: both currently allocate `Brush.verticalGradient(...)` fresh on every draw). `drawWithCache`'s split is exactly what this milestone needs: everything that depends only on `size`/`cornerRadius`/`style` identity (the `Brush` objects, the `CornerRadius`, any `Path`) is built once outside `onDrawBehind {}` and re-built only when those inputs change; only cheap draw calls run inside `onDrawBehind {}` every frame. **Colors that animate (hover brighten, pressed invert) must still be read inside `onDrawBehind {}`** — that's correct and required, not a cache-defeating mistake, as long as it's a `State<Color>` *read*, not a `Brush` *rebuild*. Concretely: build a gradient shaped by fixed stop *positions* once; if the *colors* at those stops change with state, accept a small `Brush.verticalGradient(listOf(currentFillTop, currentFillBottom))` rebuild inside `onDrawBehind` (cheap — two `Color` values, no `Path`) rather than trying to force color-only updates through the cache (Compose's `drawWithCache` invalidates on *any* captured value used inside the cache-block change, so if `style` itself changes because a `Color` changed, the whole cache block still needs to be sensitive to that — the practical rule is: **never rebuild a `Path` or a >2-stop `Brush` with size-computed positions inside `onDrawBehind`; a 2-stop color-only `Brush` rebuild there is acceptable**).
+- **`drawBehind` remains correct only for genuinely static, size-independent draws** — none of the new devices qualify; `drawBehind` should be treated as deprecated-in-spirit for anything new in this milestone, not just for the two existing buggy call sites.
+- **`drawWithContent`** is reserved for the one case it's already used for correctly and dangerously — `AeroButton.kt:85-90`'s hover overlay — which is also the confirmed corner-square bug (Pitfall 6). The fix is not "stop using `drawWithContent`," it's "move the overlay draw *inside* the same `aeroSurface()`-owned, already-clipped chain" (i.e., bake the hover-brighten into `AeroSurfaceStyle`'s fill colors, selected by the caller *before* calling `aeroSurface()`, rather than drawing a second unclipped overlay on top of M3's `Button` content).
+
+### Where clipping sits — the confirmed-bug convention
+
+`glassSurface` (`GlassModifiers.kt:87-105`) currently does `.drawBehind { ...stroke... }.clip(shape)` — draw-then-clip, so the bounds-centred 1.dp stroke's outer half is clipped away (confirmed, PITFALLS.md Pitfall 6 item 1). **The locked convention going forward, enforced by `aeroSurface()`'s own chain order in Q1:**
+
+```
+[optional dropShadow]  →  .clip(shape)  →  [cached fill+gloss+bevel+rim block]  →  [optional innerShadow]
+```
+
+`.clip(shape)` is the **outermost modifier that affects the surface's own paint** — everything meant to respect rounding is written *after* it in the chain (Pitfall 6's exact rule, now embedded in one shared function instead of repeated per component). The rim/contour stroke itself is additionally **inset by half its stroke width** inside `drawAeroSurfaceCore` (belt-and-suspenders — correct clip order alone is sufficient, but an inset stroke is also correct regardless of clip order and costs nothing extra).
+
+### Pass count per component instance
+
+| State | Passes | Notes |
+|---|---|---|
+| Rest, no shadow style | 1 (`onDrawBehind` block) | e.g. `AeroListItem` at rest — fully transparent, cheapest path is `Modifier` unchanged (no `aeroSurface` call at all when `!selected && !hovered`) |
+| Rest, with drop+inner shadow | 3 (dropShadow node + fill block + innerShadow node) | e.g. `AeroButton` rest state |
+| Hover/focus active | +1 (`aeroGlowRing`, gated) | Only composed into the chain while `hovered \|\| focused` is true — `Modifier.then(if (glow) Modifier.aeroGlowRing(...) else Modifier)` costs literally zero when inactive, directly satisfying PITFALLS.md Pitfall 3's "shadow/glow scoped to interactive-state-only" guidance |
+
+`AeroListItem` specifically must **never** carry `dropShadow` (PITFALLS.md Pitfall 3 names it explicitly as the one component that can appear in numbers in a `LazyColumn`) — its `AeroSurfaceStyle` preset for the selection pill sets `dropShadow = null` unconditionally; only the rim + low-alpha fill + optional gloss line render.
+
+---
+
+## Q3 — Theme Tokens
+
+**Recommendation: do NOT add ~10 new flat literal fields × 3 themes to `AeroColorScheme`. Add ONE new nested, algorithmically-derived type, plus ONE new trailing nullable override field on `AeroColorScheme` for the additive, source-compatible escape hatch.**
+
+### Why not flat properties, why not hand-authored-per-theme
+
+`AeroColorScheme` (`library/src/main/kotlin/com/mordred/aero/theme/AeroColorScheme.kt:13-37`) is a `public data class` with **23 mandatory, no-default `Color` parameters**, constructed directly (not just via `.copy()`) by any consumer building a custom theme. Hand-authoring ~10 new ornament tokens (gloss, bevel light/dark, rim, shadow, hover glow, groove fill, gradient split stops) × 3 built-in themes repeats the exact risk FEATURES.md's Cross-Theme Finding and PITFALLS.md's Pitfall 11 both flag: a human tunes new literals against `AeroBlue` (the "most Aero" theme, most likely to be open during development) and `Classic`'s fully-opaque tokens silently render wrong — not merely less pretty, categorically different (a translucent sheen renders as a flat opaque patch). Hand-authoring also multiplies the "which of these ~30 new literals did we forget to update for `Classic`" surface to audit.
+
+### The design
 
 ```kotlin
-Column(modifier = modifier.fillMaxWidth()) {
-    sections.forEachIndexed { i, section ->
-        SectionHeader(
-            title = section.title,
-            expanded = isExpanded(i),
-            onToggle = { onToggle(i) },
-        )
-        if (isExpanded(i)) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(with(density) { animatedHeight[i].toDp() })
-            ) { section.content() }
-        }
-        // Divider only between two adjacent expanded sections
-        if (isExpanded(i) && i < sections.lastIndex && isExpanded(i + 1)) {
-            PanelGroupDivider(
-                onDrag = { delta -> onDragBetween(i, i + 1, delta) },
+// library/src/main/kotlin/com/mordred/aero/theme/ColorMath.kt  (NEW)
+internal fun Color.lighten(amount: Float): Color = /* RGB mix toward Color.White, NOT alpha */
+internal fun Color.darken(amount: Float): Color = /* RGB mix toward Color.Black */
+```
+
+```kotlin
+// library/src/main/kotlin/com/mordred/aero/theme/AeroOrnamentTokens.kt  (NEW)
+@Immutable
+public data class AeroOrnamentTokens(
+    val glossHighlight: Color,
+    val bevelLight: Color,
+    val bevelShadow: Color,
+    val rimLight: Color,
+    val hoverGlow: Color,
+    val grooveShadow: Color,
+    val fillSplitTop: Color,
+    val fillSplitBottom: Color,
+) {
+    public companion object {
+        public fun derive(base: AeroColorScheme): AeroOrnamentTokens {
+            val opaque = base.glassSurface.alpha >= 0.99f  // Classic vs AeroBlue/AeroDark branch
+            return AeroOrnamentTokens(
+                glossHighlight = base.glassHighlight.lighten(0.15f),
+                bevelLight = base.primary.lighten(0.25f),
+                bevelShadow = base.primary.darken(0.20f),
+                rimLight = base.glassBorder.lighten(0.10f),
+                hoverGlow = base.primary.lighten(0.30f),
+                grooveShadow = base.surface.darken(0.15f),
+                fillSplitTop = base.primary.lighten(0.18f),
+                fillSplitBottom = base.primary.darken(0.12f),
+                // `opaque` branch: gradients fade toward each color's own alpha=0 copy,
+                // never a hardcoded Color.Transparent, so Classic's opaque tokens degrade to
+                // "less of itself" rather than assuming translucency existed to begin with
+                // (Pitfall 11's exact prescribed fix — implemented once, here, not per-primitive).
             )
         }
     }
 }
 ```
 
-When section `i` collapses, `isExpanded(i)` becomes false on the same recompose that updates `expanded[i]`. The dividers adjacent to section `i` disappear in the same frame as the collapse begins. No divider state needs cleanup.
+```kotlin
+// AeroColorScheme.kt — MODIFIED, one new trailing field, default null:
+@Immutable
+public data class AeroColorScheme(
+    public val primary: Color,
+    // ...all 23 existing fields, UNCHANGED, in the SAME order...
+    public val panelBackground: Color,
+    public val ornamentOverride: AeroOrnamentTokens? = null,  // NEW — trailing, defaulted
+)
+```
+
+```kotlin
+// AeroTheme.kt — MODIFIED, new computed accessor alongside the existing `colors`/`typography`:
+public object AeroTheme {
+    public val colors: AeroColorScheme
+        @Composable @ReadOnlyComposable get() = LocalAeroColors.current
+    public val ornaments: AeroOrnamentTokens
+        @Composable @ReadOnlyComposable get() =
+            LocalAeroColors.current.ornamentOverride ?: AeroOrnamentTokens.derive(LocalAeroColors.current)
+    // ...
+}
+```
+
+### Source-compatibility, addressed explicitly
+
+`AeroColorScheme` is public and constructed **positionally and by name** at existing call sites (`AeroColorScheme.AeroBlue`, `.AeroDark`, `.Classic` inside the same file; any consumer's custom theme via the full 23-arg constructor). Kotlin requires defaulted parameters to be trailing (or for every subsequent parameter to also have a default) for the no-named-args call form to keep compiling. **The new field is appended last, with a default of `null`.** This means:
+- Existing **positional** constructor calls (all 23 args, in order) compile unchanged — a 24th trailing defaulted parameter is invisible to them.
+- Existing **named** constructor calls compile unchanged for the same reason.
+- Existing **`.copy()`** calls are unaffected regardless of field position — `.copy()` always was source-compatible for additive fields.
+- **Not source-compatible in exactly one narrow case:** a consumer using purely-positional `AeroColorScheme(...)` construction while *also* supplying a 24th trailing positional argument that happens to be a `Color` (impossible, since the new field's type is `AeroOrnamentTokens?`, not `Color` — a `Color` argument in that position would be a compile error before and after this change). No real-world call site is broken by this addition.
+
+Built-in `AeroBlue`/`AeroDark`/`Classic` presets leave `ornamentOverride` at its default (`null`), so all three get the derived tokens — validated against all three themes as a **Foundation-phase spike deliverable** (per PITFALLS.md Pitfall 11: "verify against all three themes independently... not deferred to the final sign-off"), not assumed correct from the formula alone. If the derived Classic result reads wrong once actually rendered, the fix is to adjust `derive()`'s `opaque` branch (one function, one place), not to hand-patch three sets of literals.
 
 ---
 
-## Data Flow
+## Q4 — State-Driven Visuals
 
-### Collapse Toggle
+**Recommendation: `MutableInteractionSource` + `collectIsHoveredAsState`/`collectIsPressedAsState`/`collectIsFocusedAsState`, wired through `Modifier.hoverable`/`focusable`/`clickable` (Foundation-level, not raw `pointerInput`) — the exact pattern already proven correct in `AeroListItem.kt:57,74` and already implemented (but under-reused) in `components/buttons/InteractionStates.kt`. A shared helper is warranted; relocate the existing helper file rather than duplicate it.**
 
-```
-User clicks header[i]
-    |
-    v
-onToggle(i)  ->  expanded[i] = false
-                 lastExpandedPx[i] = sizePx[i]   (save before redistribution)
-                 sizePx = shareTransferOnCollapse(sizePx, expanded, i, headerPx)
-    |
-    v
-Recompose:
-  renderHeight[i] = headerPx  (expanded=false)
-  renderHeight[neighbors] = increased (received i's share)
-  animatedHeight[i]: targetValue = headerPx  ->  smooth 200ms collapse
-  animatedHeight[neighbors]: targetValue increased  ->  smooth 200ms grow
-  PanelGroupDivider adjacent to i: disappears (isExpanded(i) = false)
-```
+### The existing helper is already right, just mis-scoped
 
-### Expand Toggle
+`library/src/main/kotlin/com/mordred/aero/components/buttons/InteractionStates.kt` already provides `rememberHoverState`/`rememberPressedState`/`rememberFocusState` (thin wrappers over `collectIsHoveredAsState`/etc.) plus `ANIMATION_DURATION_MS = 150`. All are `internal` — and **Kotlin's `internal` is module-scoped, not package-scoped** (already established precedent in this codebase: STATE.md's Phase 7 note "Kotlin internal is module-scoped, so the showcase imports a thin public wrapper"). This means `AeroSwitch.kt`, `AeroSegmentedControl.kt`, `AeroSlider.kt`, `AeroRangeSlider.kt`, and `AeroListItem.kt` **can already call these functions today** without any visibility change — the gap is that nobody outside `components/buttons/` does, which reads as accidental rather than intentional scoping.
 
-```
-User clicks header[i]
-    |
-    v
-onToggle(i)  ->  expanded[i] = true
-                 sizePx = shareTransferOnExpand(sizePx, expanded, i, lastExpandedPx[i])
-    |
-    v
-Recompose:
-  renderHeight[i] = derived from lastExpandedPx[i] weight
-  renderHeight[neighbors] = decreased (gave share to i)
-  animatedHeight[i]: targetValue = renderHeight[i]  ->  smooth 200ms expand
-  animatedHeight[neighbors]: targetValue decreased  ->  smooth 200ms shrink
-  PanelGroupDivider: appears between i and its expanded neighbors
+**Action for Phase 16 (Foundation):**
+1. **Move** `InteractionStates.kt` from `components/buttons/` to a new `library/src/main/kotlin/com/mordred/aero/components/common/InteractionStates.kt` — purely a relocation (no visibility change needed, since `internal` already works module-wide), done to remove the "why is a switch importing something that lives in the buttons package" friction for the next five components that adopt it.
+2. **Add one bundling helper** next to the three existing ones:
+
+```kotlin
+internal data class AeroInteractionState(
+    val hovered: Boolean,
+    val pressed: Boolean,
+    val focused: Boolean,
+)
+
+@Composable
+internal fun rememberAeroInteractionState(source: InteractionSource): AeroInteractionState {
+    val hovered by source.collectIsHoveredAsState()
+    val pressed by source.collectIsPressedAsState()
+    val focused by source.collectIsFocusedAsState()
+    return AeroInteractionState(hovered, pressed, focused)
+}
 ```
 
-### Drag Resize
+This is warranted, not optional: FEATURES.md's Gap Summary confirms 5 of 8 components (`AeroSwitch`, `AeroSegmentedControl`, both slider thumbs, `AeroListItem`'s combined selected+hover case) are wiring hover/press/focus **fresh** in this milestone. One bundling call site per component, instead of three separate `by remember { ... }` lines repeated five times, is the direct application of this project's own "shared code, not shared coincidence" lesson (the same class of lesson the PanelGroup DSL-lambda incident already taught it). `rememberAeroInteractionState` deliberately returns **only booleans**, not resolved colors/styles — each component's own `AeroSurfaceStyle` selection (`if (state.pressed) style.pressed() else if (state.hovered) style.hovered() else style.rest()`) stays component-specific, since fill/rim/gloss targets differ too much per component to share a second-level abstraction.
 
-```
-User drags PanelGroupDivider between section[above] and section[below]
-    |
-    v
-aeroDragSplitter.onDrag(delta)
-    |
-    v
-onDragBetween(above, below, delta):
-    combined = sizePx[above] + sizePx[below]
-    clamped = clampDividerPx(sizePx[above], delta, minPx, combined - minPx)
-    sizePx[above] = clamped            (direct write, no animation wrapper)
-    sizePx[below] = combined - clamped
-    onLayoutChange?.invoke(sizePx.toList())
-    |
-    v
-Recompose:
-  renderHeight[above], renderHeight[below] recalculate from new sizePx weights
-  animatedHeight[above]: targetValue = renderHeight[above]  ->  chases drag instantly
-  animatedHeight[below]: same
-  (all other sections unaffected)
-```
+### Two-writer / hover-not-clearing risk (Pitfall 9) — apply, don't re-derive
 
-### Window Resize
+Any component where a **drag** gesture and a **hover/press animation** touch the same visual value (most relevantly `AeroSlider`'s and `AeroRangeSlider`'s thumbs, if a thumb both animates a "pressed depth" *and* tracks drag position) must apply this project's already-locked Pattern 3 (`AeroPanelGroup`'s animation-target-only vs. drag-writes-directly split, `isDragging` flips the spec to `snap()`) — this is not new architecture, just a note that Q1–Q3's new primitives do not remove the need for it.
 
-```
-Parent container resizes  ->  BoxWithConstraints recomposes with new totalPx
-    |
-    v
-availableForExpanded recalculates from new totalPx
-renderHeight[i] = (sizePx[i] / expandedSizeSum) * availableForExpanded
-    |
-    v
-All sections reflow proportionally.
-sizePx weights unchanged (no state reset).
-No animation triggered (renderHeight changes continuously during resize).
-```
+### Indication / ripple story at CMP 1.11.1 / Material3 1.4+
+
+**No change relevant to this milestone.** UPGRADE.md Part 3 §3 (grounded in a full-text search of the official CMP CHANGELOG.md across the entire 1.7.3→1.11.1 window) found **zero matches** for `rememberRipple()`→`ripple()`, `Indication`/`IndicationNodeFactory`, or `LocalIndication` migration entries, and a repo grep confirms `rememberRipple` is not used anywhere in `library/src/main` today (this project draws its own Aero press-state visuals rather than relying on M3 ripple, consistent with the milestone's whole premise). **Practical consequence for Q5:** wherever M3's `Button`/`Slider` container is fully dropped (`AeroButton`/`AeroOutlinedButton`, per Q5), the replacement `Modifier.clickable(...)` call must pass **`indication = null`** explicitly — Aero's own press-state (scale + gradient invert, A7) is the intended feedback; a default M3/Foundation ripple underneath it would visually double up. Where M3's `Slider` container is *kept* (Q5), its own internal indication for the default thumb is irrelevant, since the custom `thumb =`/`track =` slots replace the visual entirely and M3 does not force a ripple onto caller-supplied slot content.
 
 ---
 
-## New vs Reused Code
+## Q5 — Rewriting the M3 Wrappers (the key architectural question)
 
-### Reused Verbatim
+### What M3 provides today, enumerated
 
-| Item | File | Usage in AeroPanelGroup |
-|------|------|------------------------|
-| `aeroDragSplitter` | `internal/drag/AeroDragSplitter.kt` | Applied to `PanelGroupDivider` with `Orientation.Vertical` |
-| `clampDividerPx` | `layout/internal/splitpane/SplitClamp.kt` | Called in `onDragBetween`. Inverted-range guard already present. |
+| Behavior | `AeroButton`/`AeroOutlinedButton` (M3 `Button`/`OutlinedButton`) | `AeroSlider` (M3 `Slider`) |
+|---|---|---|
+| `Role.Button` / progress semantics | Automatic via M3's internal `Modifier.semantics` | `ProgressBarRangeInfo` etc., automatic |
+| Keyboard activation (Enter/Space) | Automatic (M3 `Button` is built on `Modifier.clickable`) | Arrow-key nudge, automatic |
+| Focus traversal | Automatic | Automatic |
+| `LocalMinimumInteractiveComponentSize` | Present, **already overridden to `Dp.Unspecified`** at `AeroButton.kt:79`/`AeroOutlinedButton.kt:79` — pre-existing opt-out, not new scope | N/A (Slider has no equivalent floor) |
+| Indication/ripple | Default M3 ripple (not currently overridden) | N/A (thumb/track visuals) |
+| Drag handling | N/A | Full gesture state machine inside `SliderState` |
+| Step-snap (`steps`) | N/A | Automatic, currently forwarded live at `AeroSlider.kt:81` |
+| `onValueChangeFinished` contract | N/A | Automatic (fires once per completed drag/step-change gesture) |
+| Disabled pointer gating | Automatic (`enabled = false` blocks all M3-owned pointer input) | Automatic |
 
-`fractionToPx` and `pxToFraction` from SplitClamp.kt are NOT needed — PanelGroup uses raw px weights, not 0..1 fractions.
+### VERIFIED via Context7 (androidx.compose.material3 official reference): `Slider` exposes `thumb`/`track` slot composables
 
-### New Code Required
+```kotlin
+@Composable
+fun Slider(
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    onValueChangeFinished: (() -> Unit)? = null,
+    colors: SliderColors = SliderDefaults.colors(),
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    steps: Int = 0,
+    thumb: @Composable (SliderState) -> Unit = { SliderDefaults.Thumb(interactionSource, colors) },
+    track: @Composable (SliderState) -> Unit = { SliderDefaults.Track(sliderState = it, colors = colors) },
+    valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
+): Unit
+```
 
-| File | Type | Content |
-|------|------|---------|
-| `layout/AeroPanelGroup.kt` | Compose | `AeroPanelSection` data class; `AeroPanelGroup` public composable; `AeroPanelSectionRow` private composable; `PanelGroupDivider` private composable |
-| `layout/internal/panelgroup/PanelDistribution.kt` | Pure JVM | `distributePx`, `shareTransferOnCollapse`, `shareTransferOnExpand` — no Compose imports |
-| `layout/PanelDistributionTest.kt` (test source) | JVM test | All pure-logic scenarios (see table below) |
+Both the `value`/`onValueChange` overload (this project's current call shape) and the newer `SliderState`-based overload expose `thumb: @Composable (SliderState) -> Unit` and `track: @Composable (SliderState) -> Unit`, each independently overridable, each defaulting to `SliderDefaults.Thumb(...)`/`SliderDefaults.Track(...)`. **This is not a new-in-1.4/1.5 API** — the shape is consistent across the current androidx reference and has been part of Material3's public surface since well before the CMP 1.9.x-era M3 1.4.0 pin UPGRADE.md documents; HIGH confidence this slot API exists at whatever specific stable M3 version Phase 15 ultimately pins (M3 1.4.x at minimum, per UPGRADE.md's own finding that CMP 1.9.1+ already resolves `compose.material3` to a stable M3 1.4.0 artifact — and the milestone's locked CMP 1.11.1 target requires an *explicit* pin to a stable M3 regardless, since the bare alias resolves to an unacceptable 1.5.0-alpha17 there). **Residual verification step, not a re-investigation:** once Phase 15 lands on its final pinned M3 coordinate, a 5-minute IDE-autocomplete check that `thumb`/`track` are present on that exact resolved artifact — cheap, and consistent with this project's "verify before asserting" discipline, but this is now a confirmation step, not an open question.
 
----
+### Per-component recommendation
 
-## Pure/Unit-Testable Logic
+| Component | Recommendation | Rationale |
+|---|---|---|
+| **`AeroButton`** | **Hand-roll the container, but on top of Foundation's `Modifier.clickable`, not M3's `Button`/`Surface` and not a raw `pointerInput`.** `Box(Modifier.aeroSurface(style, shape).clickable(interactionSource = is, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)) { Text(...) }`. | M3 `Button`'s only container-customization surface is `colors: ButtonColors` (flat container/content colors, no `Brush`, no gradient) plus `shape`/`elevation`/`border`/`contentPadding` — there is no slot equivalent to `Slider`'s `thumb`/`track` for a Button's own container paint, so M3's *container* genuinely blocks the Aero geometry (matches the milestone's original premise for these two). But `Modifier.clickable(role = Role.Button, ...)` — a **Foundation**-level primitive, one layer below M3, not a from-scratch `pointerInput`/`Canvas` — already supplies `Role.Button` semantics, Enter/Space keyboard activation, Tab focus order, and automatic disabled-gating. This is meaningfully lower-risk than the "hand-roll like `AeroRangeSlider`" precedent PITFALLS.md's Pitfall 8 worries about, because `AeroRangeSlider` genuinely built on bare `Canvas` + `pointerInput` with **zero** `semantics`/`focusable` (confirmed, no such calls anywhere in `AeroRangeSlider.kt`) — `Modifier.clickable` does not have that gap. |
+| **`AeroOutlinedButton`** | Same pattern as `AeroButton`, sharing one internal container composable/config (`AeroButtonSurface(filled: Boolean, ...)` per FEATURES.md B1/B2) so the two buttons cannot visually drift apart. | Identical M3-limitation analysis; `OutlinedButton`'s only differentiator from `Button` is `border`/transparent-fill, both fully expressible via `AeroSurfaceStyle`'s existing fields. |
+| **`AeroSlider`** | **Keep M3 `Slider`. Supply custom `thumb =` and `track =` slots built from the shared `aeroSurface`/`aeroThumbSurface`/groove primitives.** | This is the most important correction this research makes to the milestone's working assumption. FEATURES.md classified `AeroSlider` as the single HIGH-complexity, drag-rewrite-required outlier (its B5 section explicitly recommended reusing `AeroRangeSlider`'s `awaitPointerEventScope` pattern). The verified slot API removes that requirement: M3 retains ALL of drag handling, keyboard arrow-nudge, `steps` snap, the `onValueChangeFinished` contract, and semantics — Pitfall 8's entire checklist (items 1–5) is satisfied *by keeping M3*, not by re-implementing it. Only the thumb's and track's **paint** changes. Complexity revises from HIGH to MEDIUM; the dependency on porting `AeroRangeSlider`'s drag loop to `AeroSlider` is removed (that pattern stays scoped to `AeroRangeSlider`, which has no M3 dual-thumb equivalent this project uses, per the existing locked PITFALL-03 decision — untouched). |
+| **`AeroRangeSlider`** | No change to this question — already Canvas-based, no M3 to keep or drop; pure visual upgrade consuming `drawAeroSurfaceCore`/`drawAeroThumb` directly (per Q1). | Confirms FEATURES.md's existing B6 analysis; nothing here revises it. |
 
-**Convention (from existing codebase):** Functions with no Compose imports live in `internal/` packages and are tested with plain `kotlin.test` — no Compose test runner required. Pattern: `SplitClamp.kt` (tested in `SplitClampTest`), `AccordionToggle.kt` (tested in `AccordionToggleTest`).
+### Foundation-phase spike required before Phase 18 commits
 
-### Functions to isolate in PanelDistribution.kt
-
-| Function | Inputs | Outputs | Key test scenarios |
-|----------|--------|---------|-------------------|
-| `distributePx` | `sizePx: FloatArray, expanded: BooleanArray, totalPx: Float, headerPx: Float, dividerPx: Float` | `FloatArray` rendered heights | 3 equal sections all expanded; 1 collapsed; all collapsed -> all headerPx; window resize keeps ratios |
-| `shareTransferOnCollapse` | `sizePx: FloatArray, expanded: BooleanArray, index: Int, headerPx: Float` | new `sizePx: FloatArray` | Middle collapses -> both neighbors gain proportionally; first collapses -> right gains all; last collapses -> left gains all; only expanded section collapses -> no redistribution (nothing to give to) |
-| `shareTransferOnExpand` | `sizePx: FloatArray, expanded: BooleanArray, index: Int, restorePx: Float` | new `sizePx: FloatArray` | Restore when neighbor has room; restore clamped when neighbor would hit minSize; restore when only one neighbor exists |
-
-Additional test for drag budget: `combined = a + b; clamped = clampDividerPx(a, delta, min, combined - min)` with combined < 2×min (inverted range, same class as PITFALL-B).
-
-### Functions that stay in the Compose layer (not unit-testable in isolation)
-
-- `animateFloatAsState` usage — Compose runtime required
-- `BoxWithConstraints` — Compose layout required
-- `aeroDragSplitter` modifier — Compose pointer input required
-- `glassPanel` modifier — Compose draw required
-
----
-
-## Anti-Patterns
-
-### Anti-Pattern 1: `remember(totalPx)` key on size state
-
-**What people do:** `var sizePx by remember(totalPx) { mutableStateOf(totalPx / sections.size) }`
-
-**Why it's wrong:** Resets all section sizes to equal distribution on every window resize or parent-pane drag. This was PITFALL-A, the root cause of the AeroSplitPane nested-freeze bug fixed in v2.0.1.
-
-**Do this instead:** `val sizePx = remember { mutableStateListOf(*initialSizes) }` with no key. Derive render heights from current `totalPx` on each recompose.
-
-### Anti-Pattern 2: Stale capture in aeroDragSplitter closure
-
-**What people do:** `val h = sizePx[i]` as a plain local inside the composable, closed over in `onDrag`.
-
-**Why it's wrong:** `aeroDragSplitter` captures `onDrag` once (keyed on `(orientation, enabled)`). The captured `h` is stale after the first drag event fires. Same bug class as FIXSP-01 (commit 7f38c0c).
-
-**Do this instead:** Read `sizePx[above]` and `sizePx[below]` directly inside the `onDrag` lambda. `SnapshotStateList` reads inside lambdas are always live. Wrap `totalPx` in `rememberUpdatedState` for the clamp bound.
-
-### Anti-Pattern 3: SubcomposeLayout or height measurement
-
-**What people do:** `SubcomposeLayout` to measure content, or `onGloballyPositioned` to read heights.
-
-**Why it's wrong:** Extra layout pass per frame. One-frame lag. Oscillation when combined with animation. Explicitly rejected in AeroAccordion KDoc.
-
-**Do this instead:** Fix header height as constant (`36.dp.toPx()`), fix divider height as constant (`8.dp.toPx()`). Derive all heights arithmetically inside `BoxWithConstraints`. Content clips within its assigned height box.
-
-### Anti-Pattern 4: `animateContentSize` on expanded sections
-
-**What people do:** Reuse `Modifier.animateContentSize()` from AeroAccordion on the content box.
-
-**Why it's wrong:** `animateContentSize` requires content measurement and fights explicit `.height(dp)` constraints. It also intercepts drag writes and re-animates them, making drag feel sluggish or incorrect.
-
-**Do this instead:** `animateFloatAsState` per section, apply result as explicit `.height(with(density) { animatedPx.toDp() })`. Compatible with both drag and toggle.
-
-### Anti-Pattern 5: Separate divider state map
-
-**What people do:** `val dividerPositions = remember { mutableMapOf<Pair<Int,Int>, Float>() }` as a secondary structure.
-
-**Why it's wrong:** Requires synchronization with `expanded[]` and `sizePx[]`. Any desync (collapse fires, divider map not cleaned) causes rendering bugs.
-
-**Do this instead:** Derive divider existence inline: render divider only when `isExpanded(i) && isExpanded(i+1)`. No divider state needed.
+The `thumb =`/`track =` slot recommendation needs one empirical check the milestone brief didn't originally scope: confirm that a custom-sized `AeroSurfaceStyle`-drawn thumb (target ~16–18.dp per FEATURES.md A12) and a custom groove/fill track render correctly inside M3 `Slider`'s own layout box — i.e., that supplying non-default-sized slot composables doesn't get clipped or misaligned by `Slider`'s own internal height/track-position math. This is a cheap scratch-composable spike (mirrors the already-planned `dropShadow`/`innerShadow` signature spike in UPGRADE.md Part 5) and should be added to Phase 16's exit checklist, not discovered mid-Phase-18.
 
 ---
 
-## Build Order for Phase 13
+## Q6 — Build Order
 
-**Lead with the animation-vs-drag risk spike.** This is the only architectural unknown — everything else ports directly from existing patterns.
+```
+Phase 15  Toolchain upgrade (Kotlin 2.4.10 / CMP 1.11.1)              [already locked, separate]
+    │
+    ▼
+Phase 16  Foundation — Aero primitives layer
+    - ColorMath.kt (lighten/darken)
+    - AeroOrnamentTokens.kt (+ derive())
+    - AeroColorScheme.kt: + ornamentOverride trailing field
+    - AeroTheme.kt: + AeroTheme.ornaments accessor
+    - AeroSurfaceStyle.kt (+ raised/pressed/groove/pill presets)
+    - AeroSurfacePrimitives.kt: drawAeroSurfaceCore, Modifier.aeroSurface,
+      Modifier.aeroGlowRing, drawAeroThumb / Modifier.aeroThumbSurface
+    - GlassModifiers.kt: BUG FIXES ONLY (endY proportional, clip-order, dead elevation
+      wired or removed) — legacy 3 modifiers stay source-compatible
+    - components/common/InteractionStates.kt (relocated) + rememberAeroInteractionState()
+    - SPIKE: dropShadow/innerShadow real signature vs. actual 1.11.1 jar
+    - SPIKE: M3 Slider thumb/track slot sizing feasibility (Q5)
+    - Three-theme spot check of every new primitive — NOT deferred (Pitfall 11)
+    - Full-library visual smoke pass (glassSurface/glassPanel/glassEffect touch ~40
+      out-of-scope components too — see Q7)
+    │
+    ▼
+Phase 17  Buttons — AeroButton, AeroOutlinedButton
+    - First real consumer of aeroSurface + aeroGlowRing + Modifier.clickable pattern
+    - Shared AeroButtonSurface(filled: Boolean) internal composable
+    - Expect this phase to surface any remaining Foundation-layer bugs (FEATURES.md's
+      own dependency note: "first real consumer, surfaces any remaining bugs")
+    │
+    ▼
+Phase 18  Range — AeroSlider (M3-slot restyle), AeroRangeSlider, AeroProgressBar
+    - Validates aeroThumbSurface/drawAeroThumb + groove/fill primitives together
+    - AeroSlider first (proves the M3-slot approach against the Phase 16 spike findings);
+      AeroRangeSlider second (reuses the now-proven thumb primitive, per FEATURES.md's
+      own "second consumer, bugs fixed once for both" recommendation);
+      AeroProgressBar third (shares the fill/groove renderer with AeroSlider's track)
+    │
+    ▼
+Phase 19  Selectors + Lists — AeroSwitch, AeroSegmentedControl, AeroListItem
+    - AeroSwitch: needs thumb + groove (Phase 18 dependency) — cannot move earlier
+    - AeroSegmentedControl: reuses AeroButton's A7 pressed-fill code as its "active"
+      segment look (Phase 17 dependency) + aeroGlowRing — no new primitives
+    - AeroListItem: reuses fixed glassSurface-descended pill + aeroGlowRing (focus) —
+      technically has NO hard dependency on Phase 18 and could move directly after
+      Phase 17 if phase-sizing favors it; grouped here for lowest-risk/last-wave buffer
+      and because Selectors+Lists together is a natural "polish wave" showcase unit
+    │
+    ▼
+Phase 20  Verification — showcase wiring, grep-gates, three-theme sign-off
+    - Distributed per-phase mini-checks (17/18/19 above) ALREADY happened —
+      this phase is the consolidated pass + structural gates (Q7), not the first look
+```
 
-### Step 1: SPIKE — animateFloatAsState + direct drag write coexistence (first task)
-
-Create a minimal proof-of-concept in the showcase (throwaway, NOT in library) with:
-- 3 hardcoded `mutableStateListOf` sections
-- `animateFloatAsState` per section targeting current `sizePx[i]`
-- One real `aeroDragSplitter` between sections 0 and 1 (Orientation.Vertical)
-- One toggle button simulating collapse of section 1
-
-**Gate:** Drag is instant (no visible lag). Collapse animates smoothly over 200ms. Dragging during a mid-animation collapse does not corrupt heights. If gate passes: proceed with Pattern 3 as designed. If `animateFloatAsState` introduces visible lag during drag: use direct `sizePx[i].toDp()` for drag rendering and only invoke `animateFloatAsState` when `expanded[i]` flips.
-
-### Step 2: Pure logic + tests (TDD)
-
-Write `PanelDistribution.kt` (no Compose imports). Write `PanelDistributionTest.kt` covering all scenarios in the table above. All tests GREEN before writing any Compose code. Mirrors Phase 12 TDD approach (RED test written before fix for `clampDividerPx`).
-
-### Step 3: Layout skeleton (no animation, no drag)
-
-- `AeroPanelSection` data class
-- `BoxWithConstraints` -> `totalPx`
-- `Column` render loop: static header rows + content boxes at computed heights
-- Expand/collapse toggle (uncontrolled path only)
-- Static `PanelGroupDivider` between expanded pairs (no drag yet)
-- **Gate:** Window resize redistributes heights proportionally. Collapse/expand changes rendered heights correctly.
-
-### Step 4: Collapse/expand animation
-
-- `animateFloatAsState` per section (confirmed safe in Step 1)
-- Wire `shareTransferOnCollapse` / `shareTransferOnExpand`
-- `lastExpandedPx` save/restore
-- **Gate:** 200ms FastOutSlowInEasing animation visible. Multiple concurrent animations (collapse A while expanding B) do not conflict.
-
-### Step 5: Drag resize
-
-- Wire `aeroDragSplitter` to `PanelGroupDivider` (Orientation.Vertical)
-- `onDragBetween` with `rememberUpdatedState(totalPx)` pattern
-- `onLayoutChange` callback
-- **Gate:** Drag is instant. After window resize, drag does not snap back (live-state read confirmed working).
-
-### Step 6: Controlled expansion path + KDoc
-
-- Add `onExpandedChange` / `expandedIndices` parameters
-- KDoc on `AeroPanelGroup` with REQ-ID and PITFALL references
-- "Do not collapse to one branch" comment present
-
-### Step 7: Aero visual polish
-
-- `glassPanel` on header rows (matching AeroAccordion)
-- Caret `AeroIcons.CaretRight` 0->90 via `animateFloatAsState` (matching AeroAccordion)
-- `headerActions` slot (optional trailing composable in header row)
-- Grip dots on `PanelGroupDivider` (matching `SplitPaneDivider` nasechki style)
-- Three-theme visual check
-
-### Step 8: Showcase demo + sign-off
-
-- Append `AeroPanelGroup` demo block to `LayoutSection.kt`
-- Three-theme visual sign-off
+This order is dependency-justified, not merely FEATURES.md's wave labels restated: Buttons before Range is required because `AeroSegmentedControl` (Phase 19) reuses Button's pressed-fill code; Range before Selectors is required because `AeroSwitch`'s thumb/groove genuinely don't exist until Phase 18 builds and proves them via `AeroSlider`/`AeroRangeSlider`. `AeroListItem`'s placement in Phase 19 rather than earlier is the one non-strict-dependency choice, flagged as such for the roadmapper to move if phase-sizing argues otherwise.
 
 ---
 
-## Risk Register
+## Q7 — Regression Surface
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|-----------|--------|-----------|
-| `animateFloatAsState` lag during rapid drag | Medium | High | Spike in Step 1. Fallback: skip animation during drag, only animate on toggle. |
-| Stale capture in `aeroDragSplitter` closure | High (known class) | High | `rememberUpdatedState` pattern per FIXSP-01. Test: drag after resize must not snap. |
-| Inverted range in clamp (two sections squeezed below 2×minSize) | Medium | Medium | `clampDividerPx` has `coerceAtLeast` guard already. Add test: `combined < 2×minSize`. |
-| All-sections-collapsed state | Low | Medium | `distributePx` must return `headerPx` for all. Pure-logic test required. |
-| Collapse animation conflicts with concurrent drag on same pair | Low | Medium | Guard: divider disappears the frame `expanded[i]` flips. Mid-collapse sections have no adjacent draggable divider. |
-| `shareTransferOnExpand` takes too much from a small neighbor | Low | Low | Clamp neighbor's resulting `sizePx` to minimum before finalizing transfer. Pure-logic test. |
+### What could silently break
 
----
+1. **Default sizes / corner radii.** Every one of the 8 components has hardcoded or default-parameter intrinsic dimensions consumer layouts are already built against: `AeroButton(height: Dp = 30.dp)`, `AeroOutlinedButton(height: Dp = 28.dp)`, `AeroSwitch` (hardcoded `36×18.dp` track / `14.dp` thumb, not parameterized), `AeroListItem` (hardcoded `36.dp` row height), `AeroSegmentedControl` (hardcoded `28.dp` height). New ornamentation (shadow, glow ring) wanting "breathing room" is the most likely accidental cause of a silent bump (PITFALLS.md Pitfall 13).
+2. **Removed M3 semantics/keyboard.** `AeroButton`/`AeroOutlinedButton` dropping M3's `Button`/`OutlinedButton` (Q5) removes the automatic `Role.Button`/keyboard/focus M3 provided — the replacement (`Modifier.clickable(role = Role.Button, ...)`) is lower-risk than a from-scratch reimplementation, but it is still a **change of implementation**, not a no-op, and must be verified, not assumed correct by design alone.
+3. **`AeroSlider.steps` becoming a dead parameter** — the exact Pitfall 7 forward-looking flag — is a **non-issue under the Q5 recommendation** specifically because `steps` continues to flow into M3's own `Slider(steps = steps, ...)` call; this is a direct, positive consequence of the slot-based (not full-rewrite) decision, worth stating explicitly since it removes a previously-flagged risk rather than merely mitigating it.
+4. **Existing unit tests** referencing these 8 components — grep `library/src/test` for the 8 component names before Phase 17 starts, to enumerate the exact at-risk test set rather than discovering breakage after the fact.
+5. **The shared glass layer's blast radius is wider than "8 components."** `glassEffect`/`glassPanel`/`glassSurface` (`GlassModifiers.kt`) are used across the **~40 out-of-scope components** too (pickers' popup containers, `AeroPanelGroup` headers, `AeroCard`, etc. — per PROJECT.md's "explicitly NOT in scope: a sweep of the remaining ~40 components," which describes feature scope, not blast-radius scope). Fixing `glassSurface`'s `endY`/clip-order bugs in Phase 16 **necessarily re-renders every existing consumer of those three modifiers**, not just the 8 target components. This is a real regression-surface expansion the milestone's framing understates — addressed by Phase 16's own "full-library visual smoke pass" exit item (Q6), catching it at the cheapest possible point (immediately after the fix, before 4 more phases build on top of it) rather than at final sign-off.
+6. **No real external consumer app available this milestone.** `aska` and `satellite-control` are explicitly pinned to the old toolchain / `2.0.4` and are NOT expected to track this milestone (PROJECT.md, STATE.md). The project's strongest historical regression-catcher (a real consumer app — it caught the actual RCMP-04 root cause and the SplitPane stale-state bug that showcase sign-off alone missed) is unavailable this time. This raises the relative importance of the structural gates below and of a minimal scratch-consumer smoke step.
 
-## Confidence Assessment
+### Regression-guard strategy — named, and built to be provably-failing-first per `feedback_repro_must_exercise_path`
 
-| Area | Confidence | Basis |
-|------|-----------|-------|
-| State model (sizePx normalization) | HIGH | Direct port of AeroSplitPane fraction pattern; source read |
-| Live-state drag pattern | HIGH | Direct read of FIXSP-01 fix and `rememberUpdatedState` in AeroSplitPane.kt line 116 |
-| `animateFloatAsState` for toggle | HIGH | Used in AeroAccordion (`caretRotation`) and AeroSidebar; source read |
-| `animateFloatAsState` + drag coexistence | MEDIUM | Architecturally sound; not previously tested in this codebase. Spike required. |
-| Pure logic separation | HIGH | Mirrors SplitClamp.kt and AccordionToggle.kt exactly; source read |
-| `clampDividerPx` reuse | HIGH | Inverted-range guard present; source read of SplitClamp.kt line 22 |
-| `aeroDragSplitter` reuse | HIGH | Orientation.Vertical path exists; source read |
+| Guard | What it catches | Provably-fails-on-unfixed-code how |
+|---|---|---|
+| **Defaults Snapshot Test** — a plain JVM test asserting every public default-parameter numeric literal across the 8 components' signatures (height, corner radius, track/thumb sizes) against a recorded pre-milestone baseline | Pitfall 13 (silent size creep) | Written from the *current* values before any component-phase work starts; any unreviewed literal change flips it immediately — deterministic, not a screenshot judgment call |
+| **Keyboard-activation UI test** (`runComposeUiTest`, same style as `AeroPanelGroupRecomposeUiTest`) for `AeroButton`/`AeroOutlinedButton`: programmatic Tab-focus + `Enter`/`Space` triggers `onClick` | Pitfall 8 (lost M3 semantics/keyboard) | Written **before** the M3→`clickable` conversion (fails against a hypothetically-broken hand-roll that forgot `role`/keyboard wiring), passes after — TDD-red-then-green, the exact bar this project's own memory (`feedback_repro_must_exercise_path`) requires |
+| **Clip-before-paint centralization** — not a grep-gate first, a **structural** guarantee: because `aeroSurface()` (Q1) is the single place the clip/dropShadow/innerShadow ordering is written, Pitfall 6 cannot recur at a NEW call site without someone bypassing the shared function. The grep-gate (`.drawBehind`/`.drawWithContent` preceded by `.clip(`) becomes a cheap **"did anyone bypass `aeroSurface()`"** check, not the primary defense | Pitfall 6 (draw-before-clip) | Grep is zero-cost and mechanical; the real defense is architectural (one function, not per-call-site discipline) |
+| **Gradient-literal grep-gate** — regex for bare numeric `Float` literals in `startY`/`endY`/`startX`/`endX` gradient arguments across `GlassModifiers.kt`, `AeroSurfacePrimitives.kt`, and the 8 component files (only `size.*`/`.toPx()`-derived values allowed) | Pitfall 4 (non-proportional hardcoded gradients — the exact `endY = 100f` bug already confirmed in `glassSurface`) | Mechanical, zero-match required, checkable without running the app |
+| **Full-library visual smoke pass**, end of Phase 16, all ~50 components not just the 8 targets | Item 5 above (shared glass-layer blast radius) | Distributed early rather than deferred — matches this project's own explicit v2.0-retrospective lesson (Pitfall 14) about aggregate-at-the-end verification being its "biggest inefficiency" |
+| **Distributed per-phase three-theme sign-off** (Phases 17/18/19 each get their own mini pass) + one consolidated Phase 20 pass | Pitfall 14 (human sign-off false-positive) | Matches v2.0's own precedent; Phase 20's consolidated pass is a re-check, not the first look |
+| **Minimal scratch-consumer smoke step** — a throwaway `publishToMavenLocal` + tiny non-showcase-styled screen exercising `AeroButton`/`AeroSlider`/`AeroListItem` outside the `:showcase` module's own styling conventions | Item 6 above (no real consumer app this milestone) | Cheap insurance against showcase-only blind spots; explicitly named because the project has direct history of this exact gap mattering (RCMP-04's real root cause, the SplitPane stale-state regression — both caught outside showcase, not by it) |
 
 ---
 
-*Architecture research for: AeroPanelGroup (v2.0.2 additive layout component)*
-*Researched: 2026-06-22*
+## Integration Points — Concrete File/Type Map
+
+| File | Status | New/Changed types |
+|---|---|---|
+| `library/src/main/kotlin/com/mordred/aero/theme/ColorMath.kt` | NEW | `internal fun Color.lighten(Float): Color`, `internal fun Color.darken(Float): Color` |
+| `library/src/main/kotlin/com/mordred/aero/theme/AeroOrnamentTokens.kt` | NEW | `public data class AeroOrnamentTokens(...)`, `AeroOrnamentTokens.Companion.derive(base: AeroColorScheme)` |
+| `library/src/main/kotlin/com/mordred/aero/theme/AeroColorScheme.kt` | MODIFIED | + trailing `val ornamentOverride: AeroOrnamentTokens? = null` (source-compatible additive field) |
+| `library/src/main/kotlin/com/mordred/aero/theme/AeroTheme.kt` | MODIFIED | + `AeroTheme.ornaments: AeroOrnamentTokens` computed accessor |
+| `library/src/main/kotlin/com/mordred/aero/theme/AeroSurfaceStyle.kt` | NEW | `public data class AeroSurfaceStyle(...)` + `raised()`/`pressed()`/`groove()`/`pill()` presets |
+| `library/src/main/kotlin/com/mordred/aero/theme/AeroSurfacePrimitives.kt` | NEW | `internal fun DrawScope.drawAeroSurfaceCore(...)`, `public fun Modifier.aeroSurface(...)`, `public fun Modifier.aeroGlowRing(...)`, `internal fun DrawScope.drawAeroThumb(...)`, `public fun Modifier.aeroThumbSurface(...)` |
+| `library/src/main/kotlin/com/mordred/aero/theme/GlassModifiers.kt` | MODIFIED (bug fixes only) | `glassPanel`/`glassSurface`/`glassEffect` signatures unchanged; `endY` proportional fix, clip-order fix, `elevation` wired or removed |
+| `library/src/main/kotlin/com/mordred/aero/components/buttons/InteractionStates.kt` → `library/src/main/kotlin/com/mordred/aero/components/common/InteractionStates.kt` | MOVED + EXTENDED | + `internal data class AeroInteractionState`, `internal fun rememberAeroInteractionState(InteractionSource): AeroInteractionState` |
+| `library/src/main/kotlin/com/mordred/aero/components/buttons/AeroButton.kt` | REWRITTEN (Phase 17) | Drops M3 `Button`; `Box(Modifier.aeroSurface(...).clickable(role = Role.Button, indication = null, ...))` |
+| `library/src/main/kotlin/com/mordred/aero/components/buttons/AeroOutlinedButton.kt` | REWRITTEN (Phase 17) | Same pattern, shares internal `AeroButtonSurface(filled: Boolean, ...)` with `AeroButton` |
+| `library/src/main/kotlin/com/mordred/aero/components/range/AeroSlider.kt` | MODIFIED (Phase 18) | KEEPS `Slider(...)`; adds custom `thumb = {...}`/`track = {...}` slot lambdas using `aeroThumbSurface`/groove primitives |
+| `library/src/main/kotlin/com/mordred/aero/components/range/AeroRangeSlider.kt` | MODIFIED (Phase 18) | Visual-only; `drawAeroSurfaceCore`/`drawAeroThumb` called directly inside existing `Canvas` |
+| `library/src/main/kotlin/com/mordred/aero/components/range/AeroProgressBar.kt` | MODIFIED (Phase 18) | Groove + fill via `aeroSurface`, shares fill renderer with `AeroSlider`'s track slot |
+| `library/src/main/kotlin/com/mordred/aero/components/selection/AeroSwitch.kt` | MODIFIED (Phase 19) | Track via `aeroSurface` (groove/raised presets), thumb via `aeroThumbSurface`, hover/press/focus via `rememberAeroInteractionState` (currently has NONE of this wiring) |
+| `library/src/main/kotlin/com/mordred/aero/components/selection/AeroSegmentedControl.kt` | MODIFIED (Phase 19) | Per-segment `aeroSurface` + `aeroGlowRing`, selected-segment reuses `AeroButton`'s A7 pressed-fill code path |
+| `library/src/main/kotlin/com/mordred/aero/components/list/AeroListItem.kt` | MODIFIED (Phase 19) | Adds missing `.clip()`, selection pill via `aeroSurface` (no drop shadow, per Q2), combined selected+hover branch fixed |
+
+---
+
+## Anti-Patterns to Avoid
+
+### Anti-Pattern 1: Per-component bespoke gradient/bevel code
+
+**What people would do:** write `AeroSwitch`'s track gradient inline, then `AeroSlider`'s groove inline, slightly differently, because "it's just a few lines each."
+**Why it's wrong:** this is precisely the `PanelGroup`-DSL-lambda class of risk already in this project's memory — two independently-maintained copies of "the same visual idea" silently drift, and a bug fixed in one is not fixed in the other.
+**Do this instead:** every one of the 8 components calls `Modifier.aeroSurface`/`drawAeroSurfaceCore`/`aeroThumbSurface` — zero component owns its own gradient-construction code.
+
+### Anti-Pattern 2: Reaching for `pointerInput`/`Canvas` reflexively when "hand-rolling"
+
+**What people would do:** treat "M3 geometry blocks the look, so custom-draw it" as license to drop all the way to `AeroRangeSlider`'s bare-Canvas-plus-manual-loop pattern for `AeroButton`/`AeroOutlinedButton` too.
+**Why it's wrong:** `AeroRangeSlider` had no M3 equivalent to fall back on for its precision-drag requirement (PITFALL-03) — that's why it goes all the way to the bottom. `AeroButton`/`AeroOutlinedButton` and `AeroSlider` are not in that position: Foundation's `Modifier.clickable` (Buttons) and M3's `thumb =`/`track =` slots (Slider) both exist specifically to avoid re-deriving semantics/keyboard/drag from scratch.
+**Do this instead:** drop only the layer that actually blocks the look (M3's `Surface`/`ButtonColors` for Buttons; M3's default thumb/track *painting* for Slider) and keep every layer below it that isn't blocking anything (Foundation's `clickable`; M3's `SliderState` gesture/keyboard/step-snap machinery).
+
+### Anti-Pattern 3: Treating `AeroColorScheme` as a place to keep adding raw color fields
+
+**What people would do:** add `glossHighlight2`, `bevelLight`, `bevelShadow`, `rimAero`, etc. directly as new `AeroColorScheme` constructor parameters, one per device.
+**Why it's wrong:** compounds the already-23-field data class, multiplies the "did we tune this for all three themes" audit surface per Pitfall 11, and every future ornament device would demand another round of the same three-theme hand-tuning.
+**Do this instead:** `AeroOrnamentTokens.derive(base)` — one algorithm, three themes for free, one trailing override field for the rare case a custom theme needs to hand-author its own.
+
+---
+
+## Sources
+
+- `.planning/research/FEATURES.md` — device catalog (A1–A13), per-component treatment (B1–B8), dependency graph, interaction-state matrix. Builds on this directly; not restated except where a finding is revised (Q5).
+- `.planning/research/PITFALLS.md` — 14 named pitfalls, especially Pitfall 1 (`drawWithCache`), Pitfall 6 (clip-order, confirmed bug), Pitfall 7 (dead parameters), Pitfall 8 (M3 semantics/keyboard loss), Pitfall 11 (theme-dependent breakage), Pitfall 13 (size creep), Pitfall 14 (sign-off false positives).
+- `.planning/research/UPGRADE.md` — CMP 1.11.1/Kotlin 2.4.10 compatibility findings, `dropShadow`/`innerShadow` verified signature (Part 4), Material3-alias-must-be-pinned finding (Part 2), test-infrastructure dispatcher-default risk (Part 3 §6).
+- `.planning/STATE.md`, `.planning/PROJECT.md` — v3.0 scoping decisions, baseline defect table, locked cross-milestone conventions (single-`drawBehind` rule, `internal` module-scoping precedent from Phase 7).
+- Context7, `/websites/developer_android_reference_kotlin_androidx_compose_material3` — **direct verification** of `Slider(..., thumb: @Composable (SliderState) -> Unit, track: @Composable (SliderState) -> Unit, ...)` and `SliderDefaults.Thumb`/`SliderDefaults.Track`, both the `value`/`onValueChange` overload and the `SliderState` overload. This is the load-bearing finding for Q5. HIGH confidence — official androidx reference, two independently-returned doc entries agreeing on the same shape.
+- Direct code inspection (this repo, read in full for this research): `library/build.gradle.kts`, `library/src/main/kotlin/com/mordred/aero/theme/GlassModifiers.kt`, `AeroColorScheme.kt`, `AeroTheme.kt`; `components/buttons/AeroButton.kt`, `AeroOutlinedButton.kt`, `InteractionStates.kt`; `components/range/AeroSlider.kt`, `AeroRangeSlider.kt`, `AeroProgressBar.kt`; `components/selection/AeroSwitch.kt`, `AeroSegmentedControl.kt`; `components/list/AeroListItem.kt`.
+
+---
+*Architecture research for: aero-compose-ui v3.0 Glass Refinement*
+*Researched: 2026-07-21*
