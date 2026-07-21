@@ -129,22 +129,24 @@ Enabling-фаза по образцу Phase 7 из v2.0. Каждый визуа
 
 ## Traceability
 
-Заполняется при создании роадмапа.
+Roadmap: `.planning/ROADMAP.md` (created 2026-07-21, Phases 15–20).
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TOOL-01..08 | Phase 15 | Pending |
-| PRIM-01..18 | Phase 16 | Pending |
-| VBTN-01..06 | Phase 17 | Pending |
-| VRNG-01..09 | Phase 18 | Pending |
-| VSEL-01..04, VLST-01..04 | Phase 19 | Pending |
-| SHW-15..16, VER-01..06 | Phase 20 | Pending |
+| TOOL-01..08 | Phase 15 (Toolchain Upgrade) | Pending |
+| PRIM-01..18 | Phase 16 (Foundation — Aero Primitives Layer) | Pending |
+| VBTN-01..06 | Phase 17 (Buttons) | Pending |
+| VRNG-01..09 | Phase 18 (Range) | Pending |
+| VSEL-01..04, VLST-01..04 | Phase 19 (Selectors + Lists) | Pending |
+| SHW-15..16, VER-01..06 | Phase 20 (Verification) | Pending |
 
 **Coverage:**
-- v3.0 requirements: 53 total
-- Mapped to phases: 53 (предварительно, подтверждается роадмаппером)
+- v3.0 requirements: 57 total (TOOL 8 + PRIM 18 + VBTN 6 + VRNG 9 + VSEL 4 + VLST 4 + SHW 2 + VER 6)
+- Mapped to phases: 57/57 — validated by roadmapper against the enumerated REQ-IDs above (per-category sum), not the pre-roadmap estimate
 - Unmapped: 0
+
+**Correction (2026-07-21, roadmap creation):** this section previously stated "53 total" as a pre-roadmap estimate. The actual enumerated REQ-ID count across all eight categories in this document sums to 57, confirmed during roadmap creation. No requirements were added or removed — this is a recount, not a scope change.
 
 ---
 *Requirements defined: 2026-07-21*
-*Last updated: 2026-07-21 after research synthesis*
+*Last updated: 2026-07-21 after roadmap creation — traceability filled in, coverage count corrected 53→57*

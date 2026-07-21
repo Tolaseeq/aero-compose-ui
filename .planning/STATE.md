@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Glass Refinement
-status: defining_requirements
-stopped_at: Milestone v3.0 started — research pending, then requirements
+status: roadmap_created
+stopped_at: Phase 15-20 roadmap created (57/57 requirements mapped), ready for /gsd:plan-phase 15
 last_updated: "2026-07-21T00:00:00.000Z"
-last_activity: 2026-07-21 — Milestone v3.0 Glass Refinement started
+last_activity: 2026-07-21 — ROADMAP.md created for v3.0 Glass Refinement (Phases 15-20)
 progress:
-  total_phases: 0
+  total_phases: 6
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -25,63 +25,29 @@ See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refin
 ## Current Position
 
 Milestone: v3.0 Glass Refinement
-Phase: Not started (defining requirements)
+Phase: 15 of 20 (Toolchain Upgrade) — ready to plan
 Plan: —
-Status: Defining requirements (research stage next)
-Last activity: 2026-07-21 — Milestone v3.0 started
+Status: Roadmap created, ready for `/gsd:plan-phase 15`
+Last activity: 2026-07-21 — ROADMAP.md + REQUIREMENTS.md traceability written
 
-## v3.0 Scoping Decisions (2026-07-21)
+Progress: [░░░░░░░░░░] 0%
 
-Locked during `/gsd:new-milestone` questioning:
+## v3.0 Roadmap (2026-07-21)
 
-- **In scope — exactly eight components:** `AeroButton`, `AeroOutlinedButton`, `AeroSwitch`, `AeroSegmentedControl`, `AeroSlider`, `AeroRangeSlider`, `AeroProgressBar`, `AeroListItem`. Plus repairing/extending the shared glass layer itself.
-- **Out of scope:** a sweep of the remaining ~40 components; any behaviour/signature change beyond what the new visuals require.
-- **Custom drawing is allowed** where Material3 geometry blocks the Aero look — `AeroButton`/`AeroOutlinedButton`/`AeroSlider` are currently thin M3 wrappers whose two-tone fill, gloss, inner bevel and track groove cannot be expressed through `ButtonColors`/`SliderColors`. Public API + behaviour stay 1:1.
-- **Foundation first:** extend `GlassModifiers` + `AeroColorScheme` tokens, then migrate components onto that layer (mirrors the successful Phase 7 enabling-phase pattern from v2.0).
-- **Fidelity target:** "Aero spirit, modern execution" — clearly glassy and dimensional, recognisably Aero, without literally copying Win7 proportions.
+Six phases, continuing numbering from 15 (project shipped through Phase 14 / v2.0.4). Dependency-justified order per `.planning/research/SUMMARY.md`, validated against `.planning/REQUIREMENTS.md` during roadmap creation — no structural changes made to the research proposal; it held up against the actual requirement set.
 
-### Toolchain upgrade — MANDATORY (decided 2026-07-21)
+| Phase | Name | Requirements | Depends on |
+|-------|------|---------------|------------|
+| 15 | Toolchain Upgrade | TOOL-01..08 (8) | Phase 14 |
+| 16 | Foundation — Aero Primitives Layer | PRIM-01..18 (18) | Phase 15 |
+| 17 | Buttons | VBTN-01..06 (6) | Phase 16 |
+| 18 | Range | VRNG-01..09 (9) | Phase 16 |
+| 19 | Selectors + Lists | VSEL-01..04, VLST-01..04 (8) | Phase 17, Phase 18 |
+| 20 | Verification | SHW-15..16, VER-01..06 (8) | Phase 17, 18, 19 |
 
-- **Upgrade to the latest STABLE Compose Multiplatform is a required part of this milestone**, not optional and not deferred. User decision, explicit: first "миграцию на CMP 1.9.0 делаем обязательно", then widened to "мигрируем даже не на 1.9.0 а самую актуальную стабильную".
-- **Motivation:** `Modifier.dropShadow` / `Modifier.innerShadow` landed in CMP 1.9.0 and are unavailable at 1.7.3; they give real shadow + inset-rim primitives for the Aero work instead of hand-rolled double-stroke approximations. See `.planning/research/STACK.md` (which recommended NOT upgrading — that recommendation is **overridden** by this decision) and `.planning/research/UPGRADE.md`.
-- **Consumer compatibility is explicitly NOT a constraint.** User: "Не надо заботиться о совместимости программ, написанных под старый compose, им тоже необходима миграция и я ей обязательно позже займусь. В крайнем случае смогут дальше использовать 2.0.4." Known consumers pinned to the current toolchain — `C:\1A_WORK\aska` (kotlin 2.1.21 / compose 1.7.3, commented "pinned to lib ABI") and `C:\1A_WORK\satellite-control` (kotlin 2.1.21) — will be migrated separately by the user, or stay on `2.0.4`. Do NOT add scope, shims, or compatibility branches for them.
-- **Reference point:** `C:\1A_WORK\lastver_131\mordred` (the original style-donor app, NOT a consumer of this library) already builds on compose-plugin **1.10.3** with Kotlin 2.1.20 — evidence the newer CMP line works in this environment.
-- **TARGET VERSION LOCKED: Compose Multiplatform `1.11.1`** (released 2026-06-02, the latest STABLE line; `1.12.0-beta02` of 2026-07-14 is prerelease and excluded). User decision 2026-07-21, taken with full knowledge of the cost below.
-- **This overrides the UPGRADE research recommendation of `1.9.3`.** That doc argued 1.9.3 delivers the entire motivation (`dropShadow`/`innerShadow`, which landed at 1.9.0) at zero Kotlin/Gradle/JDK cost and with a stable Material3 1.4.0. The user chose the newest stable anyway, to avoid migrating again soon. The 1.9.3 analysis in `.planning/research/UPGRADE.md` remains useful as the fallback if 1.11.1 proves too costly mid-phase.
-- **Consequences of choosing 1.11.1 — these become MANDATORY work items in the upgrade phase:**
-  1. **Kotlin target LOCKED: `2.4.10`** (user decision 2026-07-21; currently 2.1.21). Verified on Maven Central: `kotlin-gradle-plugin:2.4.10` and `compose-compiler-gradle-plugin:2.4.10` both exist and 2.4.10 is the latest STABLE Kotlin (`2.4.20-Beta1` is prerelease). Note `org.jetbrains.kotlin.plugin.compose` is versioned with Kotlin, so the catalog's `compose-compiler` alias follows automatically.
-     - **⚠ VERSION-PAIRING RISK — resolve FIRST, before any other migration work.** CMP `1.11.1` was published **2026-06-01**; Kotlin `2.4.10` was published **2026-07-14** — six weeks later. JetBrains never shipped these as a matched pair; the line aligned with Kotlin 2.4.x is CMP `1.12.x` (`1.12.0-beta02`, published 2026-07-13), which is prerelease and therefore excluded by the "latest stable CMP" decision.
-     - Since Kotlin 2.0 the Compose compiler is decoupled from the CMP runtime, so this pairing will *probably* work — but the compiler enforces a **minimum compose-runtime version**, and 1.11.1's runtime may predate what compiler 2.4.10 demands.
-     - **Gate:** the very first task of the upgrade phase is a bare `./gradlew build` on Kotlin 2.4.10 + CMP 1.11.1. This is settled empirically in one build, not by reasoning.
-     - **Fallbacks, in order of preference if that gate fails:** (a) Kotlin 2.4.10 + CMP `1.12.0-beta02` — matched pair, but CMP goes prerelease; (b) CMP 1.11.1 + the newest Kotlin it actually accepts — keeps CMP stable, drops the 2.4.10 pin; (c) CMP `1.9.3` + Kotlin unchanged, per the original UPGRADE research recommendation. Escalate the choice to the user rather than picking silently — both (a) and (b) walk back an explicit user decision.
-  2. **`compose.material3` must be pinned explicitly to a stable Material3.** At 1.11.x the alias silently resolves to **Material3 1.5.0-alpha17** — shipping a published library against an alpha is not acceptable. Do not rely on the alias default.
-  3. **Test infrastructure migration.** CMP 1.11.0 deprecates `runComposeUiTest` v1 and changes the default `TestDispatcher` from `Unconfined` to `Standard`. `AeroPanelGroupRecomposeUiTest` is the SOLE regression guard for the v2.0.4 RCMP fix and must be ported. **Per `feedback_repro_must_exercise_path`: after porting, the guard must be re-proven to FAIL on unfixed code** (revert the non-`@Composable` DSL fix locally, confirm it observes duplicated headers, restore) — a ported-but-inert guard is exactly the v2.0.3 false-positive failure mode.
-  4. Re-verify the `dropShadow`/`innerShadow` signatures against the real 1.11.1 jar before building primitives on them — research confidence is MEDIUM-HIGH (doc mirror, not first-party reference).
-- **Non-issues, verified (do not re-investigate):**
-  - The ERROR-level `Popup(...)` deprecation at CMP 1.10.0 does not affect this repo — all 14 call sites already pass explicit `PopupProperties` (audited directly, not inferred).
-  - Win11 `undecorated`+`transparent` crash (compose #3757) was fixed in 2024 and is moot here — this project never sets `transparent = true`. A newer open AMD/Direct3D skiko crash (SKIKO-1072) is in the same moot category.
-- **Sequencing implication:** the upgrade is its own phase (15) landing BEFORE any visual work, so the visual phases are authored against the final API surface and a green test suite. Exit criteria enumerated in `.planning/research/UPGRADE.md` Part 5 — compile gate → M3 stable pin → full test suite with a RE-PROVEN recompose-drag guard → showcase smoke pass → `dropShadow`/`innerShadow` scratch proof → JitPack build check.
+**Coverage: 57/57 v3.0 requirements mapped, 0 orphaned.** Note: `.planning/REQUIREMENTS.md`'s own Traceability section previously stated "53 total" — an internal miscount in that doc; the actual enumerated REQ-IDs sum to 57 (TOOL 8 + PRIM 18 + VBTN 6 + VRNG 9 + VSEL 4 + VLST 4 + SHW 2 + VER 6). Corrected during roadmap creation; see updated Traceability table in REQUIREMENTS.md.
 
-### Design decisions resolved 2026-07-21 (closing FEATURES.md open questions)
-
-- **`AeroProgressBar` sheen:** optional, **default OFF** (a `showSheen`-style param). Many always-animating bars read as "loading skeleton" and burn CPU.
-- **`AeroProgressBar` indeterminate:** keep the existing **1500ms restart** timing; restyle appearance only. No Win7 ping-pong bounce — avoids changing animation behaviour.
-- **`AeroSegmentedControl` selected segment:** **recessed / pressed** metaphor (inverted gradient + inner shadow), reusing pressed-button code. Explicitly NOT raised — do not mix the two.
-- **`AeroListItem` bottom mirror reflection:** **deferred, out of scope.** The clipped rounded gradient + rim highlight is the requirement; a per-row extra draw layer in long lists is not worth it.
-
-### Architecture finding that changes milestone risk (2026-07-21)
-
-**Material3's `Slider` exposes `thumb: @Composable (SliderState) -> Unit` and `track: @Composable (SliderState) -> Unit` slots** (verified via Context7 against the official androidx reference; both default to `SliderDefaults.Thumb`/`SliderDefaults.Track`).
-
-This **overturns** FEATURES.md's assumption that `AeroSlider` needs full M3 removal plus a custom drag rewrite — it was the milestone's one HIGH-complexity outlier. Supplying custom-drawn slots keeps drag, keyboard, step-snap, `onValueChangeFinished` and semantics for free, at near-zero behavioural risk. This also defuses PITFALLS.md's top-severity concern (silently regressing M3 behaviour) and its `AeroSlider.steps`-becomes-a-dead-parameter warning.
-
-Related architecture positions to carry into planning:
-- `AeroButton`/`AeroOutlinedButton`: drop M3's `Button`/`Surface` container but KEEP Foundation's `Modifier.clickable(role = Role.Button, indication = null, ...)` — lower risk than a from-scratch `Canvas` + `pointerInput` hand-roll (the `AeroRangeSlider` zero-semantics precedent).
-- Primitive API: ONE `internal fun DrawScope.drawAeroSurfaceCore(style, cornerPx)`, exposed both as `Modifier.aeroSurface(style, shape)` for Box-owning components and as direct calls for Canvas-owning ones. One implementation, not three.
-- `AeroColorScheme` extension: algorithmically derived `AeroOrnamentTokens.derive(base)` using **RGB lighten/darken** (Classic's tokens are opaque, so alpha manipulation does not work), plus one trailing `ornamentOverride: AeroOrnamentTokens? = null` field for source-compatible escape-hatch overrides — instead of ~10 hand-tuned literals × 3 themes.
-- **Wider blast radius than eight components:** fixing `GlassModifiers.kt` re-renders the ~40 out-of-scope components that share those modifiers. A full-library smoke pass belongs EARLY (foundation-phase exit), not at final sign-off.
-
-**Still to verify empirically (do not treat as settled):** the exact pinned Material3 version really exposes those slots; whether custom-sized slot composables fit inside M3 `Slider`'s internal layout math (needs a spike); and the `dropShadow`/`innerShadow` signatures against the real 1.11.1 jar.
+Research flags carried into planning: Phases 15, 16, 18 likely need `/gsd:research-phase` (toolchain-pairing gate outcome unknown, dropShadow/innerShadow + M3 Slider-slot spikes, Range's multiple moving parts). Phases 17, 19, 20 use well-established patterns and can be planned directly.
 
 ## Baseline Findings — why these eight look Material (surveyed 2026-07-21)
 
@@ -103,79 +69,22 @@ Related architecture positions to carry into planning:
 - `glassSurface` — gloss gradient is hardcoded `endY = 100f` **pixels**, not proportional, so it never completes on short controls and is a thin band on tall ones.
 - `glassSurface` — `drawBehind` runs before `.clip(shape)` and the 1.dp stroke is bounds-centred, so its outer half is clipped away → effectively a 0.5.dp border.
 
-**Aero devices already available:** proportional top gloss (`glassPanel`, 55% height), vertical body gradient (`glassEffect`), 1.dp rim (`glassEffect`/`glassSurface`), theme tokens `glassSurface`/`glassBorder`/`glassHighlight`/`panelBackground`, plus `titleBarGradientStart/End` (used only by `AeroTitleBar`).
+## Toolchain Upgrade — MANDATORY (locked 2026-07-21)
 
-**Aero devices missing entirely:** drop shadow / outer glow, bottom reflection (two-tone split), inner bevel / inset rim light, specular curved gloss, noise texture, real backdrop blur (glass is alpha-simulated only), any horizontal gradient variant.
+- **Target version LOCKED: Compose Multiplatform `1.11.1` + Kotlin `2.4.10`.** Pairing was never shipped matched by JetBrains (six weeks apart); Phase 15's first task is a bare `./gradlew build` to settle this empirically.
+- **Fallbacks, in order, if the gate fails (escalate to user, never pick silently):** (a) Kotlin 2.4.10 + CMP `1.12.0-beta02` (matched, prerelease); (b) CMP 1.11.1 + newest Kotlin it accepts; (c) CMP `1.9.3` + Kotlin unchanged.
+- `compose.material3` alias resolves to alpha at 1.11.x — must pin explicit stable coordinate.
+- CMP 1.11.0 deprecates `runComposeUiTest` v1 and flips default `TestDispatcher` `Unconfined`→`Standard`; `AeroPanelGroupRecomposeUiTest` (sole v2.0.4 RCMP regression guard) must be ported AND re-proven to fail on unfixed code post-port.
+- Consumer compatibility (`aska`, `satellite-control`) is explicitly NOT a constraint — they migrate separately or stay on 2.0.4.
 
-Next: research (4 parallel agents) → REQUIREMENTS.md → ROADMAP.md. Phase numbering continues from **15**.
+## Architecture positions locked for planning
 
-## v2.0.4 — Real RCMP Root Cause (2026-06-26)
-
-**Symptom:** horizontal CONTROLLED `AeroPanelGroup` rendered each section's header strip ×N (3 sections → 9+ "tabs") when a divider was dragged in a real consumer app — i.e. v2.0.3 did not fix it.
-
-**Why v2.0.3 missed it:** the 14-01 fix (move `expandedState` sync to `SideEffect`, derive `expandedArr` from `isExpanded()`) addressed a *write-during-composition* theory that was not the cause. The 14-02 showcase repro read its ticking counter *inside* `section.content()` (deep), which only recomposes that content Box — it never re-ran the DSL lambda, so it could never reproduce the bug. Both human sign-offs were therefore false-positives.
-
-**Real root cause (confirmed by instrumented `enters/disposes` + `sections.size` logging):** `AeroPanelGroup`'s DSL lambda `content` was `@Composable`, so it had its own recompose scope. During an active drag (continuous re-measure as `.width` changes) any parent recompose re-ran that lambda *independently*, re-appending `section()` into the SAME persisted `AeroPanelGroupScope`. `scope.sections` grew 3 → 9 → 12 → … → 33; the `key(section.key)` render loop emitted ever more header strips and none were disposed. `AeroPanelGroupImpl` and `BoxWithConstraints` each composed exactly once — only the section list grew.
-
-**Trigger requires BOTH:** (a) an active drag *with movement* (sizePx write → re-measure), AND (b) a recompose of `AeroPanelGroup`/its content lambda. Recompose-without-drag and drag-without-recompose are both fine — which is why it only showed in a real app whose hosting screen recomposes mid-drag (VM observables, animations).
-
-**Fix (commit 8d2170f):** make the DSL lambda non-`@Composable` (`content: AeroPanelGroupScope.() -> Unit`), mirroring `LazyListScope`. The collection pass runs exactly once per `AeroPanelGroup` recompose and cannot accumulate. Each section's own `content` slot stays `@Composable`. Source-compatible for existing `section(){...}` usage.
-
-**Guard:** new `AeroPanelGroupRecomposeUiTest` (Compose-desktop `runComposeUiTest` + programmatic `performMouseInput` drag interleaved with mid-drag recompose) asserts exactly 1 header per section — it observed 11 before the fix, 1 after. This is the real regression guard 14-02 could not be. Added `compose.uiTest` + `compose.desktop.currentOs` test deps. 232 library tests pass; 12 `PanelGroupLogicTest` GREEN (REG-02); showcase compiles; RCMP-04 showcase demo rewritten to read the tick in the demo body so it genuinely reproduces.
-
-## Phase 14 Scope (v2.0.3)
-
-Single phase covering all 8 v1 requirements (100% coverage):
-- **RCMP-01..04** — horizontal controlled recompose-during-drag duplication fix (`N`→×`N` eliminated); `expandedArr` from `isExpanded()` each composition; `expandedState` sync moved to `SideEffect`; seed-block stops mutating read-in-same-composition state; minimal showcase repro in `LayoutSection.kt`.
-- **REG-01..02** — vertical + uncontrolled byte-identical; 12 `PanelGroupLogicTest` stay GREEN; Compose 1.7.3, zero new deps.
-- **REL-01..02** — bump `2.0.2`→`2.0.3` in `build.gradle.kts`; tag `v2.0.3`; JitPack resolves `com.github.Tolaseeq:aero-compose-ui:2.0.3`.
-
-Target file: `library/src/main/kotlin/com/mordred/aero/components/layout/AeroPanelGroup.kt` (seed block ~297-320, sync block ~331-335, read ~346). Showcase repro: `LayoutSection.kt`. Release: `build.gradle.kts`. JitPack infra already exists (jitpack.yml, maven-publish, tags through v2.0.2).
-
-## Shipped Milestones
-
-| Version | Name | Phases | Plans | Requirements | Shipped |
-|---------|------|--------|-------|--------------|---------|
-| v1.0 | MVP (Foundation + Atomic + Composite/Navigation) | 1–3 | 18 | 53 | 2026-04-28 |
-| v1.1 | Icon System | 4–6 | 11 | 17 | 2026-04-30 |
-| v2.0 | Stateful + Layout | 7–11 | 27 | 27 | 2026-06-18 |
-| v2.0.1 | Picker & SplitPane Fixes | 12 | 4 | 18 | 2026-06-22 |
-| v2.0.2 | AeroPanelGroup | 13–13.1 | 8 | 18 + PNL-HORIZ-01 | 2026-06-23 |
-| v2.0.4 | PanelGroup Recompose Fix (real root cause; v2.0.3 was a superseded wrong-cause release) | 14 | 3 | RCMP-01..04, REG-01..02, REL-01..02 | 2026-06-26 |
-
-See `.planning/MILESTONES.md` for full accomplishments.
-
-## v2.0.1 Shipped (2026-06-22)
-
-Phase 12 (4 plans, 18/18 requirements) — Fix A (seconds trigger) → Fix B (nested SplitPane) → AeroDateTimeRangePicker → showcase sign-off. Full record: `.planning/MILESTONES.md`; archive: `.planning/milestones/v2.0.1-ROADMAP.md`; lessons: `.planning/RETROSPECTIVE.md`.
-
-## v2.0.2 Shipped (2026-06-23)
-
-Phases 13 + 13.1 (8 plans, 18 v1 + PNL-HORIZ-01) — `AeroPanelGroup` + `AeroPanelSection`: N-section collapse-to-header + drag-resize (VS Code Side Bar), fraction-based size state, hybrid controlled/uncontrolled API, Win7 Aero header, 12 pure-logic JVM tests; inserted Phase 13.1 added horizontal orientation via shared internal core (zero breaking change). Three-theme sign-off APPROVED both orientations. Full record: `.planning/MILESTONES.md`; archive: `.planning/milestones/v2.0.2-ROADMAP.md`; lessons: `.planning/RETROSPECTIVE.md`. Key technical decisions promoted to PROJECT.md "Key Decisions" (v2.0.2 rows).
-
-## v2.0 Locked Decisions (carried forward)
-
-- `undecorated=true` BEZ `transparent=true` — Win11 EXCEPTION_ACCESS_VIOLATION rule; extends to ALL Popup/Dialog (W11-01)
-- Glass effect in single `drawBehind` block — performance baseline
-- `:library` uses `compose.desktop.common`, `:showcase` uses `currentOs`
-- AeroIcons name verbatim from Phosphor — locked v1.1
-- `Icon()` from material3 used directly; tint always explicit — locked v1.1
-- Generated `.kt` files committed to `src/main/`, NOT regenerated at build time
-- `detectDragGestures` banned for Canvas-based drag — use `awaitPointerEventScope` + manual loop (PITFALL-03)
-- `AeroScrollArea` banned inside DataTable / TreeView — use raw `LazyListState + AeroScrollBar` (PITFALL-01)
-- DataTable selection API is `Set<RowKey>` + `key: (T) -> Any`, NOT `Set<Int>` indices (PITFALL-04)
-- ColorPicker internal state is HSV float tuple only; RGB and HEX are derived views (PITFALL-15)
-- `AeroCalendarPositionProvider` replaces `AeroDropdownPopup` for all date picker popups (PITFALL-02)
-- `kotlinx-datetime:0.6.2` is declared `api(...)` at `library/build.gradle.kts:27` — confirmed
-
-<!-- v2.0.1 key technical decisions are now realized — see PROJECT.md "Key Decisions" (v2.0.1 rows) and the [Phase 12] entries under Accumulated Context below. -->
-
-## v2.0.2 Locked Decisions (carried forward — relevant to Phase 14)
-
-- **Pattern 3 (PNL-PITFALL-01):** `animateFloatAsState` reads `renderHeight` as a target-only value; drag writes `sizePx` directly; `isDragging` flips the spec to `snap()` during a gesture and back to `tween(200ms, FastOutSlowInEasing)` after. The locked answer to "animate vs. drag the same value." Phase 14 must preserve this.
-- **Header reservation:** `availableForExpanded = totalPx − sectionCount*headerPx − activeDividers*thickness`, one header per section. Phase 14 size-math must keep this.
-- **Public-wrapper + internal-core `AeroPanelGroupImpl(orientation)`:** all layout/state/drag logic lives in the internal core; only 3 orientation branch points differ. Phase 14 edits this core.
-- **`onLayoutChange` fires on drag-end + toggle only** — not per frame. Regression-guarded by REG-01.
+- `AeroSlider` KEEPS Material3's `Slider` and supplies custom `thumb =`/`track =` slots (verified: both slots are long-stable, not new-in-1.4/1.5) — this downgrades what was flagged as the milestone's one HIGH-complexity outlier to MEDIUM. Spike required in Phase 16 to confirm custom-sized slots don't clip/misalign inside M3's internal layout math; if it fails, fallback is full M3 removal + reuse of `AeroRangeSlider`'s drag pattern (re-promotes Phase 18 to HIGH complexity).
+- `AeroButton`/`AeroOutlinedButton` drop M3's `Button`/`Surface` container but KEEP `Modifier.clickable(role = Role.Button, indication = null, ...)` — lower risk than the `AeroRangeSlider` zero-semantics precedent.
+- One `internal fun DrawScope.drawAeroSurfaceCore(style, cornerPx)`, exposed as `Modifier.aeroSurface(style, shape)` (Box-owning) and direct calls (Canvas-owning, e.g. `AeroRangeSlider`). One implementation, not three.
+- `AeroOrnamentTokens.derive(base)` uses RGB lighten/darken (Classic's tokens are opaque; alpha manipulation doesn't work), plus a trailing `ornamentOverride: AeroOrnamentTokens? = null` escape hatch — source-compatible.
+- **Wider blast radius than eight components:** fixing `GlassModifiers.kt` re-renders the ~40 out-of-scope components sharing those modifiers. PRIM-17's full-library smoke pass is a Phase 16 EXIT item, not deferred to Phase 20.
+- **Design decisions locked:** `AeroProgressBar` sheen optional, default OFF; indeterminate keeps 1500ms restart timing, no ping-pong; `AeroSegmentedControl` selected segment is recessed/pressed (reuses pressed-button code), never raised; `AeroListItem` bottom mirror reflection deferred out of scope.
 
 ## Performance Metrics
 
@@ -184,137 +93,42 @@ Phases 13 + 13.1 (8 plans, 18 v1 + PNL-HORIZ-01) — `AeroPanelGroup` + `AeroPan
 **v2.0:** 55 plans, ~49 days, 145 commits, 152 files changed, +27,406 / −2,285 lines.
 **v2.0.1:** 4 plans, single-day push (2026-06-22, ~2h20m), 25 commits, 9 code files changed, +520 / −14 lines.
 **v2.0.2:** 8 plans (Phases 13 + 13.1), ~1-day push (2026-06-22→23), 49 commits, 4 code files, +1,516 lines.
+**v2.0.4:** 3 plans, single-day push incl. corrective release (2026-06-25→26), real RCMP root-cause fix.
 
 ## Accumulated Context
 
 ### Roadmap Evolution
 
+- **v3.0 ROADMAP.md created (2026-07-21):** Six phases (15–20), dependency-justified per research SUMMARY.md and re-validated against REQUIREMENTS.md during roadmap creation — the six-phase proposal held up unchanged (standard granularity, 5-8 typical, fits at 6). Toolchain (15) isolated first per hard constraint; Foundation (16) before all components; Buttons (17) before Selectors (19, `AeroSegmentedControl` reuses pressed-button fill); Range (18) before Selectors (19, `AeroSwitch` needs Range's proven thumb/groove primitives); Verification (20) last, consolidated. 57/57 requirements mapped (corrected from REQUIREMENTS.md's stale "53 total" traceability note — actual per-category REQ-ID counts sum to 57).
 - Phase 14 added for v2.0.3 (patch milestone, single phase per user scope): horizontal-controlled recompose-during-drag duplication fix + JitPack release. All 8 requirements (RCMP-01..04, REG-01..02, REL-01..02) map to Phase 14 — 100% coverage. No `/gsd:research-phase` — direct edit to existing code, mirrors Phase 13/v2.0.1 patch precedent. (ROADMAP created 2026-06-25)
-- Phase 13.1 inserted after Phase 13: AeroPanelGroup horizontal orientation variant (PNL-HORIZ-01) — side-by-side columns, vertical dividers, drag resizes width; orthogonal to the vertical/stacked AeroPanelGroup shipped in Phase 13. Reuses Phase 13 patterns (PanelDistribution pure logic, aeroDragSplitter Orientation.Horizontal, Pattern 3 + snap()-during-drag, pairwise clamp, headerPx+content target). (INSERTED 2026-06-23)
+- Phase 13.1 inserted after Phase 13: AeroPanelGroup horizontal orientation variant (PNL-HORIZ-01) — side-by-side columns, vertical dividers, drag resizes width; orthogonal to the vertical/stacked AeroPanelGroup shipped in Phase 13. (INSERTED 2026-06-23)
 
 ### Decisions
 
-Full decision log in PROJECT.md "Key Decisions" table. Active decisions affecting all future milestones:
+Full decision log in PROJECT.md "Key Decisions" table. Active decisions affecting current work — see "Toolchain Upgrade" and "Architecture positions locked" sections above for v3.0-specific ones. Carried forward from prior milestones:
 
-- `undecorated=true` BEZ `transparent=true` — Win11 EXCEPTION_ACCESS_VIOLATION rule (locked since Phase 1); extends to ALL Popup/Dialog in v2.0 (W11-01)
+- `undecorated=true` BEZ `transparent=true` — Win11 EXCEPTION_ACCESS_VIOLATION rule (locked since Phase 1); extends to ALL Popup/Dialog
 - Glass effect in single `drawBehind` block — performance baseline
-- `:library` uses `compose.desktop.common`, `:showcase` uses `currentOs`
-- AeroIcons name verbatim from Phosphor — locked v1.1
-- `Icon()` from material3 used directly; tint always explicit — locked v1.1
-- Generated `.kt` files committed to `src/main/`, NOT regenerated at build time
-- AeroBreadcrumb `separator: String` intentionally NOT migrated to `ImageVector`
-- **v2.0 new:** `detectDragGestures` is banned for Canvas-based drag on Compose Desktop — use `awaitPointerEventScope` + manual loop (PITFALL-03, touchSlop=18dp)
-- **v2.0 new:** `AeroScrollArea` is banned inside DataTable / TreeView — use raw `LazyListState + AeroScrollBar` (PITFALL-01)
-- **v2.0 new:** DataTable selection API is `Set<RowKey>` + `key: (T) -> Any`, NOT `Set<Int>` indices (PITFALL-04)
-- **v2.0 new:** ColorPicker internal state is HSV float tuple only; RGB and HEX are derived views (PITFALL-15)
-- **v2.0 new:** `AeroCalendarPositionProvider` (new, Phase 7) replaces `AeroDropdownPopup` for all date picker popups (PITFALL-02)
-- **v2.0 new:** `kotlinx-datetime:0.6.2` added in Phase 8 as the only new dependency
-- [Phase 07]: Hue convention LOCKED to degrees [0f, 360f] (matches Color.hsv requirePrecondition)
-- [Phase 07]: AeroCalendarPositionProvider first-frame guard uses popupContentSize == IntSize.Zero, NOT >= windowSize
-- [Phase 07]: Width overflow on wide popup right-aligns and never flips Top/Bottom
-- [Phase 07]: Touchslop spike skipped — awaitPointerEventScope manual loop is the locked v2.0 pattern regardless
-- [Phase 07]: Phase7ScratchSection demo body lives in :library (AeroPhase7Scratch.kt, public, deleted Phase 11) NOT :showcase — Kotlin internal is module-scoped, so the showcase imports a thin public wrapper to keep all 6 Phase 7 primitives internal
-- [Phase 07]: Modifier.aeroDragSplitter is the locked v2.0 in-content drag pattern: awaitPointerEventScope + manual loop, cursor change keyed to Orientation, change.consume() only on actual delta (release unconsumed)
-- [Phase 07]: AeroCalendarGrid header Row pinned to Modifier.width(252.dp); outer Column wrapContentWidth — header now matches 7x36dp day-grid width exactly
-- [Phase 07]: Architecture B reconfirmed: AeroCard glass wrappers in scratch demo only — AeroCalendarGrid + AeroStepIndicator remain surface-less; glass is a consumer responsibility
-- [Phase 08-pickers]: AeroRangeSlider tooltip is an overlaid glassEffect Box positioned by thumb x (AeroSlider pill approach), not in-Canvas text; behind showTooltip, only for the active thumb
-- [Phase 08-pickers]: lastMovedThumb inits to RangeThumb.End so the Start thumb draws on top when both thumbs compress (PITFALL-07); thumbToDrawFirst helper makes z-order unit-testable
-- [Phase 08-pickers]: PickerPopupContainer is the single shared W11-02 popup surface (two-layer background + glassPanel, no elevation) for all 4 date/time pickers; cornerRadius locked 8.dp
-- [Phase 08-pickers]: AeroDatePicker min/max bounds are inclusive; dateIsDisabled extracted as pure internal predicate for unit testability
-- [Phase 08]: AeroColorPicker HSV(A) floats are the single source of truth; RGB/HEX derived per emit, never stored (PITFALL-15) — drift gate test locks it
-- [Phase 08]: safeHsvColor is the only Color.hsv entry point in the picker; coerces hue to [0,360] to avoid the requirePrecondition throw (NEW-PICK-01)
-- [Phase 08]: AeroTimePicker is 24-hour only — no use12Hour/AM-PM parameter (descoped per user decision), enforced by a zero-match grep gate
-- [Phase 08]: TimeFields (internal spinner row) + assembleTime (pure clamp/assemble helper) are the reuse seam consumed by AeroDateTimePicker (plan 04); TimePicker emits LocalTime on every spinner change with no Apply gate
-- [Phase 08]: AeroDateTimePicker (PICK-04) composes AeroCalendarGrid + TimeFields directly with a pending-state Apply/Cancel commit gate; the only onValueChange() call site is the Apply onClick (combineDateTime) — day clicks and time edits never close or emit (NEW-PICK-02)
-- [Phase 08-pickers]: AeroCalendarGrid range params are additive (rangeStart/rangeEnd: LocalDate? = null after selected); intermediate cells render primary@0.15f, endpoints primary (PITFALL-09 extension, AeroDark-readable)
-- [Phase 08-pickers]: AeroDateRangePicker (PICK-02) uses sealed AeroDateRangeState + pure nextRangeState((state,clicked) -> (next, commit?)); the non-null commit is the SOLE guard around the single onRangeSelect() call, so it fires exactly once per completed range and never on a start-only click (PITFALL-06, unit-tested without Compose); stacking threshold locked at maxWidth < 560.dp (NEW-PICK-03); leftMonth drives both months, rightMonth = leftMonth + 1
-- [Phase 09-01]: AeroScrollBar(LazyListState) additive overload (Option A) — keeps existing callers intact, DataTable/TreeView bypass AeroScrollArea PITFALL-01
-- [Phase 09-01]: Selection locked as Set<Any> + caller key fn at type level (PITFALL-04) — zero Set<Int> in datatable package
-- [Phase 09-01]: resolveColumnWidths uses pxPerDp: Float not Compose Density for pure JVM testability
-- [Phase 09-03]: AeroTreeView uses flatten-and-replace pattern: fixed rowHeight items, no AnimatedVisibility, children are separate LazyColumn items
-- [Phase 09-03]: SnapshotStateMap<Any, NodeState> above LazyColumn + toggleNode pure guard locks DATA-06/PITFALL-05: onExpand fires exactly once per node on first expand
-- [Phase 09-data]: KDoc strings must not mention forbidden grep-gate tokens (AeroScrollArea, stickyHeader, detectDragGestures) — use paraphrases to avoid false positives in package-level verification checks
-- [Phase 10-02]: AeroAccordion hybrid ownership: onExpandedChange null = uncontrolled (mutableStateOf Set<Int>); non-null = controlled pure renderer — matches AeroDataTable hybrid-sort pattern
-- [Phase 10-layout]: AeroSidebarMode enum + targetWidthForMode consolidated in AeroSidebarState.kt; SideEffect (not LaunchedEffect) syncs animateDpAsState to state.widthState each frame; AeroSidebarScope constructed fresh each recompose with current mode — PITFALL-11 contract locked
-- [Phase 10-layout]: BoxWithConstraints used once for measurement; dividerPx state updated only on drag — no SubcomposeLayout per frame
-- [Phase 10-layout]: AeroSplitPane keyboard nudge deferred to v2.x per CONTEXT.md Claude's Discretion
-- [Phase 11]: kotlinx-datetime added as direct :showcase dependency (Rule 3 auto-fix — DataSection.kt pre-existing blocker; transitive from :library was insufficient for direct source use)
-- [Phase 11]: Phase7ScratchSection call removed and three new section calls added in-place; scratch wrapper and aggregator deleted without breaking any other module dependency
-- [Phase 11]: AeroHsvColorSquare sized to 220dp so 24dp hue slider fits in 280dp bounded panel (F12 fix)
-- [Phase 11]: Popup AeroColorPicker wrapped in Box to prevent full-window stretch; 280.dp panel width is the W11-02 glass surface (F10 fix)
-- [Phase 11]: Accordion divider inset 8dp horizontal matching glassPanel cornerRadius to avoid overflowing rounded bg (F11 fix)
-- [Phase 11]: F4: clickable moved to outer cell Box in AeroTableHeader; resize splitter at CenterEnd on its own inner Box — sort and resize targets do not interfere
-- [Phase 11]: F5: AeroTreeNode row-level clickable calls onExpandClick() when isExpandable — safe because it routes through toggleNode() PITFALL-05 once-only guard in AeroTreeView
-- [Phase 11-showcase-v2-0-visual-sign-off]: formatAeroDate in AeroDatePicker.kt as package-internal helper used by all three date pickers for DD.MM.YYYY default (F6)
-- [Phase 11-showcase-v2-0-visual-sign-off]: F14 required no state-machine changes: nextRangeState already committed same-month ranges; both calendar grids route onDateSelected=onDayClick; fix was verification + tests only
-- [Phase 11]: positionChange() chosen for aeroDragSplitter delta — single-frame intra-event API, immune to hit-area Box relocation between frames (F3/F15 root cause)
-- [Phase 11]: rememberUpdatedState(value) in AeroRangeSlider drag loop so applyThumbMove always reads the latest committed range (F9 root cause — stale captured value in pointerInput lambda)
-- [Phase 11-showcase-v2-0-visual-sign-off]: F-WIZARD root cause: AeroStepperWizard is intentionally surface-less; active step uses weight(1f,fill=false) inside a plain Column — needs caller-provided bounded parent height; showcase fix is Box(height(200.dp)); no library edit needed
-- [Phase 11-showcase-v2-0-visual-sign-off]: F-ACCORDION-HOVER: .clip(RoundedCornerShape(8.dp)) added before .clickable in AeroAccordion.kt so hover/press highlight clips to rounded glass surface
-- [Phase 12-01]: formatAeroDateTime internal helper in AeroDateTimePicker.kt; formatter param changed to ((LocalDateTime)->String)?=null; displayText dispatches via formatter?.invoke(ldt) ?: formatAeroDateTime(ldt, showSeconds) — resolves FIXDT-01/02, provides shared helper for AeroDateTimeRangePicker (PITFALL-H prevention)
-- [Phase 12-01]: kotlinx-datetime declared api(libs.kotlinx.datetime) confirmed; PROJECT.md stale implementation/Revisit note corrected to factual api record (SHW-14)
-- [Phase 12]: Fraction-based SplitPane divider state: var dividerFraction by remember with val dividerPx derived each recompose; no remember(totalPx) key eliminates nested-drag snap-back (PITFALL-A fix, FIXSP-01)
-- [Phase 12]: clampDividerPx guard: val safeMax = maxPx.coerceAtLeast(minFirstPx) before coerceIn prevents IllegalArgumentException when inner pane squeezed below combined minima (PITFALL-B fix, FIXSP-02)
-- [Phase 12]: Apply gate (PITFALL-E prevention): nextRangeState commit pair discarded in onDayClick; onRangeSelect fires ONLY at Apply onClick guarded by rangeState is Selected (DTR-02/03)
-- [Phase 12]: orderDateTimeRange applied at sole emit site: LocalDateTime Comparable a<=b swap for same-day reversed times (DTR-04); no Instant conversion needed in kotlinx-datetime 0.6.2
-- [Phase 12]: Both TimeFields rows rendered unconditionally; enabled=false until rangeState is Selected — stable popup height for AeroCalendarPositionProvider flip logic (DTR-08, PITFALL-I)
-- [Phase 12]: Three-theme visual sign-off (SHW-11/12/13) approved on AeroBlue/AeroDark/Classic; SplitPane drag regression (stale captured state) found during sign-off and fixed in 7f38c0c
-- [Phase 13-01 spike findings for 13-02 PanelDistribution.kt / 13-04 drag path]: THREE layout-math and animation bugs found in spike and fixed (commits 0167e7c, 09d6952). Port-safe rules for PanelDistribution and the real AeroPanelGroup drag path:
-  1. HEADER RESERVATION: `availableForExpanded = totalPx - (sectionCount * headerHeightPx) - (activeDividerCount * dividerThicknessPx)`. Reserve one header per section, not one per collapsed section. Every section always renders its header regardless of expanded state.
-  2. DRAG DELTA SCALING: Raw pixel delta from pointer events is in rendered pixels; `sizePx` values are abstract proportion units. Before applying: `val scale = expandedSizeSum / availableForExpanded` (constant during a single drag gesture since combined=above+below is invariant). Apply `scaledDelta = delta * scale`. Min-clamp must also use sizePx units: `minSizeUnits = minRenderedPx * scale`. The PITFALL-B safeMax guard pattern (coerceAtLeast) is preserved, now in sizePx unit space.
-  3. `availableForExpanded` must be guarded with `.coerceAtLeast(0f)` to prevent negative heights when all sections are collapsed.
-  4. DRAG ANIMATION DISABLE (required in plan 13-04 AeroPanelGroup drag path): `animateFloatAsState` must switch to `snap()` while a drag is active, and revert to `tween(200ms, FastOutSlowInEasing)` otherwise. Pattern: `var isDragging by remember { mutableStateOf(false) }` flag; set true on `awaitFirstDown`, reset false in `try/finally` around the inner drag loop so all exit paths (release or `change == null`) clear it. With `snap()`, `animatedHeight == renderHeight` instantly during drag — the divider tracks the cursor 1:1. On release `renderHeight` already equals `animatedHeight`, so there is no catch-up tween or positional jump. Collapse/expand toggles (no drag) still animate over 200ms. The `tween(durationMillis = 200` branch must be retained (else branch) so the required-token gate still passes.
-- [Phase 13-aeropanelgroup]: PNL-PITFALL-01 RESOLVED: animateFloatAsState reads renderHeight as target; drag writes sizePx directly (Pattern 3). No snap-back, no oscillation confirmed by human gate.
-- [Phase 13-aeropanelgroup]: HEADER RESERVATION: availableForExpanded = totalPx - (sectionCount * headerHeightPx) - (activeDividerCount * dividerThicknessPx). All sections always render a header strip.
-- [Phase 13-aeropanelgroup]: DRAG DELTA SCALING: scale = expandedSizeSum / availableForExpanded; apply scaledDelta = delta * scale; min-clamp also in sizePx units.
-- [Phase 13-aeropanelgroup]: DRAG ANIMATION DISABLE (required in 13-04): snap() animationSpec while isDragging=true, tween(200ms, FastOutSlowInEasing) otherwise. isDragging set on awaitFirstDown, cleared in try/finally.
-- [Phase 13]: computeAvailablePx reserves headerPx for ALL sections (sectionCount * headerPx, spike finding 1) plus all-collapsed early-return for PNL-15 invariant
-- [Phase 13]: distributePx and shareTransferOnCollapse use last-index remainder to absorb float drift (PNL-PITFALL-02/05)
-- [Phase 13-aeropanelgroup]: sizePx seeds 1f or defaultSize.toPx(); distributePx handles proportional math so no explicit normalization needed
-- [Phase 13-aeropanelgroup]: animateFloatAsState target when collapsed = headerPx (not 0f): collapsed sections still render 36dp header, content area shrinks to zero
-- [Phase 13-aeropanelgroup]: AeroPanelGroupScope fresh each recompose; seed guard on sizePx.size != sections.size re-inits all three parallel state lists
-- [Phase 13-aeropanelgroup]: AeroPanelGroup drag resize: aeroDragSplitter + clampPanelDividerPx + isDragging->snap() + rememberUpdatedState(totalPx); hybrid expansion: val controlled = onExpandedChange != null; both branches intentional (PNL-08)
-- [Phase 13-aeropanelgroup]: onLayoutChange fires at drag-end and collapse/expand toggle only — NOT per drag frame (PNL-09)
-- [Phase 13-aeropanelgroup]: Section target height is headerPx + renderHeights[i]: distributePx returns content-only heights; header must be re-added to the animated total Box target; content sub-box subtracts HEADER_HEIGHT so content area equals renderHeights[i]
-- [Phase 13-aeropanelgroup]: Drag clamp is pairwise: minBelowPx uses only the directly-adjacent below section's own minSize * scale; sigma-sum over-reserved the budget and pinned the divider; each divider clamped independently
-- [Phase 13-aeropanelgroup]: Three-theme visual sign-off PASS (PNL-14, PNL-17): AeroBlue / AeroDark / Classic all pass seven-item checklist — Aero gloss header, CaretRight 0->90 animation, leadingIcon + headerActions, grip dots, collapsible=false, resizable=false, re-expand restores size
-- [Phase 13.1-01]: orientation: Orientation (androidx.compose.foundation.gestures) reused directly — no new enum, no AeroSplitOrientation
-- [Phase 13.1-01]: AeroPanelGroupImpl extraction: public wrapper collects DSL scope and delegates to internal core, both in same file
-- [Phase 13.1-01]: PanelGroupDivider both grip-dot branches (Vertical Row, Horizontal Column) written in Plan 01 so Plan 02 needs zero divider edits
-- [Phase 13.1]: Three orientation branch points only: BoxWithConstraints axis (maxWidth/maxHeight), container (Row/Column), section modifiers (fillMaxHeight+width vs fillMaxWidth+height); all state/animation/drag logic shared
-- [Phase 13.1]: caretRotations: 0f/180f for horizontal (>/<); 90f/0f for vertical — driven by isHorizontal inside shared caretRotations map, no duplication
-- [Phase 13.1-03]: Horizontal-section vertical titles: BoxWithConstraints + requiredWidth(maxHeight) + rotate(-90f) is the approved pattern; graphicsLayer-only and placeRelativeWithLayer approaches were abandoned (GAP-1 sign-off defect)
-- [Phase 13.1-03]: GAP-2 column distribution: removed weight(1f) from outer section Row; explicit distributePx width for non-last columns; last column absorbs float rounding with weight(1f) at content level
-- [Phase 13.1-03]: Three-theme sign-off APPROVED — AeroBlue / AeroDark / Classic — on both vertical (regression) and horizontal (PNL-HORIZ-01) demos; PNL-17 Aero fidelity confirmed across both orientations
-- [Phase 14]: RCMP-02+03: SideEffect-deferred expandedState sync + isExpanded()-derived expandedArr are both required together; neither alone is sufficient
-- [Phase 14]: isExpanded() is the authoritative expansion source for structural decisions; expandedState mirror is for animation targets only (SideEffect closes the one-frame lag before next draw)
-- [Phase 14]: [Phase 14-02]: RCMP-04 permanent regression demo — horizontal CONTROLLED AeroPanelGroup with one section reading a LaunchedEffect-ticked counter (~32ms); human-verified exactly 3 sections under recompose-while-drag (RCMP-01)
-- [Phase 14]: [Phase 14-02]: repro state var named rcmpExpandedKeys to avoid shadowing; titles Live/Static A/Static B per plan action block
-- [Phase 14]: v2.0.3: version bump precedes tag; v2.0.3 tagged on commit 225cf85 carrying the bump + fix + repro, pushed to Tolaseeq/aero-compose-ui (sha d2093cc)
+- `detectDragGestures` banned for Canvas-based drag on Compose Desktop — use `awaitPointerEventScope` + manual loop (PITFALL-03)
+- `AeroScrollArea` banned inside DataTable / TreeView — raw `LazyListState + AeroScrollBar` (PITFALL-01)
+- Pattern 3 (`AeroPanelGroup` precedent) is the locked answer for "animation vs. drag write the same value" — reused explicitly by VRNG-09 in Phase 18
+- Builder/DSL lambdas that side-effect into a collection must NOT be `@Composable` (v2.0.4 RCMP root cause)
+- A regression guard must provably FAIL on unfixed code before it counts as a guard (v2.0.3 false-positive lesson) — directly encoded as TOOL-04 and VER-06 in v3.0
 
 ### Pending Todos
 
-- Gap-close: AeroDropdown popup offset regression (v1.0 carry-over) — explicitly OUT of v2.0.3 scope; candidate for future milestone (DROP-FIX-01)
+- Gap-close: AeroDropdown popup offset regression (v1.0 carry-over) — explicitly OUT of v3.0 scope; candidate for future milestone (DROP-FIX-01)
 - Deferred to future milestones: inline pickers, DataTable cell-edit/reorder/filter, TreeView DnD, ColorPicker eyedropper, StepperWizard branching, Sidebar drag-resize, AeroDateTimeRangePicker hover-preview (DTR-HOVER-01), AeroPanelGroup drag-to-reorder (PNL-REORDER-01), nested AeroPanelGroup first-class API (PNL-NEST-01), keyboard resize (PNL-KBD-01)
-- [CLOSED Phase 13.1]: AeroPanelGroup horizontal orientation (PNL-HORIZ-01) — DELIVERED and signed off
+- v3.0 Future Requirements (deferred, see REQUIREMENTS.md): VLST-F01 (list-item mirror reflection), VRNG-F01 (Win7 ping-pong indeterminate), VIS-F01 (visual sweep of remaining ~40 components)
 
 ### Blockers/Concerns
 
-- None blocking Phase 14. The fix is fully specified by the user (compute `expandedArr` from `isExpanded()` each composition; move `expandedState` sync into `SideEffect`; ensure the seed-block doesn't mutate read-in-same-composition state). Direct edit to existing code; no research phase needed (mirrors Phase 13 / v2.0.1 patch precedent).
-- Watch-out for Phase 14: the SideEffect-based `expandedState` sync must not reintroduce the per-frame `onLayoutChange` regression (REG-01) — `onLayoutChange` stays drag-end + toggle only.
-
-### Quick Tasks Completed
-
-| # | Description | Date | Commit | Directory |
-|---|-------------|------|--------|-----------|
-| 260624-k4d | AeroComboBox не очищается после выбора пункта (clearOnSelect + не переоткрывать попап при полном совпадении) | 2026-06-24 | d371e72 | [260624-k4d-aerocombobox-ontextchange-label-onoption](./quick/260624-k4d-aerocombobox-ontextchange-label-onoption/) |
-| Phase 14 P01 | 3 | 2 tasks | 1 files |
-| Phase 14 P02 | 6min | 3 tasks | 1 files |
-| Phase 14 P03 | 10min | 2 tasks | 6 files |
+- **Phase 15 gate is genuinely unverified until run:** the Kotlin 2.4.10 + CMP 1.11.1 pairing gate (`./gradlew build`) has no prior evidence either way. If it fails, escalate to the user with the three named fallbacks — do not pick one silently.
+- **No real external consumer app tracks v3.0** (`aska`/`satellite-control` stay pinned to the old toolchain) — the project's historically strongest regression-catcher is unavailable this milestone. VER-05's minimal scratch-consumer step is the mitigation, not a full replacement.
 
 ## Session Continuity
 
 Last session: 2026-07-21
-Stopped at: Milestone v3.0 Glass Refinement scoped; PROJECT.md + STATE.md updated; research stage next
+Stopped at: v3.0 ROADMAP.md created (Phases 15-20, 57/57 requirements mapped); REQUIREMENTS.md traceability updated
 Resume file: None
-Next action: research → `.planning/REQUIREMENTS.md` → `/gsd:plan-phase 15`
+Next action: `/gsd:plan-phase 15` (Toolchain Upgrade — consider `/gsd:research-phase 15` first per research flag)
