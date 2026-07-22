@@ -1,7 +1,7 @@
 ---
 phase: 16
 slug: foundation-aero-primitives-layer
-status: draft
+status: verified
 shadcn_initialized: false
 preset: none
 created: 2026-07-22
@@ -148,25 +148,37 @@ these verbatim, matching the established showcase-section naming convention):
 
 ## UI Considerations
 
-> Populated by the ui-phase UI-consideration probe. This phase's only user-facing surface is the
-> permanent Primitives showcase gallery (D-04) — a fixed, compile-time set of primitive demos,
-> not a data-bound view. Categories below are filtered to what a design-system-primitives gallery
-> can meaningfully raise (per the probe's relevance filter: element kinds present here are
-> `list-collection` — the gallery grid — and `interactive-control` — individual hover/press/focus
-> demo boxes and the M3 Slider spike; `static-content` — captions).
+> Populated by the ui-phase UI-consideration probe (engine-computed, resolved post-verification —
+> not authored inline). This phase's only user-facing surface is the permanent Primitives showcase
+> gallery (D-04) — a fixed, compile-time set of primitive demos, not a data-bound view. The probe
+> classified three surfaces (user-confirmed): **E1** Primitives gallery grid = `list-collection`,
+> **E2** individual demo boxes + the Material3 `AeroSlider` slot-sizing spike = `interactive-control`,
+> **E3** per-primitive/per-state captions = `static-content`. No `unclassified` candidates.
 
-Applicable state considerations resolved: 2 covered, 1 backstop, 0 unresolved; 5 dismissed (not applicable, reason given — no `unclassified` candidates).
+**Focal point (Dimension 2, visual hierarchy):** within each demo card the primitive's own rendered
+surface (the gloss/bevel/glow/groove ornamentation) is the primary visual anchor — it draws the eye
+first; the `typography.label` caption beneath is deliberately secondary. Across the gallery no single
+card dominates: the six primitive groups read as a uniform-weight grid of equals so the *contrast
+between* ornamentation treatments is what stands out, not any one demo.
+
+**Probe coverage:** 17 applicable considerations → **2 covered, 3 backstop, 12 dismissed, 0 unresolved**
+(no `unclassified`). Data-state categories (empty / loading / error / partial / zero-one-many) are
+dismissed by construction: this surface has no data source — the demo set is fixed at compile time.
+Empty/error *copy* is separately recorded not-applicable in `## Copywriting Contract` (this section
+covers shape-rooted STATE coverage and references those rows rather than restating them).
 
 | Category | Element(s) | Status | Resolution / Reason |
 |----------|------------|--------|---------------------|
-| empty | Primitives gallery (list-collection) | dismissed | Fixed compile-time set of 6 primitive groups (surface/glow-ring/thumb/groove/gloss/shadow) — never dynamically empty; no data source to be absent |
-| loading | Primitives gallery (list-collection) | dismissed | Everything renders synchronously at composition time — no async data fetch exists in this phase |
-| error | Primitives gallery (list-collection) | dismissed | No data load/submit surface exists in this phase's scope |
-| populated | Primitives gallery (list-collection) | ✅ covered | The gallery's happy-path view shows all 6 primitive groups × three themes (AeroBlue/AeroDark/Classic) × applicable states (default/hover/press/focus/disabled) legibly in one scrollable section, matching `FoundationSection`'s existing Row-of-`DemoBox` layout pattern extended to 6 groups instead of 3 |
-| partial | Primitives gallery (list-collection) | dismissed | No partial-data concept applies — each primitive group either fully renders or doesn't compile |
-| overflow | Primitives gallery layout (list-collection / static-content) | 🧪 backstop | 6 primitive groups × up to 5 states × 3 themes is a larger grid than `FoundationSection`'s original 3 boxes; gallery section must be vertically scrollable (inherits the existing showcase's outer `Column`/scroll-container convention) so the grid never clips — verify at PRIM-16's three-theme gallery review, not assumed |
-| zero-one-many | Primitives gallery (list-collection) | dismissed | Fixed count of 6 primitive groups, never 0/1/many dynamically |
-| long-text | Demo captions, state labels (static-content) | ✅ covered | All captions are short fixed English identifiers (primitive/API names, one-word state labels) matching the existing `"glassEffect"`/`"glassPanel"`/`"glassSurface"` precedent length — no wrap/truncation handling required, none introduced |
+| populated | E1 gallery grid; E2 demo controls | ✅ covered | Happy-path view shows all 6 primitive groups × three themes (AeroBlue/AeroDark/Classic) × applicable interaction states (default/hover/press/focus/disabled) legibly in one scrollable section — extends `FoundationSection`'s existing Row-of-`DemoBox` pattern from 3 groups to 6 |
+| overflow | E1 gallery grid | 🧪 backstop | 6 groups × up to 5 states × 3 themes is a larger grid than `FoundationSection`'s original 3 boxes. **Statement:** the gallery section renders in a vertically scrollable container (inherits the existing showcase's outer `Column`/scroll convention) so the grid never clips. **Verification (backstop):** confirmed at PRIM-16's three-theme gallery review — not assumed |
+| overflow | E2 demo controls | 🧪 backstop | **Statement:** the M3 `AeroSlider` spike and interactive demo boxes stay within their demo-card bounds across states; ornamentation insets or draws outside layout bounds (Pitfall 7) rather than expanding the card. **Verification (backstop):** visually confirmed at the PRIM-16 three-theme review |
+| overflow | E3 captions | 🧪 backstop | **Statement:** caption row width fits the demo-card column at all three theme densities without pushing layout. **Verification (backstop):** spot-checked in the same three-theme gallery review |
+| long-text | E2 demo controls; E3 captions | dismissed | All captions are short fixed English identifiers (primitive/API names, one-word state labels) matching the existing `"glassEffect"`/`"glassPanel"`/`"glassSurface"` precedent length — no wrap/truncation handling required, none introduced |
+| empty | E1 gallery grid; E2 demo controls | dismissed | Fixed compile-time set of 6 primitive groups — never dynamically empty; no data source to be absent |
+| loading | E1 gallery grid; E2 demo controls | dismissed | Everything renders synchronously at composition time — no async data fetch exists in this phase |
+| error | E1 gallery grid; E2 demo controls | dismissed | No data load/submit surface exists in this phase's scope (see `## Copywriting Contract` error-state row) |
+| partial | E1 gallery grid; E2 demo controls | dismissed | No partial-data concept applies — each primitive group either fully renders or doesn't compile |
+| zero-one-many | E1 gallery grid; E2 demo controls | dismissed | Fixed count of 6 primitive groups, never 0/1/many dynamically |
 
 ---
 
@@ -184,11 +196,11 @@ registry blocks are declared. Safety-gate vetting logic is skipped entirely.
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: FLAG → resolved (focal-point statement added to `## UI Considerations`)
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: FLAG (non-blocking) — inherited pre-Phase-16 5-size scale carries one size over the 4-size ceiling; this phase adds zero new roles, so deferred to a future consolidation pass (Phase 20 polish candidate)
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS
 
-**Approval:** pending
+**Approval:** VERIFIED (6/6 dimensions; 2 non-blocking FLAGs — D2 addressed inline, D4 deferred). Ready for planning.
