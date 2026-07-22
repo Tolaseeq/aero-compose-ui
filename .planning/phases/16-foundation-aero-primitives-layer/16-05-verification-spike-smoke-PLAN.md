@@ -18,6 +18,7 @@ must_haves:
     - "populated: the gallery and the full showcase render legibly across all three themes at the sign-off (UI-SPEC E1/E2 covered)"
     - { statement: "The full showcase renders in its vertically scrollable container across all three themes with no clipped/overflowing section from the GlassModifiers re-render (blast-radius review)", verification: backstop }
     - { statement: "The M3 AeroSlider spike slot and every gallery demo stay within their layout-card bounds across states on all three themes (ornamentation insets or draws outside bounds, never expands the card — Pitfall 7)", verification: backstop }
+    - { statement: "caption row width fits the demo-card column at all three theme densities (AeroBlue/AeroDark/Classic) without pushing layout", verification: backstop }
     - { statement: "At least one smoke pass is run at a non-100% DPI scale to catch scale-dependent gloss/border artifacts (carries SHW-16 discipline forward)", verification: backstop }
   artifacts:
     - showcase/src/main/kotlin/com/mordred/showcase/scratch/ScratchSliderSlotSpike.kt
@@ -108,6 +109,7 @@ This plan (16-05) produces:
     2. PRIM-16 gallery sign-off: open the Primitives section and, using the ThemeSwitcher, confirm on AeroBlue, AeroDark, AND Classic that each primitive (surface, glow ring, thumb, groove, gloss, shadow) reads as genuinely glass per D-01 — visible gloss ~30-35% of height, a soft (not hard) two-tone seam, a subtle bevel/rim, and depth — and never as Feather-style outline or Material3-flat. Confirm Classic (opaque tokens) does NOT render a flat colored block.
     3. PRIM-17 full-library smoke pass: scroll through all ~50 existing showcase sections on each of the three themes and confirm the GlassModifiers.kt fixes caused no broken or ugly rendering (slightly-more-glass is expected and accepted, not a regression).
     4. Run at least one pass at a non-100% DPI scale (e.g. 125%/150%) to catch scale-dependent gloss/border artifacts.
+    4b. Caption fit (UI-SPEC E3 backstop): on each of the three themes confirm every per-primitive/per-state caption row width fits within its demo-card column without pushing or wrapping the layout.
     5. D-03 decision: on this review, decide whether glassEffect(elevation)'s revived dropShadow improves cards/panels across the three themes (keep) or reads as noise (request removal); record the verdict.
     6. Review the ScratchSliderSlotSpike KDoc verdict (Task 1) and confirm it matches what you observe running the spike.
   </how-to-verify>

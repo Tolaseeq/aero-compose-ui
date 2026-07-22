@@ -30,6 +30,7 @@ must_haves:
     - "populated: the gallery surface DemoBox shows the aeroSurface primitive legibly under each of the three themes via the existing ThemeSwitcher (UI-SPEC E1/E2 covered)"
     - { statement: "The Primitives gallery renders inside the showcase's existing vertically scrollable Column so the growing demo grid never clips", verification: backstop }
     - { statement: "aeroSurface ornamentation renders inset within the demo-card bounds (or outside layout bounds via unclipped draw), never expanding the card, across all three themes", verification: backstop }
+    - { statement: "caption row width fits the demo-card column at all three theme densities (AeroBlue/AeroDark/Classic) without pushing layout", verification: backstop }
   artifacts:
     - library/src/main/kotlin/com/mordred/aero/theme/ColorMath.kt
     - library/src/main/kotlin/com/mordred/aero/theme/AeroOrnamentTokens.kt
