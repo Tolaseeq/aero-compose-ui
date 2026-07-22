@@ -205,3 +205,8 @@ None - no external service configuration required.
 ---
 *Phase: 16-foundation-aero-primitives-layer*
 *Completed: 2026-07-22*
+
+## Self-Check: PASSED
+
+All 12 files created/modified in this plan confirmed present on disk; all 3 commits
+(`9586b7f` RED, `693bc6c` GREEN, `cec5c47` docs SUMMARY) confirmed present in `git log`.
