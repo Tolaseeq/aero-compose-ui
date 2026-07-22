@@ -30,6 +30,24 @@ import kotlin.test.assertEquals
  *
  * Mirrors the failing consumer config: controlled + Orientation.Horizontal + per-section minSize
  * + defaultSize + onLayoutChange.
+ *
+ * ## CMP 1.11 toolchain port (TOOL-03/TOOL-04, Phase 15 Plan 03)
+ *
+ * **Port choice:** kept the v1 `runComposeUiTest` (deprecated-but-compiling at CMP 1.11.1;
+ * emits a compiler warning pointing at `androidx.compose.ui.test.v2.runComposeUiTest`) rather
+ * than migrating to the v2 API — permitted by CONTEXT.md discretion since it introduces zero
+ * hard compile errors and the re-proof below confirms the guard still exercises the bug.
+ *
+ * **Dispatcher-sufficiency finding:** the existing `waitForIdle()` calls after every
+ * `runOnUiThread { tickState.value++ }` proved sufficient on this toolchain — no explicit
+ * `advanceUntilIdle()`/`runCurrent()` pumping was added. This was NOT assumed; it was proven
+ * live via the mandatory TOOL-04 re-proof sequence (temporarily adding `@Composable` to
+ * `AeroPanelGroup`'s `content` DSL parameter, i.e. reverting the v2.0.4 root-cause fix):
+ *   - **Reverted fix (`@Composable` on `content`):** `dragWithIndependentRecomposeDoesNotDuplicateHeaders`
+ *     FAILED — `AssertionFailedError: after drag + recompose: LeftPane header count (got 11) ==> expected: <1> but was: <11>`
+ *     (header duplication genuinely reproduced under the new toolchain).
+ *   - **Restored fix:** both tests PASSED (2/2, 0 failures) — exactly 1 header per section.
+ * A guard that passed in both states would be inert and would have failed TOOL-04; it did not.
  */
 @OptIn(ExperimentalTestApi::class)
 class AeroPanelGroupRecomposeUiTest {
