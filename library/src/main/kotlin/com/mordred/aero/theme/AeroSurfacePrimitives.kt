@@ -117,31 +117,49 @@ public fun Modifier.aeroSurface(style: AeroSurfaceStyle, shape: Shape): Modifier
 /** Width of [aeroGlowRing]'s inner, crisp stroke. */
 private val GLOW_RING_INNER_STROKE = 1.5.dp
 
-/** Width of [aeroGlowRing]'s outer, wider, fainter stroke. */
-private val GLOW_RING_OUTER_STROKE = 4.dp
+/** Width of each concentric ring composing [aeroGlowRing]'s outer soft bloom. */
+private val GLOW_RING_BLOOM_STROKE = 2.dp
 
-/** How far [aeroGlowRing]'s outer stroke sits outside the layout bounds (Pitfall 7 — drawn
- * outside bounds via unclipped draw, never by growing the component's declared size). */
-private val GLOW_RING_OUTSET = 3.dp
+/** Outward step between each successive bloom ring (Pitfall 7 — drawn outside bounds via
+ * unclipped draw, never by growing the component's declared size). */
+private val GLOW_RING_BLOOM_STEP = 2.5.dp
+
+/** Number of concentric bloom rings approximating the glow's soft outward falloff. */
+private const val GLOW_RING_BLOOM_LAYERS = 4
+
+/** Alpha multiplier applied to [glowColor]'s own alpha for the innermost (closest-to-surface)
+ * bloom ring. */
+private const val GLOW_RING_BLOOM_BASE_ALPHA = 0.9f
+
+/** Alpha multiplier applied between each successive bloom ring, so the ring nearest the surface
+ * reads brightest and the outermost fades toward nothing. */
+private const val GLOW_RING_BLOOM_FALLOFF = 0.55f
 
 /**
- * Hover/focus glow ring (PRIM-06) — a double-stroke approximation (inner crisp stroke + outer
- * wider, fainter stroke fading to `glowColor.copy(alpha = 0f)`, never `Color.Transparent`,
- * PRIM-14) standing in for a real Gaussian blur (16-RESEARCH.md Don't-Hand-Roll: zero extra
- * composited layer, zero Skia-type coupling risk).
+ * Hover/focus glow ring (PRIM-06) — a double-stroke approximation (inner crisp stroke + an outer
+ * soft bloom) standing in for a real Gaussian blur (16-RESEARCH.md Don't-Hand-Roll: zero extra
+ * composited layer, zero Skia-type coupling risk). The outer bloom is itself a poor-man's blur:
+ * [GLOW_RING_BLOOM_LAYERS] concentric solid-color rings, each stepping [GLOW_RING_BLOOM_STEP]
+ * further outside the layout bounds than the last and fading by [GLOW_RING_BLOOM_FALLOFF] per
+ * ring — never `Color.Transparent` (PRIM-14), and never a single radial gradient centered on the
+ * box, whose bright stop lands in the card interior rather than at the actual perimeter stroke
+ * location for anything but a perfect square.
  *
  * Gated on [active] — when `false` the draw block contributes nothing (no draw calls at all),
  * so an inactive glow ring costs a single boolean branch, never a `rememberInfiniteTransition`
  * or other always-on animation (T-16-03, PRIM-06 prohibition).
  *
- * The outer stroke is drawn OUTSIDE this modifier's own layout bounds via an unclipped
- * `drawWithCache { onDrawBehind { ... } }` block (Compose's draw phase isn't clipped to layout
- * bounds by default) — never by padding/growing the declared size (Pitfall 7). Callers that
- * need the ring visually inset instead may simply pass a smaller [cornerRadius]/size.
+ * Both the inner stroke and the bloom rings are drawn OUTSIDE this modifier's own layout bounds
+ * via an unclipped `drawWithCache { onDrawBehind { ... } }` block (Compose's draw phase isn't
+ * clipped to layout bounds by default) — never by padding/growing the declared size (Pitfall 7).
+ * Callers that need the ring visually inset instead may simply pass a smaller
+ * [cornerRadius]/size.
  *
  * @param glowColor Already-resolved color (e.g. `AeroOrnamentTokens.hoverGlow`) — this function
  * does not read [LocalAeroColors] itself, matching [aeroSurface]'s "caller resolves the theme,
- * primitive just draws" convention.
+ * primitive just draws" convention. [AeroOrnamentTokens.hoverGlow] is deliberately lightened well
+ * past the surface fill/bevel tokens so this reads as a distinct luminous halo, not a shade of
+ * the surface it wraps.
  * @param cornerRadius MUST match the same corner value used for the component's own clip shape
  * (16-RESEARCH.md Pitfall 5) — never an independently derived radius.
  */
@@ -149,8 +167,8 @@ public fun Modifier.aeroGlowRing(active: Boolean, glowColor: Color, cornerRadius
     this.drawWithCache {
         val cornerPx = cornerRadius.toPx()
         val innerStrokePx = GLOW_RING_INNER_STROKE.toPx()
-        val outerStrokePx = GLOW_RING_OUTER_STROKE.toPx()
-        val outsetPx = GLOW_RING_OUTSET.toPx()
+        val bloomStrokePx = GLOW_RING_BLOOM_STROKE.toPx()
+        val bloomStepPx = GLOW_RING_BLOOM_STEP.toPx()
         onDrawBehind {
             if (!active) return@onDrawBehind
 
@@ -161,22 +179,25 @@ public fun Modifier.aeroGlowRing(active: Boolean, glowColor: Color, cornerRadius
                 style = Stroke(width = innerStrokePx),
             )
 
-            // Outer wider, fainter stroke — offset outward beyond the layout bounds and faded
-            // via a radial brush toward glowColor.copy(alpha = 0f) (PRIM-14).
-            drawRoundRect(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        glowColor.copy(alpha = glowColor.alpha * 0.6f),
-                        glowColor.copy(alpha = 0f),
-                    ),
-                    center = Offset(size.width / 2f, size.height / 2f),
-                    radius = (maxOf(size.width, size.height) / 2f) + outsetPx + outerStrokePx,
-                ),
-                topLeft = Offset(-outsetPx, -outsetPx),
-                size = Size(size.width + outsetPx * 2f, size.height + outsetPx * 2f),
-                cornerRadius = CornerRadius(cornerPx + outsetPx, cornerPx + outsetPx),
-                style = Stroke(width = outerStrokePx),
-            )
+            // Outer soft bloom — concentric rings stepping outward beyond the layout bounds,
+            // each fainter than the last. Solid per-ring color (not a gradient) guarantees
+            // non-trivial brightness immediately outside the surface's own edge, regardless of
+            // the box's aspect ratio.
+            var ringAlpha = glowColor.alpha * GLOW_RING_BLOOM_BASE_ALPHA
+            for (layer in 1..GLOW_RING_BLOOM_LAYERS) {
+                // The first ring's inner edge sits AT the surface's own boundary (offset by only
+                // its own half-width) so there is no dead gap between the surface edge and where
+                // the bloom starts contributing visible brightness.
+                val ringOffsetPx = (bloomStrokePx / 2f) + bloomStepPx * (layer - 1)
+                drawRoundRect(
+                    color = glowColor.copy(alpha = ringAlpha),
+                    topLeft = Offset(-ringOffsetPx, -ringOffsetPx),
+                    size = Size(size.width + ringOffsetPx * 2f, size.height + ringOffsetPx * 2f),
+                    cornerRadius = CornerRadius(cornerPx + ringOffsetPx, cornerPx + ringOffsetPx),
+                    style = Stroke(width = bloomStrokePx),
+                )
+                ringAlpha *= GLOW_RING_BLOOM_FALLOFF
+            }
         }
     }
 

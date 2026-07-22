@@ -3,6 +3,7 @@ package com.mordred.aero.theme
 import kotlin.test.Test
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 /**
  * PRIM-02 verification. [AeroOrnamentTokens.derive] must be non-null and theme-sensitive for
@@ -56,4 +57,34 @@ class AeroOrnamentTokensTest {
             "glossHighlight must differ from Classic's raw glassHighlight token"
         )
     }
+
+    /**
+     * Regression guard (16-05 UAT gap-fix): `hoverGlow` must read as a distinctly brighter halo
+     * than the surface fill it wraps, on all three presets — not merely "not equal" but
+     * perceptibly lighter, since `aeroGlowRing`'s inner stroke is drawn directly against
+     * `fillSplitTop`. A prior derivation (`primary.lighten(0.30f)` vs. `fillSplitTop`'s
+     * `primary.lighten(0.18f)`) was "not equal" yet visually indistinguishable from the surface.
+     */
+    @Test
+    fun hoverGlowIsMeaningfullyBrighterThanFillSplitTopOnAllThreePresets() {
+        val presets = listOf(
+            AeroColorScheme.AeroBlue,
+            AeroColorScheme.AeroDark,
+            AeroColorScheme.Classic,
+        )
+        presets.forEach { scheme ->
+            val tokens = AeroOrnamentTokens.derive(scheme)
+            val glowLuminance = luminance(tokens.hoverGlow)
+            val fillLuminance = luminance(tokens.fillSplitTop)
+            assertTrue(
+                glowLuminance - fillLuminance > 0.08f,
+                "hoverGlow (luminance=$glowLuminance) must be meaningfully brighter than " +
+                    "fillSplitTop (luminance=$fillLuminance) for $scheme so the glow ring reads " +
+                    "as a distinct halo rather than blending into the surface it wraps"
+            )
+        }
+    }
+
+    private fun luminance(color: androidx.compose.ui.graphics.Color): Float =
+        (color.red + color.green + color.blue) / 3f
 }

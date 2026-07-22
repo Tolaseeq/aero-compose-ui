@@ -159,6 +159,49 @@ class AeroSurfacePrimitivesTest {
     }
 
     @Test
+    fun aeroGlowRingOuterBloomIsNotASingleGradientCenteredOnTheBox() {
+        // Regression guard (16-05 UAT gap-fix): a single Brush.radialGradient centered at the
+        // box's own center fades to near-zero alpha by the time it reaches the actual perimeter
+        // stroke location for anything but a perfect square — measured as byte-identical to
+        // background immediately outside an aeroGlowRing card. The outer bloom must instead be
+        // solid-color concentric rings so brightness lands AT the perimeter.
+        val body = functionBody("aeroGlowRing")
+        assertFalse(
+            Regex("""Brush\.radialGradient""").containsMatchIn(body),
+            "aeroGlowRing's outer bloom must not rely on a single radial gradient centered on " +
+                "the box (16-05 UAT gap-fix regression guard)"
+        )
+    }
+
+    @Test
+    fun aeroGlowRingOuterBloomUsesMultipleConcentricRingsNotASingleStroke() {
+        // A single stroke cannot produce a soft outward falloff — the bloom needs several rings.
+        val source = aeroSurfacePrimitivesSource.readText()
+        val layerCount = Regex("""GLOW_RING_BLOOM_LAYERS\s*=\s*(\d+)""")
+            .find(source)?.groupValues?.get(1)?.toInt()
+            ?: error("Could not find GLOW_RING_BLOOM_LAYERS constant in AeroSurfacePrimitives.kt")
+        assertTrue(
+            layerCount >= 3,
+            "aeroGlowRing's outer bloom must use several concentric rings (poor-man's blur) to " +
+                "produce a soft outward falloff, not a single stroke"
+        )
+    }
+
+    @Test
+    fun aeroGlowRingFirstBloomRingTouchesTheSurfaceEdgeWithNoDeadGap() {
+        // Regression guard (16-05 UAT gap-fix): the first bloom ring's offset must be anchored
+        // to the surface's own edge (its own half-width), not pushed several dp away by a fixed
+        // outset before any bloom appears — the exact "zero brightness immediately outside the
+        // card" defect measured during the three-theme sign-off.
+        val body = functionBody("aeroGlowRing")
+        assertTrue(
+            body.contains("bloomStrokePx / 2f"),
+            "The first bloom ring must start at the surface's own edge (offset by only its own " +
+                "half-stroke-width), not a fixed dead-zone outset (16-05 UAT gap-fix regression guard)"
+        )
+    }
+
+    @Test
     fun noColorTransparentInNewPrimitiveFunctionBodies() {
         // Scoped to function bodies (not KDoc prose, which legitimately names the anti-pattern
         // it warns against) — a whole-file scan would false-positive on those doc comments.
