@@ -111,7 +111,7 @@ Details: `.planning/milestones/v2.0.4-ROADMAP.md` · Summary: `.planning/MILESTO
   4. The full library test suite (232+ tests, including all 12 `PanelGroupLogicTest`) is green, and the showcase compiles, launches, and smoke-runs on all three themes with no observable change from the pre-migration baseline
   5. A `dropShadow`/`innerShadow` scratch composable compiles against the real 1.11.1 artifact (not just documentation), and the JitPack build passes on the new toolchain
 
-**Plans**: 4/6 plans executed
+**Plans**: 5/6 plans executed
 
 Plans:
 
@@ -119,7 +119,7 @@ Plans:
 - [x] 15-02-PLAN.md — Build gate + stable Material3 1.9.0 pin (HARD STOP + escalation) [Wave 2]
 - [x] 15-03-PLAN.md — RCMP test port + re-proof (fail-on-unfixed) [Wave 3]
 - [x] 15-04-PLAN.md — Full 232-test suite + showcase smoke & baseline diff [Wave 4]
-- [ ] 15-05-PLAN.md — dropShadow/innerShadow scratch composable (Phase 16 handoff) [Wave 3]
+- [x] 15-05-PLAN.md — dropShadow/innerShadow scratch composable (Phase 16 handoff) [Wave 3]
 - [ ] 15-06-PLAN.md — JitPack release proof (throwaway pre-release tag) [Wave 5]
 
 ### Phase 16: Foundation — Aero Primitives Layer
@@ -234,7 +234,7 @@ Plans:
 | 13. AeroPanelGroup | v2.0.2 | 5/5 | Complete | 2026-06-23 |
 | 13.1. AeroPanelGroup horizontal orientation variant | v2.0.2 | 3/3 | Complete | 2026-06-23 |
 | 14. PanelGroup Recompose Fix | v2.0.4 | 3/3 | Complete | 2026-06-26 |
-| 15. Toolchain Upgrade | v3.0 | 4/6 | In Progress|  |
+| 15. Toolchain Upgrade | v3.0 | 5/6 | In Progress|  |
 | 16. Foundation — Aero Primitives Layer | v3.0 | 0/TBD | Not started | - |
 | 17. Buttons | v3.0 | 0/TBD | Not started | - |
 | 18. Range | v3.0 | 0/TBD | Not started | - |
