@@ -129,11 +129,11 @@ private const val GLOW_RING_BLOOM_LAYERS = 4
 
 /** Alpha multiplier applied to [glowColor]'s own alpha for the inner crisp stroke, keeping it a
  * subtle rim rather than a hard, fully-opaque line (D-01 moderate-Aero target). */
-private const val GLOW_RING_INNER_STROKE_ALPHA = 0.65f
+private const val GLOW_RING_INNER_STROKE_ALPHA = 0.45f
 
 /** Alpha multiplier applied to [glowColor]'s own alpha for the innermost (closest-to-surface)
  * bloom ring — kept a soft haze rather than a near-opaque wash (D-01 moderate-Aero target). */
-private const val GLOW_RING_BLOOM_BASE_ALPHA = 0.5f
+private const val GLOW_RING_BLOOM_BASE_ALPHA = 0.33f
 
 /** Alpha multiplier applied between each successive bloom ring, so the ring nearest the surface
  * reads brightest and the outermost fades toward nothing. */

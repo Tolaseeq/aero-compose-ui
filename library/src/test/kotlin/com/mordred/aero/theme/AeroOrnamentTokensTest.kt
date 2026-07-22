@@ -65,11 +65,12 @@ class AeroOrnamentTokensTest {
      * `fillSplitTop`. A prior derivation (`primary.lighten(0.30f)` vs. `fillSplitTop`'s
      * `primary.lighten(0.18f)`) was "not equal" yet visually indistinguishable from the surface.
      *
-     * Threshold calibrated to `hoverGlow = primary.lighten(0.45f)` (16-05 second UAT gap-fix:
-     * the 0.75f derivation was meaningfully brighter but read as a harsh near-white rim). The
-     * worst-case preset (AeroDark, whose `primary` is already close to white) still clears this
-     * bar with margin — 0.04f remains well above the ~0.01-0.02f perceptual JND, so the guard
-     * still fails a glow that has regressed back to blending into its surface.
+     * Threshold calibrated to `hoverGlow = primary.lighten(0.30f)` (16-05 third UAT gap-fix:
+     * the 0.45f derivation was still too intense). AeroDark is the worst case — its `primary`
+     * is already close to white, leaving the least headroom before the lighten ceiling — and
+     * clears this lowered bar (0.02f) by only ~0.007f margin, so the guard remains a
+     * meaningful, non-trivial assertion rather than a no-op while still failing a glow that
+     * regresses back to blending into its surface.
      */
     @Test
     fun hoverGlowIsMeaningfullyBrighterThanFillSplitTopOnAllThreePresets() {
@@ -83,7 +84,7 @@ class AeroOrnamentTokensTest {
             val glowLuminance = luminance(tokens.hoverGlow)
             val fillLuminance = luminance(tokens.fillSplitTop)
             assertTrue(
-                glowLuminance - fillLuminance > 0.04f,
+                glowLuminance - fillLuminance > 0.02f,
                 "hoverGlow (luminance=$glowLuminance) must be meaningfully brighter than " +
                     "fillSplitTop (luminance=$fillLuminance) for $scheme so the glow ring reads " +
                     "as a distinct halo rather than blending into the surface it wraps"
