@@ -101,9 +101,11 @@ class AeroSurfacePrimitivesTest {
     }
 
     @Test
-    fun noRememberInfiniteTransitionInAeroSurfacePrimitives() {
+    fun noRememberInfiniteTransitionInAeroGlowRingBody() {
+        // Scoped to the function body (not KDoc prose, which legitimately names the
+        // anti-pattern it warns against) — a whole-file scan would false-positive on that doc.
         assertFalse(
-            aeroSurfacePrimitivesSource.readText().contains("rememberInfiniteTransition"),
+            functionBody("aeroGlowRing").contains("rememberInfiniteTransition"),
             "aeroGlowRing must not be driven by a rememberInfiniteTransition (local-DoS avoidance, PRIM-06 prohibition)"
         )
     }

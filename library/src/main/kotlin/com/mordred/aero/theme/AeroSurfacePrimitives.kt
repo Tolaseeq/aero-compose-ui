@@ -1,5 +1,6 @@
 package com.mordred.aero.theme
 
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
@@ -112,15 +113,94 @@ public fun Modifier.aeroSurface(style: AeroSurfaceStyle, shape: Shape): Modifier
     }
     .let { m -> style.innerShadow?.let { m.innerShadow(shape = shape, shadow = it) } ?: m }
 
-// --- 16-02 Task 1 RED-phase stubs (intentionally incomplete/wrong; replaced in the GREEN commit) ---
+/** Width of [aeroGlowRing]'s inner, crisp stroke. */
+private val GLOW_RING_INNER_STROKE = 1.5.dp
 
-/** RED stub — TODO(16-02 GREEN): gate on [active], double-stroke fade, drawWithCache geometry. */
-public fun Modifier.aeroGlowRing(active: Boolean, glowColor: Color, cornerRadius: Dp = 8.dp): Modifier = this
+/** Width of [aeroGlowRing]'s outer, wider, fainter stroke. */
+private val GLOW_RING_OUTER_STROKE = 4.dp
 
-/** RED stub — TODO(16-02 GREEN): must reuse [drawAeroSurfaceCore], not a fresh gradient. */
+/** How far [aeroGlowRing]'s outer stroke sits outside the layout bounds (Pitfall 7 — drawn
+ * outside bounds via unclipped draw, never by growing the component's declared size). */
+private val GLOW_RING_OUTSET = 3.dp
+
+/**
+ * Hover/focus glow ring (PRIM-06) — a double-stroke approximation (inner crisp stroke + outer
+ * wider, fainter stroke fading to `glowColor.copy(alpha = 0f)`, never `Color.Transparent`,
+ * PRIM-14) standing in for a real Gaussian blur (16-RESEARCH.md Don't-Hand-Roll: zero extra
+ * composited layer, zero Skia-type coupling risk).
+ *
+ * Gated on [active] — when `false` the draw block contributes nothing (no draw calls at all),
+ * so an inactive glow ring costs a single boolean branch, never a `rememberInfiniteTransition`
+ * or other always-on animation (T-16-03, PRIM-06 prohibition).
+ *
+ * The outer stroke is drawn OUTSIDE this modifier's own layout bounds via an unclipped
+ * `drawWithCache { onDrawBehind { ... } }` block (Compose's draw phase isn't clipped to layout
+ * bounds by default) — never by padding/growing the declared size (Pitfall 7). Callers that
+ * need the ring visually inset instead may simply pass a smaller [cornerRadius]/size.
+ *
+ * @param glowColor Already-resolved color (e.g. `AeroOrnamentTokens.hoverGlow`) — this function
+ * does not read [LocalAeroColors] itself, matching [aeroSurface]'s "caller resolves the theme,
+ * primitive just draws" convention.
+ * @param cornerRadius MUST match the same corner value used for the component's own clip shape
+ * (16-RESEARCH.md Pitfall 5) — never an independently derived radius.
+ */
+public fun Modifier.aeroGlowRing(active: Boolean, glowColor: Color, cornerRadius: Dp = 8.dp): Modifier =
+    this.drawWithCache {
+        val cornerPx = cornerRadius.toPx()
+        val innerStrokePx = GLOW_RING_INNER_STROKE.toPx()
+        val outerStrokePx = GLOW_RING_OUTER_STROKE.toPx()
+        val outsetPx = GLOW_RING_OUTSET.toPx()
+        onDrawBehind {
+            if (!active) return@onDrawBehind
+
+            // Inner crisp stroke — hugs the shape's own bounds.
+            drawRoundRect(
+                color = glowColor,
+                cornerRadius = CornerRadius(cornerPx, cornerPx),
+                style = Stroke(width = innerStrokePx),
+            )
+
+            // Outer wider, fainter stroke — offset outward beyond the layout bounds and faded
+            // via a radial brush toward glowColor.copy(alpha = 0f) (PRIM-14).
+            drawRoundRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        glowColor.copy(alpha = glowColor.alpha * 0.6f),
+                        glowColor.copy(alpha = 0f),
+                    ),
+                    center = Offset(size.width / 2f, size.height / 2f),
+                    radius = (maxOf(size.width, size.height) / 2f) + outsetPx + outerStrokePx,
+                ),
+                topLeft = Offset(-outsetPx, -outsetPx),
+                size = Size(size.width + outsetPx * 2f, size.height + outsetPx * 2f),
+                cornerRadius = CornerRadius(cornerPx + outsetPx, cornerPx + outsetPx),
+                style = Stroke(width = outerStrokePx),
+            )
+        }
+    }
+
+/**
+ * Raised-thumb primitive (PRIM-07) — the circle-shape special case of [drawAeroSurfaceCore].
+ * Reuses the exact same fill/gloss/bevel geometry by passing [radiusPx] as the corner radius
+ * of a square draw area: when the receiver's `size` is `2*radiusPx` square, every corner
+ * radius collapsing to half the side length degenerates the rounded-rect fill/gloss/bevel/rim
+ * into a circle — no second gradient implementation (PRIM-07 prohibition).
+ */
 internal fun DrawScope.drawAeroThumb(style: AeroSurfaceStyle, radiusPx: Float) {
-    drawCircle(color = style.fillTop, radius = radiusPx)
+    drawAeroSurfaceCore(style, cornerPx = radiusPx)
 }
 
-/** RED stub — TODO(16-02 GREEN): Box-owning circular exposure of [drawAeroThumb]. */
+/**
+ * Box-owning exposure of [drawAeroThumb] — clips to a circle sized by the smaller of the box's
+ * width/height, matching [aeroSurface]'s `.clip(shape)`-outermost / `drawWithCache` conventions
+ * (PRIM-12/13). Native [style]-declared `dropShadow`/`innerShadow` follow the same drop-before-
+ * fill, inner-after ordering as [aeroSurface].
+ */
 public fun Modifier.aeroThumbSurface(style: AeroSurfaceStyle): Modifier = this
+    .let { m -> style.dropShadow?.let { m.dropShadow(shape = CircleShape, shadow = it) } ?: m }
+    .clip(CircleShape)
+    .drawWithCache {
+        val radiusPx = minOf(size.width, size.height) / 2f
+        onDrawBehind { drawAeroThumb(style, radiusPx) }
+    }
+    .let { m -> style.innerShadow?.let { m.innerShadow(shape = CircleShape, shadow = it) } ?: m }
