@@ -122,6 +122,15 @@ None - no external service configuration required.
 - Plan 03 (test-infra port: `AeroPanelGroupRecomposeUiTest` for the `Unconfined`->`Standard` `TestDispatcher` default change, TOOL-03/TOOL-04) can proceed directly — the deprecation warning observed this session (`runComposeUiTest` v1 deprecated in favor of v2) is exactly the expected signal RESEARCH.md predicted, not a new blocker.
 - No blockers or concerns carried forward from this plan.
 
+## Self-Check: PASSED
+
+- FOUND: gradle/libs.versions.toml
+- FOUND: library/build.gradle.kts
+- FOUND: showcase/build.gradle.kts
+- FOUND: .planning/phases/15-toolchain-upgrade/15-02-SUMMARY.md
+- FOUND: eaf3af9 (Task 1 commit)
+- FOUND: feac206 (SUMMARY commit)
+
 ---
 *Phase: 15-toolchain-upgrade*
 *Completed: 2026-07-22*
