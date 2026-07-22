@@ -31,10 +31,12 @@ public data class AeroOrnamentTokens(
             bevelLight = base.primary.lighten(0.25f),
             bevelShadow = base.primary.darken(0.20f),
             rimLight = base.glassBorder.lighten(0.10f),
-            // Lightened well past bevelLight (0.25f)/fillSplitTop (0.18f) so the glow reads as
-            // a distinct luminous halo rather than blending into the surface's own top-of-fill
-            // brightness (PRIM-06 — must contrast the surface it wraps, not match its hue family).
-            hoverGlow = base.primary.lighten(0.75f),
+            // Lightened past bevelLight (0.25f)/fillSplitTop (0.18f) so the glow reads as a
+            // distinct luminous halo rather than blending into the surface's own top-of-fill
+            // brightness (PRIM-06 — must contrast the surface it wraps, not match its hue
+            // family) — but not so far past white that it reads as a harsh, near-white rim
+            // (D-01 moderate-Aero target: soft focus glow, not a hard selection ring).
+            hoverGlow = base.primary.lighten(0.45f),
             grooveShadow = base.surface.darken(0.15f),
             fillSplitTop = base.primary.lighten(0.18f),
             fillSplitBottom = base.primary.darken(0.12f),

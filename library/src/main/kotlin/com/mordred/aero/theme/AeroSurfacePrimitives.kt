@@ -127,9 +127,13 @@ private val GLOW_RING_BLOOM_STEP = 2.5.dp
 /** Number of concentric bloom rings approximating the glow's soft outward falloff. */
 private const val GLOW_RING_BLOOM_LAYERS = 4
 
+/** Alpha multiplier applied to [glowColor]'s own alpha for the inner crisp stroke, keeping it a
+ * subtle rim rather than a hard, fully-opaque line (D-01 moderate-Aero target). */
+private const val GLOW_RING_INNER_STROKE_ALPHA = 0.65f
+
 /** Alpha multiplier applied to [glowColor]'s own alpha for the innermost (closest-to-surface)
- * bloom ring. */
-private const val GLOW_RING_BLOOM_BASE_ALPHA = 0.9f
+ * bloom ring — kept a soft haze rather than a near-opaque wash (D-01 moderate-Aero target). */
+private const val GLOW_RING_BLOOM_BASE_ALPHA = 0.5f
 
 /** Alpha multiplier applied between each successive bloom ring, so the ring nearest the surface
  * reads brightest and the outermost fades toward nothing. */
@@ -163,9 +167,9 @@ private const val GLOW_RING_BLOOM_FALLOFF = 0.55f
  *
  * @param glowColor Already-resolved color (e.g. `AeroOrnamentTokens.hoverGlow`) — this function
  * does not read [LocalAeroColors] itself, matching [aeroSurface]'s "caller resolves the theme,
- * primitive just draws" convention. [AeroOrnamentTokens.hoverGlow] is deliberately lightened well
+ * primitive just draws" convention. [AeroOrnamentTokens.hoverGlow] is deliberately lightened
  * past the surface fill/bevel tokens so this reads as a distinct luminous halo, not a shade of
- * the surface it wraps.
+ * the surface it wraps — moderately so, per D-01's soft-focus-glow target, not to near-white.
  * @param cornerRadius MUST match the same corner value used for the component's own clip shape
  * (16-RESEARCH.md Pitfall 5) — never an independently derived radius.
  */
@@ -178,9 +182,10 @@ public fun Modifier.aeroGlowRing(active: Boolean, glowColor: Color, cornerRadius
         onDrawBehind {
             if (!active) return@onDrawBehind
 
-            // Inner crisp stroke — hugs the shape's own bounds.
+            // Inner crisp stroke — hugs the shape's own bounds. Alpha-softened so this is a
+            // subtle rim, not a hard opaque line (D-01 moderate-Aero target).
             drawRoundRect(
-                color = glowColor,
+                color = glowColor.copy(alpha = glowColor.alpha * GLOW_RING_INNER_STROKE_ALPHA),
                 cornerRadius = CornerRadius(cornerPx, cornerPx),
                 style = Stroke(width = innerStrokePx),
             )
