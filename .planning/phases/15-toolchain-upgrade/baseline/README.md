@@ -46,7 +46,34 @@ state specifically, found in the Buttons / Range / Input / List showcase section
 
 ## Capture checklist (for the human-verify step)
 
-- [ ] AeroBlue: screenshot(s) covering all 8 components saved as `baseline-AeroBlue-*.png`
-- [ ] AeroDark: screenshot(s) covering all 8 components saved as `baseline-AeroDark-*.png`
-- [ ] Classic: screenshot(s) covering all 8 components saved as `baseline-Classic-*.png`
-- [ ] At least 3 image files total (one per theme minimum; more is better for a rigorous diff)
+- [x] AeroBlue: screenshot(s) covering all 8 components saved as `baseline-AeroBlue-*.png`
+- [x] AeroDark: screenshot(s) covering all 8 components saved as `baseline-AeroDark-*.png`
+- [x] Classic: screenshot(s) covering all 8 components saved as `baseline-Classic-*.png`
+- [x] At least 3 image files total (7 captured)
+
+## Capture record (2026-07-22)
+
+**Method:** windows-mcp desktop automation (CursorTouch/windows-mcp). Showcase launched via
+`./gradlew :showcase:run`, maximized to the left monitor, theme changed via the in-app
+`ThemeSwitcher` tabs, page scrolled through the component sections. Each frame captured as the
+full showcase window region **1920×1080 @ 100% DPI** (`Graphics.CopyFromScreen`, PNG). The
+screenshots are 1:1 with screen pixels — no downscaling — so plan 04's "after" pass should
+reproduce the same 1920×1080 maximized framing for a clean pixel diff.
+
+**Files and component coverage** (every one of the 8 target components appears in ≥1 shot per theme):
+
+| Theme | File | Sections shown | Target components |
+|-------|------|----------------|-------------------|
+| AeroBlue | `baseline-AeroBlue-01-top.png` | Foundation, Icons, Buttons (top) | AeroButton, AeroOutlinedButton |
+| AeroBlue | `baseline-AeroBlue-02.png` | Icons (end), Buttons (full), Input (start) | AeroButton, AeroOutlinedButton |
+| AeroBlue | `baseline-AeroBlue-03.png` | Switch/Chip/Segmented, Dropdown, Range&Progress, Lists | AeroSwitch, AeroSegmentedControl, AeroSlider, AeroProgressBar, AeroRangeSlider, AeroListItem |
+| AeroDark | `baseline-AeroDark-01-top.png` | Foundation, Icons, Buttons (top) | AeroButton, AeroOutlinedButton |
+| AeroDark | `baseline-AeroDark-02-controls.png` | Switch/Segmented, Range&Progress, Lists | AeroSwitch, AeroSegmentedControl, AeroSlider, AeroProgressBar, AeroRangeSlider, AeroListItem |
+| Classic | `baseline-Classic-01-top.png` | Foundation, Icons, Buttons (top) | AeroButton, AeroOutlinedButton |
+| Classic | `baseline-Classic-02-controls.png` | Switch/Segmented, Range&Progress, Lists | AeroSwitch, AeroSegmentedControl, AeroSlider, AeroProgressBar, AeroRangeSlider, AeroListItem |
+
+**Note for plan 04:** as documented in STATE.md "Baseline Findings", these eight components
+currently use Material colors for their own surfaces, so they render very similarly across the
+three themes at rest (theme differences are most visible in the Foundation glass cards and
+background tint). The after-diff should therefore treat any per-component pixel change as a
+potential Skia drift signal, not dismiss it as a theme artifact.
