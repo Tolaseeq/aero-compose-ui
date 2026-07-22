@@ -13,6 +13,7 @@ A Compose Desktop UI component library styled after Windows Aero (Windows 7): gl
 - 🚧 **v3.0 Glass Refinement** — Phases 15–20 (in progress) — toolchain migration (Kotlin 2.4.10 / CMP 1.11.1), repaired Aero primitives layer, eight components restyled to genuine Win7 glass
 
 Full ship-time snapshots (milestone goal, all phase details, decisions, tech debt) are archived per milestone:
+
 - `.planning/milestones/v1.1-ROADMAP.md` (also captures v1.0 phase definitions)
 - `.planning/milestones/v2.0-ROADMAP.md`
 - `.planning/milestones/v2.0.1-ROADMAP.md`
@@ -98,19 +99,23 @@ Details: `.planning/milestones/v2.0.4-ROADMAP.md` · Summary: `.planning/MILESTO
 ## Phase Details
 
 ### Phase 15: Toolchain Upgrade
+
 **Goal**: The library builds, tests, and ships on Kotlin 2.4.10 + Compose Multiplatform 1.11.1 (or an explicitly user-approved fallback), with zero visual-code changes mixed in — so any later regression is unambiguously attributable to either the toolchain or the visual work, never both.
 **Depends on**: Phase 14 (v2.0.4, last shipped state)
 **Requirements**: TOOL-01, TOOL-02, TOOL-03, TOOL-04, TOOL-05, TOOL-06, TOOL-07, TOOL-08
 **Success Criteria** (what must be TRUE):
+
   1. `./gradlew build` succeeds on Kotlin 2.4.10 + Compose Multiplatform 1.11.1 — or, if that untested pairing fails, one of the three named fallbacks is selected only after escalating to the user (never substituted silently)
   2. `compose.material3` resolves to an explicitly pinned stable coordinate, not the alpha the bare alias would silently resolve to
   3. `AeroPanelGroupRecomposeUiTest` is ported to the CMP 1.11 test-infrastructure changes and is re-proven to FAIL when the non-`@Composable` DSL fix is temporarily reverted, then passes again once restored — a ported-but-inert guard is not acceptable
   4. The full library test suite (232+ tests, including all 12 `PanelGroupLogicTest`) is green, and the showcase compiles, launches, and smoke-runs on all three themes with no observable change from the pre-migration baseline
   5. A `dropShadow`/`innerShadow` scratch composable compiles against the real 1.11.1 artifact (not just documentation), and the JitPack build passes on the new toolchain
-**Plans**: 6 plans
+
+**Plans**: 1/6 plans executed
 
 Plans:
-- [ ] 15-01-PLAN.md — Pre-migration baseline capture (before-screenshots, 3 themes) [Wave 1]
+
+- [x] 15-01-PLAN.md — Pre-migration baseline capture (before-screenshots, 3 themes) [Wave 1]
 - [ ] 15-02-PLAN.md — Build gate + stable Material3 1.9.0 pin (HARD STOP + escalation) [Wave 2]
 - [ ] 15-03-PLAN.md — RCMP test port + re-proof (fail-on-unfixed) [Wave 3]
 - [ ] 15-04-PLAN.md — Full 232-test suite + showcase smoke & baseline diff [Wave 4]
@@ -118,76 +123,96 @@ Plans:
 - [ ] 15-06-PLAN.md — JitPack release proof (throwaway pre-release tag) [Wave 5]
 
 ### Phase 16: Foundation — Aero Primitives Layer
+
 **Goal**: A single, shared, three-theme-proven Aero drawing/token layer exists so every visual component phase consumes it rather than re-deriving gradients, gloss, bevel, and grooves independently.
 **Depends on**: Phase 15
 **Requirements**: PRIM-01, PRIM-02, PRIM-03, PRIM-04, PRIM-05, PRIM-06, PRIM-07, PRIM-08, PRIM-09, PRIM-10, PRIM-11, PRIM-12, PRIM-13, PRIM-14, PRIM-15, PRIM-16, PRIM-17, PRIM-18
 **Success Criteria** (what must be TRUE):
+
   1. `Color.lighten()`/`darken()` exist and `AeroOrnamentTokens.derive(base)` produces algorithmically-derived ornament tokens for all three themes, reachable through an additive `ornamentOverride` escape hatch on `AeroColorScheme` with no breaking change to existing constructor calls
   2. A single `drawAeroSurfaceCore(style, cornerPx)` backs `Modifier.aeroSurface()` (Box-owning components), a direct-call path (Canvas-owning components), `Modifier.aeroGlowRing` (hover/focus), and a raised-thumb + recessed-track-groove primitive pair — one implementation exposed multiple ways, not independent copies
   3. `GlassModifiers.kt`'s three confirmed defects are fixed: `glassSurface`'s gloss is proportional to component height (no `endY = 100f` literal), its border renders at full declared thickness (clip-order fixed), and `glassEffect(elevation)` either draws a real shadow or the dead parameter is removed
   4. Every new gradient fades toward `baseColor.copy(alpha = 0f)` (never hardcoded `Color.Transparent`) and is spot-checked on AeroBlue/AeroDark/Classic at first implementation, not deferred; geometry/brushes are built in `drawWithCache`, not rebuilt per frame
   5. A full-library smoke pass across all ~50 components (not just the eight targets) shows no regression from the `GlassModifiers.kt` fixes, `rememberAeroInteractionState()` is available from `components/common/`, and the M3 `Slider` thumb/track slot-sizing spike either confirms custom-sized slots fit cleanly or is documented as failed with the `AeroSlider` fallback noted
+
 **Plans**: TBD
 
 Plans:
+
 - [ ] 16-01: TBD (planned via `/gsd:plan-phase 16` — likely needs `/gsd:research-phase` per research flag; includes dropShadow/innerShadow spike and M3 Slider slot-sizing spike as exit items)
 
 ### Phase 17: Buttons
+
 **Goal**: `AeroButton` and `AeroOutlinedButton` read as genuine Aero glass controls with correct hover/press/focus/disabled states, while keeping keyboard activation and button semantics.
 **Depends on**: Phase 16
 **Requirements**: VBTN-01, VBTN-02, VBTN-03, VBTN-04, VBTN-05, VBTN-06
 **Success Criteria** (what must be TRUE):
+
   1. `AeroButton` renders a two-tone gradient fill with a visible seam, proportional top gloss, inner bevel, and outer contour
   2. Hover shows a glow, press inverts the gradient, focus is visible, and disabled reads distinctly — all in Aero idiom, and the hover overlay is clipped to the button's rounded shape (no square corners bleeding past the corner radius)
   3. `Role.Button` semantics and keyboard activation (Space/Enter) still work after the M3 container is dropped, via `Modifier.clickable(role = Role.Button, ...)` — not a zero-semantics hand-roll
   4. `AeroOutlinedButton` shows the equivalent outlined-variant treatment and cannot visually drift from `AeroButton`, because both consume one shared internal surface composable
+
 **Plans**: TBD
 
 Plans:
+
 - [ ] 17-01: TBD (planned via `/gsd:plan-phase 17` — standard pattern, plan directly)
 
 ### Phase 18: Range
+
 **Goal**: `AeroSlider`, `AeroRangeSlider`, and `AeroProgressBar` show recessed track grooves and raised, glossy thumbs/fills, with zero regression to slider drag/keyboard/step behavior.
 **Depends on**: Phase 16 (consumes Buttons' pressed-fill code only indirectly via Foundation; no hard Phase 17 dependency)
 **Requirements**: VRNG-01, VRNG-02, VRNG-03, VRNG-04, VRNG-05, VRNG-06, VRNG-07, VRNG-08, VRNG-09
 **Success Criteria** (what must be TRUE):
+
   1. `AeroSlider` keeps Material3's `Slider` and supplies custom `thumb =`/`track =` slots showing a recessed groove and a raised, glossy thumb with hover/focus — the M3 container is not removed
   2. `AeroSlider`'s drag, keyboard-arrow nudge, `steps` snapping, `onValueChangeFinished`, and semantics all behave identically to before the restyle
   3. `AeroRangeSlider` shows the same groove + raised-thumb treatment with independent hover/press per thumb, while its existing drag logic is untouched
   4. `AeroProgressBar` shows a recessed track bed and a gradient fill with gloss; the periodic sheen is present but OFF by default; indeterminate mode is restyled but keeps its existing 1500ms restart timing with no ping-pong introduced
   5. Anywhere animation and drag write the same value (slider/range-slider thumbs), the locked Pattern 3 is reused: animation reads a target-only value, drag writes directly, `isDragging` switches to `snap()`
+
 **Plans**: TBD
 
 Plans:
+
 - [ ] 18-01: TBD (planned via `/gsd:plan-phase 18` — likely needs `/gsd:research-phase` per research flag)
 
 ### Phase 19: Selectors + Lists
+
 **Goal**: `AeroSwitch` and `AeroSegmentedControl` gain their first-ever hover/press/focus states and Aero volume, and `AeroListItem`'s selection highlight is finally clipped to a proper Aero pill with a visible focus state.
 **Depends on**: Phase 17 (`AeroSegmentedControl` reuses the pressed-button fill code), Phase 18 (`AeroSwitch`'s thumb/groove primitives are built and proven by Range)
 **Requirements**: VSEL-01, VSEL-02, VSEL-03, VSEL-04, VLST-01, VLST-02, VLST-03, VLST-04
 **Success Criteria** (what must be TRUE):
+
   1. `AeroSwitch` shows a recessed track groove and a raised thumb with gloss and shadow, replacing the current fully-flat rendering
   2. `AeroSwitch` has working hover, press, and focus states for the first time (currently absent entirely)
   3. `AeroSegmentedControl`'s selected segment appears recessed (inverted gradient + inner shadow) by reusing the pressed-button code from Phase 17, and the control gains hover and focus for the first time
   4. `AeroListItem`'s selection highlight is clipped to a rounded pill with gradient and rim light, hover remains visible on an already-selected row (the two states combine instead of one suppressing the other), a focus visual exists, and all newly-hover-wired components reuse `AeroListItem`'s existing `Modifier.hoverable` + `collectIsHoveredAsState` pattern rather than inventing pointer-position tracking
+
 **Plans**: TBD
 
 Plans:
+
 - [ ] 19-01: TBD (planned via `/gsd:plan-phase 19` — standard pattern, plan directly)
 
 ### Phase 20: Verification
+
 **Goal**: The milestone's visual work is demonstrated, mechanically gated, and human-approved across all three themes before shipping — closing the loop the v2.0.3 false-positive-sign-off lesson demands.
 **Depends on**: Phase 17, Phase 18, Phase 19
 **Requirements**: SHW-15, SHW-16, VER-01, VER-02, VER-03, VER-04, VER-05, VER-06
 **Success Criteria** (what must be TRUE):
+
   1. The showcase demonstrates all eight restyled components in every state (default/hover/press/focus/disabled where applicable)
   2. A human three-theme sign-off (AeroBlue / AeroDark / Classic) passes, including at least one pass at a non-100% DPI scale
   3. Both new grep-gates (no pixel literals in gradient stops; no bypass of `aeroSurface()`'s centralized clip order) are proven to FAIL on deliberately-broken code before being proven to pass on the real code — matching VER-06's "provably fail on unfixed code" requirement, not "run the test"
   4. A snapshot test confirms component default sizes and corner radii match the pre-migration baseline (no silent layout creep)
   5. A UI test confirms keyboard activation works for both converted buttons, and a minimal scratch-consumer outside the showcase's own conventions builds against the new artifact
+
 **Plans**: TBD
 
 Plans:
+
 - [ ] 20-01: TBD (planned via `/gsd:plan-phase 20` — standard pattern, mirrors v2.0.2/v2.0.4 three-theme sign-off precedent)
 
 ## Progress
@@ -209,7 +234,7 @@ Plans:
 | 13. AeroPanelGroup | v2.0.2 | 5/5 | Complete | 2026-06-23 |
 | 13.1. AeroPanelGroup horizontal orientation variant | v2.0.2 | 3/3 | Complete | 2026-06-23 |
 | 14. PanelGroup Recompose Fix | v2.0.4 | 3/3 | Complete | 2026-06-26 |
-| 15. Toolchain Upgrade | v3.0 | 0/TBD | Not started | - |
+| 15. Toolchain Upgrade | v3.0 | 1/6 | In Progress|  |
 | 16. Foundation — Aero Primitives Layer | v3.0 | 0/TBD | Not started | - |
 | 17. Buttons | v3.0 | 0/TBD | Not started | - |
 | 18. Range | v3.0 | 0/TBD | Not started | - |

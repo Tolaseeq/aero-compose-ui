@@ -2,14 +2,17 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Glass Refinement
-status: "Roadmap created, ready for `/gsd:plan-phase 15`"
+current_phase: 15
+current_phase_name: toolchain-upgrade
+status: executing
 stopped_at: Phase 15 context gathered
-last_updated: "2026-07-22T07:46:36.181Z"
-last_activity: 2026-07-21 — ROADMAP.md + REQUIREMENTS.md traceability written
+last_updated: "2026-07-22T09:19:32.627Z"
+last_activity: 2026-07-22
+last_activity_desc: Phase 15 execution started
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 0
+  total_plans: 6
   completed_plans: 0
   percent: 0
 ---
@@ -21,15 +24,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refinement)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, typed `AeroIcons`, and a showcase — no manual style work or icon-pack hunting required.
-**Current focus:** v3.0 Glass Refinement — make eight Material3-looking components read as Win7 Aero glass, on top of a repaired + extended Aero primitives layer. Behaviour and public API unchanged.
+**Current focus:** Phase 15 — toolchain-upgrade
 
 ## Current Position
 
 Milestone: v3.0 Glass Refinement
-Phase: 15 of 20 (Toolchain Upgrade) — ready to plan
-Plan: —
-Status: Roadmap created, ready for `/gsd:plan-phase 15`
-Last activity: 2026-07-21 — ROADMAP.md + REQUIREMENTS.md traceability written
+Phase: 15 (toolchain-upgrade) — EXECUTING
+Plan: 1 of 6
+Status: Executing Phase 15
+Last activity: 2026-07-22 — Phase 15 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -66,6 +69,7 @@ Research flags carried into planning: Phases 15, 16, 18 likely need `/gsd:resear
 | `AeroListItem` | plain `Row`, `.background(animatedBg)`, **not clipped** | hard-edged full-bleed flat highlight; no rounded selection pill, no gradient, no focus visual |
 
 **Glass layer defects to fix (part of this milestone):**
+
 - `glassEffect(elevation = …)` — parameter is **dead**; `shadow` is imported but never applied. Every `elevation = 2.dp` call site is a no-op.
 - `glassSurface` — gloss gradient is hardcoded `endY = 100f` **pixels**, not proportional, so it never completes on short controls and is a thin band on tall ones.
 - `glassSurface` — `drawBehind` runs before `.clip(shape)` and the 1.dp stroke is bounds-centred, so its outer half is clipped away → effectively a 0.5.dp border.
