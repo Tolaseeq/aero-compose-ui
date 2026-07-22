@@ -33,9 +33,9 @@ Enabling-фаза по образцу Phase 7 из v2.0. Каждый визуа
 - [x] **PRIM-03**: `AeroColorScheme` расширен исходно-совместимо — замыкающее `ornamentOverride: AeroOrnamentTokens? = null` как escape-hatch; существующие вызовы конструктора не ломаются
 - [x] **PRIM-04**: `AeroSurfaceStyle` описывает поверхность декларативно: стопы заливки, глянец, бевель, рим, тень
 - [x] **PRIM-05**: Одна `internal fun DrawScope.drawAeroSurfaceCore(style, cornerPx)` — единственная реализация, наружу двумя путями: `Modifier.aeroSurface(style, shape)` для компонентов-Box'ов и прямой вызов для владеющих Canvas
-- [ ] **PRIM-06**: `Modifier.aeroGlowRing` — общий примитив свечения для hover/focus
-- [ ] **PRIM-07**: Примитив выпуклой ручки (`aeroThumbSurface` / `drawAeroThumb`) — гейтит `AeroSwitch`, `AeroSlider`, `AeroRangeSlider`
-- [ ] **PRIM-08**: Примитив утопленного желобка трека — гейтит `AeroSwitch`, оба слайдера и `AeroProgressBar`
+- [x] **PRIM-06**: `Modifier.aeroGlowRing` — общий примитив свечения для hover/focus
+- [x] **PRIM-07**: Примитив выпуклой ручки (`aeroThumbSurface` / `drawAeroThumb`) — гейтит `AeroSwitch`, `AeroSlider`, `AeroRangeSlider`
+- [x] **PRIM-08**: Примитив утопленного желобка трека — гейтит `AeroSwitch`, оба слайдера и `AeroProgressBar`
 - [x] **PRIM-09**: Глянец `glassSurface` пропорционален высоте компонента; пиксельный литерал `endY = 100f` устранён
 - [x] **PRIM-10**: Бордер `glassSurface` рисуется на всю заявленную толщину — порядок отрисовки и `.clip()` исправлен (сейчас внешняя половина 1.dp-штриха срезается)
 - [x] **PRIM-11**: `glassEffect(elevation)` либо действительно рисует тень, либо параметр удалён. Мёртвых параметров не остаётся
