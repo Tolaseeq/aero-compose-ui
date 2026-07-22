@@ -145,6 +145,10 @@ Plans:
 - [ ] 16-04-PLAN.md — InteractionStates.kt → components/common/ + rememberAeroInteractionState() [Wave 1]
 - [ ] 16-05-PLAN.md — PRIM-18 M3 Slider slot-sizing spike + full-library smoke pass + Primitives gallery three-theme sign-off (D-03 glassEffect call) [Wave 3]
 
+**Cross-cutting constraints:**
+
+- { statement: "caption row width fits the demo-card column at all three theme densities (AeroBlue/AeroDark/Classic) without pushing layout", verification: backstop }
+
 ### Phase 17: Buttons
 
 **Goal**: `AeroButton` and `AeroOutlinedButton` read as genuine Aero glass controls with correct hover/press/focus/disabled states, while keeping keyboard activation and button semantics.
