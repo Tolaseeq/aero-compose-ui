@@ -142,13 +142,13 @@ Plans:
 - [x] 16-01-primitives-spine-tracer-PLAN.md
 - [ ] 16-02-draw-primitives-expansion-PLAN.md
 - [x] 16-03-glassmodifiers-fixes-PLAN.md
-- [ ] 16-04-interaction-states-common-PLAN.md
+- [x] 16-04-interaction-states-common-PLAN.md
 - [ ] 16-05-verification-spike-smoke-PLAN.md
 
 - [x] 16-01-PLAN.md — Primitives spine tracer: ColorMath + AeroOrnamentTokens.derive + source-compatible ornamentOverride + AeroSurfaceStyle + drawAeroSurfaceCore/aeroSurface + Primitives gallery, end-to-end on three themes [Wave 1]
 - [ ] 16-02-PLAN.md — Draw-primitives expansion: aeroGlowRing, raised-thumb (aeroThumbSurface/drawAeroThumb), recessed track-groove + gallery demos [Wave 2]
 - [x] 16-03-PLAN.md — GlassModifiers.kt three defect fixes: proportional gloss, full-thickness border/clip order, glassEffect elevation revived-or-removed [Wave 1]
-- [ ] 16-04-PLAN.md — InteractionStates.kt → components/common/ + rememberAeroInteractionState() [Wave 1]
+- [x] 16-04-PLAN.md — InteractionStates.kt → components/common/ + rememberAeroInteractionState() [Wave 1]
 - [ ] 16-05-PLAN.md — PRIM-18 M3 Slider slot-sizing spike + full-library smoke pass + Primitives gallery three-theme sign-off (D-03 glassEffect call) [Wave 3]
 
 **Cross-cutting constraints:**
