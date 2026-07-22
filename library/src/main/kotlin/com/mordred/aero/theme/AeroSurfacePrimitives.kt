@@ -155,6 +155,12 @@ private const val GLOW_RING_BLOOM_FALLOFF = 0.55f
  * Callers that need the ring visually inset instead may simply pass a smaller
  * [cornerRadius]/size.
  *
+ * USAGE CONTRACT: apply this modifier OUTSIDE (i.e. before, to the left of) any clipping
+ * modifier in the chain — including [aeroSurface], which has `.clip(shape)` as its outermost
+ * paint-affecting modifier. In a modifier chain, an earlier `.clip()` clips the drawing of every
+ * modifier that follows it, so `Modifier.aeroSurface(...).aeroGlowRing(...)` erases the entire
+ * outer bloom. Correct ordering is `Modifier.aeroGlowRing(...).aeroSurface(...)`.
+ *
  * @param glowColor Already-resolved color (e.g. `AeroOrnamentTokens.hoverGlow`) — this function
  * does not read [LocalAeroColors] itself, matching [aeroSurface]'s "caller resolves the theme,
  * primitive just draws" convention. [AeroOrnamentTokens.hoverGlow] is deliberately lightened well

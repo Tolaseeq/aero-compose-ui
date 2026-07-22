@@ -59,11 +59,11 @@ fun PrimitivesSection() {
                 Box(
                     modifier = Modifier
                         .size(width = 120.dp, height = 80.dp)
+                        .aeroGlowRing(active = true, glowColor = ornaments.hoverGlow, cornerRadius = 8.dp)
                         .aeroSurface(
                             style = AeroSurfaceStyle.rest(colors, cornerRadius = 8.dp),
                             shape = RoundedCornerShape(8.dp)
                         )
-                        .aeroGlowRing(active = true, glowColor = ornaments.hoverGlow, cornerRadius = 8.dp)
                 )
             }
             DemoBox(label = "aeroThumbSurface") {
