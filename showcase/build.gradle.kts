@@ -13,7 +13,7 @@ kotlin {
 dependencies {
     implementation(project(":library"))
     implementation(compose.desktop.currentOs)
-    implementation(compose.material3)
+    implementation("org.jetbrains.compose.material3:material3:1.9.0")
     implementation(compose.foundation)
     implementation(compose.runtime)
     implementation(compose.ui)

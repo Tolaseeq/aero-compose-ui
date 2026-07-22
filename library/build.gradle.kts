@@ -19,7 +19,7 @@ dependencies {
     // `api` for everything that shows up in the public API surface (Modifier, @Composable,
     // LocalDate in the date pickers) so consumers get it on their compile classpath.
     api(compose.desktop.common)
-    api(compose.material3)
+    api("org.jetbrains.compose.material3:material3:1.9.0")
     api(compose.animation)
     api(compose.foundation)
     api(compose.runtime)
