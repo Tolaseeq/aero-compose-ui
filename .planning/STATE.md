@@ -5,15 +5,15 @@ milestone_name: Glass Refinement
 current_phase: 15
 current_phase_name: toolchain-upgrade
 status: executing
-stopped_at: Completed 15-02-PLAN.md
-last_updated: "2026-07-22T10:24:45.704Z"
+stopped_at: Completed 15-03-PLAN.md
+last_updated: "2026-07-22T10:32:51.616Z"
 last_activity: 2026-07-22
 last_activity_desc: Phase 15 execution started
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 6
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -30,11 +30,11 @@ See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refin
 
 Milestone: v3.0 Glass Refinement
 Phase: 15 (toolchain-upgrade) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 Status: Ready to execute
 Last activity: 2026-07-22 — Phase 15 execution started
 
-Progress: [███░░░░░░░] 33%
+Progress: [█████░░░░░] 50%
 
 ## v3.0 Roadmap (2026-07-21)
 
@@ -104,6 +104,7 @@ Research flags carried into planning: Phases 15, 16, 18 likely need `/gsd:resear
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 15 P02 | 15min | 2 tasks | 3 files |
+| Phase 15 P03 | 5min | 3 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -125,6 +126,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - Builder/DSL lambdas that side-effect into a collection must NOT be `@Composable` (v2.0.4 RCMP root cause)
 - A regression guard must provably FAIL on unfixed code before it counts as a guard (v2.0.3 false-positive lesson) — directly encoded as TOOL-04 and VER-06 in v3.0
 - [Phase 15]: Kotlin 2.4.10 + CMP 1.11.1 build gate passed on first bundled attempt (three known-safe fixes together); no fallback/escalation needed
+- [Phase 15]: Kept v1 runComposeUiTest for AeroPanelGroupRecomposeUiTest (deprecated-but-compiling at CMP 1.11.1); live re-proof confirmed the guard is not inert (FAIL with 11 headers on reverted fix, PASS with 1 on restored fix), closing TOOL-04
 
 ### Pending Todos
 
@@ -139,7 +141,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-07-22T10:24:29.416Z
-Stopped at: Completed 15-02-PLAN.md
+Last session: 2026-07-22T10:32:51.607Z
+Stopped at: Completed 15-03-PLAN.md
 Resume file: None
 Next action: `/gsd:plan-phase 15` (Toolchain Upgrade — consider `/gsd:research-phase 15` first per research flag)
