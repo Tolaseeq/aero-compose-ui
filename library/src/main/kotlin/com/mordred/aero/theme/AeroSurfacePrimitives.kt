@@ -9,10 +9,12 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
@@ -109,3 +111,16 @@ public fun Modifier.aeroSurface(style: AeroSurfaceStyle, shape: Shape): Modifier
         onDrawBehind { drawAeroSurfaceCore(style, cornerPx) }
     }
     .let { m -> style.innerShadow?.let { m.innerShadow(shape = shape, shadow = it) } ?: m }
+
+// --- 16-02 Task 1 RED-phase stubs (intentionally incomplete/wrong; replaced in the GREEN commit) ---
+
+/** RED stub — TODO(16-02 GREEN): gate on [active], double-stroke fade, drawWithCache geometry. */
+public fun Modifier.aeroGlowRing(active: Boolean, glowColor: Color, cornerRadius: Dp = 8.dp): Modifier = this
+
+/** RED stub — TODO(16-02 GREEN): must reuse [drawAeroSurfaceCore], not a fresh gradient. */
+internal fun DrawScope.drawAeroThumb(style: AeroSurfaceStyle, radiusPx: Float) {
+    drawCircle(color = style.fillTop, radius = radiusPx)
+}
+
+/** RED stub — TODO(16-02 GREEN): Box-owning circular exposure of [drawAeroThumb]. */
+public fun Modifier.aeroThumbSurface(style: AeroSurfaceStyle): Modifier = this
