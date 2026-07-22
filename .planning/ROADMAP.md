@@ -107,10 +107,15 @@ Details: `.planning/milestones/v2.0.4-ROADMAP.md` · Summary: `.planning/MILESTO
   3. `AeroPanelGroupRecomposeUiTest` is ported to the CMP 1.11 test-infrastructure changes and is re-proven to FAIL when the non-`@Composable` DSL fix is temporarily reverted, then passes again once restored — a ported-but-inert guard is not acceptable
   4. The full library test suite (232+ tests, including all 12 `PanelGroupLogicTest`) is green, and the showcase compiles, launches, and smoke-runs on all three themes with no observable change from the pre-migration baseline
   5. A `dropShadow`/`innerShadow` scratch composable compiles against the real 1.11.1 artifact (not just documentation), and the JitPack build passes on the new toolchain
-**Plans**: TBD
+**Plans**: 6 plans
 
 Plans:
-- [ ] 15-01: TBD (planned via `/gsd:plan-phase 15` — likely needs `/gsd:research-phase` per research flag)
+- [ ] 15-01-PLAN.md — Pre-migration baseline capture (before-screenshots, 3 themes) [Wave 1]
+- [ ] 15-02-PLAN.md — Build gate + stable Material3 1.9.0 pin (HARD STOP + escalation) [Wave 2]
+- [ ] 15-03-PLAN.md — RCMP test port + re-proof (fail-on-unfixed) [Wave 3]
+- [ ] 15-04-PLAN.md — Full 232-test suite + showcase smoke & baseline diff [Wave 4]
+- [ ] 15-05-PLAN.md — dropShadow/innerShadow scratch composable (Phase 16 handoff) [Wave 3]
+- [ ] 15-06-PLAN.md — JitPack release proof (throwaway pre-release tag) [Wave 5]
 
 ### Phase 16: Foundation — Aero Primitives Layer
 **Goal**: A single, shared, three-theme-proven Aero drawing/token layer exists so every visual component phase consumes it rather than re-deriving gradients, gloss, bevel, and grooves independently.
