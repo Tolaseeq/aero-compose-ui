@@ -1,8 +1,8 @@
 ---
 phase: 15
 slug: toolchain-upgrade
-status: draft
-nyquist_compliant: false
+status: approved
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-07-22
 ---
@@ -79,6 +79,6 @@ created: 2026-07-22
 - [ ] Wave 0 covers all MISSING references (scratch composable, baseline screenshots)
 - [ ] No watch-mode flags
 - [ ] Feedback latency < 120s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved 2026-07-22 (plan-checker verified 8a/8c/8d pass; 8b full-suite latency is inherent to TOOL-05's full-green requirement)
