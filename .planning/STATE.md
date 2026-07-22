@@ -5,16 +5,16 @@ milestone_name: Glass Refinement
 current_phase: 15
 current_phase_name: toolchain-upgrade
 status: executing
-stopped_at: Completed 15-05-PLAN.md
-last_updated: "2026-07-22T10:53:58.173Z"
+stopped_at: Completed 15-06-PLAN.md (Phase 15 complete, 6/6 plans)
+last_updated: "2026-07-22T11:03:06.590Z"
 last_activity: 2026-07-22
 last_activity_desc: Phase 15 execution started
 progress:
   total_phases: 6
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 6
-  completed_plans: 5
-  percent: 0
+  completed_plans: 6
+  percent: 17
 ---
 
 # Project State
@@ -30,11 +30,11 @@ See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refin
 
 Milestone: v3.0 Glass Refinement
 Phase: 15 (toolchain-upgrade) — EXECUTING
-Plan: 5 of 6
+Plan: 6 of 6
 Status: Ready to execute
 Last activity: 2026-07-22 — Phase 15 execution started
 
-Progress: [████████░░] 83%
+Progress: [██████████] 100%
 
 ## v3.0 Roadmap (2026-07-21)
 
@@ -107,6 +107,7 @@ Research flags carried into planning: Phases 15, 16, 18 likely need `/gsd:resear
 | Phase 15 P03 | 5min | 3 tasks | 1 files |
 | Phase 15 P04 | 25min | 3 tasks | 7 files |
 | Phase 15 P05 | 20min | 1 tasks | 1 files |
+| Phase 15 P06 | 8min | 2 tasks | 0 files |
 
 ## Accumulated Context
 
@@ -131,6 +132,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 15]: Kept v1 runComposeUiTest for AeroPanelGroupRecomposeUiTest (deprecated-but-compiling at CMP 1.11.1); live re-proof confirmed the guard is not inert (FAIL with 11 headers on reverted fix, PASS with 1 on restored fix), closing TOOL-04
 - [Phase 15]: Full 232-test suite green (incl. 12 PanelGroupLogicTest) + human-confirmed no-drift visual verdict (pixel-diff corroborated) across three themes vs plan-01 baseline — migration proven behaviorally and visually inert (TOOL-05/TOOL-06)
 - [Phase 15]: TOOL-07: research signature's package for dropShadow/innerShadow (androidx.compose.ui.graphics.shadow) was wrong; corrected via javap bytecode inspection to androidx.compose.ui.draw, recorded verbatim in ScratchAeroShadowProof.kt KDoc as the Phase 16 source of truth
+- [Phase 15]: Used a throwaway pre-release tag (v3.0.0-alpha01) to prove the JitPack build instead of bumping build.gradle.kts, keeping the locked bump-on-milestone rule intact
+- [Phase 15]: jitpack.yml left unchanged - the actual JitPack build log confirmed openjdk17 is sufficient for Kotlin 2.4.10 + CMP 1.11.1, closing TOOL-08
 
 ### Pending Todos
 
@@ -145,7 +148,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-07-22T10:53:58.162Z
-Stopped at: Completed 15-05-PLAN.md
+Last session: 2026-07-22T11:03:06.580Z
+Stopped at: Completed 15-06-PLAN.md (Phase 15 complete, 6/6 plans)
 Resume file: None
 Next action: `/gsd:plan-phase 15` (Toolchain Upgrade — consider `/gsd:research-phase 15` first per research flag)

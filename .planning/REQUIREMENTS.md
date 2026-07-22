@@ -22,7 +22,7 @@
 - [x] **TOOL-05**: Весь тест-сьют библиотеки зелёный (232 теста, включая 12 `PanelGroupLogicTest`)
 - [x] **TOOL-06**: Showcase компилируется и запускается; дымовой прогон на трёх темах не показывает изменений относительно до-миграционного состояния
 - [x] **TOOL-07**: Сигнатуры `Modifier.dropShadow` / `Modifier.innerShadow` подтверждены компиляцией против реального артефакта 1.11.1 (scratch-composable), а не по документации
-- [ ] **TOOL-08**: Сборка на JitPack проходит на новом тулчейне
+- [x] **TOOL-08**: Сборка на JitPack проходит на новом тулчейне
 
 ### Aero Primitives Foundation (PRIM)
 
@@ -137,7 +137,7 @@ Roadmap: `.planning/ROADMAP.md` (created 2026-07-21, Phases 15–20).
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TOOL-01..08 | Phase 15 (Toolchain Upgrade) | Pending |
+| TOOL-01..08 | Phase 15 (Toolchain Upgrade) | Complete |
 | PRIM-01..18 | Phase 16 (Foundation — Aero Primitives Layer) | Pending |
 | VBTN-01..06 | Phase 17 (Buttons) | Pending |
 | VRNG-01..09 | Phase 18 (Range) | Pending |
