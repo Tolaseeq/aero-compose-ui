@@ -103,4 +103,14 @@ public object AeroTheme {
         @Composable
         @ReadOnlyComposable
         get() = LocalAeroTypography.current
+
+    /**
+     * Active [AeroOrnamentTokens] — resolves [AeroColorScheme.ornamentOverride] when the
+     * current color scheme sets one, otherwise algorithmically derives tokens via
+     * [AeroOrnamentTokens.derive] (PRIM-03 escape hatch honored).
+     */
+    public val ornaments: AeroOrnamentTokens
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalAeroColors.current.let { it.ornamentOverride ?: AeroOrnamentTokens.derive(it) }
 }

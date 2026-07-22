@@ -10,9 +10,9 @@ import androidx.compose.ui.graphics.Color
  * is theme-sensitive by construction, including on [AeroColorScheme.Classic]'s fully-opaque
  * tokens where an alpha-based derivation would be a silent no-op (PRIM-02).
  *
- * RED-phase stub: [derive] intentionally returns identical `Color.Black` tokens regardless of
- * [base] so AeroOrnamentTokensTest's "theme-sensitive" assertions fail before the real
- * lighten/darken-based derivation lands.
+ * Magnitudes below are calibration starting points (D-01's moderate ~30-35% gloss target),
+ * re-reviewed at the Phase 16 three-theme sign-off — not a locked spec (16-RESEARCH.md
+ * Assumption A2).
  */
 @Immutable
 public data class AeroOrnamentTokens(
@@ -27,14 +27,14 @@ public data class AeroOrnamentTokens(
 ) {
     public companion object {
         public fun derive(base: AeroColorScheme): AeroOrnamentTokens = AeroOrnamentTokens(
-            glossHighlight = Color.Black,
-            bevelLight = Color.Black,
-            bevelShadow = Color.Black,
-            rimLight = Color.Black,
-            hoverGlow = Color.Black,
-            grooveShadow = Color.Black,
-            fillSplitTop = Color.Black,
-            fillSplitBottom = Color.Black,
+            glossHighlight = base.glassHighlight.lighten(0.15f),
+            bevelLight = base.primary.lighten(0.25f),
+            bevelShadow = base.primary.darken(0.20f),
+            rimLight = base.glassBorder.lighten(0.10f),
+            hoverGlow = base.primary.lighten(0.30f),
+            grooveShadow = base.surface.darken(0.15f),
+            fillSplitTop = base.primary.lighten(0.18f),
+            fillSplitBottom = base.primary.darken(0.12f),
         )
     }
 }

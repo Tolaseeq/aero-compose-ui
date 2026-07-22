@@ -32,6 +32,7 @@ import com.mordred.showcase.sections.LayoutSection
 import com.mordred.showcase.sections.NavigationSection
 import com.mordred.showcase.sections.OverlaysSection
 import com.mordred.showcase.sections.PickersSection
+import com.mordred.showcase.sections.PrimitivesSection
 import com.mordred.showcase.sections.RangeSection
 import com.mordred.showcase.sections.SelectionSection
 import com.mordred.showcase.sections.ThemeSwitcher
@@ -80,6 +81,15 @@ fun ShowcaseApp(
                         style = typography.title
                     )
                     FoundationSection()
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Text(
+                        text = "Primitives",
+                        color = colors.onBackground,
+                        style = typography.title
+                    )
+                    PrimitivesSection()
                 }
 
                 IconsSection(toastState = toastState)

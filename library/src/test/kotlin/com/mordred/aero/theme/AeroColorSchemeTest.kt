@@ -54,8 +54,57 @@ class AeroColorSchemeTest {
     }
 
     @Test
-    fun aeroColorSchemeHasTwentyThreeTokens() {
+    fun aeroColorSchemeHasTwentyFourTokensAfterOrnamentOverrideAppend() {
+        // PRIM-03: a trailing, defaulted ornamentOverride field was appended (23 -> 24).
+        // The append itself is source-compatible (no existing constructor call needs edits);
+        // only this structural-count assertion is updated to match.
         val count = AeroColorScheme::class.declaredMemberProperties.size
-        assertEquals(23, count, "AeroColorScheme must declare exactly 23 color tokens")
+        assertEquals(24, count, "AeroColorScheme must declare 23 original color tokens + 1 ornamentOverride")
+    }
+
+    @Test
+    fun ornamentOverrideDefaultsToNullOnAllPresets() {
+        assertEquals(null, AeroColorScheme.AeroBlue.ornamentOverride, "AeroBlue.ornamentOverride")
+        assertEquals(null, AeroColorScheme.AeroDark.ornamentOverride, "AeroDark.ornamentOverride")
+        assertEquals(null, AeroColorScheme.Classic.ornamentOverride, "Classic.ornamentOverride")
+    }
+
+    @Test
+    fun existingTwentyThreeArgConstructorCallStillCompilesAndDefaultsOverrideToNull() {
+        // Mirrors the pre-Phase-16 23-field constructor shape verbatim (no ornamentOverride
+        // arg) — proves PRIM-03 source-compatibility for pre-existing named-arg call sites.
+        val scheme = AeroColorScheme(
+            primary = Color(0xFF000000),
+            onPrimary = Color(0xFF000000),
+            secondary = Color(0xFF000000),
+            onSecondary = Color(0xFF000000),
+            surface = Color(0xFF000000),
+            onSurface = Color(0xFF000000),
+            background = Color(0xFF000000),
+            onBackground = Color(0xFF000000),
+            error = Color(0xFF000000),
+            onError = Color(0xFF000000),
+            cardBackground = Color(0xFF000000),
+            borderDefault = Color(0xFF000000),
+            borderSelected = Color(0xFF000000),
+            labelText = Color(0xFF000000),
+            glassSurface = Color(0xFF000000),
+            glassBorder = Color(0xFF000000),
+            glassHighlight = Color(0xFF000000),
+            titleBarGradientStart = Color(0xFF000000),
+            titleBarGradientEnd = Color(0xFF000000),
+            titleBarText = Color(0xFF000000),
+            buttonHover = Color(0xFF000000),
+            closeButtonHover = Color(0xFF000000),
+            panelBackground = Color(0xFF000000)
+        )
+        assertEquals(null, scheme.ornamentOverride, "trailing ornamentOverride must default to null")
+    }
+
+    @Test
+    fun ornamentOverrideCanBeSetViaTrailingArgument() {
+        val override = AeroOrnamentTokens.derive(AeroColorScheme.AeroBlue)
+        val custom = AeroColorScheme.AeroBlue.copy(ornamentOverride = override)
+        assertEquals(override, custom.ornamentOverride, "ornamentOverride must be settable via copy")
     }
 }

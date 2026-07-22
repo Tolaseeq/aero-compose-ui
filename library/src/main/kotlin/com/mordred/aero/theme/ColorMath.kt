@@ -9,9 +9,19 @@ import androidx.compose.ui.graphics.Color
  * while [AeroColorScheme.AeroBlue]/[AeroColorScheme.AeroDark]'s equivalent tokens are
  * translucent; an alpha-based lighten/darken would be a silent no-op on Classic (PRIM-01).
  *
- * RED-phase stub: intentionally returns the input color unchanged so ColorMathTest fails
- * for the right reason before the real RGB-mix implementation lands.
+ * Both mix toward the target endpoint proportionally to [amount] (0f = unchanged, 1f = full
+ * White/Black), preserving the input's alpha channel exactly.
  */
-internal fun Color.lighten(amount: Float): Color = this
+internal fun Color.lighten(amount: Float): Color = Color(
+    red = red + (1f - red) * amount,
+    green = green + (1f - green) * amount,
+    blue = blue + (1f - blue) * amount,
+    alpha = alpha,
+)
 
-internal fun Color.darken(amount: Float): Color = this
+internal fun Color.darken(amount: Float): Color = Color(
+    red = red * (1f - amount),
+    green = green * (1f - amount),
+    blue = blue * (1f - amount),
+    alpha = alpha,
+)

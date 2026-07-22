@@ -33,7 +33,14 @@ public data class AeroColorScheme(
     public val titleBarText: Color,
     public val buttonHover: Color,
     public val closeButtonHover: Color,
-    public val panelBackground: Color
+    public val panelBackground: Color,
+    /**
+     * Escape hatch (PRIM-03): when non-null, [AeroTheme.ornaments] uses this instead of
+     * algorithmically deriving ornament tokens via [AeroOrnamentTokens.derive]. Trailing and
+     * defaulted so every pre-existing positional/named constructor call keeps compiling
+     * unchanged — source-compatible by construction.
+     */
+    public val ornamentOverride: AeroOrnamentTokens? = null
 ) {
     public companion object {
         public val AeroBlue: AeroColorScheme = AeroColorScheme(
