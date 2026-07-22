@@ -155,3 +155,11 @@ None.
 ---
 *Phase: 16-foundation-aero-primitives-layer*
 *Completed: 2026-07-22*
+
+## Self-Check: PASSED
+
+- FOUND: library/src/main/kotlin/com/mordred/aero/theme/GlassModifiers.kt
+- FOUND: library/src/test/kotlin/com/mordred/aero/theme/GlassModifiersTest.kt
+- FOUND: .planning/phases/16-foundation-aero-primitives-layer/16-03-SUMMARY.md
+- FOUND commit: 51c932f (fix)
+- FOUND commit: 880e507 (docs: SUMMARY)

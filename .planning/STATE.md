@@ -5,8 +5,8 @@ milestone_name: Glass Refinement
 current_phase: 16
 current_phase_name: foundation-aero-primitives-layer
 status: executing
-stopped_at: Completed 16-01-primitives-spine-tracer-PLAN.md
-last_updated: "2026-07-22T14:24:25.753Z"
+stopped_at: Completed 16-03-glassmodifiers-fixes-PLAN.md
+last_updated: "2026-07-22T14:34:09.471Z"
 last_activity: 2026-07-22
 last_activity_desc: Phase 16 execution started
 progress:
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refin
 
 Milestone: v3.0 Glass Refinement
 Phase: 16 (foundation-aero-primitives-layer) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-07-22 — Phase 16 execution started
 
@@ -109,6 +109,7 @@ Research flags carried into planning: Phases 15, 16, 18 likely need `/gsd:resear
 | Phase 15 P05 | 20min | 1 tasks | 1 files |
 | Phase 15 P06 | 8min | 2 tasks | 0 files |
 | Phase 16 P01 | 20min | 1 tasks | 11 files |
+| Phase 16 P03 | 10min | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -137,6 +138,9 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 15]: jitpack.yml left unchanged - the actual JitPack build log confirmed openjdk17 is sufficient for Kotlin 2.4.10 + CMP 1.11.1, closing TOOL-08
 - [Phase 16, Plan 01]: AeroOrnamentTokens field set and lighten/darken magnitudes taken verbatim from 16-RESEARCH.md as calibration starting points, re-reviewed at 16-05 sign-off
 - [Phase 16, Plan 01]: drawAeroSurfaceCore called from inside Modifier.aeroSurface's drawWithCache/onDrawBehind per 16-RESEARCH.md Pattern 1's literal skeleton, preserving the single-function four-exposure-path architecture over stricter per-call brush caching
+- [Phase 16, Plan 03]: glassEffect(elevation) revived via dropShadow (source-compatible) not removed - both elevation=2.dp call sites (AeroSlider, AeroRangeSlider) keep compiling; 16-05 confirms revive or requests removal per D-03
+- [Phase 16, Plan 03]: glassSurface gloss fraction set to 0.32 (D-01's ~30-35% band), deliberately distinct from glassPanel's 0.55 - only the size.height * fraction idiom was copied, not the value
+- [Phase 16, Plan 03]: glassPanel also migrated to drawWithCache alongside glassSurface (Rule 2 - threat model T-16-04 names both functions for the per-frame-allocation mitigation), zero visual/value change
 
 ### Pending Todos
 
@@ -151,7 +155,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-07-22T14:24:25.737Z
-Stopped at: Completed 16-01-primitives-spine-tracer-PLAN.md
+Last session: 2026-07-22T14:34:09.456Z
+Stopped at: Completed 16-03-glassmodifiers-fixes-PLAN.md
 Resume file: None
 Next action: `/gsd:plan-phase 15` (Toolchain Upgrade — consider `/gsd:research-phase 15` first per research flag)
