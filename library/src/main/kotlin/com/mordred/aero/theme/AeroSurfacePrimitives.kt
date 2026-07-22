@@ -204,3 +204,13 @@ public fun Modifier.aeroThumbSurface(style: AeroSurfaceStyle): Modifier = this
         onDrawBehind { drawAeroThumb(style, radiusPx) }
     }
     .let { m -> style.innerShadow?.let { m.innerShadow(shape = CircleShape, shadow = it) } ?: m }
+
+// --- 16-02 Task 2 RED-phase stub (intentionally incomplete/wrong; replaced in the GREEN commit) ---
+
+/** RED stub — TODO(16-02 Task 2 GREEN): must reuse [drawAeroSurfaceCore], not a fresh gradient. */
+internal fun DrawScope.drawAeroGroove(style: AeroSurfaceStyle, cornerPx: Float) {
+    drawRoundRect(color = style.bevelShadow, cornerRadius = CornerRadius(cornerPx, cornerPx))
+}
+
+/** RED stub — TODO(16-02 Task 2 GREEN): Box-owning exposure of [drawAeroGroove]. */
+public fun Modifier.aeroGroove(style: AeroSurfaceStyle): Modifier = this

@@ -12,15 +12,16 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * PRIM-06/07 verification for the 16-02 plan's expansion of the shared draw core (Task 1):
+ * PRIM-06/07/08 verification for the 16-02 plan's expansion of the shared draw core:
  *  - [Modifier.aeroGlowRing] renders without exception both active and inactive, and never
  *    drives itself from a `rememberInfiniteTransition` (local-DoS avoidance, PRIM-06).
  *  - [Modifier.aeroThumbSurface]/[drawAeroThumb] render a raised circular surface and reuse
  *    [drawAeroSurfaceCore]'s shared fill/gloss/bevel path — never a second gradient
  *    implementation (PRIM-07).
+ *  - [Modifier.aeroGroove]/`drawAeroGroove` render a recessed track bed, callable both via
+ *    Modifier and directly inside a Canvas DrawScope, and also reuse [drawAeroSurfaceCore]
+ *    (PRIM-08).
  *  - No new gradient in this file fades to `Color.Transparent` (PRIM-14).
- *
- * Task 2 extends this file with PRIM-08 groove coverage.
  *
  * Mirrors [GlassModifiersTest]'s two-pronged approach: render-without-exception smoke passes
  * across all three built-in [AeroColorScheme] presets, plus source-level regression assertions
@@ -97,6 +98,53 @@ class AeroSurfacePrimitivesTest {
         assertTrue(
             body.contains("drawAeroSurfaceCore"),
             "aeroThumbSurface/drawAeroThumb must call the shared drawAeroSurfaceCore, not a fresh gradient implementation (PRIM-07)"
+        )
+    }
+
+    @Test
+    fun aeroGrooveRendersWithoutExceptionOnAllThreePresets() {
+        presets.forEach { (_, scheme) ->
+            runComposeUiTest {
+                setContent {
+                    AeroTheme(colorScheme = scheme) {
+                        Box(
+                            Modifier
+                                .size(width = 120.dp, height = 8.dp)
+                                .aeroGroove(style = AeroSurfaceStyle.rest(scheme, cornerRadius = 4.dp))
+                        )
+                    }
+                }
+                waitForIdle()
+            }
+        }
+    }
+
+    @Test
+    fun aeroGrooveReusesSharedDrawCoreNotAFreshGradientConstructor() {
+        val body = functionBody("aeroGroove") + functionBody("drawAeroGroove")
+        assertTrue(
+            body.contains("drawAeroSurfaceCore"),
+            "aeroGroove/drawAeroGroove must call the shared drawAeroSurfaceCore, not a fresh gradient implementation (PRIM-08)"
+        )
+    }
+
+    @Test
+    fun drawAeroGrooveHasADrawScopeReceiverCallableInsideCanvas() {
+        val source = aeroSurfacePrimitivesSource.readText()
+        assertTrue(
+            source.contains("fun DrawScope.drawAeroGroove("),
+            "drawAeroGroove must be a DrawScope extension function so Canvas-owning consumers " +
+                "(e.g. AeroRangeSlider-style call sites) can call it directly, matching " +
+                "drawAeroSurfaceCore's dual Modifier/direct-Canvas convention (PRIM-08)"
+        )
+    }
+
+    @Test
+    fun noColorTransparentInGrooveFunctionBodies() {
+        val body = functionBody("aeroGroove") + functionBody("drawAeroGroove")
+        assertFalse(
+            Regex("""Color\.Transparent""").containsMatchIn(body),
+            "The groove primitive must fade to baseColor.copy(alpha = 0f), never Color.Transparent (PRIM-14)"
         )
     }
 
