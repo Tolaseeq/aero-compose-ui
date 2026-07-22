@@ -89,7 +89,7 @@ Details: `.planning/milestones/v2.0.4-ROADMAP.md` · Summary: `.planning/MILESTO
 
 **Phase numbering continues from 15** (project shipped through Phase 14 / v2.0.4).
 
-- [ ] **Phase 15: Toolchain Upgrade** — Kotlin 2.4.10 + Compose Multiplatform 1.11.1, isolated from all visual work
+- [x] **Phase 15: Toolchain Upgrade** — Kotlin 2.4.10 + Compose Multiplatform 1.11.1, isolated from all visual work
 - [ ] **Phase 16: Foundation — Aero Primitives Layer** — repaired `GlassModifiers`, `AeroSurfaceStyle`/`AeroSurfacePrimitives`, `AeroOrnamentTokens`, shared thumb/groove primitives, full-library smoke pass
 - [ ] **Phase 17: Buttons** — `AeroButton`, `AeroOutlinedButton` restyled with shared internal surface
 - [ ] **Phase 18: Range** — `AeroSlider` (M3 slots), `AeroRangeSlider`, `AeroProgressBar` restyled

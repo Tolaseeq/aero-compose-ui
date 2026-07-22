@@ -4,11 +4,11 @@ milestone: v3.0
 milestone_name: Glass Refinement
 current_phase: 15
 current_phase_name: toolchain-upgrade
-status: executing
-stopped_at: Completed 15-06-PLAN.md (Phase 15 complete, 6/6 plans)
+status: Phase 15 complete + verified (8/8 must-haves). Ready for Phase 16.
+stopped_at: Phase 15 (toolchain-upgrade) complete — 6/6 plans, verification PASS
 last_updated: "2026-07-22T11:03:06.590Z"
 last_activity: 2026-07-22
-last_activity_desc: Phase 15 execution started
+last_activity_desc: Phase 15 complete + verified — Kotlin 2.4.10 + CMP 1.11.1, behaviorally & visually inert
 progress:
   total_phases: 6
   completed_phases: 1
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refin
 ## Current Position
 
 Milestone: v3.0 Glass Refinement
-Phase: 15 (toolchain-upgrade) — EXECUTING
-Plan: 6 of 6
-Status: Ready to execute
-Last activity: 2026-07-22 — Phase 15 execution started
+Phase: 15 (toolchain-upgrade) — COMPLETE + VERIFIED (next: Phase 16 — Foundation / Aero Primitives)
+Plan: 6 of 6 complete
+Status: Phase 15 complete + verified (8/8). Toolchain on Kotlin 2.4.10 + CMP 1.11.1, behaviorally & visually inert.
+Last activity: 2026-07-22 — Phase 15 complete + verified
 
 Progress: [██████████] 100%
 
