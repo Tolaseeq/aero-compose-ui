@@ -1,6 +1,7 @@
 package com.mordred.aero.theme
 
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
@@ -205,12 +206,63 @@ public fun Modifier.aeroThumbSurface(style: AeroSurfaceStyle): Modifier = this
     }
     .let { m -> style.innerShadow?.let { m.innerShadow(shape = CircleShape, shadow = it) } ?: m }
 
-// --- 16-02 Task 2 RED-phase stub (intentionally incomplete/wrong; replaced in the GREEN commit) ---
+/** Fraction of [drawAeroGroove]'s height its darkened top-edge inner-shadow cue fades over. */
+private const val GROOVE_SHADOW_CUE_FRACTION: Float = 0.4f
 
-/** RED stub — TODO(16-02 Task 2 GREEN): must reuse [drawAeroSurfaceCore], not a fresh gradient. */
+/** Alpha multiplier applied to `style.bevelShadow` at the inner-shadow cue's darkest point. */
+private const val GROOVE_SHADOW_CUE_ALPHA: Float = 0.5f
+
+/**
+ * Recessed track-groove primitive (PRIM-08) — reuses [drawAeroSurfaceCore] with fill and bevel
+ * direction swapped so the shared fill/gloss/bevel/rim geometry reads as carved-in rather than
+ * raised, with gloss disabled (a recess doesn't catch a top highlight the way a raised surface
+ * does) — no bespoke gradient/bevel implementation (PRIM-08 prohibition). Adds a darkened
+ * inner-shadow cue hugging the top edge (`bevelShadow`-derived, per 16-RESEARCH.md FEATURES A10)
+ * reinforcing the "light doesn't reach the bottom of the recess" read.
+ *
+ * Callable directly inside an existing Canvas [DrawScope] (matching [drawAeroSurfaceCore]'s dual
+ * Modifier/direct-Canvas convention), for Canvas-owning consumers such as `AeroRangeSlider`-style
+ * call sites, and indirectly via [Modifier.aeroGroove] for Box-owning consumers.
+ */
 internal fun DrawScope.drawAeroGroove(style: AeroSurfaceStyle, cornerPx: Float) {
-    drawRoundRect(color = style.bevelShadow, cornerRadius = CornerRadius(cornerPx, cornerPx))
+    drawAeroSurfaceCore(
+        style = style.copy(
+            fillTop = style.fillBottom,
+            fillBottom = style.fillTop,
+            bevelLight = style.bevelShadow,
+            bevelShadow = style.bevelLight,
+            glossAlpha = 0f,
+        ),
+        cornerPx = cornerPx,
+    )
+
+    // Inner-shadow cue — fades to bevelShadow.copy(alpha = 0f) (PRIM-14: never the flat
+    // fully-transparent color constant).
+    drawRoundRect(
+        brush = Brush.verticalGradient(
+            colors = listOf(
+                style.bevelShadow.copy(alpha = style.bevelShadow.alpha * GROOVE_SHADOW_CUE_ALPHA),
+                style.bevelShadow.copy(alpha = 0f),
+            ),
+            startY = 0f,
+            endY = size.height * GROOVE_SHADOW_CUE_FRACTION,
+        ),
+        cornerRadius = CornerRadius(cornerPx, cornerPx),
+    )
 }
 
-/** RED stub — TODO(16-02 Task 2 GREEN): Box-owning exposure of [drawAeroGroove]. */
-public fun Modifier.aeroGroove(style: AeroSurfaceStyle): Modifier = this
+/**
+ * Box-owning exposure of [drawAeroGroove], matching [aeroSurface]'s `.clip(shape)`-outermost /
+ * `drawWithCache` conventions (PRIM-12/13). [style]'s own `cornerRadius` field drives both the
+ * clip shape and the draw geometry — never two independently-derived radii (16-RESEARCH.md
+ * Pitfall 5).
+ */
+public fun Modifier.aeroGroove(style: AeroSurfaceStyle): Modifier {
+    val shape = RoundedCornerShape(style.cornerRadius)
+    return this
+        .clip(shape)
+        .drawWithCache {
+            val cornerPx = style.cornerRadius.toPx()
+            onDrawBehind { drawAeroGroove(style, cornerPx) }
+        }
+}

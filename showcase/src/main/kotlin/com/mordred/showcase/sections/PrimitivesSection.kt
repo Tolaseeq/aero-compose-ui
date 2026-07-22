@@ -13,22 +13,27 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.mordred.aero.theme.AeroOrnamentTokens
 import com.mordred.aero.theme.AeroSurfaceStyle
 import com.mordred.aero.theme.AeroTheme
+import com.mordred.aero.theme.aeroGlowRing
+import com.mordred.aero.theme.aeroGroove
 import com.mordred.aero.theme.aeroSurface
+import com.mordred.aero.theme.aeroThumbSurface
 import com.mordred.aero.theme.glassPanel
 
 /**
  * Phase 16 permanent Primitives gallery (D-04 sign-off vehicle, PRIM-16) — extends the
- * `FoundationSection` DemoBox-per-variant precedent. This plan (16-01) wires the first
- * primitive group (`aeroSurface`); later plans in this phase add glow-ring/thumb/groove
- * groups alongside it. Stays in the project as a living reference for Phases 17-19, not
- * thrown away after sign-off.
+ * `FoundationSection` DemoBox-per-variant precedent. Wires all four primitive groups from
+ * `AeroSurfacePrimitives.kt`: `aeroSurface` (16-01), and `aeroGlowRing` / `aeroThumbSurface` /
+ * the recessed groove (16-02). Stays in the project as a living reference for Phases 17-19,
+ * not thrown away after sign-off.
  */
 @Composable
 fun PrimitivesSection() {
     val colors = AeroTheme.colors
     val typography = AeroTheme.typography
+    val ornaments = AeroOrnamentTokens.derive(colors)
 
     Box(
         modifier = Modifier
@@ -48,6 +53,31 @@ fun PrimitivesSection() {
                             style = AeroSurfaceStyle.rest(colors, cornerRadius = 8.dp),
                             shape = RoundedCornerShape(8.dp)
                         )
+                )
+            }
+            DemoBox(label = "aeroGlowRing") {
+                Box(
+                    modifier = Modifier
+                        .size(width = 120.dp, height = 80.dp)
+                        .aeroSurface(
+                            style = AeroSurfaceStyle.rest(colors, cornerRadius = 8.dp),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .aeroGlowRing(active = true, glowColor = ornaments.hoverGlow, cornerRadius = 8.dp)
+                )
+            }
+            DemoBox(label = "aeroThumbSurface") {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .aeroThumbSurface(style = AeroSurfaceStyle.rest(colors, cornerRadius = 12.dp))
+                )
+            }
+            DemoBox(label = "groove") {
+                Box(
+                    modifier = Modifier
+                        .size(width = 120.dp, height = 12.dp)
+                        .aeroGroove(style = AeroSurfaceStyle.rest(colors, cornerRadius = 6.dp))
                 )
             }
         }
