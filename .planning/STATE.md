@@ -4,17 +4,17 @@ milestone: v3.0
 milestone_name: Glass Refinement
 current_phase: 17
 current_phase_name: Buttons
-status: executing
-stopped_at: Completed 17-04-PLAN.md
-last_updated: "2026-07-23T14:20:39.174Z"
+status: verifying
+stopped_at: Completed 17-05-PLAN.md — Phase 17 human visual sign-off APPROVED, ready for phase verification
+last_updated: "2026-07-23T15:29:06.447Z"
 last_activity: 2026-07-23
 last_activity_desc: Phase 17 execution started
 progress:
   total_phases: 6
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 16
-  completed_plans: 10
-  percent: 17
+  completed_plans: 11
+  percent: 33
 ---
 
 # Project State
@@ -31,10 +31,10 @@ See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refin
 Milestone: v3.0 Glass Refinement
 Phase: 17 (Buttons) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-23 — Phase 17 execution started
 
-Progress: [██████░░░░] 63%
+Progress: [███████░░░] 69%
 
 ## v3.0 Roadmap (2026-07-21)
 
@@ -117,6 +117,7 @@ Research flags carried into planning: Phases 15, 16, 18 likely need `/gsd:resear
 | Phase 17 P02 | 13min | 2 tasks | 4 files |
 | Phase 17 P03 | 15min | 2 tasks | 5 files |
 | Phase 17 P04 | 8min | 1 tasks | 1 files |
+| Phase 17 P05 | 39min | 1 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -164,6 +165,10 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase ?]: [Phase 17, Plan 03]: VBTN-03/VBTN-06 source-scan guards proven to FAIL against deliberately-reintroduced broken code (temporary local edits, reverted before commit) before being trusted, per the v2.0.3 false-positive-sign-off lesson
 - [Phase ?]: [Phase 17, Plan 04]: No forced-state static styling added for hover/press/focus - the live three-theme switcher plus real mouse/keyboard makes these transient states genuinely reviewable without bypassing resolveButtonStyle's real state-resolution path
 - [Phase ?]: [Phase 17, Plan 04]: Long-label truncation demo needed an explicit Modifier.width(120.dp) on the demo instance only - AeroButtonSurface's Box has no width constraint of its own, so without a width cap the label would widen the button instead of truncating
+- [Phase ?]: [Phase 17, Plan 05]: Human three-theme x five-state sign-off APPROVED for AeroButton/AeroOutlinedButton after two calibration rounds closing rim brightness, filled-fill contrast, and disabled-legibility defects the gate itself caught
+- [Phase ?]: [Phase 17, Plan 05]: Rim alpha capped via min(native glassBorder alpha, 0.45) rather than a flat constant, so Classic's naturally dimmer rim is not forced down to match AeroBlue/AeroDark
+- [Phase ?]: [Phase 17, Plan 05]: Filled-button fill darkening (primary.darken 0.20f/0.36f) scoped to AeroButtonSurface's own resolution only, not pushed into shared AeroOrnamentTokens/AeroSurfaceStyle.rest() defaults, to avoid darkening every other accent-derived surface
+- [Phase ?]: [Phase 17, Plan 05]: flattenDisabled's terminal blend target changed from light borderDefault to theme's own base.surface (blend 0.4->0.5) so disabled buttons recede into background instead of standing out as light-gray
 
 ### Pending Todos
 
@@ -178,7 +183,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-07-23T14:20:39.159Z
-Stopped at: Completed 17-04-PLAN.md
+Last session: 2026-07-23T15:29:06.432Z
+Stopped at: Completed 17-05-PLAN.md — Phase 17 human visual sign-off APPROVED, ready for phase verification
 Resume file: None
 Next action: `/gsd:plan-phase 15` (Toolchain Upgrade — consider `/gsd:research-phase 15` first per research flag)
