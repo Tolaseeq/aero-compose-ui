@@ -4,9 +4,9 @@ milestone: v3.0
 milestone_name: Glass Refinement
 current_phase: 16
 current_phase_name: foundation-aero-primitives-layer
-status: executing
-stopped_at: Completed 16-02-draw-primitives-expansion-PLAN.md
-last_updated: "2026-07-22T15:02:47.858Z"
+status: verifying
+stopped_at: Completed 16-05-verification-spike-smoke-PLAN.md (Phase 16 complete)
+last_updated: "2026-07-22T16:27:50.161Z"
 last_activity: 2026-07-22
 last_activity_desc: Phase 16 execution started
 progress:
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refin
 Milestone: v3.0 Glass Refinement
 Phase: 16 (foundation-aero-primitives-layer) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-22 — Phase 16 execution started
 
 Progress: [██████░░░░] 55%
@@ -112,6 +112,7 @@ Research flags carried into planning: Phases 15, 16, 18 likely need `/gsd:resear
 | Phase 16 P03 | 10min | 1 tasks | 2 files |
 | Phase 16 P04 | 8min | 1 tasks | 6 files |
 | Phase 16 P02 | 32min | 2 tasks | 3 files |
+| Phase 16 P05 | 2h10min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -147,6 +148,9 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 16, Plan 04]: InteractionStates.kt relocated components/buttons -> components/common (single source of truth); AeroButton/AeroOutlinedButton/AeroIconButton imports updated, behavior unchanged
 - [Phase 16, Plan 02]: aeroGlowRing/aeroThumbSurface/aeroGroove all reuse drawAeroSurfaceCore via style.copy() field swaps (thumb: cornerPx=radiusPx collapses to circle; groove: fillTop/fillBottom + bevelLight/bevelShadow swapped, gloss off) - zero bespoke gradient implementations
 - [Phase 16, Plan 02]: D-02 resolved manual-gradient (not native dropShadow/innerShadow) for aeroGlowRing's double-stroke and the groove's inner-shadow cue, matching drawAeroSurfaceCore's existing all-gradient approach
+- [Phase 16, Plan 05]: PRIM-18 spike PASS (bytecode-proven + human-confirmed) - AeroSlider keeps Material3 Slider + custom thumb=/track= slots at MEDIUM complexity for Phase 18, not full M3 removal
+- [Phase 16, Plan 05]: D-03 CONFIRMED - glassEffect(elevation)'s revived dropShadow (wired Plan 03) stays final; improves cards/panels across all three themes without noise
+- [Phase 16, Plan 05]: aeroGlowRing was invisible in the gallery (radial-gradient bloom clipped by aeroSurface's own .clip + same-hue-family hoverGlow) - fixed via multi-ring concentric bloom, USAGE CONTRACT (apply outside any clip), and two intensity soften passes; final hoverGlow=primary.lighten(0.30f), now a documented binding rule for Phase 17-19 components
 
 ### Pending Todos
 
@@ -161,7 +165,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-07-22T15:02:47.845Z
-Stopped at: Completed 16-02-draw-primitives-expansion-PLAN.md
+Last session: 2026-07-22T16:27:50.144Z
+Stopped at: Completed 16-05-verification-spike-smoke-PLAN.md (Phase 16 complete)
 Resume file: None
 Next action: `/gsd:plan-phase 15` (Toolchain Upgrade — consider `/gsd:research-phase 15` first per research flag)
