@@ -3,6 +3,7 @@ package com.mordred.aero.components.buttons
 import androidx.compose.ui.unit.dp
 import com.mordred.aero.theme.AeroColorScheme
 import com.mordred.aero.theme.AeroSurfaceStyle
+import com.mordred.aero.theme.darken
 import com.mordred.aero.theme.flattenDisabled
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -39,6 +40,24 @@ class AeroOutlinedButtonStylesTest {
     private val schemes = listOf(AeroColorScheme.AeroBlue, AeroColorScheme.Classic)
 
     /**
+     * Reconstructs the BUTTON-scoped rest style [resolveButtonStyle] resolves internally (17-05
+     * ROUND-2 sign-off gap-fix, FIX A + FIX B) — see [AeroButtonStylesTest.expectedButtonRest]'s
+     * twin. Duplicated here (not shared across test files) because each file's magic-number
+     * assertions are meant to independently pin the UI-SPEC contract, matching this file's
+     * existing style (e.g. [restOutlinedMatchesTheUiSpecFixedDeltaRatios] hardcodes 0.15f).
+     */
+    private fun expectedButtonRest(colors: AeroColorScheme): AeroSurfaceStyle =
+        AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp).copy(
+            fillTop = colors.primary.darken(0.20f),
+            fillBottom = colors.primary.darken(0.36f),
+            rimAlpha = minOf(colors.glassBorder.alpha, 0.45f),
+        )
+
+    /** Theme-aware outlined rim alpha (17-05 ROUND-2 sign-off gap-fix, FIX A) — mirrors [resolveButtonStyle]'s formula. */
+    private fun expectedOutlinedRimAlpha(colors: AeroColorScheme): Float =
+        minOf(colors.glassBorder.alpha * 1.7f, 0.70f)
+
+    /**
      * Excludes the "disabled" state (17-05 sign-off gap-fix): [resolveButtonStyle] no longer
      * applies `.outlinedStyle()` to the already-flattened disabled style — it applies
      * `.outlinedStyle()` FIRST, then `.flattenDisabled()` LAST, so disabled-outlined is provably
@@ -70,10 +89,13 @@ class AeroOutlinedButtonStylesTest {
                     enabled = state.enabled,
                 )
 
+                // outlinedStyle() alone no longer sets rimAlpha (17-05 ROUND-2, FIX A) — the
+                // theme-aware outlined rim is overridden by resolveButtonStyle on top of it.
                 assertEquals(
-                    filled.outlinedStyle(),
+                    filled.outlinedStyle().copy(rimAlpha = expectedOutlinedRimAlpha(colors)),
                     outlined,
-                    "outlined must equal outlinedStyle(filled) for state=${state.label}, colors=$colors",
+                    "outlined must equal outlinedStyle(filled) with the theme-aware outlined rim " +
+                        "overridden on top, for state=${state.label}, colors=$colors",
                 )
             }
         }
@@ -89,8 +111,9 @@ class AeroOutlinedButtonStylesTest {
     @Test
     fun disabledOutlinedAppliesOutlinedStyleThenFlattenDisabledInThatOrder() {
         schemes.forEach { colors ->
-            val rest = AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp)
-            val expected = rest.outlinedStyle().flattenDisabled(colors)
+            val rest = expectedButtonRest(colors)
+            val outlinedRimAlpha = expectedOutlinedRimAlpha(colors)
+            val expected = rest.outlinedStyle().copy(rimAlpha = outlinedRimAlpha).flattenDisabled(colors)
             val staleOrdering = rest.flattenDisabled(colors).outlinedStyle()
             val actual = resolveButtonStyle(
                 colors = colors, outlined = true,
@@ -100,7 +123,8 @@ class AeroOutlinedButtonStylesTest {
             assertEquals(
                 expected,
                 actual,
-                "disabled+outlined must equal outlinedStyle() applied to rest, THEN flattenDisabled() applied last, for $colors",
+                "disabled+outlined must equal outlinedStyle() (with the theme-aware outlined rim " +
+                    "overridden on top), THEN flattenDisabled() applied last, for $colors",
             )
             assertNotEquals(
                 staleOrdering,
@@ -139,13 +163,14 @@ class AeroOutlinedButtonStylesTest {
 
     /**
      * FIX 3 (17-05 sign-off gap-fix): disabled outlined's fill must collapse to one neutral,
-     * borderDefault-blended tone (the [flattenDisabled] contract) — not stay the button's accent
-     * fill merely dimmed by the outlined alpha multiplier.
+     * surface-blended tone (the [flattenDisabled] contract, retargeted from borderDefault to
+     * surface by 17-05 ROUND-2's FIX C) — not stay the button's accent fill merely dimmed by the
+     * outlined alpha multiplier.
      */
     @Test
     fun disabledOutlinedFillIsNeutralCollapseNotAccentTone() {
         schemes.forEach { colors ->
-            val rest = AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp)
+            val rest = expectedButtonRest(colors)
             val disabledOutlined = resolveButtonStyle(
                 colors = colors, outlined = true,
                 hovered = false, pressed = false, focused = false, enabled = false,
@@ -178,10 +203,41 @@ class AeroOutlinedButtonStylesTest {
         assertEquals(rest.fillTop.alpha * 0.15f, outlinedRest.fillTop.alpha, colorChannelTolerance, "fillTop alpha must be filled alpha x0.15")
         assertEquals(rest.fillBottom.alpha * 0.15f, outlinedRest.fillBottom.alpha, colorChannelTolerance, "fillBottom alpha must be filled alpha x0.15")
         assertEquals(0.15f, outlinedRest.glossAlpha, 0.0001f, "rest glossAlpha must map 0.22 -> ~0.15")
-        assertEquals(0.65f, outlinedRest.rimAlpha, 0.0001f, "rimAlpha must be ~0.65 (17-05 sign-off gap-fix)")
+        // rimAlpha is deliberately left UNTOUCHED by outlinedStyle() alone (17-05 ROUND-2
+        // sign-off gap-fix, FIX A) — resolveButtonStyle sets the theme-aware value on top, since
+        // this pure style-to-style transform has no access to `colors`.
+        assertEquals(
+            rest.rimAlpha,
+            outlinedRest.rimAlpha,
+            "outlinedStyle() alone must leave rimAlpha untouched — resolveButtonStyle overrides it with the theme-aware value",
+        )
         assertEquals(rest.bevelLight, outlinedRest.bevelLight, "bevelLight must be unchanged")
         assertEquals(rest.bevelShadow, outlinedRest.bevelShadow, "bevelShadow must be unchanged")
         assertEquals(4.dp, outlinedRest.cornerRadius, "cornerRadius must remain 4.dp")
+    }
+
+    /**
+     * FIX A (17-05 ROUND-2 sign-off gap-fix): outlined keeps a stronger contour than filled for
+     * the SAME theme — it has almost no fill to lean on instead, so its resolved rim must read
+     * brighter than the filled button's rim, across all three real presets.
+     */
+    @Test
+    fun outlinedRimAlphaExceedsFilledRimAlphaForSameTheme() {
+        listOf(AeroColorScheme.AeroBlue, AeroColorScheme.AeroDark, AeroColorScheme.Classic).forEach { colors ->
+            val filled = resolveButtonStyle(
+                colors = colors, outlined = false,
+                hovered = false, pressed = false, focused = false, enabled = true,
+            )
+            val outlined = resolveButtonStyle(
+                colors = colors, outlined = true,
+                hovered = false, pressed = false, focused = false, enabled = true,
+            )
+
+            assertTrue(
+                outlined.rimAlpha > filled.rimAlpha,
+                "outlined rimAlpha (${outlined.rimAlpha}) must exceed filled rimAlpha (${filled.rimAlpha}) for $colors",
+            )
+        }
     }
 
     @Test

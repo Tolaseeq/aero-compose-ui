@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.mordred.aero.theme.AeroColorScheme
 import com.mordred.aero.theme.AeroSurfaceStyle
+import com.mordred.aero.theme.darken
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -19,8 +20,22 @@ class AeroButtonStylesTest {
 
     private val schemes = listOf(AeroColorScheme.AeroBlue, AeroColorScheme.Classic)
 
+    /**
+     * Reconstructs the BUTTON-scoped rest style [resolveButtonStyle] resolves internally (17-05
+     * ROUND-2 sign-off gap-fix, FIX A + FIX B) — [AeroSurfaceStyle.rest]'s ornament-derived fill
+     * overridden to a darker `primary`-derived two-tone, and its rimAlpha capped to
+     * `minOf(glassBorder.alpha, 0.45)` — so tests can assert against the exact expected values
+     * without duplicating [resolveButtonStyle]'s private constants.
+     */
+    private fun expectedButtonRest(colors: AeroColorScheme): AeroSurfaceStyle =
+        AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp).copy(
+            fillTop = colors.primary.darken(0.20f),
+            fillBottom = colors.primary.darken(0.36f),
+            rimAlpha = minOf(colors.glassBorder.alpha, 0.45f),
+        )
+
     @Test
-    fun restStateEqualsRestFactoryStyle() {
+    fun restStateEqualsThemeAwareButtonRest() {
         schemes.forEach { colors ->
             val resolved = resolveButtonStyle(
                 colors = colors,
@@ -30,9 +45,14 @@ class AeroButtonStylesTest {
                 focused = false,
                 enabled = true,
             )
-            val expected = AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp)
+            val expected = expectedButtonRest(colors)
 
-            assertEquals(expected, resolved, "rest state must equal AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp) for $colors")
+            assertEquals(
+                expected,
+                resolved,
+                "rest state must equal the theme-aware button rest (17-05 round-2: darker primary-derived " +
+                    "fill + native-capped rim alpha) for $colors",
+            )
         }
     }
 
@@ -74,7 +94,7 @@ class AeroButtonStylesTest {
     @Test
     fun pressedReturnsPressedRecessTransformedStyle() {
         schemes.forEach { colors ->
-            val rest = AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp)
+            val rest = expectedButtonRest(colors)
 
             val pressed = resolveButtonStyle(
                 colors = colors, outlined = false,
@@ -91,7 +111,7 @@ class AeroButtonStylesTest {
     @Test
     fun hoveredNotPressedReturnsHoverLightenTransformedStyle() {
         schemes.forEach { colors ->
-            val rest = AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp)
+            val rest = expectedButtonRest(colors)
 
             val hovered = resolveButtonStyle(
                 colors = colors, outlined = false,
@@ -112,7 +132,7 @@ class AeroButtonStylesTest {
     @Test
     fun focusedOnlyReturnsUnchangedRestFill() {
         schemes.forEach { colors ->
-            val rest = AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp)
+            val rest = expectedButtonRest(colors)
 
             val focusedOnly = resolveButtonStyle(
                 colors = colors, outlined = false,
@@ -120,6 +140,62 @@ class AeroButtonStylesTest {
             )
 
             assertEquals(rest, focusedOnly, "focus-only must return the unchanged rest style — focus is carried by the glow ring, not a fill change")
+        }
+    }
+
+    /**
+     * FIX A (17-05 ROUND-2 sign-off gap-fix): Classic's native `glassBorder` alpha is opaque
+     * (1.0), so capping it at 0.45 leaves it EXACTLY where the round-1 fix left it — the operator
+     * explicitly reported Classic already looked right and must not regress. AeroBlue's native
+     * `glassBorder` alpha (~0.31) is dimmer than the 0.45 cap, so it must draw at its OWN native
+     * alpha rather than being brightened up to the cap — this is the rim-too-bright fix.
+     */
+    @Test
+    fun filledRimAlphaIsCappedAtNativeGlassBorderAlphaPerTheme() {
+        val classic = resolveButtonStyle(
+            colors = AeroColorScheme.Classic, outlined = false,
+            hovered = false, pressed = false, focused = false, enabled = true,
+        )
+        val aeroBlue = resolveButtonStyle(
+            colors = AeroColorScheme.AeroBlue, outlined = false,
+            hovered = false, pressed = false, focused = false, enabled = true,
+        )
+
+        assertEquals(0.45f, classic.rimAlpha, 0.0001f, "Classic filled rimAlpha must stay 0.45 (unchanged — was already correct)")
+        assertTrue(
+            aeroBlue.rimAlpha < 0.45f,
+            "AeroBlue filled rimAlpha (${aeroBlue.rimAlpha}) must be dimmer than the 0.45 cap — it must draw at its own native glassBorder alpha",
+        )
+        assertEquals(
+            AeroColorScheme.AeroBlue.glassBorder.alpha,
+            aeroBlue.rimAlpha,
+            0.0001f,
+            "AeroBlue filled rimAlpha must equal its own native glassBorder alpha (below the cap)",
+        )
+    }
+
+    /**
+     * FIX B (17-05 ROUND-2 sign-off gap-fix): the operator asked for a darker filled fill so
+     * white button text stays legible against the light-blue Aero primaries — assert the
+     * resolved rest fill is darker than the theme's own `primary` for both light-primary Aero
+     * themes (AeroBlue, AeroDark).
+     */
+    @Test
+    fun filledFillIsDarkerThanPrimaryOnLightAeroThemes() {
+        listOf(AeroColorScheme.AeroBlue, AeroColorScheme.AeroDark).forEach { colors ->
+            val rest = resolveButtonStyle(
+                colors = colors, outlined = false,
+                hovered = false, pressed = false, focused = false, enabled = true,
+            )
+
+            assertTrue(
+                luminance(rest.fillTop) < luminance(colors.primary),
+                "filled rest fillTop must be darker than $colors's primary (fillTop luminance=${luminance(rest.fillTop)}, primary luminance=${luminance(colors.primary)})",
+            )
+            assertTrue(
+                luminance(rest.fillBottom) < luminance(colors.primary),
+                "filled rest fillBottom must be darker than $colors's primary (fillBottom luminance=${luminance(rest.fillBottom)}, primary luminance=${luminance(colors.primary)})",
+            )
         }
     }
 
