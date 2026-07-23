@@ -90,7 +90,7 @@ Details: `.planning/milestones/v2.0.4-ROADMAP.md` · Summary: `.planning/MILESTO
 **Phase numbering continues from 15** (project shipped through Phase 14 / v2.0.4).
 
 - [x] **Phase 15: Toolchain Upgrade** — Kotlin 2.4.10 + Compose Multiplatform 1.11.1, isolated from all visual work
-- [ ] **Phase 16: Foundation — Aero Primitives Layer** — repaired `GlassModifiers`, `AeroSurfaceStyle`/`AeroSurfacePrimitives`, `AeroOrnamentTokens`, shared thumb/groove primitives, full-library smoke pass
+- [x] **Phase 16: Foundation — Aero Primitives Layer** — repaired `GlassModifiers`, `AeroSurfaceStyle`/`AeroSurfacePrimitives`, `AeroOrnamentTokens`, shared thumb/groove primitives, full-library smoke pass (completed 2026-07-23)
 - [ ] **Phase 17: Buttons** — `AeroButton`, `AeroOutlinedButton` restyled with shared internal surface
 - [ ] **Phase 18: Range** — `AeroSlider` (M3 slots), `AeroRangeSlider`, `AeroProgressBar` restyled
 - [ ] **Phase 19: Selectors + Lists** — `AeroSwitch`, `AeroSegmentedControl`, `AeroListItem` restyled
@@ -149,7 +149,7 @@ Plans:
 - [x] 16-02-PLAN.md — Draw-primitives expansion: aeroGlowRing, raised-thumb (aeroThumbSurface/drawAeroThumb), recessed track-groove + gallery demos [Wave 2]
 - [x] 16-03-PLAN.md — GlassModifiers.kt three defect fixes: proportional gloss, full-thickness border/clip order, glassEffect elevation revived-or-removed [Wave 1]
 - [x] 16-04-PLAN.md — InteractionStates.kt → components/common/ + rememberAeroInteractionState() [Wave 1]
-- [ ] 16-05-PLAN.md — PRIM-18 M3 Slider slot-sizing spike + full-library smoke pass + Primitives gallery three-theme sign-off (D-03 glassEffect call) [Wave 3]
+- [x] 16-05-PLAN.md — PRIM-18 M3 Slider slot-sizing spike + full-library smoke pass + Primitives gallery three-theme sign-off (D-03 glassEffect call) [Wave 3]
 
 **Cross-cutting constraints:**
 
@@ -249,7 +249,7 @@ Plans:
 | 13.1. AeroPanelGroup horizontal orientation variant | v2.0.2 | 3/3 | Complete | 2026-06-23 |
 | 14. PanelGroup Recompose Fix | v2.0.4 | 3/3 | Complete | 2026-06-26 |
 | 15. Toolchain Upgrade | v3.0 | 6/6 | In Progress|  |
-| 16. Foundation — Aero Primitives Layer | v3.0 | 0/5 | Planned    |  |
+| 16. Foundation — Aero Primitives Layer | v3.0 | 5/5 | Complete    | 2026-07-23 |
 | 17. Buttons | v3.0 | 0/TBD | Not started | - |
 | 18. Range | v3.0 | 0/TBD | Not started | - |
 | 19. Selectors + Lists | v3.0 | 0/TBD | Not started | - |
