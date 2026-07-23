@@ -167,11 +167,15 @@ Plans:
   3. `Role.Button` semantics and keyboard activation (Space/Enter) still work after the M3 container is dropped, via `Modifier.clickable(role = Role.Button, ...)` — not a zero-semantics hand-roll
   4. `AeroOutlinedButton` shows the equivalent outlined-variant treatment and cannot visually drift from `AeroButton`, because both consume one shared internal surface composable
 
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
 
-- [ ] 17-01: TBD (planned via `/gsd:plan-phase 17` — standard pattern, plan directly)
+- [ ] 17-01-PLAN.md — Tracer: shared internal surface + filled AeroButton rest state end-to-end (M3 container removed, Role.Button, showcase wired) [Wave 1]
+- [ ] 17-02-PLAN.md — Per-state style transforms (pressedRecess/flattenDisabled/hoverLighten in theme/) + resolveButtonStyle; all five filled states [Wave 2]
+- [ ] 17-03-PLAN.md — Outlined variant as fixed delta of filled; Role.Button+keyboard test; VBTN-03/VBTN-06 source-scan guards [Wave 3]
+- [ ] 17-04-PLAN.md — Showcase state-matrix demo rows for both variants (three-theme × five-state review target) [Wave 4]
+- [ ] 17-05-PLAN.md — Human three-theme × five-state sign-off checkpoint (blocking) [Wave 5]
 
 ### Phase 18: Range
 
