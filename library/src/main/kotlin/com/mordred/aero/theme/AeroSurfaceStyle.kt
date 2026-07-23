@@ -64,8 +64,14 @@ public data class AeroSurfaceStyle(
 /** Hover fill-brighten factor applied by [AeroSurfaceStyle.hoverLighten] (17-UI-SPEC.md Hover row). */
 private const val HOVER_LIGHTEN_AMOUNT: Float = 0.08f
 
-/** Fraction the disabled flat fill is blended toward [AeroColorScheme.borderDefault] (17-UI-SPEC.md Disabled row). */
-private const val DISABLED_NEUTRAL_BLEND: Float = 0.4f
+/**
+ * Fraction the disabled flat fill is blended toward [AeroColorScheme.surface] (17-UI-SPEC.md
+ * Disabled row). Raised 0.4f -> 0.5f (17-05 ROUND-2 sign-off gap-fix, FIX C) alongside the blend
+ * target's switch from [AeroColorScheme.borderDefault] to [AeroColorScheme.surface] — see
+ * [flattenDisabled]'s KDoc for why blending toward the border token stood out as a light-gray
+ * highlight rather than receding into the panel.
+ */
+private const val DISABLED_NEUTRAL_BLEND: Float = 0.5f
 
 /** Darken amount applied to the disabled flat fill to derive its single collapsed bevel tone. */
 private const val DISABLED_BEVEL_DARKEN: Float = 0.05f
@@ -94,10 +100,20 @@ internal fun AeroSurfaceStyle.pressedRecess(innerShadow: Shadow): AeroSurfaceSty
 
 /**
  * Disabled transform (D-05) — flattens the geometry itself rather than merely fading it: the
- * two-tone fill collapses to one tone (blended toward [base]'s neutral [AeroColorScheme.borderDefault],
- * not just the two fill stops averaged) so a disabled accent-colored button desaturates toward
- * gray instead of reading as a dimmed version of its own hue; bevel collapses to a single tone
- * (no light/shadow split, reading as "dead"); gloss is fully disabled; the rim halves in strength.
+ * two-tone fill collapses to one tone (blended toward [base]'s [AeroColorScheme.surface], not just
+ * the two fill stops averaged) so a disabled accent-colored button desaturates toward the theme's
+ * own dark panel tone instead of reading as a dimmed version of its own hue; bevel collapses to a
+ * single tone (no light/shadow split, reading as "dead"); gloss is fully disabled; the rim halves
+ * in strength.
+ *
+ * Blends toward [AeroColorScheme.surface] rather than [AeroColorScheme.borderDefault] (17-05
+ * ROUND-2 sign-off gap-fix, FIX C) — `borderDefault` is a translucent WHITE token on the Aero
+ * themes, so blending toward it produced a light-gray fill that stood out as a highlight against
+ * the dark background instead of receding, the opposite of "disabled." `surface` is each theme's
+ * own dark panel tone, so the collapsed fill recedes into the surrounding chrome instead of
+ * glowing. [DISABLED_NEUTRAL_BLEND] is raised alongside this switch (0.4f -> 0.5f) for a clearer
+ * merge with the surface. Still a genuine "dead" look — gloss off, single bevel tone, rim halved —
+ * just not a light-gray standout.
  *
  * Never uses `.copy(alpha = ...)` for the flatten — [Color.lighten]/[Color.darken]/[lerp] mix RGB
  * channels directly so the result stays correct on [AeroColorScheme.Classic]'s fully-opaque tokens
@@ -105,7 +121,7 @@ internal fun AeroSurfaceStyle.pressedRecess(innerShadow: Shadow): AeroSurfaceSty
  */
 internal fun AeroSurfaceStyle.flattenDisabled(base: AeroColorScheme): AeroSurfaceStyle {
     val collapsedFill = lerp(fillTop, fillBottom, 0.5f)
-    val neutralFill = lerp(collapsedFill, base.borderDefault, DISABLED_NEUTRAL_BLEND)
+    val neutralFill = lerp(collapsedFill, base.surface, DISABLED_NEUTRAL_BLEND)
     val flatBevel = neutralFill.darken(DISABLED_BEVEL_DARKEN)
     return copy(
         fillTop = neutralFill,

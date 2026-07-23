@@ -54,6 +54,34 @@ class AeroSurfaceStyleTransformsTest {
         )
     }
 
+    /**
+     * FIX C (17-05 ROUND-2 sign-off gap-fix): [flattenDisabled] blends toward
+     * [AeroColorScheme.surface] (each theme's own dark panel tone) instead of
+     * [AeroColorScheme.borderDefault] (a translucent WHITE token on the Aero themes) — the old
+     * behavior produced a light-gray fill that stood out as a highlight against the dark
+     * background instead of receding into the panel, the opposite of "disabled." AeroBlue is
+     * where this distinction is starkest: `borderDefault` is light (translucent white),
+     * `surface` is dark (a deep blue panel tone).
+     */
+    @Test
+    fun flattenDisabledFillTrendsTowardSurfaceNotBorderDefault() {
+        val colors = AeroColorScheme.AeroBlue
+        val rest = AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp)
+
+        val disabled = rest.flattenDisabled(colors)
+
+        val distanceToSurface = rgbChannelDistance(disabled.fillTop, colors.surface)
+        val distanceToBorderDefault = rgbChannelDistance(disabled.fillTop, colors.borderDefault)
+
+        assertTrue(
+            distanceToSurface < distanceToBorderDefault,
+            "disabled fillTop (${disabled.fillTop}) must be closer to surface (${colors.surface}, " +
+                "distance=$distanceToSurface) than to borderDefault (${colors.borderDefault}, " +
+                "distance=$distanceToBorderDefault) — it must recede toward the panel, not stand " +
+                "out as a light-gray highlight",
+        )
+    }
+
     @Test
     fun hoverLightenBrightensBothFillStopsPreservingGlossBevelRim() {
         val rest = AeroSurfaceStyle.rest(AeroColorScheme.AeroBlue, cornerRadius = 4.dp)
@@ -89,6 +117,10 @@ class AeroSurfaceStyleTransformsTest {
     }
 
     private fun luminance(color: Color): Float = (color.red + color.green + color.blue) / 3f
+
+    /** Sum of per-channel absolute RGB differences — a simple "closeness" metric ignoring alpha. */
+    private fun rgbChannelDistance(a: Color, b: Color): Float =
+        kotlin.math.abs(a.red - b.red) + kotlin.math.abs(a.green - b.green) + kotlin.math.abs(a.blue - b.blue)
 
     private fun assertApproxEquals(expected: Float, actual: Float, message: String) {
         assertTrue(
