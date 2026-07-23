@@ -2,6 +2,7 @@ package com.mordred.aero.theme
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -54,3 +55,71 @@ public data class AeroSurfaceStyle(
         }
     }
 }
+
+/** Hover fill-brighten factor applied by [AeroSurfaceStyle.hoverLighten] (17-UI-SPEC.md Hover row). */
+private const val HOVER_LIGHTEN_AMOUNT: Float = 0.08f
+
+/** Fraction the disabled flat fill is blended toward [AeroColorScheme.borderDefault] (17-UI-SPEC.md Disabled row). */
+private const val DISABLED_NEUTRAL_BLEND: Float = 0.4f
+
+/** Darken amount applied to the disabled flat fill to derive its single collapsed bevel tone. */
+private const val DISABLED_BEVEL_DARKEN: Float = 0.05f
+
+/** Multiplier applied to [AeroSurfaceStyle.rimAlpha] when disabled (17-UI-SPEC.md Disabled row). */
+private const val DISABLED_RIM_ALPHA_MULTIPLIER: Float = 0.5f
+
+/**
+ * Recessed/pressed transform (D-02) — the exact field-swap idiom [drawAeroGroove] already uses
+ * (`AeroSurfacePrimitives.kt` lines 259-269), lifted into a pure extension fn here (not
+ * `components/buttons/`) so Phase 19's `AeroSegmentedControl` can import it cross-package for its
+ * recessed-selected-segment fill without a reach-around into the button package.
+ *
+ * Swaps [fillTop]/[fillBottom] and [bevelLight]/[bevelShadow], disables gloss (a recessed surface
+ * doesn't catch a top highlight), and attaches [innerShadow] — [Modifier.aeroSurface] applies a
+ * style's `innerShadow` automatically, so no extra draw call is needed at the call site.
+ */
+internal fun AeroSurfaceStyle.pressedRecess(innerShadow: Shadow): AeroSurfaceStyle = copy(
+    fillTop = fillBottom,
+    fillBottom = fillTop,
+    bevelLight = bevelShadow,
+    bevelShadow = bevelLight,
+    glossAlpha = 0f,
+    innerShadow = innerShadow,
+)
+
+/**
+ * Disabled transform (D-05) — flattens the geometry itself rather than merely fading it: the
+ * two-tone fill collapses to one tone (blended toward [base]'s neutral [AeroColorScheme.borderDefault],
+ * not just the two fill stops averaged) so a disabled accent-colored button desaturates toward
+ * gray instead of reading as a dimmed version of its own hue; bevel collapses to a single tone
+ * (no light/shadow split, reading as "dead"); gloss is fully disabled; the rim halves in strength.
+ *
+ * Never uses `.copy(alpha = ...)` for the flatten — [Color.lighten]/[Color.darken]/[lerp] mix RGB
+ * channels directly so the result stays correct on [AeroColorScheme.Classic]'s fully-opaque tokens
+ * (PRIM-14/PRIM-01 no-silent-no-op rule).
+ */
+internal fun AeroSurfaceStyle.flattenDisabled(base: AeroColorScheme): AeroSurfaceStyle {
+    val collapsedFill = lerp(fillTop, fillBottom, 0.5f)
+    val neutralFill = lerp(collapsedFill, base.borderDefault, DISABLED_NEUTRAL_BLEND)
+    val flatBevel = neutralFill.darken(DISABLED_BEVEL_DARKEN)
+    return copy(
+        fillTop = neutralFill,
+        fillBottom = neutralFill,
+        glossAlpha = 0f,
+        glossHeightFraction = 0f,
+        bevelLight = flatBevel,
+        bevelShadow = flatBevel,
+        rimAlpha = rimAlpha * DISABLED_RIM_ALPHA_MULTIPLIER,
+    )
+}
+
+/**
+ * Hover transform — brightens both fill stops by [HOVER_LIGHTEN_AMOUNT] via [Color.lighten]'s
+ * RGB-mix (never `.copy(alpha = ...)`, correct on Classic's opaque tokens) so the whole fill body
+ * lights up (D-03), while gloss/bevel/rim structure is preserved unchanged — the hover glow ring
+ * is a separate, independently-chained [aeroGlowRing] cue, not part of this fill transform.
+ */
+internal fun AeroSurfaceStyle.hoverLighten(): AeroSurfaceStyle = copy(
+    fillTop = fillTop.lighten(HOVER_LIGHTEN_AMOUNT),
+    fillBottom = fillBottom.lighten(HOVER_LIGHTEN_AMOUNT),
+)
