@@ -5,15 +5,15 @@ milestone_name: Glass Refinement
 current_phase: 17
 current_phase_name: Buttons
 status: executing
-stopped_at: Phase 17 UI-SPEC approved
-last_updated: "2026-07-23T13:26:23.322Z"
+stopped_at: Completed 17-01-PLAN.md
+last_updated: "2026-07-23T13:47:57.781Z"
 last_activity: 2026-07-23
-last_activity_desc: Phase 16 complete, transitioned to Phase 17
+last_activity_desc: Phase 17 execution started
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 16
-  completed_plans: 6
+  completed_plans: 7
   percent: 17
 ---
 
@@ -24,17 +24,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refinement)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, typed `AeroIcons`, and a showcase — no manual style work or icon-pack hunting required.
-**Current focus:** Phase 16 — foundation-aero-primitives-layer
+**Current focus:** Phase 17 — Buttons
 
 ## Current Position
 
 Milestone: v3.0 Glass Refinement
-Phase: 17 — Buttons
-Plan: Not started
+Phase: 17 (Buttons) — EXECUTING
+Plan: 2 of 5
 Status: Ready to execute
-Last activity: 2026-07-23 — Phase 16 complete, transitioned to Phase 17
+Last activity: 2026-07-23 — Phase 17 execution started
 
-Progress: [██████░░░░] 55%
+Progress: [████░░░░░░] 44%
 
 ## v3.0 Roadmap (2026-07-21)
 
@@ -113,6 +113,7 @@ Research flags carried into planning: Phases 15, 16, 18 likely need `/gsd:resear
 | Phase 16 P04 | 8min | 1 tasks | 6 files |
 | Phase 16 P02 | 32min | 2 tasks | 3 files |
 | Phase 16 P05 | 2h10min | 2 tasks | 6 files |
+| Phase 17 P01 | 20min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -151,6 +152,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase 16, Plan 05]: PRIM-18 spike PASS (bytecode-proven + human-confirmed) - AeroSlider keeps Material3 Slider + custom thumb=/track= slots at MEDIUM complexity for Phase 18, not full M3 removal
 - [Phase 16, Plan 05]: D-03 CONFIRMED - glassEffect(elevation)'s revived dropShadow (wired Plan 03) stays final; improves cards/panels across all three themes without noise
 - [Phase 16, Plan 05]: aeroGlowRing was invisible in the gallery (radial-gradient bloom clipped by aeroSurface's own .clip + same-hue-family hoverGlow) - fixed via multi-ring concentric bloom, USAGE CONTRACT (apply outside any clip), and two intensity soften passes; final hoverGlow=primary.lighten(0.30f), now a documented binding rule for Phase 17-19 components
+- [Phase ?]: [Phase 17, Plan 01]: AeroSurfaceStyle.rest(colors, cornerRadius=4.dp) used verbatim for the tracer rest-state - D-01 accent-identity finding confirmed no bespoke accent-override style needed
+- [Phase ?]: [Phase 17, Plan 01]: Glow-before-surface modifier ordering (aeroGlowRing x2 then aeroSurface) proven end-to-end and locked as the pattern all future Aero components composing these two primitives must follow
 
 ### Pending Todos
 
@@ -165,7 +168,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-07-23T11:42:42.941Z
-Stopped at: Phase 17 UI-SPEC approved
-Resume file: c:/1A_WORK/ui_lib/.planning/phases/17-buttons/17-UI-SPEC.md
+Last session: 2026-07-23T13:47:57.765Z
+Stopped at: Completed 17-01-PLAN.md
+Resume file: None
 Next action: `/gsd:plan-phase 15` (Toolchain Upgrade — consider `/gsd:research-phase 15` first per research flag)

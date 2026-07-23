@@ -167,12 +167,12 @@ Plans:
   3. `Role.Button` semantics and keyboard activation (Space/Enter) still work after the M3 container is dropped, via `Modifier.clickable(role = Role.Button, ...)` — not a zero-semantics hand-roll
   4. `AeroOutlinedButton` shows the equivalent outlined-variant treatment and cannot visually drift from `AeroButton`, because both consume one shared internal surface composable
 
-**Plans**: 5 plans
+**Plans**: 1/5 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 17-01-PLAN.md — Tracer: shared internal surface + filled AeroButton rest state end-to-end (M3 container removed, Role.Button, showcase wired) [Wave 1]
+- [x] 17-01-PLAN.md — Tracer: shared internal surface + filled AeroButton rest state end-to-end (M3 container removed, Role.Button, showcase wired) [Wave 1]
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -267,7 +267,7 @@ Plans:
 | 14. PanelGroup Recompose Fix | v2.0.4 | 3/3 | Complete | 2026-06-26 |
 | 15. Toolchain Upgrade | v3.0 | 6/6 | In Progress|  |
 | 16. Foundation — Aero Primitives Layer | v3.0 | 5/5 | Complete    | 2026-07-23 |
-| 17. Buttons | v3.0 | 0/TBD | Not started | - |
+| 17. Buttons | v3.0 | 1/5 | In Progress|  |
 | 18. Range | v3.0 | 0/TBD | Not started | - |
 | 19. Selectors + Lists | v3.0 | 0/TBD | Not started | - |
 | 20. Verification | v3.0 | 0/TBD | Not started | - |
