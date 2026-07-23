@@ -162,16 +162,21 @@ empty state, or error state. Rows below are reinterpreted accordingly.
 
 ## UI Considerations
 
-Applicable state considerations resolved: 1 covered, 0 backstop, 0 unresolved.
-
-Only `long-text` applies to this phase's element kind (`interactive-control`) per the taxonomy's
-relevance filter — `empty`/`loading`/`error`/`populated`/`partial`/`overflow`/`zero-one-many`
-all apply to `form`/`list-collection`/`media`/`nav` element kinds, none of which this phase
-touches (both components are single fixed-size interactive controls with a plain string label).
+Probe result: 16 categories applicable across the 2 elements (the heuristic classifier over-fired
+— the prose's negations "not a form, not a list, not a collection, not media" tripped every
+element-kind cue). Resolved at kind-confirmation: both surfaces are single fixed-size
+**interactive-control** elements, so only `long-text` genuinely applies. **1 covered, 0 backstop,
+0 unresolved, 12 dismissed (N/A).**
 
 | Category | Element(s) | Status | Resolution / Reason |
 |----------|------------|--------|---------------------|
-| long-text | `AeroButton` / `AeroOutlinedButton` label (interactive-control) | ✅ covered | Button label renders single-line: `maxLines = 1`, `overflow = TextOverflow.Ellipsis`. The fixed heights (30.dp / 28.dp, locked per Spacing Scale/VER-03) never grow or wrap for a long label — matches Win7 Aero's fixed-height truncating button convention, never a Material-style auto-growing button. **This is a new addition** — the current shipped `Text(...)` call sets neither `maxLines` nor `overflow`; the planner must add both, not assume they already exist. |
+| long-text | `AeroButton` / `AeroOutlinedButton` label | ✅ covered | Button label renders single-line: `maxLines = 1`, `overflow = TextOverflow.Ellipsis`. The fixed heights (30.dp / 28.dp, locked per Spacing Scale/VER-03) never grow or wrap for a long label — matches Win7 Aero's fixed-height truncating button convention, never a Material-style auto-growing button. **This is a new addition** — the current shipped `Text(...)` call sets neither `maxLines` nor `overflow`; the planner must add both, not assume they already exist. |
+| empty | both buttons | ⊘ dismissed (N/A) | A button is a stateless fixed-size control with no data-driven collection — there is no zero-item / no-data rendering. Confirmed against the Copywriting Contract (empty-state rows already marked N/A). |
+| loading | both buttons | ⊘ dismissed (N/A) | No async / busy / loading variant is in scope for VBTN-01..06 — the locked state set is exactly rest/hover/press/focus/disabled (CONTEXT.md D-01..D-06). A `loading/busy` button state was explicitly considered and dismissed this phase (not deferred — out of the milestone's paint-not-behavior boundary). |
+| error | both buttons | ⊘ dismissed (N/A) | No error/failure state in scope; `enabled = false` (Disabled) is the only "negative" state this phase defines. Confirmed against the Copywriting Contract (error row marked N/A). |
+| populated | both buttons | ⊘ dismissed (N/A) | The "normal populated" state is the Rest row already fully specified in the Color § per-state contract — no separate data-volume rendering exists for a single label control. |
+| partial | both buttons | ⊘ dismissed (N/A) | No multi-field / partial-data concept — a button carries one required caller-supplied string label. |
+| zero-one-many | both buttons | ⊘ dismissed (N/A) | No collection / list semantics — singular vs plural layout does not apply to a single control. |
 
 ---
 
@@ -191,11 +196,11 @@ independently-copy-pasted registry blocks could.
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: FLAG (non-blocking) — line-height left implicit; state concrete `bodyLarge` value or mark N/A given `maxLines = 1`
+- [x] Dimension 5 Spacing: FLAG (non-blocking) — 5+ non-4-multiple values, all declared/justified as inherited from Phase 16 (VER-03); no value newly introduced by this phase
+- [x] Dimension 6 Registry Safety: PASS
 
-**Approval:** pending
+**Approval:** APPROVED (no BLOCKs; 2 non-blocking FLAGs left for the planner to optionally address)
