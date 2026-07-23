@@ -203,11 +203,14 @@ Plans:
   4. `AeroProgressBar` shows a recessed track bed and a gradient fill with gloss; the periodic sheen is present but OFF by default; indeterminate mode is restyled but keeps its existing 1500ms restart timing with no ping-pong introduced
   5. Anywhere animation and drag write the same value (slider/range-slider thumbs), the locked Pattern 3 is reused: animation reads a target-only value, drag writes directly, `isDragging` switches to `snap()`
 
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
 
-- [ ] 18-01: TBD (planned via `/gsd:plan-phase 18` — likely needs `/gsd:research-phase` per research flag)
+- [ ] 18-01-PLAN.md — TRACER: neutralRest factory + slider resolvers + AeroSlider custom-slot restyle end-to-end, Wave-0 guards (VRNG-01/02/03/09)
+- [ ] 18-02-PLAN.md — AeroRangeSlider Canvas draw-block restyle + per-thumb interaction, drag-logic-untouched guard (VRNG-04/05/09)
+- [ ] 18-03-PLAN.md — AeroProgressBar recessed bed + glossy fill + default-off running sheen + indeterminate sweep, invariant guard (VRNG-06/07/08)
+- [ ] 18-04-PLAN.md — RangeSection showcase states × three themes + human three-theme visual sign-off (VRNG-03/05/06/08)
 
 ### Phase 19: Selectors + Lists
 
