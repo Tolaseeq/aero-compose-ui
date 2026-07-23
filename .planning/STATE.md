@@ -5,15 +5,15 @@ milestone_name: Glass Refinement
 current_phase: 17
 current_phase_name: Buttons
 status: executing
-stopped_at: Completed 17-02-PLAN.md
-last_updated: "2026-07-23T13:58:47.494Z"
+stopped_at: Completed 17-03-PLAN.md
+last_updated: "2026-07-23T14:16:23.335Z"
 last_activity: 2026-07-23
 last_activity_desc: Phase 17 execution started
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 16
-  completed_plans: 8
+  completed_plans: 9
   percent: 17
 ---
 
@@ -30,11 +30,11 @@ See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refin
 
 Milestone: v3.0 Glass Refinement
 Phase: 17 (Buttons) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-07-23 — Phase 17 execution started
 
-Progress: [█████░░░░░] 50%
+Progress: [██████░░░░] 56%
 
 ## v3.0 Roadmap (2026-07-21)
 
@@ -115,6 +115,7 @@ Research flags carried into planning: Phases 15, 16, 18 likely need `/gsd:resear
 | Phase 16 P05 | 2h10min | 2 tasks | 6 files |
 | Phase 17 P01 | 20min | 2 tasks | 4 files |
 | Phase 17 P02 | 13min | 2 tasks | 4 files |
+| Phase 17 P03 | 15min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -157,6 +158,9 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase ?]: [Phase 17, Plan 01]: Glow-before-surface modifier ordering (aeroGlowRing x2 then aeroSurface) proven end-to-end and locked as the pattern all future Aero components composing these two primitives must follow
 - [Phase ?]: [Phase 17, Plan 02]: Disabled-fill blend uses androidx.compose.ui.graphics.lerp (not Color.lighten/darken) to match UI-SPEC's literal two-step lerp wording, verified correct on Classic's opaque tokens via a dedicated Classic-safety test
 - [Phase ?]: [Phase 17, Plan 02]: pressedRecess/flattenDisabled/hoverLighten placed in theme/AeroSurfaceStyle.kt (not components/buttons/) specifically so Phase 19's AeroSegmentedControl can import pressedRecess cross-package without a reach-around
+- [Phase ?]: [Phase 17, Plan 03]: outlinedStyle() implemented verbatim per 17-RESEARCH.md Pattern 5 formula (fill alpha x0.15, gloss proportionally scaled 0.15/0.32, rim literal 0.85) — placed in components/buttons/AeroButtonSurface.kt, not theme/, since it has no Phase 19 cross-package reuse need unlike pressedRecess
+- [Phase ?]: [Phase 17, Plan 03]: Pitfall 6 compile-proof spike done via direct javap bytecode inspection of ui-test-desktop-1.11.1.jar/ui-desktop-1.11.1.jar (mirrors TOOL-07 precedent) rather than a throwaway scratch composable - performKeyInput/pressKey/Key.Enter/Key.Spacebar/requestFocus all resolved exactly as assumed
+- [Phase ?]: [Phase 17, Plan 03]: VBTN-03/VBTN-06 source-scan guards proven to FAIL against deliberately-reintroduced broken code (temporary local edits, reverted before commit) before being trusted, per the v2.0.3 false-positive-sign-off lesson
 
 ### Pending Todos
 
@@ -171,7 +175,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-07-23T13:58:47.481Z
-Stopped at: Completed 17-02-PLAN.md
+Last session: 2026-07-23T14:16:23.317Z
+Stopped at: Completed 17-03-PLAN.md
 Resume file: None
 Next action: `/gsd:plan-phase 15` (Toolchain Upgrade — consider `/gsd:research-phase 15` first per research flag)
