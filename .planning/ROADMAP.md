@@ -91,7 +91,7 @@ Details: `.planning/milestones/v2.0.4-ROADMAP.md` · Summary: `.planning/MILESTO
 
 - [x] **Phase 15: Toolchain Upgrade** — Kotlin 2.4.10 + Compose Multiplatform 1.11.1, isolated from all visual work
 - [x] **Phase 16: Foundation — Aero Primitives Layer** — repaired `GlassModifiers`, `AeroSurfaceStyle`/`AeroSurfacePrimitives`, `AeroOrnamentTokens`, shared thumb/groove primitives, full-library smoke pass (completed 2026-07-23)
-- [ ] **Phase 17: Buttons** — `AeroButton`, `AeroOutlinedButton` restyled with shared internal surface
+- [x] **Phase 17: Buttons** — `AeroButton`, `AeroOutlinedButton` restyled with shared internal surface (completed 2026-07-23)
 - [ ] **Phase 18: Range** — `AeroSlider` (M3 slots), `AeroRangeSlider`, `AeroProgressBar` restyled
 - [ ] **Phase 19: Selectors + Lists** — `AeroSwitch`, `AeroSegmentedControl`, `AeroListItem` restyled
 - [ ] **Phase 20: Verification** — showcase wiring, grep-gates, three-theme sign-off (incl. non-100% DPI pass)
@@ -267,7 +267,7 @@ Plans:
 | 14. PanelGroup Recompose Fix | v2.0.4 | 3/3 | Complete | 2026-06-26 |
 | 15. Toolchain Upgrade | v3.0 | 6/6 | In Progress|  |
 | 16. Foundation — Aero Primitives Layer | v3.0 | 5/5 | Complete    | 2026-07-23 |
-| 17. Buttons | v3.0 | 5/5 | In Progress|  |
+| 17. Buttons | v3.0 | 5/5 | Complete    | 2026-07-23 |
 | 18. Range | v3.0 | 0/TBD | Not started | - |
 | 19. Selectors + Lists | v3.0 | 0/TBD | Not started | - |
 | 20. Verification | v3.0 | 0/TBD | Not started | - |
