@@ -167,14 +167,25 @@ internal fun AeroSurfaceStyle.outlinedStyle(): AeroSurfaceStyle = copy(
  * Pure, Compose-free resolution point mapping (rest/hover/press/focus/disabled) → [AeroSurfaceStyle]
  * (17-UI-SPEC.md "Filled AeroButton — per-state contract"), consumed by [AeroButtonSurface].
  *
- * Precedence (disabled wins over everything, press over hover): [enabled] `false` →
- * [AeroSurfaceStyle.flattenDisabled]; else [pressed] → [AeroSurfaceStyle.pressedRecess]; else
- * [hovered] → [AeroSurfaceStyle.hoverLighten]; else the unmodified rest style. [focused] carries
- * no fill delta here — focus is expressed purely by [AeroButtonSurface]'s persistent
- * `aeroGlowRing` call, per D-04 (kept as a resolver parameter for API symmetry/future use, not
- * because it currently branches anything).
+ * Precedence (disabled wins over everything, press over hover): [enabled] `false` → disabled
+ * branch below; else [pressed] → [AeroSurfaceStyle.pressedRecess]; else [hovered] →
+ * [AeroSurfaceStyle.hoverLighten]; else the unmodified rest style. [focused] carries no fill
+ * delta here — focus is expressed purely by [AeroButtonSurface]'s persistent `aeroGlowRing`
+ * call, per D-04 (kept as a resolver parameter for API symmetry/future use, not because it
+ * currently branches anything).
  *
- * When [outlined] is `true`, [AeroSurfaceStyle.outlinedStyle] is applied on top of the
+ * [AeroSurfaceStyle.flattenDisabled] is the TERMINAL transform when disabled (17-05 sign-off
+ * gap-fix) — not an input to [AeroSurfaceStyle.outlinedStyle]. The old ordering applied
+ * `.outlinedStyle()` AFTER `.flattenDisabled()`, so outlined's unconditional
+ * `rimAlpha = OUTLINED_RIM_ALPHA` / fill-alpha-×0.15 clobbered flattenDisabled's halved rimAlpha
+ * and neutral-fill collapse, leaving disabled-outlined practically indistinguishable from
+ * active-outlined. Now: when [outlined], `.outlinedStyle()` is applied to the rest style FIRST,
+ * then `.flattenDisabled()` is applied last, so its rimAlpha-halving and neutral-fill collapse
+ * are the final word (outlined disabled rim ≈ 0.65 × 0.5 = ~0.325 vs. active outlined rim 0.65 —
+ * clearly dimmer). Disabled FILLED is unchanged from before (still `rest.flattenDisabled(colors)`).
+ * No hover/press transforms are ever applied in the disabled branch.
+ *
+ * When enabled and [outlined] is `true`, [AeroSurfaceStyle.outlinedStyle] is applied on top of the
  * already-per-state-resolved filled style (17-03) — outlined provably inherits every state delta
  * by construction, never an independently-authored second style (VBTN-06).
  */
@@ -187,8 +198,11 @@ internal fun resolveButtonStyle(
     enabled: Boolean,
 ): AeroSurfaceStyle {
     val rest = AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp)
+    if (!enabled) {
+        val disabledBase = if (outlined) rest.outlinedStyle() else rest
+        return disabledBase.flattenDisabled(colors)
+    }
     val resolved = when {
-        !enabled -> rest.flattenDisabled(colors)
         pressed -> rest.pressedRecess(PRESSED_INNER_SHADOW)
         hovered -> rest.hoverLighten()
         else -> rest

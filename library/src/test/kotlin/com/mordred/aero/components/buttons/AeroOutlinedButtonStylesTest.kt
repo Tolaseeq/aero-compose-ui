@@ -3,8 +3,11 @@ package com.mordred.aero.components.buttons
 import androidx.compose.ui.unit.dp
 import com.mordred.aero.theme.AeroColorScheme
 import com.mordred.aero.theme.AeroSurfaceStyle
+import com.mordred.aero.theme.flattenDisabled
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 /**
  * Value-level JVM tests (no `runComposeUiTest`, no Compose runtime) proving VBTN-05/06:
@@ -35,10 +38,21 @@ class AeroOutlinedButtonStylesTest {
 
     private val schemes = listOf(AeroColorScheme.AeroBlue, AeroColorScheme.Classic)
 
+    /**
+     * Excludes the "disabled" state (17-05 sign-off gap-fix): [resolveButtonStyle] no longer
+     * applies `.outlinedStyle()` to the already-flattened disabled style — it applies
+     * `.outlinedStyle()` FIRST, then `.flattenDisabled()` LAST, so disabled-outlined is provably
+     * NOT `outlinedStyle(filled)` anymore (that was exactly the bug: flattenDisabled's
+     * rimAlpha-halving/neutral-fill collapse was getting clobbered by outlinedStyle running after
+     * it). See [disabledOutlinedAppliesOutlinedStyleThenFlattenDisabledInThatOrder] for the
+     * disabled-specific invariant this test carves out.
+     */
+    private val enabledStates = states.filter { it.enabled }
+
     @Test
-    fun outlinedEqualsOutlinedStyleAppliedToFilledForEveryState() {
+    fun outlinedEqualsOutlinedStyleAppliedToFilledForEveryEnabledState() {
         schemes.forEach { colors ->
-            states.forEach { state ->
+            enabledStates.forEach { state ->
                 val filled = resolveButtonStyle(
                     colors = colors,
                     outlined = false,
@@ -62,6 +76,92 @@ class AeroOutlinedButtonStylesTest {
                     "outlined must equal outlinedStyle(filled) for state=${state.label}, colors=$colors",
                 )
             }
+        }
+    }
+
+    /**
+     * FIX 3 (17-05 sign-off gap-fix): proves the disabled-outlined ordering is exactly
+     * `.outlinedStyle()` applied to rest, THEN `.flattenDisabled()` applied last — the terminal
+     * transform. This is the ordering that makes disabled-outlined dimmer than active-outlined
+     * (see [disabledOutlinedRimIsStrictlyDimmerThanActiveOutlinedRim] below), unlike the old
+     * (buggy) `flattenDisabled(...).outlinedStyle()` ordering this test guards against regressing to.
+     */
+    @Test
+    fun disabledOutlinedAppliesOutlinedStyleThenFlattenDisabledInThatOrder() {
+        schemes.forEach { colors ->
+            val rest = AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp)
+            val expected = rest.outlinedStyle().flattenDisabled(colors)
+            val staleOrdering = rest.flattenDisabled(colors).outlinedStyle()
+            val actual = resolveButtonStyle(
+                colors = colors, outlined = true,
+                hovered = false, pressed = false, focused = false, enabled = false,
+            )
+
+            assertEquals(
+                expected,
+                actual,
+                "disabled+outlined must equal outlinedStyle() applied to rest, THEN flattenDisabled() applied last, for $colors",
+            )
+            assertNotEquals(
+                staleOrdering,
+                actual,
+                "disabled+outlined must NOT equal the old (buggy) flattenDisabled(...).outlinedStyle() ordering for $colors",
+            )
+        }
+    }
+
+    /**
+     * FIX 3 (17-05 sign-off gap-fix): the operator's finding — disabled outlined was "practically
+     * indistinguishable from the active outlined button" — must no longer reproduce. Disabled
+     * outlined's rim must be strictly dimmer than active/rest outlined's rim so the two states
+     * are visually distinguishable.
+     */
+    @Test
+    fun disabledOutlinedRimIsStrictlyDimmerThanActiveOutlinedRim() {
+        schemes.forEach { colors ->
+            val activeOutlined = resolveButtonStyle(
+                colors = colors, outlined = true,
+                hovered = false, pressed = false, focused = false, enabled = true,
+            )
+            val disabledOutlined = resolveButtonStyle(
+                colors = colors, outlined = true,
+                hovered = false, pressed = false, focused = false, enabled = false,
+            )
+
+            assertTrue(
+                disabledOutlined.rimAlpha < activeOutlined.rimAlpha,
+                "disabled outlined rimAlpha (${disabledOutlined.rimAlpha}) must be strictly less " +
+                    "than active outlined rimAlpha (${activeOutlined.rimAlpha}) for $colors so the " +
+                    "two states are distinguishable",
+            )
+        }
+    }
+
+    /**
+     * FIX 3 (17-05 sign-off gap-fix): disabled outlined's fill must collapse to one neutral,
+     * borderDefault-blended tone (the [flattenDisabled] contract) — not stay the button's accent
+     * fill merely dimmed by the outlined alpha multiplier.
+     */
+    @Test
+    fun disabledOutlinedFillIsNeutralCollapseNotAccentTone() {
+        schemes.forEach { colors ->
+            val rest = AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp)
+            val disabledOutlined = resolveButtonStyle(
+                colors = colors, outlined = true,
+                hovered = false, pressed = false, focused = false, enabled = false,
+            )
+
+            assertEquals(
+                disabledOutlined.fillTop,
+                disabledOutlined.fillBottom,
+                "disabled outlined fill must collapse to a single neutral tone for $colors",
+            )
+            assertNotEquals(
+                rest.fillTop,
+                disabledOutlined.fillTop,
+                "disabled outlined fill must differ from the active accent fillTop for $colors — " +
+                    "it must be the neutral collapse, not the accent tone merely dimmed",
+            )
         }
     }
 
