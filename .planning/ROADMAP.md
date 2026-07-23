@@ -170,11 +170,24 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
+**Wave 1**
 
 - [ ] 17-01-PLAN.md — Tracer: shared internal surface + filled AeroButton rest state end-to-end (M3 container removed, Role.Button, showcase wired) [Wave 1]
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 17-02-PLAN.md — Per-state style transforms (pressedRecess/flattenDisabled/hoverLighten in theme/) + resolveButtonStyle; all five filled states [Wave 2]
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 17-03-PLAN.md — Outlined variant as fixed delta of filled; Role.Button+keyboard test; VBTN-03/VBTN-06 source-scan guards [Wave 3]
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 17-04-PLAN.md — Showcase state-matrix demo rows for both variants (three-theme × five-state review target) [Wave 4]
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 17-05-PLAN.md — Human three-theme × five-state sign-off checkpoint (blocking) [Wave 5]
 
 ### Phase 18: Range
