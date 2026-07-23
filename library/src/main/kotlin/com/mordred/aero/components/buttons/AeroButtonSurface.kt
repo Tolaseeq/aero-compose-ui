@@ -54,8 +54,9 @@ import com.mordred.aero.theme.pressedRecess
  * expressed purely by the persistent [aeroGlowRing] focus call above).
  *
  * @param outlined Differentiates [AeroOutlinedButton] from this filled default; [resolveButtonStyle]
- * applies [AeroSurfaceStyle.outlinedStyle]'s fixed delta (fill alpha × 0.15, gloss 0.32 → 0.15,
- * rim 0.6 → 0.85) on top of the per-state filled resolution when `true` (17-03, VBTN-05/06).
+ * applies [AeroSurfaceStyle.outlinedStyle]'s fixed delta (fill alpha × 0.15, gloss 0.22 → 0.15,
+ * rim 0.45 → 0.65) on top of the per-state filled resolution when `true` (17-03, VBTN-05/06;
+ * magnitudes recalibrated in the 17-05 sign-off gap-fix).
  */
 @Composable
 internal fun AeroButtonSurface(
@@ -129,11 +130,18 @@ private const val OUTLINED_FILL_ALPHA_MULTIPLIER: Float = 0.15f
 /** Filled → outlined target rest glossAlpha, used as the numerator of the proportional scale below. */
 private const val OUTLINED_GLOSS_ALPHA_TARGET: Float = 0.15f
 
-/** Filled rest glossAlpha (`AeroSurfaceStyle`'s own default), the denominator of the proportional scale. */
-private const val FILLED_REST_GLOSS_ALPHA: Float = 0.32f
+/**
+ * Filled rest glossAlpha (`AeroSurfaceStyle`'s own default), the denominator of the proportional
+ * scale. MUST stay equal to [AeroSurfaceStyle]'s `glossAlpha` default (0.22f, sign-off gap-fix
+ * 17-05) — see [outlinedStyle]'s KDoc.
+ */
+private const val FILLED_REST_GLOSS_ALPHA: Float = 0.22f
 
-/** Filled → outlined target rimAlpha (17-UI-SPEC.md Outlined contract, D-06). */
-private const val OUTLINED_RIM_ALPHA: Float = 0.85f
+/**
+ * Filled → outlined target rimAlpha (17-UI-SPEC.md Outlined contract, D-06). Lowered 0.85f ->
+ * 0.65f (sign-off gap-fix 17-05) — outlined still leans on its rim for identity, but not white-hot.
+ */
+private const val OUTLINED_RIM_ALPHA: Float = 0.65f
 
 /**
  * Fixed-delta transform (D-06, VBTN-05/06) turning an already-resolved filled [AeroSurfaceStyle]
@@ -144,9 +152,9 @@ private const val OUTLINED_RIM_ALPHA: Float = 0.85f
  * 17-UI-SPEC.md "Outlined AeroOutlinedButton — per-state contract": fill alpha × ~0.15 ("a
  * whisper of gloss/gradient"); glossAlpha scaled proportionally toward the rest-state target
  * ~0.15 (so an already-zeroed gloss, e.g. pressed/disabled, stays zero rather than jumping back
- * up); rimAlpha to ~0.85 (brighter Aero contour — the outlined identity leans on its rim, not its
- * fill). `bevelLight`/`bevelShadow` and `cornerRadius` are left unchanged (contour emphasis
- * carries the depth cue instead of fill).
+ * up); rimAlpha to ~0.65 (brighter-than-fill Aero contour — the outlined identity leans on its
+ * rim, not its fill — but not white-hot, per the 17-05 sign-off gap-fix). `bevelLight`/`bevelShadow`
+ * and `cornerRadius` are left unchanged (contour emphasis carries the depth cue instead of fill).
  */
 internal fun AeroSurfaceStyle.outlinedStyle(): AeroSurfaceStyle = copy(
     fillTop = fillTop.copy(alpha = fillTop.alpha * OUTLINED_FILL_ALPHA_MULTIPLIER),

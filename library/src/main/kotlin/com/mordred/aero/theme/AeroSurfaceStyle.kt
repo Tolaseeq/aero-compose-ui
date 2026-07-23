@@ -28,9 +28,14 @@ public data class AeroSurfaceStyle(
     public val bevelShadow: Color,
     public val rimColor: Color,
     public val seamFraction: Float = 0.5f,
-    public val glossAlpha: Float = 0.32f,
+    // Sign-off gap-fix (17-05): lowered 0.32f -> 0.22f, trimming the gloss band amplifying
+    // filled-fill brightness. AeroButtonSurface.FILLED_REST_GLOSS_ALPHA must track this value.
+    public val glossAlpha: Float = 0.22f,
     public val glossHeightFraction: Float = 0.32f,
-    public val rimAlpha: Float = 0.6f,
+    // Sign-off gap-fix (17-05): lowered 0.6f -> 0.45f, softening the rim so it no longer reads
+    // brighter than the rest of the library (paired with AeroOrnamentTokens.rimLight dropping
+    // its 0.10f whitening).
+    public val rimAlpha: Float = 0.45f,
     public val cornerRadius: Dp = 8.dp,
     public val dropShadow: Shadow? = null,
     public val innerShadow: Shadow? = null,

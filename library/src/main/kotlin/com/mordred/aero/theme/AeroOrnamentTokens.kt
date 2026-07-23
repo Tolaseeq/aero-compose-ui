@@ -30,7 +30,11 @@ public data class AeroOrnamentTokens(
             glossHighlight = base.glassHighlight.lighten(0.15f),
             bevelLight = base.primary.lighten(0.25f),
             bevelShadow = base.primary.darken(0.20f),
-            rimLight = base.glassBorder.lighten(0.10f),
+            // Sign-off gap-fix (17-05): rim was reading "whiter than the rest of the library" —
+            // the 0.10f whitening pushed it visibly brighter than glassPanel/glassSurface's raw
+            // glassBorder. Now equals the library's own rim color exactly (D-01 "match the
+            // library, softer" directive).
+            rimLight = base.glassBorder,
             // Lightened past bevelLight (0.25f)/fillSplitTop (0.18f) so the glow reads as a
             // distinct luminous halo rather than blending into the surface's own top-of-fill
             // brightness (PRIM-06 — must contrast the surface it wraps, not match its hue
@@ -38,7 +42,9 @@ public data class AeroOrnamentTokens(
             // (D-01 moderate-Aero target: soft focus glow, not a hard selection ring).
             hoverGlow = base.primary.lighten(0.30f),
             grooveShadow = base.surface.darken(0.15f),
-            fillSplitTop = base.primary.lighten(0.18f),
+            // Sign-off gap-fix (17-05): 0.18f read over-saturated/garish, esp. on AeroBlue.
+            // Lowered to 0.08f (fillSplitBottom's darken(0.12f) depth stop is unchanged).
+            fillSplitTop = base.primary.lighten(0.08f),
             fillSplitBottom = base.primary.darken(0.12f),
         )
     }

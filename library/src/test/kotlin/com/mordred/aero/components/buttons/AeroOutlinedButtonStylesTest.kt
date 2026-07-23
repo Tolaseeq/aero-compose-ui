@@ -77,8 +77,8 @@ class AeroOutlinedButtonStylesTest {
         val colorChannelTolerance = 1f / 255f
         assertEquals(rest.fillTop.alpha * 0.15f, outlinedRest.fillTop.alpha, colorChannelTolerance, "fillTop alpha must be filled alpha x0.15")
         assertEquals(rest.fillBottom.alpha * 0.15f, outlinedRest.fillBottom.alpha, colorChannelTolerance, "fillBottom alpha must be filled alpha x0.15")
-        assertEquals(0.15f, outlinedRest.glossAlpha, 0.0001f, "rest glossAlpha must map 0.32 -> ~0.15")
-        assertEquals(0.85f, outlinedRest.rimAlpha, 0.0001f, "rimAlpha must be ~0.85")
+        assertEquals(0.15f, outlinedRest.glossAlpha, 0.0001f, "rest glossAlpha must map 0.22 -> ~0.15")
+        assertEquals(0.65f, outlinedRest.rimAlpha, 0.0001f, "rimAlpha must be ~0.65 (17-05 sign-off gap-fix)")
         assertEquals(rest.bevelLight, outlinedRest.bevelLight, "bevelLight must be unchanged")
         assertEquals(rest.bevelShadow, outlinedRest.bevelShadow, "bevelShadow must be unchanged")
         assertEquals(4.dp, outlinedRest.cornerRadius, "cornerRadius must remain 4.dp")
