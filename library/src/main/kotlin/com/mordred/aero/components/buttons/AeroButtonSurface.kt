@@ -11,17 +11,24 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mordred.aero.components.common.rememberAeroInteractionState
+import com.mordred.aero.theme.AeroColorScheme
 import com.mordred.aero.theme.AeroOrnamentTokens
 import com.mordred.aero.theme.AeroSurfaceStyle
 import com.mordred.aero.theme.AeroTheme
 import com.mordred.aero.theme.aeroGlowRing
 import com.mordred.aero.theme.aeroSurface
+import com.mordred.aero.theme.flattenDisabled
+import com.mordred.aero.theme.hoverLighten
+import com.mordred.aero.theme.pressedRecess
 
 /**
  * Shared internal surface painting every Aero button variant (VBTN-06) — [AeroButton] (filled)
@@ -41,13 +48,14 @@ import com.mordred.aero.theme.aeroSurface
  * `AeroRangeSlider` precedent must not repeat, VBTN-04) — carries click + Space/Enter keyboard
  * activation now that the Material3 `Button` container (which supplied this for free) is gone.
  *
- * Tracer-plan (17-01) style resolution: this single call to [AeroSurfaceStyle.rest] is the one
- * clearly-named point 17-02 replaces with full per-state (rest/hover/press/disabled) resolution
- * via `resolveButtonStyle(...)` — deliberately not stubbed with multiple fake states here.
+ * Style resolution now goes through [resolveButtonStyle] (17-02), replacing the 17-01 tracer's
+ * single rest-only call — every recomposition resolves the current rest/hover/press/disabled
+ * style from [rememberAeroInteractionState]'s booleans; focus carries no fill delta (it is
+ * expressed purely by the persistent [aeroGlowRing] focus call above).
  *
- * @param outlined Differentiates the outlined variant (17-03) from this filled default; unused
- * by the tracer's single rest-state resolution, consumed once `resolveButtonStyle`/
- * `outlinedStyle()` land in 17-02/17-03.
+ * @param outlined Differentiates the outlined variant (17-03) from this filled default; threaded
+ * through [resolveButtonStyle] but currently resolves identically to filled — the outlined delta
+ * (fill alpha × 0.15, gloss 0.32 → 0.15, rim 0.6 → 0.85) is applied in 17-03.
  */
 @Composable
 internal fun AeroButtonSurface(
@@ -62,7 +70,14 @@ internal fun AeroButtonSurface(
 ) {
     val state = rememberAeroInteractionState(interactionSource)
 
-    val style = AeroSurfaceStyle.rest(AeroTheme.colors, cornerRadius = 4.dp)
+    val style = resolveButtonStyle(
+        colors = AeroTheme.colors,
+        outlined = outlined,
+        hovered = state.hovered,
+        pressed = state.pressed,
+        focused = state.focused,
+        enabled = enabled,
+    )
 
     Box(
         contentAlignment = Alignment.Center,
@@ -95,5 +110,46 @@ internal fun AeroButtonSurface(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(contentPadding),
         )
+    }
+}
+
+/**
+ * Inner-shadow applied to a pressed/recessed button style (17-UI-SPEC.md Press row) — a native
+ * [Shadow] (Phase 16 D-02 precedent), not a manual gradient.
+ */
+private val PRESSED_INNER_SHADOW: Shadow = Shadow(
+    radius = 2.dp,
+    color = Color.Black.copy(alpha = 0.35f),
+    offset = DpOffset(0.dp, 1.dp),
+)
+
+/**
+ * Pure, Compose-free resolution point mapping (rest/hover/press/focus/disabled) → [AeroSurfaceStyle]
+ * (17-UI-SPEC.md "Filled AeroButton — per-state contract"), consumed by [AeroButtonSurface].
+ *
+ * Precedence (disabled wins over everything, press over hover): [enabled] `false` →
+ * [AeroSurfaceStyle.flattenDisabled]; else [pressed] → [AeroSurfaceStyle.pressedRecess]; else
+ * [hovered] → [AeroSurfaceStyle.hoverLighten]; else the unmodified rest style. [focused] carries
+ * no fill delta here — focus is expressed purely by [AeroButtonSurface]'s persistent
+ * `aeroGlowRing` call, per D-04 (kept as a resolver parameter for API symmetry/future use, not
+ * because it currently branches anything).
+ *
+ * [outlined] is threaded through but not yet consumed — it resolves identically to the filled
+ * style until 17-03 applies the outlined fixed-delta transform on top.
+ */
+internal fun resolveButtonStyle(
+    colors: AeroColorScheme,
+    outlined: Boolean,
+    hovered: Boolean,
+    pressed: Boolean,
+    focused: Boolean,
+    enabled: Boolean,
+): AeroSurfaceStyle {
+    val rest = AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp)
+    return when {
+        !enabled -> rest.flattenDisabled(colors)
+        pressed -> rest.pressedRecess(PRESSED_INNER_SHADOW)
+        hovered -> rest.hoverLighten()
+        else -> rest
     }
 }
