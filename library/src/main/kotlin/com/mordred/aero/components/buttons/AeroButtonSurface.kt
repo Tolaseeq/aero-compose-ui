@@ -53,9 +53,9 @@ import com.mordred.aero.theme.pressedRecess
  * style from [rememberAeroInteractionState]'s booleans; focus carries no fill delta (it is
  * expressed purely by the persistent [aeroGlowRing] focus call above).
  *
- * @param outlined Differentiates the outlined variant (17-03) from this filled default; threaded
- * through [resolveButtonStyle] but currently resolves identically to filled — the outlined delta
- * (fill alpha × 0.15, gloss 0.32 → 0.15, rim 0.6 → 0.85) is applied in 17-03.
+ * @param outlined Differentiates [AeroOutlinedButton] from this filled default; [resolveButtonStyle]
+ * applies [AeroSurfaceStyle.outlinedStyle]'s fixed delta (fill alpha × 0.15, gloss 0.32 → 0.15,
+ * rim 0.6 → 0.85) on top of the per-state filled resolution when `true` (17-03, VBTN-05/06).
  */
 @Composable
 internal fun AeroButtonSurface(
@@ -123,6 +123,38 @@ private val PRESSED_INNER_SHADOW: Shadow = Shadow(
     offset = DpOffset(0.dp, 1.dp),
 )
 
+/** Filled → outlined fill-alpha multiplier (17-UI-SPEC.md Outlined contract, D-06). */
+private const val OUTLINED_FILL_ALPHA_MULTIPLIER: Float = 0.15f
+
+/** Filled → outlined target rest glossAlpha, used as the numerator of the proportional scale below. */
+private const val OUTLINED_GLOSS_ALPHA_TARGET: Float = 0.15f
+
+/** Filled rest glossAlpha (`AeroSurfaceStyle`'s own default), the denominator of the proportional scale. */
+private const val FILLED_REST_GLOSS_ALPHA: Float = 0.32f
+
+/** Filled → outlined target rimAlpha (17-UI-SPEC.md Outlined contract, D-06). */
+private const val OUTLINED_RIM_ALPHA: Float = 0.85f
+
+/**
+ * Fixed-delta transform (D-06, VBTN-05/06) turning an already-resolved filled [AeroSurfaceStyle]
+ * into its outlined equivalent — never a second independently-authored style. [resolveButtonStyle]
+ * calls this on top of the per-state filled resolution, so outlined provably inherits every state
+ * delta by construction (17-RESEARCH.md Pattern 5).
+ *
+ * 17-UI-SPEC.md "Outlined AeroOutlinedButton — per-state contract": fill alpha × ~0.15 ("a
+ * whisper of gloss/gradient"); glossAlpha scaled proportionally toward the rest-state target
+ * ~0.15 (so an already-zeroed gloss, e.g. pressed/disabled, stays zero rather than jumping back
+ * up); rimAlpha to ~0.85 (brighter Aero contour — the outlined identity leans on its rim, not its
+ * fill). `bevelLight`/`bevelShadow` and `cornerRadius` are left unchanged (contour emphasis
+ * carries the depth cue instead of fill).
+ */
+internal fun AeroSurfaceStyle.outlinedStyle(): AeroSurfaceStyle = copy(
+    fillTop = fillTop.copy(alpha = fillTop.alpha * OUTLINED_FILL_ALPHA_MULTIPLIER),
+    fillBottom = fillBottom.copy(alpha = fillBottom.alpha * OUTLINED_FILL_ALPHA_MULTIPLIER),
+    glossAlpha = glossAlpha * (OUTLINED_GLOSS_ALPHA_TARGET / FILLED_REST_GLOSS_ALPHA),
+    rimAlpha = OUTLINED_RIM_ALPHA,
+)
+
 /**
  * Pure, Compose-free resolution point mapping (rest/hover/press/focus/disabled) → [AeroSurfaceStyle]
  * (17-UI-SPEC.md "Filled AeroButton — per-state contract"), consumed by [AeroButtonSurface].
@@ -134,8 +166,9 @@ private val PRESSED_INNER_SHADOW: Shadow = Shadow(
  * `aeroGlowRing` call, per D-04 (kept as a resolver parameter for API symmetry/future use, not
  * because it currently branches anything).
  *
- * [outlined] is threaded through but not yet consumed — it resolves identically to the filled
- * style until 17-03 applies the outlined fixed-delta transform on top.
+ * When [outlined] is `true`, [AeroSurfaceStyle.outlinedStyle] is applied on top of the
+ * already-per-state-resolved filled style (17-03) — outlined provably inherits every state delta
+ * by construction, never an independently-authored second style (VBTN-06).
  */
 internal fun resolveButtonStyle(
     colors: AeroColorScheme,
@@ -146,10 +179,11 @@ internal fun resolveButtonStyle(
     enabled: Boolean,
 ): AeroSurfaceStyle {
     val rest = AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp)
-    return when {
+    val resolved = when {
         !enabled -> rest.flattenDisabled(colors)
         pressed -> rest.pressedRecess(PRESSED_INNER_SHADOW)
         hovered -> rest.hoverLighten()
         else -> rest
     }
+    return if (outlined) resolved.outlinedStyle() else resolved
 }

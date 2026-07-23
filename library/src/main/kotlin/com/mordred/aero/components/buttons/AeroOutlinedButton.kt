@@ -1,42 +1,22 @@
 package com.mordred.aero.components.buttons
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.LocalMinimumInteractiveComponentSize
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.mordred.aero.components.common.ANIMATION_DURATION_MS
-import com.mordred.aero.components.common.rememberFocusState
-import com.mordred.aero.components.common.rememberHoverState
-import com.mordred.aero.components.common.rememberPressedState
-import com.mordred.aero.theme.AeroTheme
 
 /**
- * Aero-styled outlined button (BTN-02).
+ * Aero-styled outlined button (BTN-02 / VBTN-01..06).
  *
- * Transparent background with a themed border. All colors read from [AeroTheme.colors].
- * Hover: [AeroTheme.colors.buttonHover] overlay via drawWithContent.
- * Pressed: scale 0.97f via animateFloatAsState, 150ms LinearEasing.
- * Focus: border widens to 2.dp in [AeroTheme.colors.borderSelected].
- * Disabled: 0.4 alpha on content and border.
+ * Thin public wrapper — all painting is delegated to [AeroButtonSurface] with `outlined = true`;
+ * see its KDoc for the shared-surface contract and modifier-ordering rule. The outlined variant
+ * is a fixed delta of the filled style ([AeroSurfaceStyle.outlinedStyle], 17-UI-SPEC.md "Outlined
+ * AeroOutlinedButton — per-state contract") — never a second independent painter, which is what
+ * makes VBTN-06's "cannot visually drift from [AeroButton]" guarantee true by construction. This
+ * wrapper only owns the outlined variant's locked defaults and public signature.
  *
  * @param text Label text shown on the button.
  * @param onClick Invoked when the button is clicked.
@@ -54,59 +34,14 @@ public fun AeroOutlinedButton(
     height: Dp = 28.dp,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() }
 ) {
-    val colors = AeroTheme.colors
-
-    val hovered by rememberHoverState(interactionSource)
-    val pressed by rememberPressedState(interactionSource)
-    val focused by rememberFocusState(interactionSource)
-
-    val scale by animateFloatAsState(
-        targetValue = if (pressed && enabled) 0.97f else 1f,
-        animationSpec = tween(durationMillis = ANIMATION_DURATION_MS, easing = LinearEasing),
-        label = "pressedScale"
+    AeroButtonSurface(
+        text = text,
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        height = height,
+        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+        outlined = true,
+        interactionSource = interactionSource,
     )
-
-    val borderColor = when {
-        !enabled -> colors.borderDefault.copy(alpha = 0.4f)
-        focused -> colors.borderSelected
-        else -> colors.glassBorder
-    }
-    val borderWidth = if (focused && enabled) 2.dp else 1.dp
-
-    val buttonHoverColor = colors.buttonHover
-
-    Box(
-        modifier = modifier
-            .height(height)
-            .graphicsLayer { scaleX = scale; scaleY = scale }
-    ) {
-        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides Dp.Unspecified) {
-            OutlinedButton(
-                onClick = onClick,
-                enabled = enabled,
-                modifier = Modifier
-                    .height(height)
-                    .drawWithContent {
-                        drawContent()
-                        if (hovered && enabled) {
-                            drawRect(buttonHoverColor)
-                        }
-                    },
-                shape = RoundedCornerShape(4.dp),
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                border = BorderStroke(width = borderWidth, color = borderColor),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = colors.onSurface,
-                    disabledContentColor = colors.onSurface.copy(alpha = 0.4f)
-                ),
-                interactionSource = interactionSource
-            ) {
-                Text(
-                    text = text,
-                    style = AeroTheme.typography.bodyLarge,
-                    fontSize = 14.sp
-                )
-            }
-        }
-    }
 }
