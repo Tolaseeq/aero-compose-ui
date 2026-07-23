@@ -39,9 +39,9 @@ fun ButtonsSection() {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Buttons", color = colors.onBackground, style = typography.title)
 
-        // Row 1: AeroButton (BTN-01) — enabled, disabled
+        // Row 1: AeroButton (BTN-01 / VBTN-01..06) — enabled, disabled
         SectionRow(label = "AeroButton") {
-            AeroButton(text = "Save", onClick = {})
+            AeroButton(text = "Save Changes", onClick = {})
             AeroButton(text = "Disabled", onClick = {}, enabled = false)
         }
 
