@@ -38,17 +38,33 @@ fun ButtonsSection() {
     val typography = AeroTheme.typography
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Buttons", color = colors.onBackground, style = typography.title)
+        Text(
+            text = "Hover, press, and focus are transient — reviewed live across all three themes " +
+                "via the theme switcher above: mouse-over for hover, click-and-hold for press, Tab to focus.",
+            color = colors.labelText,
+            style = typography.bodySmall,
+        )
 
-        // Row 1: AeroButton (BTN-01 / VBTN-01..06) — enabled, disabled
+        // Row 1: AeroButton (BTN-01 / VBTN-01..06) — enabled, disabled, long-label truncation
         SectionRow(label = "AeroButton") {
             AeroButton(text = "Save Changes", onClick = {})
             AeroButton(text = "Disabled", onClick = {}, enabled = false)
+            AeroButton(
+                text = "Save All Changes and Close This Dialog Window",
+                onClick = {},
+                modifier = Modifier.width(120.dp),
+            )
         }
 
-        // Row 2: AeroOutlinedButton (BTN-02) — enabled, disabled
+        // Row 2: AeroOutlinedButton (BTN-02) — enabled, disabled, long-label truncation
         SectionRow(label = "AeroOutlinedButton") {
             AeroOutlinedButton(text = "Cancel", onClick = {})
             AeroOutlinedButton(text = "Disabled", onClick = {}, enabled = false)
+            AeroOutlinedButton(
+                text = "Cancel All Pending Operations Immediately",
+                onClick = {},
+                modifier = Modifier.width(120.dp),
+            )
         }
 
         // Row 3: AeroIconButton (BTN-03) — three icon buttons, one disabled
