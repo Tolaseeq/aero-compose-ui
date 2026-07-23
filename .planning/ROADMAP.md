@@ -206,10 +206,17 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
+**Wave 1**
 
 - [ ] 18-01-PLAN.md — TRACER: neutralRest factory + slider resolvers + AeroSlider custom-slot restyle end-to-end, Wave-0 guards (VRNG-01/02/03/09)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 18-02-PLAN.md — AeroRangeSlider Canvas draw-block restyle + per-thumb interaction, drag-logic-untouched guard (VRNG-04/05/09)
 - [ ] 18-03-PLAN.md — AeroProgressBar recessed bed + glossy fill + default-off running sheen + indeterminate sweep, invariant guard (VRNG-06/07/08)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 18-04-PLAN.md — RangeSection showcase states × three themes + human three-theme visual sign-off (VRNG-03/05/06/08)
 
 ### Phase 19: Selectors + Lists
