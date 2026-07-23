@@ -5,8 +5,8 @@ milestone_name: Glass Refinement
 current_phase: 17
 current_phase_name: Buttons
 status: planning
-stopped_at: Completed 16-05-verification-spike-smoke-PLAN.md (Phase 16 complete)
-last_updated: "2026-07-23T10:27:36.916Z"
+stopped_at: Phase 17 context gathered
+last_updated: "2026-07-23T11:02:54.937Z"
 last_activity: 2026-07-23
 last_activity_desc: Phase 16 complete, transitioned to Phase 17
 progress:
@@ -165,7 +165,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-07-22T16:27:50.144Z
-Stopped at: Completed 16-05-verification-spike-smoke-PLAN.md (Phase 16 complete)
-Resume file: None
+Last session: 2026-07-23T11:02:54.920Z
+Stopped at: Phase 17 context gathered
+Resume file: .planning/phases/17-buttons/17-CONTEXT.md
 Next action: `/gsd:plan-phase 15` (Toolchain Upgrade — consider `/gsd:research-phase 15` first per research flag)
