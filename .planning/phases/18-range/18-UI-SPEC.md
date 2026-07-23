@@ -1,7 +1,7 @@
 ---
 phase: 18
 slug: range
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-07-23
@@ -220,7 +220,7 @@ dismissed, 0 unresolved.**
 | loading | E3 indeterminate `AeroProgressBar` | ✅ covered | Indeterminate mode IS the canonical loading-state representation for this component family (VRNG-08) — restyled to the D-06 single accent-glass sweeping segment over the recessed bed, 1500ms restart, no ping-pong. Determinate mode (VRNG-06) is the "known-quantity progress" counterpart, both covered by the Color § per-state contract above |
 | populated | E1, E2, E3 | ✅ covered | Every value along each control's continuous range renders identically through the same style resolution (rest/hover/press/focus/disabled) — there is no separate "has data" vs "no data" branch for a bounded numeric control; 0%/min-value and 100%/max-value are ordinary points on the same scale, not a special empty case |
 | partial | E2 `AeroRangeSlider` | ✅ covered | The active (accent-filled) segment between the two thumbs IS the "partial selection of the full range" state — pre-existing behavior (`AeroRangeSlider.kt`'s active-track draw), unchanged logic, now rendered with the accent glass fill (D-01) instead of a flat `colors.primary` line |
-| overflow | E1, E2 drag tooltip | 🧪 backstop | **Statement:** the drag-value tooltip pill is restyled to match the new glass treatment but its position logic is untouched this phase (`AeroSlider`'s tooltip stays fixed top-center per its own pre-existing TODO comment — "track tooltip x to thumb position" is not this phase's scope; `AeroRangeSlider`'s tooltip DOES track thumb x via `offset(x = thumbXDp - 16.dp)`, which can already overflow the container near either edge — a pre-existing condition, not newly introduced). **Verification (backstop):** confirmed at the three-theme visual review that the restyle introduces no NEW overflow beyond what already existed pre-migration |
+| overflow | E1, E2 drag tooltip; E3 fill/label | 🧪 backstop | **Statement:** the drag-value tooltip pill is restyled to match the new glass treatment but its position logic is untouched this phase (`AeroSlider`'s tooltip stays fixed top-center per its own pre-existing TODO comment — "track tooltip x to thumb position" is not this phase's scope; `AeroRangeSlider`'s tooltip DOES track thumb x via `offset(x = thumbXDp - 16.dp)`, which can already overflow the container near either edge — a pre-existing condition, not newly introduced). E3 `AeroProgressBar` has **no** overflow path — its determinate fill is clamped to `[0,1]` so the accent segment can never exceed the bar's container, and the trailing `NN%` label is a fixed-width bounded integer (dismissed for E3). **Verification (backstop):** confirmed at the three-theme visual review that the restyle introduces no NEW overflow beyond what already existed pre-migration (tooltip pills only) |
 | empty | E1, E2, E3 | dismissed | No data-collection empty-state concept applies to a bounded numeric control — confirmed against the Copywriting Contract's empty-state rows (marked not applicable) |
 | error | E1, E2, E3 | dismissed | No error/failure rendering in scope; `enabled = false` is the only negative state (Copywriting Contract, Color § Disabled) |
 | zero-one-many | E1, E2, E3 | dismissed | No collection/list semantics on any of the three components |
@@ -245,11 +245,11 @@ code.
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: FLAG — line height left as "Compose default" for both roles; record resolved value at implementation (non-blocking)
+- [x] Dimension 5 Spacing: FLAG — sub-4 values present but all justified as locked/inherited pre-existing geometry, not new choices (non-blocking)
+- [x] Dimension 6 Registry Safety: PASS
 
-**Approval:** pending
+**Approval:** APPROVED (6/6 dimensions, 2 non-blocking FLAGs)
