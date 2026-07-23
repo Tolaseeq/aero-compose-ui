@@ -157,7 +157,7 @@ Patch milestone (Phase 14). Eliminated header-strip duplication in horizontal CO
 **v3.0 Glass Refinement** (требования определяются — research → REQUIREMENTS.md):
 - [ ] Миграция на актуальный стабильный Compose Multiplatform (+ Kotlin/Gradle/JDK), зелёный тест-сьют как гейт
 - [ ] Слой Aero-примитивов: починка `GlassModifiers` + новые визуальные приёмы + токены тем
-- [ ] `AeroButton`, `AeroOutlinedButton` — Aero-облик и состояния
+- [x] `AeroButton`, `AeroOutlinedButton` — Aero-облик и состояния — **Phase 17 завершена (2026-07-23)**: общий internal `AeroButtonSurface` (M3-контейнер убран), 5 состояний, `Role.Button`+Space/Enter, three-theme visual sign-off PASSED (после 2 раундов калибровки rim/fill/disabled)
 - [ ] `AeroSwitch`, `AeroSegmentedControl` — объём, состояния
 - [ ] `AeroSlider`, `AeroRangeSlider`, `AeroProgressBar` — желобок, градиентная заливка, объёмные ручки
 - [ ] `AeroListItem` — клипованное Aero-выделение
@@ -250,4 +250,4 @@ Patch milestone (Phase 14). Eliminated header-strip duplication in horizontal CO
 | **v2.0.4:** section-DSL-лямбда `content` сделана НЕ-`@Composable` (`content: AeroPanelGroupScope.() -> Unit`, как `LazyListScope`) | Реальная первопричина RCMP: `@Composable` DSL-лямбда имела свой recompose-scope → при активном drag рекомпоз родителя перезапускал её независимо, дописывая `section()` в persisted `scope` (3→9→…→33), `key()`-цикл рендерил всё больше header-полос | ✓ Good — подтверждено инструментированием; детерминированный `runComposeUiTest` drag-тест 11→1; 232 теста GREEN; подтверждено в реальном приложении. Builder/DSL-лямбды с side-effect в коллекцию НИКОГДА не должны быть `@Composable` |
 
 ---
-*Last updated: 2026-07-21 — after scoping milestone v2.1 Glass Refinement*
+*Last updated: 2026-07-23 — Phase 17 (Buttons) complete: AeroButton/AeroOutlinedButton restyled onto shared AeroButtonSurface, three-theme sign-off passed*
