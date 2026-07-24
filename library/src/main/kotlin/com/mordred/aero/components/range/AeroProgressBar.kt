@@ -24,6 +24,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -202,6 +204,12 @@ public fun AeroProgressBar(
                 .fillMaxHeight()
                 .offset(x = offsetX)
                 .aeroSurface(sweepStyle, RoundedCornerShape(cornerPx))
+                // Isolates this segment onto its own offscreen layer (WR-02) before the DstIn
+                // mask below runs — Modifier.clip alone (inside aeroSurface) doesn't guarantee
+                // an isolated compositing layer under CompositingStrategy.Auto, so without this
+                // the mask's "Dst" read can include the parent groove already painted underneath
+                // on translucent ("glass") themes, fading the groove's contribution too.
+                .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
                 .drawWithCache {
                     // Horizontal alpha-mask overlay (D-06) — drawAeroSurfaceCore's own gradient
                     // is vertical only, so the segment's leading/trailing edges need a SECOND
