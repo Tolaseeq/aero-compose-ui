@@ -298,48 +298,57 @@ public fun AeroRangeSlider(
                     var startEnter: HoverInteraction.Enter? = null
                     var endEnter: HoverInteraction.Enter? = null
                     awaitPointerEventScope {
-                        while (true) {
-                            val event = awaitPointerEvent()
-                            var nearStart = startEnter != null
-                            var nearEnd = endEnter != null
-                            when (event.type) {
-                                PointerEventType.Move, PointerEventType.Enter -> {
-                                    val position = event.changes.firstOrNull()?.position
-                                    if (position != null) {
-                                        val width = size.width.toFloat()
-                                        val startX = valueToX(currentValue.start, valueRange, width)
-                                        val endX = valueToX(currentValue.endInclusive, valueRange, width)
-                                        nearStart = abs(position.x - startX) <= hoverHitRadiusPx
-                                        nearEnd = abs(position.x - endX) <= hoverHitRadiusPx
+                        try {
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                var nearStart = startEnter != null
+                                var nearEnd = endEnter != null
+                                when (event.type) {
+                                    PointerEventType.Move, PointerEventType.Enter -> {
+                                        val position = event.changes.firstOrNull()?.position
+                                        if (position != null) {
+                                            val width = size.width.toFloat()
+                                            val startX = valueToX(currentValue.start, valueRange, width)
+                                            val endX = valueToX(currentValue.endInclusive, valueRange, width)
+                                            nearStart = abs(position.x - startX) <= hoverHitRadiusPx
+                                            nearEnd = abs(position.x - endX) <= hoverHitRadiusPx
+                                        }
                                     }
+                                    PointerEventType.Exit -> {
+                                        nearStart = false
+                                        nearEnd = false
+                                    }
+                                    else -> Unit
                                 }
-                                PointerEventType.Exit -> {
-                                    nearStart = false
-                                    nearEnd = false
+                                // tryEmit, not the suspend emit — AwaitPointerEventScope is
+                                // @RestrictsSuspension (only its own member suspend functions, e.g.
+                                // awaitPointerEvent(), may be called here); MutableInteractionSource's
+                                // buffered MutableSharedFlow backing tryEmit (16-slot, drop-oldest)
+                                // makes it effectively always succeed for this use.
+                                if (nearStart && startEnter == null) {
+                                    val enter = HoverInteraction.Enter()
+                                    startInteractionSource.tryEmit(enter)
+                                    startEnter = enter
+                                } else if (!nearStart && startEnter != null) {
+                                    startInteractionSource.tryEmit(HoverInteraction.Exit(startEnter!!))
+                                    startEnter = null
                                 }
-                                else -> Unit
+                                if (nearEnd && endEnter == null) {
+                                    val enter = HoverInteraction.Enter()
+                                    endInteractionSource.tryEmit(enter)
+                                    endEnter = enter
+                                } else if (!nearEnd && endEnter != null) {
+                                    endInteractionSource.tryEmit(HoverInteraction.Exit(endEnter!!))
+                                    endEnter = null
+                                }
                             }
-                            // tryEmit, not the suspend emit — AwaitPointerEventScope is
-                            // @RestrictsSuspension (only its own member suspend functions, e.g.
-                            // awaitPointerEvent(), may be called here); MutableInteractionSource's
-                            // buffered MutableSharedFlow backing tryEmit (16-slot, drop-oldest)
-                            // makes it effectively always succeed for this use.
-                            if (nearStart && startEnter == null) {
-                                val enter = HoverInteraction.Enter()
-                                startInteractionSource.tryEmit(enter)
-                                startEnter = enter
-                            } else if (!nearStart && startEnter != null) {
-                                startInteractionSource.tryEmit(HoverInteraction.Exit(startEnter!!))
-                                startEnter = null
-                            }
-                            if (nearEnd && endEnter == null) {
-                                val enter = HoverInteraction.Enter()
-                                endInteractionSource.tryEmit(enter)
-                                endEnter = enter
-                            } else if (!nearEnd && endEnter != null) {
-                                endInteractionSource.tryEmit(HoverInteraction.Exit(endEnter!!))
-                                endEnter = null
-                            }
+                        } finally {
+                            // Cancellation (pointerInput restart on enabled/valueRange change)
+                            // resumes here via the finally block, not the loop body — without
+                            // this, a still-open Enter with no matching Exit leaves that thumb's
+                            // hovered state stuck true forever (WR-01).
+                            startEnter?.let { startInteractionSource.tryEmit(HoverInteraction.Exit(it)) }
+                            endEnter?.let { endInteractionSource.tryEmit(HoverInteraction.Exit(it)) }
                         }
                     }
                 },
