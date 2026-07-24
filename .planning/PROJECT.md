@@ -159,7 +159,7 @@ Patch milestone (Phase 14). Eliminated header-strip duplication in horizontal CO
 - [ ] Слой Aero-примитивов: починка `GlassModifiers` + новые визуальные приёмы + токены тем
 - [x] `AeroButton`, `AeroOutlinedButton` — Aero-облик и состояния — **Phase 17 завершена (2026-07-23)**: общий internal `AeroButtonSurface` (M3-контейнер убран), 5 состояний, `Role.Button`+Space/Enter, three-theme visual sign-off PASSED (после 2 раундов калибровки rim/fill/disabled)
 - [ ] `AeroSwitch`, `AeroSegmentedControl` — объём, состояния
-- [ ] `AeroSlider`, `AeroRangeSlider`, `AeroProgressBar` — желобок, градиентная заливка, объёмные ручки
+- [x] `AeroSlider`, `AeroRangeSlider`, `AeroProgressBar` — желобок, градиентная заливка, объёмные ручки — **Phase 18 завершена (2026-07-24)**: общий `neutralRest` factory + slider-resolvers + `drawAeroGlowRing` primitive; AeroSlider на M3 custom slots, AeroRangeSlider Canvas-рестайл (drag-логика byte-identical, guard-тест), AeroProgressBar на `aeroGroove`/`aeroSurface` + optional sheen (1500ms indeterminate сохранён); rich focus/press/lift реакция унифицирована на все ползунки; three-theme sign-off PASSED (2 раунда калибровки); code-review 2 warnings пофикшены (WR-01 hover-leak + regression-тест, WR-02 offscreen mask)
 - [ ] `AeroListItem` — клипованное Aero-выделение
 - [ ] Showcase + three-theme visual sign-off
 
@@ -250,4 +250,4 @@ Patch milestone (Phase 14). Eliminated header-strip duplication in horizontal CO
 | **v2.0.4:** section-DSL-лямбда `content` сделана НЕ-`@Composable` (`content: AeroPanelGroupScope.() -> Unit`, как `LazyListScope`) | Реальная первопричина RCMP: `@Composable` DSL-лямбда имела свой recompose-scope → при активном drag рекомпоз родителя перезапускал её независимо, дописывая `section()` в persisted `scope` (3→9→…→33), `key()`-цикл рендерил всё больше header-полос | ✓ Good — подтверждено инструментированием; детерминированный `runComposeUiTest` drag-тест 11→1; 232 теста GREEN; подтверждено в реальном приложении. Builder/DSL-лямбды с side-effect в коллекцию НИКОГДА не должны быть `@Composable` |
 
 ---
-*Last updated: 2026-07-23 — Phase 17 (Buttons) complete: AeroButton/AeroOutlinedButton restyled onto shared AeroButtonSurface, three-theme sign-off passed*
+*Last updated: 2026-07-24 — Phase 18 (Range) complete: AeroSlider/AeroRangeSlider/AeroProgressBar restyled onto shared Aero primitives (neutralRest factory, slider resolvers, drawAeroGlowRing), unified focus/press/lift reaction, three-theme sign-off passed, code-review warnings fixed + hover-cancellation regression guard added*
