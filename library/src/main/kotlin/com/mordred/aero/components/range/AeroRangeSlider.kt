@@ -2,6 +2,8 @@ package com.mordred.aero.components.range
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.interaction.HoverInteraction
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,11 +19,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.inset
+import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import com.mordred.aero.components.common.rememberAeroInteractionState
+import com.mordred.aero.theme.AeroSurfaceStyle
 import com.mordred.aero.theme.AeroTheme
+import com.mordred.aero.theme.drawAeroGroove
+import com.mordred.aero.theme.drawAeroSurfaceCore
+import com.mordred.aero.theme.drawAeroThumb
+import com.mordred.aero.theme.flattenDisabled
 import com.mordred.aero.theme.glassEffect
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -172,6 +181,41 @@ public fun AeroRangeSlider(
     var trackWidthPx by remember { mutableStateOf(0f) }
     var activeThumb by remember { mutableStateOf<RangeThumb?>(null) }
 
+    // Per-thumb interaction sources (VRNG-05) — independent hover state per thumb. There is no
+    // per-region Modifier.hoverable on a Canvas, so hover Enter/Exit is emitted manually from a
+    // SEPARATE pointerInput block below (added alongside the existing drag block, never inside
+    // it — VRNG-04/Pitfall 5). Press/drag state is read directly from the existing activeThumb
+    // tracked by the untouched drag block, not from these sources' own collectIsPressedAsState().
+    val startInteractionSource = remember { MutableInteractionSource() }
+    val endInteractionSource = remember { MutableInteractionSource() }
+    val startInteractionState = rememberAeroInteractionState(startInteractionSource)
+    val endInteractionState = rememberAeroInteractionState(endInteractionSource)
+
+    // Style resolution (Aero glass restyle, D-01) — reuses Plan 01's resolveSliderThumbStyle/
+    // resolveSliderTrackStyle verbatim (same package, no forked resolver). No keyboard focus
+    // tracking exists on this Canvas control (accessibility semantics explicitly deferred,
+    // VRNG-04), so focused is always false.
+    val trackStyle = resolveSliderTrackStyle(colors, enabled)
+    val grooveStyle = AeroSurfaceStyle.neutralRest(colors, cornerRadius = 2.dp).let {
+        if (enabled) it else it.flattenDisabled(colors)
+    }
+    val startThumbStyle = resolveSliderThumbStyle(
+        colors = colors,
+        hovered = startInteractionState.hovered,
+        pressed = activeThumb == RangeThumb.Start,
+        isDragging = activeThumb == RangeThumb.Start,
+        focused = false,
+        enabled = enabled,
+    )
+    val endThumbStyle = resolveSliderThumbStyle(
+        colors = colors,
+        hovered = endInteractionState.hovered,
+        pressed = activeThumb == RangeThumb.End,
+        isDragging = activeThumb == RangeThumb.End,
+        focused = false,
+        enabled = enabled,
+    )
+
     Box(modifier = modifier.fillMaxWidth().height(48.dp)) {
         Canvas(
             modifier = Modifier
@@ -224,6 +268,64 @@ public fun AeroRangeSlider(
                             activeThumb = null
                         }
                     }
+                }
+                // Per-thumb HOVER tracking (VRNG-05) — a SEPARATE pointerInput block, added
+                // alongside the drag block above without touching its structure (VRNG-04/
+                // Pitfall 5). Observes raw Move/Enter/Exit events (never consumes a change,
+                // never competes with the drag block's gesture arena) and emits
+                // HoverInteraction.Enter/Exit into whichever thumb's computed x-position the
+                // pointer is currently near, mirroring the drag block's own nearest-thumb
+                // hit-test shape (lines above) but evaluated continuously, not just on press.
+                .pointerInput(enabled, valueRange) {
+                    if (!enabled) return@pointerInput
+                    val hoverHitRadiusPx = 10.dp.toPx()
+                    var startEnter: HoverInteraction.Enter? = null
+                    var endEnter: HoverInteraction.Enter? = null
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            var nearStart = startEnter != null
+                            var nearEnd = endEnter != null
+                            when (event.type) {
+                                PointerEventType.Move, PointerEventType.Enter -> {
+                                    val position = event.changes.firstOrNull()?.position
+                                    if (position != null) {
+                                        val width = size.width.toFloat()
+                                        val startX = valueToX(currentValue.start, valueRange, width)
+                                        val endX = valueToX(currentValue.endInclusive, valueRange, width)
+                                        nearStart = abs(position.x - startX) <= hoverHitRadiusPx
+                                        nearEnd = abs(position.x - endX) <= hoverHitRadiusPx
+                                    }
+                                }
+                                PointerEventType.Exit -> {
+                                    nearStart = false
+                                    nearEnd = false
+                                }
+                                else -> Unit
+                            }
+                            // tryEmit, not the suspend emit — AwaitPointerEventScope is
+                            // @RestrictsSuspension (only its own member suspend functions, e.g.
+                            // awaitPointerEvent(), may be called here); MutableInteractionSource's
+                            // buffered MutableSharedFlow backing tryEmit (16-slot, drop-oldest)
+                            // makes it effectively always succeed for this use.
+                            if (nearStart && startEnter == null) {
+                                val enter = HoverInteraction.Enter()
+                                startInteractionSource.tryEmit(enter)
+                                startEnter = enter
+                            } else if (!nearStart && startEnter != null) {
+                                startInteractionSource.tryEmit(HoverInteraction.Exit(startEnter!!))
+                                startEnter = null
+                            }
+                            if (nearEnd && endEnter == null) {
+                                val enter = HoverInteraction.Enter()
+                                endInteractionSource.tryEmit(enter)
+                                endEnter = enter
+                            } else if (!nearEnd && endEnter != null) {
+                                endInteractionSource.tryEmit(HoverInteraction.Exit(endEnter!!))
+                                endEnter = null
+                            }
+                        }
+                    }
                 },
         ) {
             val width = size.width
@@ -235,42 +337,58 @@ public fun AeroRangeSlider(
             val startX = valueToX(value.start, valueRange, width)
             val endX = valueToX(value.endInclusive, valueRange, width)
 
-            // 1. Inactive track (full width).
-            drawLine(
-                color = colors.borderDefault,
-                start = Offset(0f, centerY),
-                end = Offset(width, centerY),
-                strokeWidth = trackThickness,
-            )
+            // 1. Inactive track (full width) — recessed neutral groove (D-01). `inset` both
+            //    translates AND shrinks the receiver `size` (unlike `translate`, which only
+            //    shifts the origin) so drawAeroGroove's size-derived gradients read the track's
+            //    own [0, trackThickness] vertical band, not the full 48dp Canvas height.
+            inset(
+                left = 0f,
+                top = centerY - trackThickness / 2f,
+                right = 0f,
+                bottom = size.height - (centerY + trackThickness / 2f),
+            ) {
+                drawAeroGroove(grooveStyle, cornerPx = trackThickness / 2f)
+            }
 
-            // 2. Active track between the two thumbs.
-            drawLine(
-                color = if (enabled) colors.primary else colors.borderDefault,
-                start = Offset(startX, centerY),
-                end = Offset(endX, centerY),
-                strokeWidth = trackThickness,
-            )
+            // 2. Active track between the two thumbs — accent glass fill (D-01/D-02), the
+            //    "partial selection of the full range" state. Sub-region draw (Pitfall 3 — no
+            //    byte-identical precedent in this codebase): drawAeroSurfaceCore draws across
+            //    the FULL receiver `size` with no offset/width params, so `inset` constrains it
+            //    to the [startX, endX] active span by shrinking `size.width` to (endX - startX).
+            if (endX > startX) {
+                inset(
+                    left = startX,
+                    top = centerY - trackThickness / 2f,
+                    right = width - endX,
+                    bottom = size.height - (centerY + trackThickness / 2f),
+                ) {
+                    drawAeroSurfaceCore(trackStyle, cornerPx = trackThickness / 2f)
+                }
+            }
 
-            // 3. Thumbs — draw the non-last-moved first so lastMoved lands on top.
-            fun drawThumb(x: Float) {
-                drawCircle(
-                    color = if (enabled) colors.primary else colors.primary.copy(alpha = 0.4f),
-                    radius = thumbRadius,
-                    center = Offset(x, centerY),
-                )
-                drawCircle(
-                    color = colors.onPrimary,
-                    radius = thumbRadius,
-                    center = Offset(x, centerY),
-                    style = Stroke(width = 2.dp.toPx()),
-                )
+            // 3. Thumbs — raised neutral glass nub (D-01), independent per-thumb hover/press
+            //    style (VRNG-05). Draw the non-last-moved first so lastMoved lands on top. Each
+            //    thumb's `inset` region always resolves to an exact (2*thumbRadius) square
+            //    regardless of x/centerY, which is what collapses drawAeroSurfaceCore's rounded
+            //    rect into a circle (PRIM-07's cornerPx == half-side-length contract).
+            fun drawThumb(x: Float, style: AeroSurfaceStyle) {
+                inset(
+                    left = x - thumbRadius,
+                    top = centerY - thumbRadius,
+                    right = width - (x + thumbRadius),
+                    bottom = size.height - (centerY + thumbRadius),
+                ) {
+                    drawAeroThumb(style, radiusPx = thumbRadius)
+                }
             }
 
             val firstThumb = thumbToDrawFirst(lastMovedThumb)
             val firstX = if (firstThumb == RangeThumb.Start) startX else endX
+            val firstStyle = if (firstThumb == RangeThumb.Start) startThumbStyle else endThumbStyle
             val secondX = if (firstThumb == RangeThumb.Start) endX else startX
-            drawThumb(firstX)
-            drawThumb(secondX)
+            val secondStyle = if (firstThumb == RangeThumb.Start) endThumbStyle else startThumbStyle
+            drawThumb(firstX, firstStyle)
+            drawThumb(secondX, secondStyle)
         }
 
         // Glass value tooltip above the active thumb (mirrors AeroSlider's glass pill).
