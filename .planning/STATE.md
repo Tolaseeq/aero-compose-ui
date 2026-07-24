@@ -5,15 +5,15 @@ milestone_name: Glass Refinement
 current_phase: 18
 current_phase_name: range
 status: executing
-stopped_at: Completed 18-01-PLAN.md
-last_updated: "2026-07-24T09:19:29.397Z"
+stopped_at: Completed 18-02-PLAN.md
+last_updated: "2026-07-24T09:39:56.089Z"
 last_activity: 2026-07-24
 last_activity_desc: Phase 18 execution started
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 20
-  completed_plans: 12
+  completed_plans: 13
   percent: 33
 ---
 
@@ -30,11 +30,11 @@ See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refin
 
 Milestone: v3.0 Glass Refinement
 Phase: 18 (range) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-07-24 — Phase 18 execution started
 
-Progress: [██████░░░░] 60%
+Progress: [███████░░░] 65%
 
 ## v3.0 Roadmap (2026-07-21)
 
@@ -119,6 +119,7 @@ Research flags carried into planning: Phases 15, 16, 18 likely need `/gsd:resear
 | Phase 17 P04 | 8min | 1 tasks | 1 files |
 | Phase 17 P05 | 39min | 1 tasks | 6 files |
 | Phase 18-range P01 | 1h04min | 2 tasks | 4 files |
+| Phase 18-range P02 | 19min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -173,6 +174,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase ?]: [Phase 18, Plan 01]: AeroSlider thumb/track dp sizing (20.dp/4.dp) matches AeroRangeSlider's locked dimensions rather than M3's raw SliderTokens (4dp x44dp pill, 16dp track) — M3's default shape is incompatible with aeroThumbSurface's circle-only primitive
 - [Phase ?]: [Phase 18, Plan 01]: Focus and press/drag glow rings diverge in hue (borderSelected vs onSurface-derived neutral), not just intensity — same-hue-family intensity-only differentiation was the round-1 human-sign-off defect root cause, since hoverGlow and borderSelected are both primary-derived
 - [Phase ?]: [Phase 18, Plan 01]: onValueChangeFinished wired as null through SliderState internally, no new AeroSlider public parameter — resolves 18-RESEARCH.md Open Question 1, keeps VRNG-02's 1:1 public-signature constraint
+- [Phase ?]: DrawScope.inset(left,top,right,bottom) chosen for AeroRangeSlider's sub-region Canvas draws (groove/active-segment/thumbs) — unlike translate(), inset() also shrinks the receiver's size, which drawAeroSurfaceCore/drawAeroThumb depend on
+- [Phase ?]: Per-thumb hover on AeroRangeSlider's Canvas uses MutableInteractionSource.tryEmit (non-suspend), not emit — AwaitPointerEventScope is @RestrictsSuspension and forbids calling the suspend emit() from inside its loop
 
 ### Pending Todos
 
@@ -187,7 +190,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-07-24T09:19:29.382Z
-Stopped at: Completed 18-01-PLAN.md
+Last session: 2026-07-24T09:39:56.073Z
+Stopped at: Completed 18-02-PLAN.md
 Resume file: None
 Next action: `/gsd:plan-phase 15` (Toolchain Upgrade — consider `/gsd:research-phase 15` first per research flag)
