@@ -17,9 +17,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mordred.aero.components.common.rememberAeroInteractionState
 import com.mordred.aero.theme.AeroColorScheme
@@ -33,7 +30,6 @@ import com.mordred.aero.theme.aeroThumbSurface
 import com.mordred.aero.theme.flattenDisabled
 import com.mordred.aero.theme.glassEffect
 import com.mordred.aero.theme.hoverLighten
-import com.mordred.aero.theme.lighten
 
 /** Custom thumb slot diameter/radius — matches [AeroRangeSlider]'s own locked thumb size
  * (18-UI-SPEC.md Spacing Scale) so the two sibling sliders read as one visual family. M3's own
@@ -45,23 +41,6 @@ import com.mordred.aero.theme.lighten
  * M3 pill dimensions would clip to a near-invisible dot rather than a readable Aero thumb nub. */
 private val THUMB_DIAMETER = 20.dp
 private val THUMB_RADIUS = 10.dp
-
-/** Scale applied to the thumb slot's entire rendered subtree (glow rings + surface, both drawn
- * by modifiers chained after the `graphicsLayer` carrying this scale) while pressed/dragging —
- * a gentle physical "picked up" lift cue (D-04), a visual channel focus's static ring never uses,
- * so the two states cannot be confused with each other regardless of theme/DPI. */
-private const val PRESSED_SCALE: Float = 1.05f
-
-/** Number of times [aeroGlowRingRepeated] stacks the identical focus ring — additive compositing
- * of the same ring at the same geometry brightens it well past a single hover-strength ring,
- * making keyboard focus unmistakable rather than a similarly-dim blue halo. */
-private const val FOCUS_RING_REPEAT: Int = 2
-
-/** Single, unstacked press/drag ring — a calmer intensity than [FOCUS_RING_REPEAT]'s stacked
- * focus ring, distinguished from hover/focus primarily by its distinct neutral hue
- * ([resolveSliderThumbStyle]'s call site) and the accompanying [PRESSED_SCALE] lift, not by
- * raw brightness. */
-private const val PRESS_RING_REPEAT: Int = 1
 
 /** Custom track slot thickness — matches [AeroRangeSlider]'s own locked 4.dp track thickness
  * (18-UI-SPEC.md Spacing Scale), same "thin track" family the accent-fill gloss (D-02) is
@@ -120,17 +99,14 @@ public fun AeroSlider(
     val grooveStyle = AeroSurfaceStyle.neutralRest(colors, cornerRadius = TRACK_CORNER_RADIUS).let {
         if (enabled) it else it.flattenDisabled(colors)
     }
-    // Three thumb cues, deliberately distinct in both hue and treatment so they never blend
-    // into one another (D-03/D-04): focus uses the system "selection" blue (the same token every
-    // other Aero control's focus ring uses); hover uses that same blue family but a single,
-    // dimmer ring; press/drag intentionally breaks from the blue family into a bright neutral
-    // glow (onSurface-derived) plus a physical scale-up, so "picked up" never reads as "focused."
+    // Thumb visual reaction matches AeroRangeSlider's per-thumb Canvas-drawn treatment exactly
+    // (D-03/D-04, both consumers of the shared resolveSliderThumbStyle resolver): hover/press/
+    // drag are expressed purely through the resolver's fill/gloss deltas (hoverLighten, gloss
+    // boost) with no glow ring or scale-up of their own. The one glow ring this slot keeps is the
+    // hover-only ring, chained to remain suppressed while pressed/dragging.
     val isPressedOrDragging = state.pressed || isDragging
     val isHoverOnly = state.hovered && !isPressedOrDragging
-    val focusGlowColor = colors.borderSelected
     val hoverGlowColor = AeroOrnamentTokens.derive(colors).hoverGlow
-    val pressGlowColor = colors.onSurface.lighten(0.15f)
-    val thumbScale = if (isPressedOrDragging) PRESSED_SCALE else 1f
 
     Box(modifier = modifier.fillMaxWidth()) {
         if (isDragging && showTooltip) {
@@ -159,27 +135,11 @@ public fun AeroSlider(
                 Box(
                     Modifier
                         .size(THUMB_DIAMETER)
-                        // Scales the whole rendered thumb slot (glow rings + surface, both drawn
-                        // by modifiers further down this chain) uniformly around its center — the
-                        // physical "picked up" lift cue (D-04), distinct from focus's static ring.
-                        .graphicsLayer(scaleX = thumbScale, scaleY = thumbScale)
                         .hoverable(interactionSource)
-                        .aeroGlowRingRepeated(
-                            active = state.focused && enabled,
-                            glowColor = focusGlowColor,
-                            cornerRadius = THUMB_RADIUS,
-                            times = FOCUS_RING_REPEAT,
-                        )
                         .aeroGlowRing(
                             active = isHoverOnly && enabled,
                             glowColor = hoverGlowColor,
                             cornerRadius = THUMB_RADIUS,
-                        )
-                        .aeroGlowRingRepeated(
-                            active = isPressedOrDragging && enabled,
-                            glowColor = pressGlowColor,
-                            cornerRadius = THUMB_RADIUS,
-                            times = PRESS_RING_REPEAT,
                         )
                         .aeroThumbSurface(thumbStyle)
                 )
@@ -205,32 +165,12 @@ public fun AeroSlider(
 }
 
 /**
- * Chains [aeroGlowRing] [times] with identical parameters — additive compositing of the same
- * ring geometry over itself intensifies that ring well beyond a single call at the same
- * [glowColor]/alpha, without adding a stroke-width/spread parameter to the shared Phase 16
- * primitive (whose contract is deliberately minimal — [active]/[glowColor]/[cornerRadius] only).
- * Local to this file; the intensity need is [AeroSlider]-thumb-specific (D-03/D-04's "unmistakable
- * focus, unmistakable press" requirement), not a change to every other consumer of [aeroGlowRing].
- */
-private fun Modifier.aeroGlowRingRepeated(
-    active: Boolean,
-    glowColor: Color,
-    cornerRadius: Dp,
-    times: Int,
-): Modifier {
-    var result = this
-    repeat(times) {
-        result = result.aeroGlowRing(active = active, glowColor = glowColor, cornerRadius = cornerRadius)
-    }
-    return result
-}
-
-/**
  * Pure, Compose-free per-state resolution point for [AeroSlider]'s custom thumb slot
  * (18-UI-SPEC.md "Neutral thumb" per-state contract), mirroring
  * [com.mordred.aero.components.buttons.resolveButtonStyle]'s precedence chain shape (disabled
- * wins over everything, then pressed/dragging, then hovered, else rest) — reused verbatim by
- * [AeroRangeSlider]'s per-thumb resolution (Plan 02, VRNG-05).
+ * wins over everything, then pressed/dragging, then hovered, else rest) — shared verbatim with
+ * [AeroRangeSlider]'s per-thumb resolution (Plan 02, VRNG-05), which is why the two sibling
+ * sliders' thumbs render identically for every state this resolver drives.
  *
  * D-04's deliberate divergence from the button precedent: press/drag does NOT call
  * [com.mordred.aero.theme.pressedRecess] (a dragged thumb must NOT invert/recede — it stays
@@ -238,8 +178,10 @@ private fun Modifier.aeroGlowRingRepeated(
  * ([PRESSED_GLOSS_BOOST]) on top of the unmodified neutral fill.
  *
  * [focused] is accepted for API symmetry with [com.mordred.aero.components.buttons.resolveButtonStyle]
- * but does not branch here — focus is expressed purely by [AeroSlider]'s persistent
- * [aeroGlowRing] focus call, never a fill delta (matching Phase 17 D-04).
+ * but does not branch here — neither sibling slider expresses focus as a fill delta;
+ * [AeroSlider]'s own hover-only [aeroGlowRing] is the sole glow ring either slider draws, kept
+ * suppressed while pressed/dragging so it can never be mistaken for a dedicated focus or
+ * press/drag cue.
  */
 internal fun resolveSliderThumbStyle(
     colors: AeroColorScheme,
