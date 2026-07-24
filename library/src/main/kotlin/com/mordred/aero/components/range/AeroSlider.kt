@@ -48,17 +48,20 @@ private val THUMB_RADIUS = 10.dp
 
 /** Scale applied to the thumb slot's entire rendered subtree (glow rings + surface, both drawn
  * by modifiers chained after the `graphicsLayer` carrying this scale) while pressed/dragging —
- * the physical "picked up" lift cue (D-04), a visual channel focus's static ring never uses, so
- * the two states cannot be confused with each other regardless of theme/DPI. */
-private const val PRESSED_SCALE: Float = 1.15f
+ * a gentle physical "picked up" lift cue (D-04), a visual channel focus's static ring never uses,
+ * so the two states cannot be confused with each other regardless of theme/DPI. */
+private const val PRESSED_SCALE: Float = 1.05f
 
 /** Number of times [aeroGlowRingRepeated] stacks the identical focus ring — additive compositing
  * of the same ring at the same geometry brightens it well past a single hover-strength ring,
  * making keyboard focus unmistakable rather than a similarly-dim blue halo. */
 private const val FOCUS_RING_REPEAT: Int = 2
 
-/** Same additive-stacking treatment as [FOCUS_RING_REPEAT], applied to the press/drag ring. */
-private const val PRESS_RING_REPEAT: Int = 2
+/** Single, unstacked press/drag ring — a calmer intensity than [FOCUS_RING_REPEAT]'s stacked
+ * focus ring, distinguished from hover/focus primarily by its distinct neutral hue
+ * ([resolveSliderThumbStyle]'s call site) and the accompanying [PRESSED_SCALE] lift, not by
+ * raw brightness. */
+private const val PRESS_RING_REPEAT: Int = 1
 
 /** Custom track slot thickness — matches [AeroRangeSlider]'s own locked 4.dp track thickness
  * (18-UI-SPEC.md Spacing Scale), same "thin track" family the accent-fill gloss (D-02) is
