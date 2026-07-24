@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Glass Refinement
 current_phase: 18
-current_phase_name: Range
+current_phase_name: range
 status: executing
-stopped_at: Phase 18 UI-SPEC approved
-last_updated: "2026-07-23T16:50:53.262Z"
-last_activity: 2026-07-23
-last_activity_desc: Phase 17 complete, transitioned to Phase 18
+stopped_at: Completed 18-01-PLAN.md
+last_updated: "2026-07-24T09:19:29.397Z"
+last_activity: 2026-07-24
+last_activity_desc: Phase 18 execution started
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 20
-  completed_plans: 11
+  completed_plans: 12
   percent: 33
 ---
 
@@ -24,17 +24,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refinement)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, typed `AeroIcons`, and a showcase — no manual style work or icon-pack hunting required.
-**Current focus:** Phase 17 — Buttons
+**Current focus:** Phase 18 — range
 
 ## Current Position
 
 Milestone: v3.0 Glass Refinement
-Phase: 18 — Range
-Plan: Not started
+Phase: 18 (range) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-07-23 — Phase 17 complete, transitioned to Phase 18
+Last activity: 2026-07-24 — Phase 18 execution started
 
-Progress: [███████░░░] 69%
+Progress: [██████░░░░] 60%
 
 ## v3.0 Roadmap (2026-07-21)
 
@@ -118,6 +118,7 @@ Research flags carried into planning: Phases 15, 16, 18 likely need `/gsd:resear
 | Phase 17 P03 | 15min | 2 tasks | 5 files |
 | Phase 17 P04 | 8min | 1 tasks | 1 files |
 | Phase 17 P05 | 39min | 1 tasks | 6 files |
+| Phase 18-range P01 | 1h04min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -169,6 +170,9 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase ?]: [Phase 17, Plan 05]: Rim alpha capped via min(native glassBorder alpha, 0.45) rather than a flat constant, so Classic's naturally dimmer rim is not forced down to match AeroBlue/AeroDark
 - [Phase ?]: [Phase 17, Plan 05]: Filled-button fill darkening (primary.darken 0.20f/0.36f) scoped to AeroButtonSurface's own resolution only, not pushed into shared AeroOrnamentTokens/AeroSurfaceStyle.rest() defaults, to avoid darkening every other accent-derived surface
 - [Phase ?]: [Phase 17, Plan 05]: flattenDisabled's terminal blend target changed from light borderDefault to theme's own base.surface (blend 0.4->0.5) so disabled buttons recede into background instead of standing out as light-gray
+- [Phase ?]: [Phase 18, Plan 01]: AeroSlider thumb/track dp sizing (20.dp/4.dp) matches AeroRangeSlider's locked dimensions rather than M3's raw SliderTokens (4dp x44dp pill, 16dp track) — M3's default shape is incompatible with aeroThumbSurface's circle-only primitive
+- [Phase ?]: [Phase 18, Plan 01]: Focus and press/drag glow rings diverge in hue (borderSelected vs onSurface-derived neutral), not just intensity — same-hue-family intensity-only differentiation was the round-1 human-sign-off defect root cause, since hoverGlow and borderSelected are both primary-derived
+- [Phase ?]: [Phase 18, Plan 01]: onValueChangeFinished wired as null through SliderState internally, no new AeroSlider public parameter — resolves 18-RESEARCH.md Open Question 1, keeps VRNG-02's 1:1 public-signature constraint
 
 ### Pending Todos
 
@@ -183,7 +187,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-07-23T16:23:11.499Z
-Stopped at: Phase 18 UI-SPEC approved
-Resume file: c:/1A_WORK/ui_lib/.planning/phases/18-range/18-UI-SPEC.md
+Last session: 2026-07-24T09:19:29.382Z
+Stopped at: Completed 18-01-PLAN.md
+Resume file: None
 Next action: `/gsd:plan-phase 15` (Toolchain Upgrade — consider `/gsd:research-phase 15` first per research flag)

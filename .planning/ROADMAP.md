@@ -203,12 +203,12 @@ Plans:
   4. `AeroProgressBar` shows a recessed track bed and a gradient fill with gloss; the periodic sheen is present but OFF by default; indeterminate mode is restyled but keeps its existing 1500ms restart timing with no ping-pong introduced
   5. Anywhere animation and drag write the same value (slider/range-slider thumbs), the locked Pattern 3 is reused: animation reads a target-only value, drag writes directly, `isDragging` switches to `snap()`
 
-**Plans**: 4 plans
+**Plans**: 1/4 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 18-01-PLAN.md — TRACER: neutralRest factory + slider resolvers + AeroSlider custom-slot restyle end-to-end, Wave-0 guards (VRNG-01/02/03/09)
+- [x] 18-01-PLAN.md — TRACER: neutralRest factory + slider resolvers + AeroSlider custom-slot restyle end-to-end, Wave-0 guards (VRNG-01/02/03/09)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -278,7 +278,7 @@ Plans:
 | 15. Toolchain Upgrade | v3.0 | 6/6 | In Progress|  |
 | 16. Foundation — Aero Primitives Layer | v3.0 | 5/5 | Complete    | 2026-07-23 |
 | 17. Buttons | v3.0 | 5/5 | Complete    | 2026-07-23 |
-| 18. Range | v3.0 | 0/TBD | Not started | - |
+| 18. Range | v3.0 | 1/4 | In Progress|  |
 | 19. Selectors + Lists | v3.0 | 0/TBD | Not started | - |
 | 20. Verification | v3.0 | 0/TBD | Not started | - |
 
