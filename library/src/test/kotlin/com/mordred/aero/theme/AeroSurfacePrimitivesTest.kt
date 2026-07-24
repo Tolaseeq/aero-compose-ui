@@ -152,8 +152,11 @@ class AeroSurfacePrimitivesTest {
     fun noRememberInfiniteTransitionInAeroGlowRingBody() {
         // Scoped to the function body (not KDoc prose, which legitimately names the
         // anti-pattern it warns against) — a whole-file scan would false-positive on that doc.
+        // Covers both the Modifier wrapper and drawAeroGlowRing (the direct-DrawScope
+        // implementation it delegates to, added 18-04) — the real draw logic lives in the latter.
+        val body = functionBody("aeroGlowRing") + functionBody("drawAeroGlowRing")
         assertFalse(
-            functionBody("aeroGlowRing").contains("rememberInfiniteTransition"),
+            body.contains("rememberInfiniteTransition"),
             "aeroGlowRing must not be driven by a rememberInfiniteTransition (local-DoS avoidance, PRIM-06 prohibition)"
         )
     }
@@ -164,8 +167,9 @@ class AeroSurfacePrimitivesTest {
         // box's own center fades to near-zero alpha by the time it reaches the actual perimeter
         // stroke location for anything but a perfect square — measured as byte-identical to
         // background immediately outside an aeroGlowRing card. The outer bloom must instead be
-        // solid-color concentric rings so brightness lands AT the perimeter.
-        val body = functionBody("aeroGlowRing")
+        // solid-color concentric rings so brightness lands AT the perimeter. Scoped to both the
+        // Modifier wrapper and drawAeroGlowRing (18-04), where the bloom draw calls now live.
+        val body = functionBody("aeroGlowRing") + functionBody("drawAeroGlowRing")
         assertFalse(
             Regex("""Brush\.radialGradient""").containsMatchIn(body),
             "aeroGlowRing's outer bloom must not rely on a single radial gradient centered on " +
@@ -193,7 +197,11 @@ class AeroSurfacePrimitivesTest {
         // to the surface's own edge (its own half-width), not pushed several dp away by a fixed
         // outset before any bloom appears — the exact "zero brightness immediately outside the
         // card" defect measured during the three-theme sign-off.
-        val body = functionBody("aeroGlowRing")
+        // The bloom-ring draw logic lives in drawAeroGlowRing (the direct-DrawScope
+        // implementation Modifier.aeroGlowRing delegates to, added for AeroRangeSlider's
+        // per-thumb glow parity, 18-04) — assert against that function, not the thin Modifier
+        // wrapper which no longer contains the bloom math itself.
+        val body = functionBody("drawAeroGlowRing")
         assertTrue(
             body.contains("bloomStrokePx / 2f"),
             "The first bloom ring must start at the surface's own edge (offset by only its own " +
@@ -205,7 +213,8 @@ class AeroSurfacePrimitivesTest {
     fun noColorTransparentInNewPrimitiveFunctionBodies() {
         // Scoped to function bodies (not KDoc prose, which legitimately names the anti-pattern
         // it warns against) — a whole-file scan would false-positive on those doc comments.
-        val body = functionBody("aeroGlowRing") + functionBody("drawAeroThumb") + functionBody("aeroThumbSurface")
+        val body = functionBody("aeroGlowRing") + functionBody("drawAeroGlowRing") +
+            functionBody("drawAeroThumb") + functionBody("aeroThumbSurface")
         assertFalse(
             Regex("""Color\.Transparent""").containsMatchIn(body),
             "New primitives must fade to baseColor.copy(alpha = 0f), never Color.Transparent (PRIM-14)"

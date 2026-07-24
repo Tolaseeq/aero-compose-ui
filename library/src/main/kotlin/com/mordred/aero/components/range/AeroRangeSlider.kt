@@ -25,15 +25,24 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.mordred.aero.components.common.rememberAeroInteractionState
+import com.mordred.aero.theme.AeroOrnamentTokens
 import com.mordred.aero.theme.AeroSurfaceStyle
 import com.mordred.aero.theme.AeroTheme
+import com.mordred.aero.theme.drawAeroGlowRing
 import com.mordred.aero.theme.drawAeroGroove
 import com.mordred.aero.theme.drawAeroSurfaceCore
 import com.mordred.aero.theme.drawAeroThumb
 import com.mordred.aero.theme.flattenDisabled
 import com.mordred.aero.theme.glassEffect
+import com.mordred.aero.theme.lighten
 import kotlin.math.abs
 import kotlin.math.roundToInt
+
+/** Lift applied to a thumb's own drawn radius while pressed/dragging (D-04) — the Canvas
+ * equivalent of [AeroSlider]'s `graphicsLayer` scale-up, matched to the identical 1.05x factor
+ * so both sibling sliders' "picked up" cue reads the same regardless of which one is rendering
+ * (VRNG-05/09, per the human three-theme sign-off's cross-component consistency requirement). */
+private const val PRESSED_RADIUS_SCALE: Float = 1.05f
 
 /**
  * Which thumb of the dual-thumb [AeroRangeSlider] a drag/move refers to.
@@ -194,7 +203,10 @@ public fun AeroRangeSlider(
     // Style resolution (Aero glass restyle, D-01) — reuses Plan 01's resolveSliderThumbStyle/
     // resolveSliderTrackStyle verbatim (same package, no forked resolver). No keyboard focus
     // tracking exists on this Canvas control (accessibility semantics explicitly deferred,
-    // VRNG-04), so focused is always false.
+    // VRNG-04), so focused is always false and no focus-ring parity with AeroSlider is drawn —
+    // adding real per-thumb keyboard focus would be new keyboard LOGIC, out of this render-only
+    // restyle's scope (VRNG-04's own untouched-drag-loop boundary). Hover and press/drag DO get
+    // AeroSlider's full glow-ring + lift treatment below, per-thumb (VRNG-05/09).
     val trackStyle = resolveSliderTrackStyle(colors, enabled)
     val grooveStyle = AeroSurfaceStyle.neutralRest(colors, cornerRadius = 2.dp).let {
         if (enabled) it else it.flattenDisabled(colors)
@@ -215,6 +227,10 @@ public fun AeroRangeSlider(
         focused = false,
         enabled = enabled,
     )
+    // Same glow hues as AeroSlider's thumb slot (identical formula, not just identical intent) —
+    // the closest a Canvas draw can match a sibling Modifier-drawn control's look.
+    val hoverGlowColor = AeroOrnamentTokens.derive(colors).hoverGlow
+    val pressGlowColor = colors.onSurface.lighten(0.15f)
 
     Box(modifier = modifier.fillMaxWidth().height(48.dp)) {
         Canvas(
@@ -367,28 +383,42 @@ public fun AeroRangeSlider(
             }
 
             // 3. Thumbs — raised neutral glass nub (D-01), independent per-thumb hover/press
-            //    style (VRNG-05). Draw the non-last-moved first so lastMoved lands on top. Each
-            //    thumb's `inset` region always resolves to an exact (2*thumbRadius) square
-            //    regardless of x/centerY, which is what collapses drawAeroSurfaceCore's rounded
-            //    rect into a circle (PRIM-07's cornerPx == half-side-length contract).
-            fun drawThumb(x: Float, style: AeroSurfaceStyle) {
+            //    style AND glow-ring/lift treatment (VRNG-05/09), matching AeroSlider's thumb
+            //    slot exactly: a hover-only ring, a press/drag ring (distinct neutral hue) plus
+            //    a radius lift, both suppressed while the other is active. Draw the non-last-
+            //    moved first so lastMoved lands on top. Each thumb's `inset` region always
+            //    resolves to an exact (2*liftedRadius) square regardless of x/centerY, which is
+            //    what collapses drawAeroSurfaceCore's rounded rect into a circle (PRIM-07's
+            //    cornerPx == half-side-length contract) — glow rings are drawn first (unclipped,
+            //    outside the inset bounds) so the thumb fill paints on top, mirroring
+            //    Modifier.aeroGlowRing(...).aeroThumbSurface(...)'s required ordering.
+            fun drawThumb(x: Float, style: AeroSurfaceStyle, hovered: Boolean, pressedOrDragging: Boolean) {
+                val isHoverOnly = hovered && !pressedOrDragging
+                val liftedRadius = if (pressedOrDragging) thumbRadius * PRESSED_RADIUS_SCALE else thumbRadius
                 inset(
-                    left = x - thumbRadius,
-                    top = centerY - thumbRadius,
-                    right = width - (x + thumbRadius),
-                    bottom = size.height - (centerY + thumbRadius),
+                    left = x - liftedRadius,
+                    top = centerY - liftedRadius,
+                    right = width - (x + liftedRadius),
+                    bottom = size.height - (centerY + liftedRadius),
                 ) {
-                    drawAeroThumb(style, radiusPx = thumbRadius)
+                    drawAeroGlowRing(active = isHoverOnly && enabled, glowColor = hoverGlowColor, cornerPx = liftedRadius)
+                    drawAeroGlowRing(active = pressedOrDragging && enabled, glowColor = pressGlowColor, cornerPx = liftedRadius)
+                    drawAeroThumb(style, radiusPx = liftedRadius)
                 }
             }
 
             val firstThumb = thumbToDrawFirst(lastMovedThumb)
             val firstX = if (firstThumb == RangeThumb.Start) startX else endX
             val firstStyle = if (firstThumb == RangeThumb.Start) startThumbStyle else endThumbStyle
+            val firstHovered = if (firstThumb == RangeThumb.Start) startInteractionState.hovered else endInteractionState.hovered
+            val firstPressed = activeThumb == firstThumb
             val secondX = if (firstThumb == RangeThumb.Start) endX else startX
             val secondStyle = if (firstThumb == RangeThumb.Start) endThumbStyle else startThumbStyle
-            drawThumb(firstX, firstStyle)
-            drawThumb(secondX, secondStyle)
+            val secondThumb = if (firstThumb == RangeThumb.Start) RangeThumb.End else RangeThumb.Start
+            val secondHovered = if (secondThumb == RangeThumb.Start) startInteractionState.hovered else endInteractionState.hovered
+            val secondPressed = activeThumb == secondThumb
+            drawThumb(firstX, firstStyle, firstHovered, firstPressed)
+            drawThumb(secondX, secondStyle, secondHovered, secondPressed)
         }
 
         // Glass value tooltip above the active thumb (mirrors AeroSlider's glass pill).
