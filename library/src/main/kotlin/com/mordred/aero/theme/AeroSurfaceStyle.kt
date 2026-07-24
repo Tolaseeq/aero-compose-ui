@@ -58,6 +58,40 @@ public data class AeroSurfaceStyle(
                 cornerRadius = cornerRadius,
             )
         }
+
+        /**
+         * Neutral-glass rest-state preset (18-UI-SPEC.md Color § "Finding to confirm during
+         * planning") — a parallel to [rest] that sources its fill/bevel from NEUTRAL tokens
+         * ([AeroColorScheme.glassHighlight]/[AeroColorScheme.glassSurface]/
+         * [AeroColorScheme.glassBorder]) rather than [AeroColorScheme.primary]. [rest] cannot be
+         * reused unmodified here — [AeroOrnamentTokens.derive] derives BOTH `fillSplitTop/Bottom`
+         * AND `bevelLight/bevelShadow` from `base.primary`, so passing [rest] to
+         * [aeroThumbSurface]/[aeroGroove] would render an accent-tinted thumb/groove, contradicting
+         * D-01's "neutral movable thumb, recessed neutral groove" Win7 slider identity.
+         *
+         * Placed here (not `components/range/`) so Phase 19's `AeroSwitch` can reuse it
+         * cross-package for its own neutral thumb without a reach-around, mirroring [pressedRecess]'s
+         * placement rationale. [glossColor]/[rimColor] reuse [AeroOrnamentTokens.glossHighlight]/
+         * [AeroOrnamentTokens.rimLight] as-is — already neutral tokens, no re-derivation needed.
+         * Uses [Color.lighten]/[Color.darken]'s RGB-mix (never `.copy(alpha = ...)`) so the result
+         * stays correct on [AeroColorScheme.Classic]'s fully-opaque tokens (PRIM-01/14).
+         *
+         * Exact lighten/darken magnitudes are Claude's discretion (18-CONTEXT.md), spot-checked on
+         * AeroBlue/AeroDark/Classic at first implementation (PRIM-16 carries forward) — the UI-SPEC's
+         * suggested starting-point values below are used verbatim, not re-derived from memory.
+         */
+        public fun neutralRest(base: AeroColorScheme, cornerRadius: Dp = 8.dp): AeroSurfaceStyle {
+            val ornaments = base.ornamentOverride ?: AeroOrnamentTokens.derive(base)
+            return AeroSurfaceStyle(
+                fillTop = base.glassHighlight.lighten(0.12f),
+                fillBottom = base.glassSurface.darken(0.06f),
+                glossColor = ornaments.glossHighlight,
+                bevelLight = base.glassHighlight.lighten(0.20f),
+                bevelShadow = base.glassBorder.darken(0.15f),
+                rimColor = ornaments.rimLight,
+                cornerRadius = cornerRadius,
+            )
+        }
     }
 }
 
