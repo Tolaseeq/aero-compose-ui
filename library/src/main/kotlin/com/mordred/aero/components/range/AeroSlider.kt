@@ -17,6 +17,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mordred.aero.components.common.rememberAeroInteractionState
 import com.mordred.aero.theme.AeroColorScheme
@@ -42,6 +45,20 @@ import com.mordred.aero.theme.lighten
  * M3 pill dimensions would clip to a near-invisible dot rather than a readable Aero thumb nub. */
 private val THUMB_DIAMETER = 20.dp
 private val THUMB_RADIUS = 10.dp
+
+/** Scale applied to the thumb slot's entire rendered subtree (glow rings + surface, both drawn
+ * by modifiers chained after the `graphicsLayer` carrying this scale) while pressed/dragging —
+ * the physical "picked up" lift cue (D-04), a visual channel focus's static ring never uses, so
+ * the two states cannot be confused with each other regardless of theme/DPI. */
+private const val PRESSED_SCALE: Float = 1.15f
+
+/** Number of times [aeroGlowRingRepeated] stacks the identical focus ring — additive compositing
+ * of the same ring at the same geometry brightens it well past a single hover-strength ring,
+ * making keyboard focus unmistakable rather than a similarly-dim blue halo. */
+private const val FOCUS_RING_REPEAT: Int = 2
+
+/** Same additive-stacking treatment as [FOCUS_RING_REPEAT], applied to the press/drag ring. */
+private const val PRESS_RING_REPEAT: Int = 2
 
 /** Custom track slot thickness — matches [AeroRangeSlider]'s own locked 4.dp track thickness
  * (18-UI-SPEC.md Spacing Scale), same "thin track" family the accent-fill gloss (D-02) is
@@ -100,9 +117,17 @@ public fun AeroSlider(
     val grooveStyle = AeroSurfaceStyle.neutralRest(colors, cornerRadius = TRACK_CORNER_RADIUS).let {
         if (enabled) it else it.flattenDisabled(colors)
     }
-    val hoverGlow = AeroOrnamentTokens.derive(colors).hoverGlow
-    val interacting = state.hovered || state.pressed || isDragging
-    val interactionGlowColor = if (state.pressed || isDragging) hoverGlow.lighten(0.15f) else hoverGlow
+    // Three thumb cues, deliberately distinct in both hue and treatment so they never blend
+    // into one another (D-03/D-04): focus uses the system "selection" blue (the same token every
+    // other Aero control's focus ring uses); hover uses that same blue family but a single,
+    // dimmer ring; press/drag intentionally breaks from the blue family into a bright neutral
+    // glow (onSurface-derived) plus a physical scale-up, so "picked up" never reads as "focused."
+    val isPressedOrDragging = state.pressed || isDragging
+    val isHoverOnly = state.hovered && !isPressedOrDragging
+    val focusGlowColor = colors.borderSelected
+    val hoverGlowColor = AeroOrnamentTokens.derive(colors).hoverGlow
+    val pressGlowColor = colors.onSurface.lighten(0.15f)
+    val thumbScale = if (isPressedOrDragging) PRESSED_SCALE else 1f
 
     Box(modifier = modifier.fillMaxWidth()) {
         if (isDragging && showTooltip) {
@@ -131,16 +156,27 @@ public fun AeroSlider(
                 Box(
                     Modifier
                         .size(THUMB_DIAMETER)
+                        // Scales the whole rendered thumb slot (glow rings + surface, both drawn
+                        // by modifiers further down this chain) uniformly around its center — the
+                        // physical "picked up" lift cue (D-04), distinct from focus's static ring.
+                        .graphicsLayer(scaleX = thumbScale, scaleY = thumbScale)
                         .hoverable(interactionSource)
-                        .aeroGlowRing(
+                        .aeroGlowRingRepeated(
                             active = state.focused && enabled,
-                            glowColor = colors.borderSelected,
+                            glowColor = focusGlowColor,
                             cornerRadius = THUMB_RADIUS,
+                            times = FOCUS_RING_REPEAT,
                         )
                         .aeroGlowRing(
-                            active = interacting && enabled,
-                            glowColor = interactionGlowColor,
+                            active = isHoverOnly && enabled,
+                            glowColor = hoverGlowColor,
                             cornerRadius = THUMB_RADIUS,
+                        )
+                        .aeroGlowRingRepeated(
+                            active = isPressedOrDragging && enabled,
+                            glowColor = pressGlowColor,
+                            cornerRadius = THUMB_RADIUS,
+                            times = PRESS_RING_REPEAT,
                         )
                         .aeroThumbSurface(thumbStyle)
                 )
@@ -163,6 +199,27 @@ public fun AeroSlider(
             valueRange = valueRange,
         )
     }
+}
+
+/**
+ * Chains [aeroGlowRing] [times] with identical parameters — additive compositing of the same
+ * ring geometry over itself intensifies that ring well beyond a single call at the same
+ * [glowColor]/alpha, without adding a stroke-width/spread parameter to the shared Phase 16
+ * primitive (whose contract is deliberately minimal — [active]/[glowColor]/[cornerRadius] only).
+ * Local to this file; the intensity need is [AeroSlider]-thumb-specific (D-03/D-04's "unmistakable
+ * focus, unmistakable press" requirement), not a change to every other consumer of [aeroGlowRing].
+ */
+private fun Modifier.aeroGlowRingRepeated(
+    active: Boolean,
+    glowColor: Color,
+    cornerRadius: Dp,
+    times: Int,
+): Modifier {
+    var result = this
+    repeat(times) {
+        result = result.aeroGlowRing(active = active, glowColor = glowColor, cornerRadius = cornerRadius)
+    }
+    return result
 }
 
 /**
@@ -201,7 +258,7 @@ internal fun resolveSliderThumbStyle(
 /** Gloss-alpha delta applied on top of [AeroSurfaceStyle.neutralRest] while the thumb is
  * pressed/dragged (D-04) — a slightly brighter gloss as the active-drag cue, never
  * [com.mordred.aero.theme.pressedRecess]'s invert-and-recede transform. */
-private const val PRESSED_GLOSS_BOOST: Float = 0.06f
+private const val PRESSED_GLOSS_BOOST: Float = 0.10f
 
 /**
  * Pure, Compose-free resolver for [AeroSlider]'s custom track slot's ACCENT active-fill segment
