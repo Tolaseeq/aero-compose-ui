@@ -231,11 +231,21 @@ Plans:
   3. `AeroSegmentedControl`'s selected segment appears recessed (inverted gradient + inner shadow) by reusing the pressed-button code from Phase 17, and the control gains hover and focus for the first time
   4. `AeroListItem`'s selection highlight is clipped to a rounded pill with gradient and rim light, hover remains visible on an already-selected row (the two states combine instead of one suppressing the other), a focus visual exists, and all newly-hover-wired components reuse `AeroListItem`'s existing `Modifier.hoverable` + `collectIsHoveredAsState` pattern rather than inventing pointer-position tracking
 
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
+**Wave 1**
 
-- [ ] 19-01: TBD (planned via `/gsd:plan-phase 19` — standard pattern, plan directly)
+- [ ] 19-01-PLAN.md — TRACER: AeroListItem end-to-end — base-then-transform pill resolver, clipped Aero pill, in-bounds focus stroke, two fail-then-pass Wave-0 guards (VLST-01/02/03/04)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 19-02-PLAN.md — AeroSwitch recessed accent groove + raised glossy thumb, first-ever hover/press/focus/disabled, three Wave-0 guards (VSEL-01/02, VLST-04)
+- [ ] 19-03-PLAN.md — AeroSegmentedControl raised/recessed segments reusing the pressed-button code verbatim, Role.RadioButton semantics, in-bounds hover/focus, three Wave-0 guards (VSEL-03/04, VLST-04)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 19-04-PLAN.md — SelectionSection + ListSection state-matrix demos and the human three-theme × per-state visual sign-off (VSEL-01/02/03/04, VLST-01/02/03)
 
 ### Phase 20: Verification
 
