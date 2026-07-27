@@ -118,8 +118,12 @@ internal fun AeroButtonSurface(
 /**
  * Inner-shadow applied to a pressed/recessed button style (17-UI-SPEC.md Press row) — a native
  * [Shadow] (Phase 16 D-02 precedent), not a manual gradient.
+ *
+ * `internal` (not `private`) specifically so `AeroSegmentedControl` (Phase 19, cross-package)
+ * can import and reuse this exact value for its recessed selected segment (VSEL-03) — a copy
+ * must never be made; any future retune of this constant must apply to both call sites at once.
  */
-private val PRESSED_INNER_SHADOW: Shadow = Shadow(
+internal val PRESSED_INNER_SHADOW: Shadow = Shadow(
     radius = 2.dp,
     color = Color.Black.copy(alpha = 0.35f),
     offset = DpOffset(0.dp, 1.dp),
