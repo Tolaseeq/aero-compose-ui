@@ -177,3 +177,7 @@ None found. Scanned `AeroListItem.kt` for hardcoded empty values, placeholder te
 ---
 *Phase: 19-selectors-lists*
 *Completed: 2026-07-27*
+
+## Self-Check: PASSED
+
+All created/modified files found on disk; all task and metadata commits (`906e044`, `a8579eb`, `f8ca08c`) found in git history.
