@@ -25,6 +25,10 @@ import kotlin.test.assertTrue
  * Per this project's own v2.0.3 false-positive-sign-off lesson (repro-must-exercise-the-path,
  * VER-06), every guard below was proven to FAIL against the shipped, un-restyled `AeroSwitch.kt`
  * before being trusted — see 19-02-SUMMARY.md "Guard Fail-Then-Pass Proof".
+ *
+ * - 19-05/gap G2 (VSEL-02): the FOCUS `aeroGlowRing` call reads `state.focusVisible`, the HOVER
+ *   `aeroGlowRing` call still reads `state.hovered` — see 19-05-SUMMARY.md "Guard Fail-Then-Pass
+ *   Proof".
  */
 class AeroSwitchSourceTest {
 
@@ -100,6 +104,20 @@ class AeroSwitchSourceTest {
             aeroSwitchSource.contains("Color.Transparent"),
             "AeroSwitch.kt must never use the fully-transparent color constant as a gradient/fade " +
                 "target — fade to baseColor.copy(alpha = 0f) instead (PRIM-14)"
+        )
+    }
+
+    @Test
+    fun aeroSwitchGatesOnlyTheFocusRingOnFocusVisibleLeavingHoverOnTheRawFlag() {
+        assertTrue(
+            aeroSwitchSource.contains("active = state.focusVisible && enabled"),
+            "AeroSwitch.kt's FOCUS aeroGlowRing call must gate on state.focusVisible, not the raw " +
+                "focused flag — gap G2 (VSEL-02): a mouse click must not leave a residual focus ring"
+        )
+        assertTrue(
+            aeroSwitchSource.contains("active = state.hovered && enabled"),
+            "AeroSwitch.kt's HOVER aeroGlowRing call must keep reading the raw hovered flag — the " +
+                "user explicitly wants hover indication retained, gap G2 changes the focus cue only"
         )
     }
 

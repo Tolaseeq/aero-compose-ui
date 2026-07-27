@@ -83,6 +83,42 @@ class AeroSwitchSemanticsTest {
         assertEquals(true, checked, "checked must flip from false to true")
     }
 
+    /**
+     * 19-05/gap G2 regression: proves the focus-visible gate suppresses only the DRAWING of the
+     * focus ring, never the focus stop or the Space key binding — the failure mode that would be
+     * worse than the defect being fixed.
+     */
+    @Test
+    fun aeroSwitchStaysFocusedAndSpaceStillTogglesAfterTheFocusVisibleGate() = runComposeUiTest {
+        var checked by mutableStateOf(false)
+        var invocationCount = 0
+        setContent {
+            AeroTheme {
+                AeroSwitch(
+                    checked = checked,
+                    onCheckedChange = {
+                        invocationCount++
+                        checked = it
+                    },
+                    modifier = Modifier.testTag("switch"),
+                )
+            }
+        }
+        waitForIdle()
+
+        val node = onNodeWithTag("switch")
+        node.requestFocus()
+        waitForIdle()
+        node.assert(SemanticsMatcher.expectValue(SemanticsProperties.Focused, true))
+
+        node.performKeyInput { pressKey(Key.Spacebar) }
+        waitForIdle()
+
+        assertEquals(1, invocationCount, "Space must still flip the switch after the focus-visible gate")
+        assertEquals(true, checked, "checked must still flip from false to true")
+        node.assert(SemanticsMatcher.expectValue(SemanticsProperties.Focused, true))
+    }
+
     @Test
     fun aeroSwitchDisabledNeverInvokesOnCheckedChangeOnRealPointerClick() = runComposeUiTest {
         var invoked = false
