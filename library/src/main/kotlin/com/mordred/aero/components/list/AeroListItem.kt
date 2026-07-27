@@ -7,9 +7,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -36,15 +35,21 @@ import com.mordred.aero.theme.hoverLighten
 /**
  * VLST-01: Aero-styled list row with hover and selection state.
  *
+ * [ROW_MIN_HEIGHT] (36.dp) is a minimum, not a fixed height (G1): a single-line row still
+ * resolves to exactly 36.dp, but a row carrying a primary label plus [secondaryText], or a
+ * primary label wrapped onto multiple lines, grows past it instead of clipping its content.
  * Selection and hover render as a single clipped Aero pill (gradient fill + gloss + rim,
  * [PILL_VERTICAL_INSET] vertical inset, [PILL_CORNER_RADIUS] corner radius) resolved by
  * [resolveListItemPillStyle] — hover composes on top of the selected base rather than
  * replacing it (D-11), so an already-selected row that is also hovered reads strictly
- * brighter, never flatter. A focused clickable row draws an in-bounds stroke inside that
- * same pill geometry instead of the library's outer glow-ring bloom: list rows live inside
- * scrolling/clipping containers (e.g. a lazy list) that would slice an outer bloom against
- * neighboring rows, so this component's focus cue deliberately stays inside its own bounds
- * (D-13) — do not "fix" it back to the outer bloom used elsewhere in the library.
+ * brighter, never flatter. The pill and the focus-stroke [Box] are both measured against the
+ * row's own resolved size (`Modifier.matchParentSize`, not a fill-the-parent size modifier —
+ * see this plan's `<planner_finding>`), so both grow with the row instead of collapsing to zero height
+ * once the row's height stops being a fixed value. A focused clickable row draws an in-bounds
+ * stroke inside that same pill geometry instead of the library's outer glow-ring bloom: list
+ * rows live inside scrolling/clipping containers (e.g. a lazy list) that would slice an outer
+ * bloom against neighboring rows, so this component's focus cue deliberately stays inside its
+ * own bounds (D-13) — do not "fix" it back to the outer bloom used elsewhere in the library.
  *
  * @param text Primary label text.
  * @param onClick Click handler. If null, the row is non-clickable and gains no focus stop.
@@ -81,7 +86,7 @@ public fun AeroListItem(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(36.dp)
+            .heightIn(min = ROW_MIN_HEIGHT)
             .hoverable(interactionSource)
             .then(
                 if (onClick != null) {
@@ -99,7 +104,7 @@ public fun AeroListItem(
         if (pillStyle != null) {
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .matchParentSize()
                     .padding(vertical = PILL_VERTICAL_INSET)
                     .aeroSurface(pillStyle, RoundedCornerShape(PILL_CORNER_RADIUS))
             )
@@ -107,7 +112,7 @@ public fun AeroListItem(
         if (state.focused && enabled && onClick != null) {
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .matchParentSize()
                     .padding(vertical = PILL_VERTICAL_INSET)
                     .drawBehind {
                         val strokePx = FOCUS_STROKE_WIDTH.toPx()
@@ -124,8 +129,8 @@ public fun AeroListItem(
         }
         Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 12.dp)
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = ROW_VERTICAL_PADDING)
                 .then(if (!enabled) Modifier.alpha(DISABLED_CONTENT_ALPHA) else Modifier),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -157,8 +162,23 @@ public fun AeroListItem(
 /** Corner radius of the selection/hover pill and of the in-bounds focus stroke (VLST-01). */
 private val PILL_CORNER_RADIUS: Dp = 6.dp
 
-/** Vertical inset of the pill from the row's own 36.dp bounds; horizontal inset is 0.dp (full-bleed width). */
+/** Vertical inset of the pill from the row's own resolved bounds; horizontal inset is 0.dp (full-bleed width). */
 private val PILL_VERTICAL_INSET: Dp = 2.dp
+
+/**
+ * Minimum row height (G1, VLST-01). This is now a FLOOR, not a ceiling: a single-line row still
+ * resolves to exactly this height (VER-03's locked single-line geometry is unchanged), but a row
+ * whose content needs more — a secondary line, or a wrapped long primary label — grows past it
+ * instead of clipping. The pill and focus [Box]es measure against the row's resolved size via
+ * `Modifier.matchParentSize`, so they inherit whatever height the row actually grows to.
+ */
+private val ROW_MIN_HEIGHT: Dp = 36.dp
+
+/**
+ * Vertical padding on the content [Row] (G1). This is what keeps a grown row's text off the
+ * pill's rounded edge — without it, text in a two-line row sits flush against the pill's bevel.
+ */
+private val ROW_VERTICAL_PADDING: Dp = 4.dp
 
 /** Fraction the selected pill's rest() fill alphas are scaled by, so the accent reads as a highlight, not a solid fill. */
 private const val SELECTED_FILL_ALPHA_SCALE: Float = 0.5f
