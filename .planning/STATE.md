@@ -2,16 +2,18 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Glass Refinement
+current_phase: 19
+current_phase_name: selectors-lists
 status: executing
-stopped_at: Completed 19-02-PLAN.md
-last_updated: "2026-07-27T13:12:31.858Z"
+stopped_at: Completed 19-03-PLAN.md
+last_updated: "2026-07-27T13:42:00.044Z"
 last_activity: 2026-07-27
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 3
   total_plans: 24
-  completed_plans: 21
-  percent: 67
+  completed_plans: 18
+  percent: 50
 ---
 
 # Project State
@@ -27,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refin
 
 Milestone: v3.0 Glass Refinement
 Phase: 19 (selectors-lists) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-07-27
 
-Progress: [███████░░░] 67%
+Progress: [████████░░] 75%
 
 ## v3.0 Roadmap (2026-07-21)
 
@@ -121,6 +123,7 @@ Research flags carried into planning: Phases 15, 16, 18 likely need `/gsd:resear
 | Phase 18-range P04 | 19min | 2 tasks | 5 files |
 | Phase 19 P01 | 3min | 2 tasks | 3 files |
 | Phase 19 P02 | 8min | 2 tasks | 4 files |
+| Phase 19 P03 | 21min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -185,6 +188,10 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase ?]: [Phase 19, Plan 01]: D-13 in-bounds inset focus stroke used instead of aeroGlowRing for AeroListItem - list rows live inside scrolling/clipping containers that would slice an outer bloom
 - [Phase ?]: [Phase 19, Plan 02]: resolveSwitchGrooveStyle/resolveSwitchThumbStyle implemented mirroring resolveSliderThumbStyle's precedence chain minus isDragging; D-05 pressed brightens gloss instead of recessing, verified via strict glossAlpha inequality plus unchanged fill stops
 - [Phase ?]: [Phase 19, Plan 02]: thumb Box kept as a sibling of the groove Box (D-03) so its drop shadow/glow escape the 18dp track clip; both aeroGlowRing calls chained before aeroGroove/aeroThumbSurface per the primitives ordering rule
+- [Phase ?]: [Phase 19, Plan 03]: PRESSED_INNER_SHADOW widened private -> internal in AeroButtonSurface.kt, value unchanged, enabling cross-package reuse by AeroSegmentedControl (VSEL-03)
+- [Phase ?]: [Phase 19, Plan 03]: resolveSegmentStyle folds pressed into an effectiveProgress (1f when pressed, else selectedProgress) so an unselected-but-pressed segment reaches full recess immediately, matching the styles-test behavior spec exactly
+- [Phase ?]: [Phase 19, Plan 03]: selected segment label switches to colors.surface (not colors.primary) for legibility over the recessed accent fill; unselected labels stay colors.onSurface
+- [Phase ?]: [Phase 19, Plan 03]: 1.dp inter-segment separator dropped (D-08/D-10) - each segment's own raised/recessed bevel/rim contour now supplies the visual break
 
 ### Pending Todos
 
@@ -199,7 +206,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-07-27T13:12:31.850Z
-Stopped at: Completed 19-02-PLAN.md
+Last session: 2026-07-27T13:41:44.889Z
+Stopped at: Completed 19-03-PLAN.md
 Resume file: None
 Next action: `/gsd:plan-phase 15` (Toolchain Upgrade — consider `/gsd:research-phase 15` first per research flag)
