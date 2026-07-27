@@ -29,9 +29,18 @@ import kotlin.test.assertTrue
  * - P-01: [AeroListItem]'s source contains `indication = null` — the custom-painted hover/press
  *   cue replaces the platform indication rather than doubling up with it.
  *
+ * - G2/VLST-03: [AeroListItem]'s source gates its in-bounds focus stroke on
+ *   `state.focusVisible && enabled && onClick != null` — a pointer-acquired focus must not draw
+ *   the stroke, while the row stays focusable and clickable either way (19-05/19-06).
+ * - G1: [AeroListItem]'s source (comments stripped) still carries the row-growth contract —
+ *   `heightIn(min = ROW_MIN_HEIGHT)` and `matchParentSize()` present, and neither `maxLines` nor
+ *   `TextOverflow` present — truncation was explicitly rejected because it would mask the layout
+ *   defect rather than fix it (19-06).
+ *
  * Per this project's own v2.0.3 false-positive-sign-off lesson (repro-must-exercise-the-path,
  * VER-06), every guard below was proven to FAIL against the shipped, un-restyled
- * `AeroListItem.kt` before being trusted — see 19-01-SUMMARY.md "Guard Fail-Then-Pass Proof".
+ * `AeroListItem.kt` before being trusted — see 19-01-SUMMARY.md "Guard Fail-Then-Pass Proof"
+ * (and 19-06-SUMMARY.md "Guard Fail-Then-Pass Proof" for the two guards added in this plan).
  */
 class AeroListItemSourceTest {
 
@@ -97,7 +106,57 @@ class AeroListItemSourceTest {
         )
     }
 
+    @Test
+    fun aeroListItemGatesTheFocusStrokeOnFocusVisible() {
+        assertTrue(
+            aeroListItemSource.contains("state.focusVisible && enabled && onClick != null"),
+            "AeroListItem.kt must gate its in-bounds focus stroke on " +
+                "state.focusVisible && enabled && onClick != null so a pointer-acquired focus " +
+                "does not draw the stroke, while the row stays focusable and clickable either " +
+                "way (G2)"
+        )
+    }
+
+    @Test
+    fun aeroListItemRowGrowthContractSurvives() {
+        assertTrue(
+            nonCommentSource.contains("heightIn(min = ROW_MIN_HEIGHT)"),
+            "AeroListItem.kt must keep .heightIn(min = ROW_MIN_HEIGHT) as its row height " +
+                "modifier — truncation was explicitly rejected because it would mask the " +
+                "layout defect rather than fix it (G1)"
+        )
+        assertTrue(
+            nonCommentSource.contains("matchParentSize()"),
+            "AeroListItem.kt must keep matchParentSize() on the pill/focus Boxes so they grow " +
+                "with the row's resolved height instead of collapsing to zero (G1)"
+        )
+        assertFalse(
+            nonCommentSource.contains("maxLines"),
+            "AeroListItem.kt must not introduce maxLines — truncation was explicitly rejected " +
+                "because it would mask the layout defect rather than fix it (G1)"
+        )
+        assertFalse(
+            nonCommentSource.contains("TextOverflow"),
+            "AeroListItem.kt must not introduce TextOverflow — truncation was explicitly " +
+                "rejected because it would mask the layout defect rather than fix it (G1)"
+        )
+    }
+
     private val aeroListItemSource: String get() = sourceFile("AeroListItem.kt").readText()
+
+    /**
+     * [aeroListItemSource] with every comment line (KDoc `*`, line `//`, or a block-comment
+     * opener) removed, so negative guards over this property cannot be satisfied or broken by
+     * KDoc prose — this file's own KDoc mentions `matchParentSize` and `heightIn` by name.
+     */
+    private val nonCommentSource: String
+        get() = aeroListItemSource
+            .lineSequence()
+            .filterNot { line ->
+                val trimmed = line.trim()
+                trimmed.startsWith("*") || trimmed.startsWith("//") || trimmed.startsWith("/*")
+            }
+            .joinToString("\n")
 
     /** cwd-independent resolution — Gradle's test task cwd varies between `library/` and repo root. */
     private fun sourceFile(name: String): File {

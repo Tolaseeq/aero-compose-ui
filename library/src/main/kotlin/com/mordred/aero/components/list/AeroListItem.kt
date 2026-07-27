@@ -45,11 +45,15 @@ import com.mordred.aero.theme.hoverLighten
  * brighter, never flatter. The pill and the focus-stroke [Box] are both measured against the
  * row's own resolved size (`Modifier.matchParentSize`, not a fill-the-parent size modifier —
  * see this plan's `<planner_finding>`), so both grow with the row instead of collapsing to zero height
- * once the row's height stops being a fixed value. A focused clickable row draws an in-bounds
- * stroke inside that same pill geometry instead of the library's outer glow-ring bloom: list
- * rows live inside scrolling/clipping containers (e.g. a lazy list) that would slice an outer
- * bloom against neighboring rows, so this component's focus cue deliberately stays inside its
- * own bounds (D-13) — do not "fix" it back to the outer bloom used elsewhere in the library.
+ * once the row's height stops being a fixed value. A clickable row draws an in-bounds focus
+ * stroke inside that same pill geometry only for keyboard-acquired focus (G2, VLST-03) — the
+ * shared [com.mordred.aero.components.common.rememberFocusVisible] mechanism suppresses the
+ * stroke for a mouse click while leaving the row focused and clickable either way, so Tab still
+ * draws the stroke and a display-only row (`onClick == null`) never becomes a focus stop. The
+ * stroke also stays inside the pill's own bounds instead of the library's outer glow-ring bloom:
+ * list rows live inside scrolling/clipping containers (e.g. a lazy list) that would slice an
+ * outer bloom against neighboring rows, so this component's focus cue deliberately stays inside
+ * its own bounds (D-13) — do not "fix" it back to the outer bloom used elsewhere in the library.
  *
  * @param text Primary label text.
  * @param onClick Click handler. If null, the row is non-clickable and gains no focus stop.
@@ -109,7 +113,7 @@ public fun AeroListItem(
                     .aeroSurface(pillStyle, RoundedCornerShape(PILL_CORNER_RADIUS))
             )
         }
-        if (state.focused && enabled && onClick != null) {
+        if (state.focusVisible && enabled && onClick != null) {
             Box(
                 modifier = Modifier
                     .matchParentSize()
