@@ -59,6 +59,13 @@ import com.mordred.aero.theme.hoverLighten
  * tellable apart when co-active. Both glow calls are chained before any clip-applying primitive
  * on this modifier chain, per `AeroSurfacePrimitives.kt`'s ordering rule.
  *
+ * 19-05/gap G2 (VSEL-02): the focus ring is gated on [com.mordred.aero.components.common.FocusVisibility]
+ * (`state.focusVisible`), not the raw `focused` flag — it draws only for keyboard-acquired focus
+ * (e.g. Tab) and stays suppressed for pointer-acquired focus (a mouse click), including after the
+ * pointer leaves. The switch's focusability and Space toggling are entirely unaffected either way;
+ * only whether the ring is DRAWN changes. The hover glow ring is untouched by this and continues
+ * to read the raw hovered flag.
+ *
  * Track: 36x18dp rounded pill. Thumb: 14x14dp circle. Thumb animates from x=2dp (off) to x=20dp
  * (on) via a single `animateFloatAsState` tween(150) that drives both the thumb offset and the
  * groove's fill lerp (D-07/P-03 — exactly one animated value).
@@ -94,7 +101,7 @@ public fun AeroSwitch(
             )
             .hoverable(interactionSource)
             .aeroGlowRing(
-                active = state.focused && enabled,
+                active = state.focusVisible && enabled,
                 glowColor = colors.borderSelected,
                 cornerRadius = TRACK_CORNER_RADIUS,
             )
