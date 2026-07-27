@@ -1,7 +1,7 @@
 ---
 phase: 19
 slug: selectors-lists
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-07-27
@@ -215,21 +215,73 @@ copy stay explicitly 1:1 with the pre-restyle shipped code (milestone constraint
 
 ## UI Considerations
 
-Probe classified three interactive-control surfaces: **E1** `AeroSwitch` (binary toggle), **E2**
-`AeroSegmentedControl` (single-select group of N segments), **E3** `AeroListItem` (single row
-within a caller-assembled list/collection). 8 categories probed against these three elements.
-**2 covered, 1 backstop, 5 dismissed, 0 unresolved.**
+> Produced by the ui-consideration-probe (post-verification, after checker APPROVED) — the visual
+> analog of spec-phase's edge probe on the UI element/state axis. Coverage is engine-computed, not
+> prose-derived. Element kinds were confirmed rather than taken from the heuristic classifier alone:
+> `form` was added to **E1**/**E2** (both carry form-input semantics — `Role.Switch` and
+> `Role.RadioButton`) and `interactive-control` to **E3** (the row is clickable). Only E1's kind set
+> changed the outcome, raising 4 additional categories.
 
-| Category | Element(s) | Status | Resolution / Reason |
-|----------|------------|--------|---------------------|
-| populated | E1, E2 | ✅ covered | Every value of a binary switch / every option in a segmented group renders through the same per-state style resolution table above — there is no separate "has data" vs "no data" branch for either bounded-choice control |
-| zero-one-many | E3 `AeroListItem` inside a caller-assembled list | ✅ covered | `AeroListItem` itself is a single-row primitive with no internal collection concept — "zero/one/many rows" is the CALLER's `LazyColumn`/`Column` composition concern, explicitly out of this phase's per-component boundary (mirrors Phase 17's button-as-atomic-control framing). The row's own selected/hovered/focused resolution (Color § table above) is identical regardless of how many sibling rows exist |
-| overflow | E2 `AeroSegmentedControl` long segment labels | 🧪 backstop | **Statement:** segment labels are single-line `Text` with no explicit `maxLines`/`overflow` today (`AeroSegmentedControl.kt:78-82`) — unlike `AeroButton`'s VBTN-03 fix (Phase 17), this phase's scope is VSEL-03/VSEL-04 (recess + hover/focus), not label truncation, and CONTEXT.md's boundary does not call out label overflow as in-scope. A caller supplying a long segment label today would widen that segment (and the whole `Row`) rather than truncate — pre-existing behavior, not newly introduced or newly fixed by this phase. **Verification (backstop):** confirmed at the three-theme visual review that the restyle (raised/recessed fill) does not change this pre-existing width-grows-with-label behavior — if the reviewer judges it should also gain `maxLines = 1` + `TextOverflow.Ellipsis` to match VBTN-03's precedent, that is a scope addition to flag during planning, not assumed here |
-| empty | E1, E2, E3 | dismissed | No data-collection empty-state concept applies to a binary toggle, a fixed-option group, or a single list row — confirmed against the Copywriting Contract's empty-state rows (marked not applicable) |
-| loading | E1, E2, E3 | dismissed | No async/busy state in scope for any of the three components (mirrors Phase 17's dismissal) |
-| error | E1, E2, E3 | dismissed | No error/failure rendering in scope; `enabled = false` is the only negative state (Copywriting Contract, Color § Disabled) |
-| partial | E1, E2, E3 | dismissed | No multi-field/partial-data concept — a switch is fully on/off, a segmented control has exactly one fully-selected option, a list row carries fixed caller-supplied text/leading/trailing slots |
-| long-text | E3 `AeroListItem` primary/secondary text | dismissed | Unchanged from shipped — no `maxLines`/`overflow` handling exists today and none is added; the row's fixed 36.dp height with `Row`/`Column` layout means long text already wraps or overflows exactly as it did pre-restyle, and CONTEXT.md's boundary does not call this out as in-scope (unlike `AeroButton`'s VBTN-03, which explicitly listed a long-text fix) |
+| Element | Confirmed kinds | Categories raised |
+|---------|-----------------|-------------------|
+| **E1** `AeroSwitch` — binary toggle, no text | `interactive-control`, `static-content`, `form` *(added)* | 6 |
+| **E2** `AeroSegmentedControl` — single-select group of N labelled segments | `list-collection`, `interactive-control`, `static-content`, `form` *(added)* | 8 |
+| **E3** `AeroListItem` — one selectable row in a caller-assembled list | `list-collection`, `static-content`, `interactive-control` *(added)* | 8 |
+
+**Coverage: 22 applicable — 7 covered, 4 backstop, 11 dismissed, 0 unresolved.**
+
+State coverage below is shape-rooted; empty-state and error-state **copy** stays in
+`## Copywriting Contract` and is referenced, not restated.
+
+### ✅ Covered (7)
+
+| Category | Element | Truth |
+|----------|---------|-------|
+| overflow | E1 | AeroSwitch's geometry is fixed and locked by VER-03 — 36×18dp track, 14dp thumb, travel x = 2dp → 20dp, `RoundedCornerShape(50)`. It hosts no caller content, so nothing can exceed its container. The one element that intentionally renders outside the track's declared bounds is the raised thumb's shadow and glow ring, and D-03 specifies exactly how: the thumb `Box` (its own `aeroGlowRing` + `aeroThumbSurface` chain) is a sibling drawn AFTER the groove `Box` and is not subject to the groove's `.clip(shape)`. The `Box`'s declared size stays 36×18dp regardless. |
+| long-text | E1 | Not reachable — AeroSwitch renders no text at all (Typography § "`AeroSwitch` renders no text — not applicable"), and exposes no label, caption, or content slot. There is no text surface that could grow, wrap, or truncate. The showcase caption ("Notifications", per `## Copywriting Contract`) is a sibling composable owned by the demo, not by AeroSwitch. |
+| populated | E2 | The populated happy path IS this phase's contract. The Color § AeroSegmentedControl per-state table specifies every cell at any N: unselected segments resolve to `AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp)` (raised glass, the "strip of buttons" identity per D-08), the selected segment to `rest(...).pressedRecess(PRESSED_INNER_SHADOW)` reused verbatim from `AeroButtonSurface.kt` (VSEL-03), with hover (`.hoverLighten()` composed on whichever base resolved), press, focus (inner rim at `colors.borderSelected`, in-bounds per D-10) and disabled all specified per segment. Typical volume is three options — the showcase uses "Day" / "Week" / "Month". |
+| zero-one-many | E2 | Every segment renders through the identical per-segment style resolution, so the strip reads correctly across N. At **N = 1** a single segment renders raised (unselected) or recessed (selected) inside the 4.dp outer shape — legible on its own because, with the 1.dp separator `Box` dropped (Spacing §), each segment's break comes from its own bevel/rim contour rather than from a divider that needs a neighbour to sit between. At **N = many** the same holds per segment. At **N = 0** the control renders as a bare 28dp-high outer surface with no segments — caller misuse the component does not guard, unchanged from pre-restyle. No singular/plural copy exists (labels are caller-supplied). |
+| populated | E3 | Fully specified by the Color § AeroListItem per-state table across all state combinations: rest-unselected (no pill drawn), rest-selected (accent `rest()` at reduced fill alpha, clipped to the 6.dp pill), hover-unselected (`neutralRest().hoverLighten()` in the same pill shape and inset, per D-12's one-shape-two-styles rule), hover-selected (the selected base transformed by `.hoverLighten()` on top — the load-bearing VLST-02/D-11 fix where the two states compose instead of one suppressing the other), focus (inset `drawRoundRect` stroke at `colors.borderSelected`, in-bounds per D-13), and disabled. The composition-order snippet in that section pins the structure as base-then-transform, never a three-way `when` branch. |
+| partial | E3 | `secondaryText`, leading and trailing are optional slots, so partially-populated rows are the normal case, not an edge. The row's geometry is fixed and slot-independent — 36.dp height, 12.dp horizontal padding, 8.dp `Arrangement.spacedBy` gap (all VER-03-locked) — so a text-only row lays out identically to a fully-populated row minus the absent slots, with the gap collapsing naturally via `spacedBy`. Critically for this phase, the new pill is derived from the ROW box (2.dp vertical inset, 0.dp horizontal, 6.dp radius), not from its content, so selection, hover and focus visuals are identical regardless of which slots the caller supplies. |
+| zero-one-many | E3 | AeroListItem owns exactly one row and has no internal collection — sibling count is the caller's `LazyColumn`/`Column` concern, outside this phase's per-component boundary. The row's own selected / hovered / focused / disabled resolution is identical regardless of sibling count, and the pill's full-bleed-width, 2.dp-vertical-inset geometry means consecutive selected rows stack with a 4.dp visual gap between adjacent pills rather than merging into one bar — the Win7 Explorer full-width row-selection idiom this phase's identity leans on. No singular/plural copy exists (all text is caller-supplied). |
+
+### 🧪 Backstop (4)
+
+Each lifts into `must_haves.truths`. At verify time a backstop is confirmed only by explicit
+evidence (a wired held-out / visual UI-state check) or routes to `insufficient_spec → human_needed`
+— never a silent pass.
+
+**E2 · overflow** — `verification: backstop`
+- **statement:** Segment labels are single-line `Text` with no `maxLines` and no `TextOverflow` (`AeroSegmentedControl.kt:78-82`). A long caller-supplied label therefore widens its own segment and the whole outer `Row` rather than truncating. This is PRE-EXISTING behavior that this phase neither introduces nor fixes: VSEL-03/VSEL-04 scope the recess plus hover/focus states, and 19-CONTEXT.md's boundary does not list label overflow as in-scope (unlike `AeroButton`'s VBTN-03 in Phase 17, which did).
+- **backstop:** At the three-theme visual sign-off, render a deliberately long segment label and confirm the restyle (raised rest fill, recessed selected fill, per-segment hover/focus, and the dropped 1.dp separator) does not make the width-grows-with-label behavior read worse than pre-restyle — in particular that a widened segment's own bevel/rim contour still supplies a clean break against its neighbours now that the separator `Box` is gone. If the reviewer judges the control should also gain `maxLines = 1` + `TextOverflow.Ellipsis` to match VBTN-03's precedent, that is a **scope addition to raise during planning**, not an assumption made here.
+
+**E2 · long-text** — `verification: backstop`
+- **statement:** Same surface and same defect as **E2 · overflow** above — a long caller-supplied segment label is the only text `AeroSegmentedControl` owns, so long-text and overflow are one risk, not two.
+- **backstop:** Resolved by the E2 · overflow row's backstop (three-theme sign-off with a deliberately long label); not restated here, per the de-dup rule.
+
+**E3 · overflow** — `verification: backstop`
+- **statement:** Primary and secondary text carry no `maxLines` or `TextOverflow`, and the row height is locked at 36.dp (VER-03), so unusually long text overflows or wraps exactly as it did pre-restyle — unchanged and not in VLST scope. The NEW risk this phase introduces is that selection and hover are now CLIPPED to a pill (2.dp vertical inset, 6.dp radius) where they were previously an unclipped full-bleed flat background: text that overflowed a 36.dp row previously bled over a background that bled with it, but now bleeds past a bounded pill edge.
+- **backstop:** At the three-theme visual sign-off, render a **selected AND hovered** row with a deliberately long primary label plus a secondary line, and confirm the text overflow does not read as broken against the pill's bounded 2.dp-inset rounded-6.dp edge. If it does, the fix is a **scope call to raise during planning** (either `maxLines` on the row text or revisiting the pill inset), not an assumption made here.
+
+**E3 · long-text** — `verification: backstop`
+- **statement:** Same surface and same defect as **E3 · overflow** above — long primary/secondary text against the newly-clipped pill is one risk, not two.
+- **backstop:** Resolved by the E3 · overflow row's backstop (three-theme sign-off with a long-label selected+hovered row); not restated here, per the de-dup rule.
+
+### ⊘ Dismissed (11 — reason is the audit trail)
+
+| Category | Element | Reason |
+|----------|---------|--------|
+| empty | E1 | No data-collection concept. The API is a caller-owned `checked: Boolean` — always in exactly one of two fully-defined states, both contracted in Color § AeroSwitch (Rest-unchecked / Rest-checked). No zero-data branch exists. See `## Copywriting Contract`'s not-applicable empty-state rows. |
+| loading | E1 | No async or in-flight state in scope. Renders synchronously from the caller-supplied `checked` value; the only time-varying behavior is the 150ms tween on the groove fill stops (D-07), which is a state transition, not a load. Same basis as Phases 17/18. |
+| error | E1 | No failure or error rendering in scope. `enabled = false` is the only negative state, fully contracted by the Disabled row of Color § AeroSwitch (`flattenDisabled` on both groove and thumb, replacing the old uniform `alpha = 0.4f`). See `## Copywriting Contract`'s error-state row. |
+| partial | E1 | Strictly binary — the API is `checked: Boolean`, not a tri-state or indeterminate toggle. No partial or incomplete value can be expressed. |
+| empty | E2 | The option set is a fixed, caller-supplied list, not fetched data — no empty-data branch inside the component. A zero-option control is caller misuse the component does not guard (unchanged from pre-restyle); the **zero-one-many** row above states what N = 0 actually renders. Consistent with Phase 17's atomic-control boundary. |
+| loading | E2 | No async or in-flight state in scope. Options and the selected value are synchronous caller-owned data; the component never fetches. Same basis as Phases 17/18. |
+| error | E2 | No failure or error rendering in scope. `enabled = false` is the only negative state, contracted by the Disabled row of Color § AeroSegmentedControl (`flattenDisabled` on both the unselected and the recessed selected base, replacing the old uniform `alpha = 0.4f`). |
+| partial | E2 | Single-select invariant — exactly one option is selected at all times (`Role.RadioButton` semantics via `Modifier.selectable`, D-09). No multi-select, no deselected-all, no partially-selected state is expressible in the API. |
+| empty | E3 | Single-row primitive with no internal collection — no notion of zero items. A zero-row list is the caller's `LazyColumn`/`Column` concern, explicitly outside this phase's per-component boundary (the same atomic-control framing Phase 17 applied to `AeroButton`). See `## Copywriting Contract`'s not-applicable empty-state rows. |
+| loading | E3 | No async or in-flight state in scope. Row content (`text`, `secondaryText`, leading, trailing) is caller-supplied and synchronous; the component never fetches or renders a skeleton. Same basis as Phases 17/18. |
+| error | E3 | No failure or error rendering in scope. `enabled = false` is the only negative state, contracted by the Disabled row of Color § AeroListItem (`flattenDisabled` applied to whichever base — selected or unselected — would otherwise resolve, replacing the old uniform `alpha = 0.4f`). |
 
 ---
 
@@ -250,11 +302,14 @@ primitives layer plus the Phase 17/18 transforms — no independently-authored p
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: **PASS** — N/A rows justified (component-library scope); showcase demo labels specific and realistic
+- [x] Dimension 2 Visuals: **PASS** — per-state focal-point/hierarchy declared for all three components; no icon-only actions
+- [x] Dimension 3 Color: **PASS** — accent reserved for three named surfaces only; destructive N/A with justification
+- [x] Dimension 4 Typography: **PASS** — 2 existing sizes / 1 weight reused, no new roles
+- [x] Dimension 5 Spacing: **FLAG** (non-blocking) — the two new values this phase introduces, the pill's 2.dp vertical inset and 6.dp corner radius, are not 4dp-grid multiples. They are component-intrinsic geometry, consistent with the inherited-primitive precedent already accepted in Phases 16–18, and the spec gives its rationale (6.dp distinguishes the pill from the 4.dp button/segment radius). **Action:** confirm at the three-theme sign-off that 2.dp/6.dp are deliberate rather than arbitrary, and whether 4.dp or 8.dp would serve equally well while staying grid-aligned. Not required to proceed.
+- [x] Dimension 6 Registry Safety: **PASS (not applicable)** — Kotlin/Compose stack, no shadcn/npm registry; drift risk guarded by verbatim code reuse instead
 
-**Approval:** pending
+**Approval:** APPROVED — 6/6 dimensions cleared, 1 non-blocking FLAG (Dimension 5, recorded above).
+
+**UI-consideration probe:** run post-approval. 22 applicable — 7 covered, 4 backstop, 11 dismissed,
+0 unresolved. See `## UI Considerations`. The 4 backstops lift into `must_haves.truths` at planning.
