@@ -120,7 +120,13 @@ internal fun FocusVisibility.reduce(interaction: Interaction): FocusVisibility =
     is HoverInteraction.Exit -> copy(hovered = false)
     is PressInteraction.Press -> if (hovered) copy(pointerAcquired = true) else this
     is FocusInteraction.Focus -> copy(focused = true)
-    is FocusInteraction.Unfocus -> FocusVisibility()
+    // CR-02: reset only the focus-derived fields (focused, pointerAcquired) on a focus loss.
+    // `hovered` mirrors the physical pointer, which losing focus does not move — Compose only
+    // emits HoverInteraction.Enter on a pointer-ENTER transition, so a hover flag cleared here
+    // could never be restored while the pointer sits still, and the next mouse press would then
+    // be mistaken for keyboard focus (the reappearing-focus-ring symptom this reducer exists to
+    // eliminate). Preserving `hovered` across Unfocus keeps that guard armed.
+    is FocusInteraction.Unfocus -> FocusVisibility(hovered = hovered)
     else -> this
 }
 

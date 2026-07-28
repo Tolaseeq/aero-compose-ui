@@ -140,6 +140,27 @@ class FocusVisibilityTest {
     }
 
     @Test
+    fun mouseClickAfterATabAwayAndBackWithTheStationaryPointerStaysSuppressed() {
+        val enter = HoverInteraction.Enter()
+        val firstPress = PressInteraction.Press(Offset.Zero)
+        val focus = FocusInteraction.Focus()
+        val result = fold(
+            enter,
+            firstPress,
+            focus,
+            FocusInteraction.Unfocus(focus),
+            FocusInteraction.Focus(),
+            PressInteraction.Press(Offset.Zero),
+        )
+        assertFalse(
+            result.visible,
+            "CR-02: a mouse press must stay suppressed even though the hover enter that preceded " +
+                "it arrived before an intervening focus loss — the pointer never left, so no " +
+                "hover exit was ever emitted to re-arm the guard"
+        )
+    }
+
+    @Test
     fun defaultStateIsNotVisible() {
         val result = FocusVisibility()
         assertEquals(false, result.focused)
