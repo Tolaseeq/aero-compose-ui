@@ -2,71 +2,66 @@
 phase: 19-selectors-lists
 reviewed: 2026-07-28T00:00:00Z
 depth: standard
-files_reviewed: 17
+files_reviewed: 19
 files_reviewed_list:
   - library/src/main/kotlin/com/mordred/aero/components/buttons/AeroButtonSurface.kt
   - library/src/main/kotlin/com/mordred/aero/components/common/InteractionStates.kt
   - library/src/main/kotlin/com/mordred/aero/components/list/AeroListItem.kt
   - library/src/main/kotlin/com/mordred/aero/components/selection/AeroSegmentedControl.kt
   - library/src/main/kotlin/com/mordred/aero/components/selection/AeroSwitch.kt
+  - library/src/test/kotlin/com/mordred/aero/components/buttons/AeroButtonSurfaceSourceTest.kt
   - library/src/test/kotlin/com/mordred/aero/components/common/FocusVisibilityTest.kt
+  - library/src/test/kotlin/com/mordred/aero/components/common/HoverEmissionTest.kt
   - library/src/test/kotlin/com/mordred/aero/components/list/AeroListItemLayoutTest.kt
   - library/src/test/kotlin/com/mordred/aero/components/list/AeroListItemSourceTest.kt
   - library/src/test/kotlin/com/mordred/aero/components/list/AeroListItemStylesTest.kt
   - library/src/test/kotlin/com/mordred/aero/components/selection/AeroSegmentedControlSemanticsTest.kt
   - library/src/test/kotlin/com/mordred/aero/components/selection/AeroSegmentedControlSourceTest.kt
   - library/src/test/kotlin/com/mordred/aero/components/selection/AeroSegmentedControlStylesTest.kt
+  - library/src/test/kotlin/com/mordred/aero/components/selection/AeroSwitchFocusVisibleWiringTest.kt
   - library/src/test/kotlin/com/mordred/aero/components/selection/AeroSwitchSemanticsTest.kt
   - library/src/test/kotlin/com/mordred/aero/components/selection/AeroSwitchSourceTest.kt
   - library/src/test/kotlin/com/mordred/aero/components/selection/AeroSwitchStylesTest.kt
   - showcase/src/main/kotlin/com/mordred/showcase/sections/ListSection.kt
   - showcase/src/main/kotlin/com/mordred/showcase/sections/SelectionSection.kt
 findings:
-  critical: 2
-  warning: 11
+  critical: 0
+  warning: 10
   info: 5
-  total: 18
+  total: 15
 status: issues_found
 ---
 
-# Phase 19: Code Review Report
+# Phase 19: Code Review Report (re-review after gap-closure round 19-09/19-10/19-11)
 
 **Reviewed:** 2026-07-28
 **Depth:** standard
-**Files Reviewed:** 17
+**Files Reviewed:** 19
 **Status:** issues_found
 
 ## Summary
 
-Phase 19 restyled `AeroSwitch`, `AeroSegmentedControl` and `AeroListItem`, then closed three
-human-gate defects (G1 row growth, G2 focus-visible, G3 selected-segment label colour).
+This is a re-review of the prior `19-REVIEW.md` after plans 19-09, 19-10 and 19-11 claimed to
+close CR-01, CR-02, WR-01, WR-03 and WR-04. All five are verified genuinely closed in the current
+code and covered by regression tests that were confirmed RED-before/GREEN-after against the
+un-fixed source (per each plan's commit message). Details in the "Gap-Closure Verification"
+section below.
 
-Three of the four items flagged for scrutiny in the phase brief check out cleanly and are
-**not** findings:
+No new BLOCKER-class defect was introduced by the three gap-closure plans. One new WARNING is
+raised: the CR-01 fix clears its own value-level contrast guard by only the barest of margins on
+AeroDark (3.296:1, against a **3.0** floor the test itself chose), while the guard's own KDoc calls
+this "the 3.0 floor rather than the 4.5 normal-text target" — i.e. the segment label is proven to
+clear the *non-text UI component* WCAG floor, not the *normal-text* floor that actually applies to
+a text label. This is exactly the class of low-contrast defect the task brief warns a human visual
+sign-off tends to miss, so it is called out explicitly even though the value-level test the
+developer added is internally consistent and passes.
 
-- `RECESSED_FILL_DARKEN` really is applied **after** `pressedRecess` (`AeroSegmentedControl.kt:231-235`),
-  `Color.darken` (`ColorMath.kt:22-27`) multiplies RGB only and copies `alpha` verbatim, and with
-  `amount = 0.20f` no channel can go negative. The order and the alpha-safety claims hold.
-- `PRESSED_INNER_SHADOW` has exactly one declaration (`AeroButtonSurface.kt:126`); the only other
-  references are the segmented control's import/use and the styles test. Nothing redeclares or
-  mutates it.
-- The `heightIn` + `matchParentSize()` combination is measured correctly: `BoxMeasurePolicy` sizes
-  the Box from the non-`matchParentSize` child (the content `Row`) plus the incoming `minHeight`
-  of 36.dp, then measures the pill/focus boxes at that resolved size. The trailing-content slot and
-  the `onClick == null` display-only path both behave as documented.
-
-The fourth item — the new `FocusVisibility` reducer — **does** mishandle a reachable sequence and
-resurfaces the exact G2 symptom it was written to kill (CR-02).
-
-The larger problem is elsewhere. The G3 fix reasoned about the *selected* label's colour but never
-re-checked the *unselected* labels against the opaque `primary`-derived fill the 19-03 restyle
-gave every segment. Measured contrast is 1.04:1 on AeroDark — the labels are effectively invisible
-(CR-01), and `AeroButtonSurface` had already diagnosed and fixed this exact failure mode two
-phases earlier.
-
-Test coverage is where the review is most adversarial: the G2 regression test asserts nothing
-about the gate it names, one layout assertion is a tautology, and `FocusVisibilityTest` covers
-only happy paths the implementation already satisfies — which is precisely why CR-02 shipped.
+The remaining ~10 previously-reported WARNING/INFO items (WR-02, WR-05 through WR-11, IN-01 through
+IN-05) were **not** in scope for 19-09/19-10/19-11 and are re-verified below as still open against
+the current source, so they are not silently dropped by this file being overwritten. None of them
+are re-litigated in depth here beyond confirming they still reproduce; see the prior review's
+original write-ups (now superseded by this file, but the facts are re-confirmed) for full
+detail — they are restated concisely below.
 
 ## Structural Findings (fallow)
 
@@ -74,682 +69,280 @@ _No `<structural_findings>` block was supplied for this review._
 
 ## Narrative Findings (AI reviewer)
 
-## Critical Issues
+## Gap-Closure Verification (CR-01, CR-02, WR-01, WR-03, WR-04)
 
-### CR-01: Segment labels are illegible on the new raised fill — 1.04:1 contrast on AeroDark
+### CR-01 — CLOSED
+**Claim:** `RAISED_FILL_TOP_DARKEN`/`RAISED_FILL_BOTTOM_DARKEN` applied to `colors.primary` before
+`pressedRecess`, plus a WCAG contrast test.
 
-**Severity:** BLOCKER
-**File:** `library/src/main/kotlin/com/mordred/aero/components/selection/AeroSegmentedControl.kt:135,156-160` (with `AeroSurfaceStyle.kt:49-60`, `AeroOrnamentTokens.kt:47-48`)
+**Verified:** `AeroSegmentedControl.kt:238-241` declares `RAISED_FILL_TOP_DARKEN = 0.45f` /
+`RAISED_FILL_BOTTOM_DARKEN = 0.61f` (raised via commit `248814a` from an initial `0.20f/0.36f` that
+still failed AeroDark/AeroBlue below the 3.0 floor). `resolveSegmentStyle` (lines 283-286) applies
+both to `colors.primary` before `base.pressedRecess(...)` (line 287), so the recessed style inherits
+the correction through the fill-stop exchange — both raised and recessed move down together, and
+`recessedFillIsStrictlyDarkerThanRaisedFillNeverJustExchanged` still passes. A new
+`everySegmentFillKeepsTheOnSurfaceLabelAboveTheMinimumContrastRatio` test (`AeroSegmentedControlStylesTest.kt:297-348`)
+value-checks `onSurface` against both `fillTop` and `fillBottom` at both ends of the selection axis,
+across AeroBlue/AeroDark/Classic (12 assertions), against a `MIN_LABEL_CONTRAST = 3f` floor. I
+independently recomputed the tightest case (AeroDark, unselected, fillTop) by hand from the shipped
+RGB literals and the shipped `Color.darken`/relative-luminance formulas and got the same ~3.3:1 the
+commit message for `248814a` claims ("tightest margin: AeroDark unselected top = 3.296"). The
+label-vanishing defect (1.04:1 pre-fix) is gone. See the new WARNING below re: the chosen threshold.
 
-**Issue:**
-G3 put every label on `colors.onSurface` at full alpha. Correct in isolation — but the 19-03
-restyle in the same phase simultaneously gave **every** segment (selected *and* unselected) an
-opaque fill derived from `colors.primary`:
+### CR-02 — CLOSED
+**Claim:** `FocusVisibility(hovered = hovered)` on `Unfocus`.
 
-```
-AeroSurfaceStyle.rest(colors, 4.dp).fillTop    = ornaments.fillSplitTop    = primary.lighten(0.08f)
-AeroSurfaceStyle.rest(colors, 4.dp).fillBottom = ornaments.fillSplitBottom = primary.darken(0.12f)
-```
+**Verified:** `InteractionStates.kt:129` reads exactly `is FocusInteraction.Unfocus -> FocusVisibility(hovered = hovered)`,
+resetting only `focused`/`pointerAcquired` and preserving the pointer-derived `hovered` field.
+`FocusVisibilityTest.mouseClickAfterATabAwayAndBackWithTheStationaryPointerStaysSuppressed` (added in
+`1ad5414`) folds the exact six-interaction repro from the original CR-02 write-up and asserts
+`result.visible == false`; I traced the fold by hand and confirmed it only passes with the fix
+applied (with the old `FocusVisibility()` reset it would zero `hovered`, the guard on
+`PressInteraction.Press` would not re-arm `pointerAcquired`, and `visible` would wrongly be `true`).
+A second, composed end-to-end proof (`AeroSwitchFocusVisibleWiringTest.kt`) drives a real
+`AeroSwitch` + real focus move between two nodes with a stationary pointer and asserts
+`state.focusVisible == false` after the repro sequence — this is a genuine reachability proof, not
+just a reducer-level fold.
 
-`primary` is fully opaque (`0xFF...`) on all three schemes, so this is a solid light-blue plate.
-Before the restyle the unselected segment background was `Color.Transparent`
-(`git show 669980a~1`), so `onSurface` sat on the dark panel and read fine. It no longer does.
+### WR-01 — CLOSED
+**Claim:** switched to `state.focusVisible && enabled`.
 
-Measured WCAG 2.x contrast of `onSurface` against `fillTop` (the upper half of the segment, which
-`glossAlpha = 0.22f` lightens further):
+**Verified:** `AeroButtonSurface.kt:104-108`'s FOCUS `aeroGlowRing` call reads
+`active = state.focusVisible && enabled`; the HOVER call two lines below (line 109-113) is
+untouched and still reads `state.hovered && enabled`, matching the documented intent (hover cue
+stays live, focus cue gates on keyboard-acquired focus only). `AeroButtonSurfaceSourceTest.aeroButtonSurfaceGatesOnlyTheFocusGlowOnFocusVisibleLeavingHoverOnTheRawFlag`
+asserts both substrings are present. `resolveButtonStyle`'s `focused` parameter is still unused
+(acknowledged dead-by-design in its own KDoc) — not a regression, just an existing wart; see IN
+items below for the general "keep it tidy" concern, not repeated as a fresh finding here.
 
-| Scheme | `onSurface` | `fillTop` | Contrast |
-|---|---|---|---|
-| AeroDark | `#CCCCCC` | `#99CEF9` | **1.04 : 1** |
-| AeroBlue | `#E0E0E0` | `#5DC8F8` | **1.44 : 1** |
-| Classic  | `#E0E0E0` | `#6993C4` | **2.42 : 1** |
+### WR-03 — CLOSED
+**Claim:** per-segment interaction state keyed on option identity, not slot position.
 
-AA normal text requires 4.5:1; even non-text UI needs 3:1. On AeroDark the label is essentially
-invisible against the unselected segments.
+**Verified:** `AeroSegmentedControl.kt:118-181` wraps the entire per-segment body (interaction
+source, focus-visibility state, the selection tween, and the `Box`) in `key(index, opt) { ... }`.
+Index-and-value (not value-only) is a deliberate, documented tradeoff given duplicate options remain
+unguarded (deferred as WR-07, still open — see below). `sourceKeysEachSegmentOnItsOwnIdentity`
+guards the `key(index, opt)` token's presence directly in source.
 
-This is not a novel discovery — `AeroButtonSurface.kt:168-176` already documents it:
+### WR-04 — CLOSED
+**Claim:** removed a redundant second hover emitter on each of the three components.
 
-> "the ornament-derived `fillSplitTop` (`primary.lighten(0.08f)`) read too light for legible white
-> button text on the light-blue Aero primaries, so the BUTTON ... overrides to a darker two-tone."
+**Verified:**
+- `AeroSwitch.kt`: the explicit `.hoverable(interactionSource)` after `.toggleable(...)` was
+  deleted; the `hoverable` import itself was removed (no dead import left behind).
+- `AeroSegmentedControl.kt:148-153`: the per-segment `.hoverable(segSource)` was deleted, the outer
+  strip's `.hoverable(interactionSource)` (line 105) — the control-level source's only emitter —
+  was correctly left in place.
+- `AeroListItem.kt:91-112`: the unconditional `.hoverable(interactionSource)` was replaced by a
+  `.then(...)` that puts `Modifier.clickable(...)` on the `onClick != null` path (which already
+  emits hover) and `Modifier.hoverable(interactionSource, enabled = enabled)` on the
+  `onClick == null` display-only path (which has no other interaction modifier and would otherwise
+  silently lose hover).
 
-The button fixed it with `primary.darken(0.20f)/darken(0.36f)`. The segmented control consumes
-`AeroSurfaceStyle.rest` **unmodified** for its raised base and therefore reproduces the bug the
-button already solved. Ironically the *selected* (recessed) segment — the one G3 was about — is the
-only one that reads acceptably (~2.94:1 on AeroBlue), because `RECESSED_FILL_DARKEN` darkens it.
-
-Note also that `AeroSegmentedControlStylesTest.recessedFillIsStrictlyDarkerThanRaisedFillNeverJustExchanged`
-(line 247) is the only value-level check touching this area, and it only compares selected vs
-unselected luminance. Nothing anywhere asserts label-vs-fill contrast, so the defect is invisible
-to the suite.
-
-**Fix:** darken the raised base the same way `resolveButtonStyle` does, so raised and recessed both
-land in a legible neighbourhood. In `resolveSegmentStyle`:
-
-```kotlin
-/** Darken applied to the RAISED segment fill so onSurface labels stay legible against it —
- *  the same correction AeroButtonSurface.FILLED_FILL_TOP_DARKEN/BOTTOM_DARKEN already make
- *  for the identical primary-derived fill (see that file's FIX B KDoc). */
-private const val RAISED_FILL_TOP_DARKEN: Float = 0.20f
-private const val RAISED_FILL_BOTTOM_DARKEN: Float = 0.36f
-
-internal fun resolveSegmentStyle(...): AeroSurfaceStyle {
-    val restStyle = AeroSurfaceStyle.rest(colors, cornerRadius = SEGMENT_CORNER_RADIUS)
-    val base = restStyle.copy(
-        fillTop = colors.primary.darken(RAISED_FILL_TOP_DARKEN),
-        fillBottom = colors.primary.darken(RAISED_FILL_BOTTOM_DARKEN),
-    )
-    val pressedTransform = base.pressedRecess(PRESSED_INNER_SHADOW)
-    // ... unchanged from here
-}
-```
-
-Then add a value-level guard that fails on regression, e.g. assert
-`contrastRatio(colors.onSurface, resolved.fillTop) >= 3f` for every scheme in both the
-`selectedProgress = 0f` and `= 1f` cases. Note this changes the recessed style away from a literal
-`rest(...).pressedRecess(...)`, so `AeroSegmentedControlStylesTest.selectedEqualsIndependentlyReconstructedPressedRecess`
-and the VSEL-03 anti-drift KDoc must be updated to describe the darken as applied to the raised
-base rather than only to the recessed fill.
-
-Separately, `AeroSegmentedControl.kt:78` instructs future reviewers that "A future reviewer must
-not reintroduce a per-state label colour to 'fix' contrast." That ban is currently absolute and
-locks in the defect. Narrow it to "must not reintroduce a *state-dependent* label colour; fix
-contrast in the fill instead."
-
----
-
-### CR-02: `FocusVisibility.reduce` drops `hovered` on `Unfocus`, resurfacing the G2 symptom
-
-**Severity:** BLOCKER
-**File:** `library/src/main/kotlin/com/mordred/aero/components/common/InteractionStates.kt:118-125`
-
-**Issue:**
-
-```kotlin
-is FocusInteraction.Unfocus -> FocusVisibility()   // line 123 — resets hovered too
-```
-
-`FocusVisibility()` zeroes all three fields, including `hovered`. But `hovered` does not track
-focus — it tracks the physical pointer. Compose emits `HoverInteraction.Enter` **only** on a
-pointer-enter transition; if the pointer is already resting inside the control when focus is lost,
-no further `Enter` will ever arrive. The reducer's `hovered` is therefore stuck at `false` while
-the pointer is still physically over the control, and the `is PressInteraction.Press -> if (hovered)`
-guard on line 121 stops firing.
-
-Reachable repro (pointer never moves):
-
-1. Mouse-click the switch. → `Enter`, `Press`, `Focus` → `hovered=T, pointerAcquired=T, focused=T`,
-   ring correctly suppressed.
-2. Press **Tab** to move focus to the next control, leaving the pointer where it is.
-   → `Unfocus` → state reset to all-`false`. No `HoverInteraction.Exit` is emitted (the pointer
-   did not leave).
-3. Shift+Tab back. → `Focus` → `visible = true`. Still correct.
-4. Click the control again with the same, still-resting pointer. → `Press` arrives with the
-   reducer's `hovered == false` → `pointerAcquired` stays `false` → **the focus ring is drawn for
-   a mouse click**, and stays drawn after the pointer leaves.
-
-That is verbatim the reported G2 symptom the reducer exists to eliminate. The same sequence is
-reachable via window deactivation/reactivation (alt-tab away and back with the pointer parked on
-the control) and via any programmatic focus move.
-
-`FocusVisibilityTest.recoveryUnfocusThenFreshFocusWithNoHoverIsVisibleAgain` (line 94) walks the
-first three steps and stops — it never issues the fourth interaction, so the defect is uncovered.
-
-**Fix:** preserve the pointer-derived field across the focus reset:
-
-```kotlin
-internal fun FocusVisibility.reduce(interaction: Interaction): FocusVisibility = when (interaction) {
-    is HoverInteraction.Enter -> copy(hovered = true)
-    is HoverInteraction.Exit -> copy(hovered = false)
-    is PressInteraction.Press -> if (hovered) copy(pointerAcquired = true) else this
-    is FocusInteraction.Focus -> copy(focused = true)
-    // Unfocus clears the focus-derived fields ONLY. `hovered` mirrors the physical pointer,
-    // which losing focus does not move — and Compose emits HoverInteraction.Enter only on a
-    // pointer-ENTER transition, so a hovered flag cleared here can never be restored while the
-    // pointer sits still (the reducer would then treat the next mouse press as keyboard focus).
-    is FocusInteraction.Unfocus -> FocusVisibility(hovered = hovered)
-    else -> this
-}
-```
-
-Add the missing regression case:
-
-```kotlin
-@Test
-fun mouseClickAfterATabAwayAndBackWithTheStationaryPointerStaysSuppressed() {
-    val enter = HoverInteraction.Enter()
-    val focus = FocusInteraction.Focus()
-    val result = fold(
-        enter,                              // pointer arrives and never leaves
-        PressInteraction.Press(Offset.Zero),
-        focus,
-        FocusInteraction.Unfocus(focus),    // Tab away — no HoverInteraction.Exit is emitted
-        FocusInteraction.Focus(),           // Shift+Tab back
-        PressInteraction.Press(Offset.Zero) // click again with the SAME resting pointer
-    )
-    assertFalse(result.visible, "a mouse press must stay suppressed even though the hover Enter " +
-        "that preceded it arrived before an intervening Unfocus")
-}
-```
-
----
+New `HoverEmissionTest` premise tests prove `toggleable`/`selectable`/`clickable` each emit hover on
+their own supplied source without an explicit `.hoverable`, plus component-level proofs
+(`aeroSwitchStillReportsHoverWithNoExplicitHoverModifier`,
+`aeroListItemReportsHoverOnBothTheClickableAndTheDisplayOnlyPath`) drive real pointer input against
+the real, post-fix components and confirm hover still works on every path. Source-scan guards in all
+three `*SourceTest.kt` files now assert an exact count of one `.hoverable(` call per file (list
+item, switch) or two total with one attributable to the outer strip (segmented control), rather than
+the old "at least one" check that could not have caught the duplicate. This also closes the
+"disabled control still reports itself hovered" half of the original WR-04 — `AeroListItem`'s
+retained `.hoverable(...)` now passes `enabled = enabled`, and `AeroSwitch`/`AeroSegmentedControl`'s
+sole hover emitters are the enabled-aware `toggleable`/`selectable` modifiers themselves.
 
 ## Warnings
 
-### WR-01: `AeroButtonSurface` still gates its focus glow on the raw `focused` flag
+### WR-12 (new): CR-01's contrast fix clears a 3.0 floor, not the 4.5 normal-text floor the label actually needs
 
-**Severity:** WARNING
-**File:** `library/src/main/kotlin/com/mordred/aero/components/buttons/AeroButtonSurface.kt:96`
+**File:** `library/src/test/kotlin/com/mordred/aero/components/selection/AeroSegmentedControlStylesTest.kt:351-357`,
+`library/src/main/kotlin/com/mordred/aero/components/selection/AeroSegmentedControl.kt:238-241`
 
-**Issue:** The phase added `focusVisible` to `AeroInteractionState` and wired it into `AeroSwitch`,
-`AeroSegmentedControl` and `AeroListItem` — but not into `AeroButtonSurface`, which sits in the
-review scope, calls the same `rememberAeroInteractionState`, and is the file that exports
-`PRESSED_INNER_SHADOW` to the segmented control:
+**Issue:** The new `everySegmentFillKeepsTheOnSurfaceLabelAboveTheMinimumContrastRatio` guard is
+correctly written and does gate what it claims to gate — but what it claims to gate is deliberately
+the *non-text UI component* WCAG floor (3.0:1), not the *normal-text* floor (4.5:1) that actually
+applies to a rendered label. The guard's own KDoc is explicit about this:
 
-```kotlin
-.aeroGlowRing(
-    active = state.focused && enabled,   // line 96 — raw flag
-    ...
-)
-```
+> "the 3.0 floor rather than the 4.5 normal-text target ... because the developer named 3.0
+> explicitly for this guard (CR-01)."
 
-`AeroButton` and `AeroOutlinedButton` therefore keep the exact G2 defect the phase fixed
-everywhere else: a mouse click leaves a residual focus glow ring after the pointer moves away.
-The library is now internally inconsistent — the same gesture on a button and on a switch produces
-different cues.
+On AeroDark, the unselected segment's `fillTop` (the worst case) sits at ~3.3:1 against
+`colors.onSurface` — comfortably above 3.0, but still below 4.5. That 14sp label text is neither
+large-text-exempt (WCAG 1.4.3's 3:1 large-text carve-out needs ~18pt regular or ~14pt bold) nor a
+"UI component" in the graphical-object sense the 3:1 floor is meant for (borders, icons, focus
+indicators) — it is a text label, which is exactly the case the task brief flags as easy for a human
+visual sign-off to wave through as "looks fine" while still reading as noticeably low-contrast next
+to the button/list/switch text elsewhere in the library (all of which clear 4.5:1+ via their own
+darken constants).
 
-Relatedly, `resolveButtonStyle(focused = ...)` (line 253) is a parameter that never branches
-anything. Its KDoc acknowledges this, but it is still a dead argument that has to be kept in sync
-by every caller.
+This is not a functional regression — CR-01's original 1.04:1 defect (label effectively invisible)
+is fixed — but the margin chosen leaves AeroDark's raised segment label in a "technically passes,
+visually marginal" zone that this exact review round was asked to scrutinize.
 
-**Fix:** `active = state.focusVisible && enabled`, and add the corresponding guard to
-`AeroButtonSurfaceSourceTest` mirroring `AeroSwitchSourceTest.aeroSwitchGatesOnlyTheFocusRingOnFocusVisibleLeavingHoverOnTheRawFlag`.
-If buttons are intentionally excluded, say so explicitly in `AeroButtonSurface`'s KDoc — right now
-the omission is indistinguishable from an oversight.
-
----
-
-### WR-02: Disabled `AeroSegmentedControl` no longer dims its labels or its frame (regression)
-
-**Severity:** WARNING
-**File:** `library/src/main/kotlin/com/mordred/aero/components/selection/AeroSegmentedControl.kt:97-103,156-160`
-
-**Issue:** The pre-restyle implementation dimmed the whole control when disabled:
-
-```kotlin
-.alpha(if (enabled) 1f else 0.4f)   // 669980a~1, dropped by the restyle
-```
-
-The new code flattens only the per-segment **fill** (`resolveSegmentStyle` → `flattenDisabled`).
-The labels still render at `colors.onSurface` full alpha and the outer
-`.border(1.dp, colors.borderDefault, shape)` still draws at full strength. A disabled strip
-therefore reads as "enabled but oddly grey", not disabled — and this is directly visible in the
-showcase (`SelectionSection.kt:87-89`).
-
-Compare `AeroListItem.kt:138`, which correctly keeps
-`Modifier.alpha(DISABLED_CONTENT_ALPHA)` on its content `Row`. The two components in the same
-phase now disagree about what "disabled" looks like.
-
-**Fix:** apply the same content-alpha treatment used by `AeroListItem`, and dim the frame:
-
-```kotlin
-/** Alpha applied to segment labels and the outer frame when disabled — the per-segment fill
- *  flattens separately via flattenDisabled, matching AeroListItem.DISABLED_CONTENT_ALPHA. */
-private const val DISABLED_CONTENT_ALPHA: Float = 0.4f
-
-Row(
-    modifier = modifier
-        .height(28.dp)
-        .then(if (!enabled) Modifier.alpha(DISABLED_CONTENT_ALPHA) else Modifier)
-        .border(1.dp, colors.borderDefault, shape)
-        .clip(shape)
-        .hoverable(interactionSource)
-)
-```
-
-Note the `.alpha()` must sit before `.border(...)` to dim the frame too, and this composes with
-`flattenDisabled` rather than replacing it.
+**Fix:** Either (a) raise `MIN_LABEL_CONTRAST` to `4.5f` and retune
+`RAISED_FILL_TOP_DARKEN`/`RAISED_FILL_BOTTOM_DARKEN` (and correspondingly `RECESSED_FILL_DARKEN`)
+until all three schemes clear it at both selection-axis endpoints, or (b) keep the 3.0 floor but
+say so explicitly in the human sign-off checklist for 19-12 ("AeroDark unselected segment label is
+~3.3:1 — expected to read slightly dim, this is accepted, not a defect") so the visual reviewer is
+not left to independently discover and second-guess a margin the code already knows is tight.
 
 ---
 
-### WR-03: `remember` and `animateFloatAsState` inside `forEachIndexed` with no `key()`
+### WR-02 (carried forward, still open): Disabled `AeroSegmentedControl` still doesn't dim its labels or its frame
 
-**Severity:** WARNING
-**File:** `library/src/main/kotlin/com/mordred/aero/components/selection/AeroSegmentedControl.kt:104-113`
+**File:** `library/src/main/kotlin/com/mordred/aero/components/selection/AeroSegmentedControl.kt:100-105`
 
-**Issue:**
-
-```kotlin
-options.forEachIndexed { index, opt ->
-    val isSelected = (opt == selected)
-    val segSource = remember { MutableInteractionSource() }      // line 106 — positional only
-    val segState = rememberAeroInteractionState(segSource)
-    val selectedProgress by animateFloatAsState(..., label = "segSelected_$index")   // line 109
-```
-
-All iterations share one call site, so Compose memoizes them purely by position in the slot table.
-When `options` changes (an item inserted, removed, or reordered), segment *i* inherits the
-`MutableInteractionSource`, the `FocusVisibility` state, and the in-flight selection tween of
-whichever option previously occupied slot *i*. Concretely: removing `"Day"` from
-`["Day","Week","Month"]` leaves `"Week"` rendering with `"Day"`'s `selectedProgress = 1f`
-animation and `"Day"`'s stale hover/press/focus state, so it briefly draws recessed and possibly
-hover-lit while the tween unwinds. `rememberAeroInteractionState` also starts a `LaunchedEffect`
-per segment keyed on the source, which is now the wrong source for that option.
-
-`options` is a public `List<T>` parameter with no stability contract, so this is caller-reachable,
-not theoretical.
-
-**Fix:** wrap the loop body so identity follows the option, not the index:
-
-```kotlin
-options.forEachIndexed { index, opt ->
-    key(opt) {
-        val isSelected = (opt == selected)
-        val segSource = remember { MutableInteractionSource() }
-        ...
-    }
-}
-```
-
-(Use `key(index, opt)` if duplicate options must be tolerated — see WR-07.)
+Re-verified against current source: the outer `Row` still has no `.alpha(...)` treatment when
+`enabled == false` — `.height(28.dp).border(1.dp, colors.borderDefault, shape).clip(shape).hoverable(interactionSource)`
+is unconditional, and the per-segment `Text` (line 175-179) still always renders
+`color = colors.onSurface` at full alpha regardless of `enabled`. Only the per-segment fill
+flattens via `resolveSegmentStyle(...).flattenDisabled(colors)`. `AeroListItem` correctly applies
+`Modifier.alpha(DISABLED_CONTENT_ALPHA)` to its content row (`AeroListItem.kt:144`); the two
+components shipped in the same phase still disagree about what "disabled" looks like. Not addressed
+by 19-09/10/11 (out of their scope); still reproducible.
 
 ---
 
-### WR-04: Redundant `.hoverable(...)` double-emits hover, and stays enabled when the control is disabled
+### WR-05 (carried forward, still open): `AeroSegmentedControl` keeps a fixed `.height(28.dp)` while `AeroListItem` grows
 
-**Severity:** WARNING
-**Files:** `library/src/main/kotlin/com/mordred/aero/components/list/AeroListItem.kt:94`,
-`library/src/main/kotlin/com/mordred/aero/components/selection/AeroSegmentedControl.kt:134`,
-`library/src/main/kotlin/com/mordred/aero/components/selection/AeroSwitch.kt:102`
+**File:** `library/src/main/kotlin/com/mordred/aero/components/selection/AeroSegmentedControl.kt:102`
 
-**Issue:** All three components chain an explicit `.hoverable(source)` onto the **same**
-`InteractionSource` they already pass to `clickable` / `selectable` / `toggleable`. Verified
-against the resolved artifact (`foundation-desktop-1.11.1.jar`): `AbstractClickableNode` — the
-shared base of all three interaction modifiers — carries its own
-`HoverInteraction$Enter hoverInteraction` field plus `emitHoverEnter`/`emitHoverExit`/`onPointerEvent`
-members. It already emits hover on the supplied source.
-
-Two consequences:
-
-1. **Duplicate emissions.** Each pointer entry/exit produces two `Enter`/`Exit` pairs on one
-   source. `collectIsHoveredAsState` survives this because it is reference-counted (it keeps a list
-   of `Enter`s and removes on the matching `Exit`). `FocusVisibility.reduce` is **not** — it models
-   `hovered` as a plain `Boolean`, so the *first* `Exit` clears it while a second `Enter` is still
-   outstanding. The reducer's hover model now disagrees with the platform's own bookkeeping about
-   the same stream. Today the emissions arrive batched (`E,E … X,X`) so the press always lands
-   inside the true-window, but the model is wrong and this is exactly the kind of fragility that
-   produced CR-02.
-
-2. **Disabled controls still report hovered.** `Modifier.hoverable` defaults `enabled = true`, and
-   none of the three call sites pass `enabled = enabled`. A disabled row/segment/switch sets
-   `state.hovered = true` on pointer-over; only the downstream `&& enabled` guards in
-   `resolveListItemPillStyle`, `resolveSegmentStyle` and the `aeroGlowRing` calls stop it from
-   rendering. Any future consumer of `state.hovered` that forgets that guard gets a hover cue on a
-   dead control.
-
-`VLST-04`'s source guards (`AeroListItemSourceTest.kt:85`, `AeroSwitchSourceTest.kt:77`,
-`AeroSegmentedControlSourceTest.kt:94`) mandate `.hoverable(` be present, so this cannot be fixed
-without touching those guards — worth doing, since VLST-04's real intent ("never raw
-`pointerInput` hover tracking") is already satisfied by the interaction modifiers alone.
-
-**Fix (minimum, no guard churn):** pass the enabled flag through —
-
-```kotlin
-.hoverable(interactionSource, enabled = enabled)
-```
-
-**and** make the reducer count `Enter`s so duplicate emissions cannot desync it:
-
-```kotlin
-internal data class FocusVisibility(
-    val focused: Boolean = false,
-    val hoverCount: Int = 0,
-    val pointerAcquired: Boolean = false
-) {
-    val hovered: Boolean get() = hoverCount > 0
-    val visible: Boolean get() = focused && !pointerAcquired
-}
-
-is HoverInteraction.Enter -> copy(hoverCount = hoverCount + 1)
-is HoverInteraction.Exit  -> copy(hoverCount = (hoverCount - 1).coerceAtLeast(0))
-```
-
-(`FocusVisibilityTest.concurrencyHoverAfterKeyboardFocusStaysVisibleAndHoveredIsTrue` asserts on
-`result.hovered`, which the derived property keeps satisfying.)
+Re-verified: `.height(28.dp)` (a hard ceiling) is unchanged, and the segment `Text` still sets
+neither `maxLines` nor `overflow`. The showcase's `LONG_SEGMENT_LABEL` row
+(`SelectionSection.kt:93-99`) still exercises a path with no measured-height regression test, unlike
+`AeroListItemLayoutTest`. Segments still carry no `Modifier.weight(1f)`, so N wide segments overflow
+the `Row`'s width rather than sharing it. Not addressed by this round.
 
 ---
 
-### WR-05: `AeroSegmentedControl` keeps the fixed height that G1 just removed from `AeroListItem`
+### WR-06 (carried forward, still open): `AeroSwitch` with `onCheckedChange = null` is still a focus stop with a no-op click action
 
-**Severity:** WARNING
-**File:** `library/src/main/kotlin/com/mordred/aero/components/selection/AeroSegmentedControl.kt:97-99,156-160`
+**File:** `library/src/main/kotlin/com/mordred/aero/components/selection/AeroSwitch.kt:93-100`
 
-**Issue:** `.height(28.dp)` is a hard ceiling, and the segment `Text` sets neither `maxLines` nor
-`overflow`. A label wider than its segment wraps to a second line, which is then clipped by the
-fixed 28.dp *and* by the outer `.clip(shape)` — silently, with no ellipsis. This is the identical
-defect class G1 fixed in `AeroListItem` in the same phase, left in place one file over.
-
-The showcase deliberately renders a 65-character segment label
-(`SelectionSection.kt:104` `LONG_SEGMENT_LABEL`, used at line 95) "to exercise the E2 overflow
-backstop" — so the phase knows this path exists but has no measured-height test for it, unlike
-`AeroListItemLayoutTest`.
-
-Second, related problem: segments carry no `weight`, so N segments with wide labels overflow the
-`Row`'s incoming width constraint and the trailing segments are clipped out of existence rather
-than shrinking.
-
-**Fix:** decide the contract explicitly and test it. Either
-(a) mirror G1 — `.heightIn(min = SEGMENT_MIN_HEIGHT)` and let the strip grow, adding an
-`AeroSegmentedControlLayoutTest` measuring the long-label case the way `AeroListItemLayoutTest`
-does; or
-(b) keep the fixed height and truncate deliberately —
-`Text(..., maxLines = 1, overflow = TextOverflow.Ellipsis)` plus `Modifier.weight(1f)` on each
-segment `Box` so they share the available width instead of overflowing.
-Either is defensible; silently clipping is not.
+Re-verified: `.toggleable(...)` is still applied unconditionally, with
+`onValueChange = { onCheckedChange?.invoke(it) }` (line 99) swallowing the null case rather than
+omitting the modifier. A read-only switch still exposes `Role.Switch` + a click action to
+accessibility, takes Tab focus, and draws press/focus cues, all for a control that silently no-ops
+every activation. Not addressed by this round.
 
 ---
 
-### WR-06: `AeroSwitch` with `onCheckedChange = null` is a focus stop with a no-op click action
+### WR-07 (carried forward, still open): `AeroSegmentedControl` still does not enforce "exactly one selected"
 
-**Severity:** WARNING
-**File:** `library/src/main/kotlin/com/mordred/aero/components/selection/AeroSwitch.kt:94-101`
+**File:** `library/src/main/kotlin/com/mordred/aero/components/selection/AeroSegmentedControl.kt:88-96,119`
 
-**Issue:**
-
-```kotlin
-.toggleable(
-    value = checked,
-    enabled = enabled,
-    role = Role.Switch,
-    interactionSource = interactionSource,
-    indication = null,
-    onValueChange = { onCheckedChange?.invoke(it) }   // line 100
-)
-```
-
-`onCheckedChange` is declared nullable, but `toggleable` is applied unconditionally. A switch
-constructed with `onCheckedChange = null` (the documented way to express a read-only/parent-driven
-switch) still:
-
-- exposes `Role.Switch` **and** a click action to accessibility, so a screen reader announces it as
-  actionable;
-- takes Tab focus and draws the focus glow ring;
-- shows press cues via `state.pressed`;
-- silently swallows every activation.
-
-Material3's own `Switch` omits the toggleable modifier entirely when `onCheckedChange == null`,
-precisely so the parent row can own the semantics. `AeroSwitchSemanticsTest` never covers the null
-case.
-
-**Fix:**
-
-```kotlin
-.then(
-    if (onCheckedChange != null) {
-        Modifier.toggleable(
-            value = checked,
-            enabled = enabled,
-            role = Role.Switch,
-            interactionSource = interactionSource,
-            indication = null,
-            onValueChange = onCheckedChange,
-        )
-    } else {
-        Modifier
-    }
-)
-```
-
-Add a semantics test asserting a null-handler switch exposes no click action and is not a focus
-stop, mirroring `AeroListItem`'s display-only (`onClick == null`) contract.
+Re-verified: no `require(...)` guards exist; `selected` not present in `options`, `options`
+containing duplicates, and empty `options` are all still silently accepted, contradicting the KDoc's
+"enforcing exactly one selected option" claim (line 44). This is also the precondition 19-11's WR-03
+fix explicitly built its `key(index, opt)` tradeoff around ("duplicate options remain unguarded per
+deferred WR-07") — so it is directly load-bearing for whether that tradeoff is still the right one.
+Not addressed by this round.
 
 ---
 
-### WR-07: `AeroSegmentedControl` does not enforce its documented "exactly one selected" invariant
+### WR-08 (carried forward, still open): Tautological adjacency assertion in `AeroListItemLayoutTest`
 
-**Severity:** WARNING
-**File:** `library/src/main/kotlin/com/mordred/aero/components/selection/AeroSegmentedControl.kt:43,85-105`
-
-**Issue:** The KDoc opens with "Segmented control **enforcing** exactly one selected option", but
-nothing enforces anything. Selection is a plain `opt == selected` on line 105:
-
-- `selected` not present in `options` → **zero** segments selected; every segment renders raised and
-  every `SemanticsProperties.Selected` is `false`. No error, no fallback. This is easy to hit
-  transiently when `options` changes and the caller's `selected` state has not caught up.
-- `options` containing duplicates (or `T` with a coarse `equals`, e.g. a data class where only some
-  fields matter) → **several** segments render selected and report `Selected = true` simultaneously,
-  which is invalid for `Role.RadioButton`.
-- `options` empty → a bare 28.dp bordered strip with no content.
-
-`AeroSegmentedControlSemanticsTest.everySegmentHasRoleRadioButtonAndExactlyOneReportsSelected`
-only ever tests the well-formed case.
-
-**Fix:** either enforce or downgrade the claim. Cheapest honest option:
-
-```kotlin
-require(options.isNotEmpty()) { "AeroSegmentedControl requires at least one option" }
-require(options.count { it == selected } <= 1) {
-    "AeroSegmentedControl: `selected` matches ${options.count { it == selected }} options — " +
-        "`options` must not contain duplicates under T.equals()"
-}
-```
-
-and change the KDoc from "enforcing" to a stated precondition: "`selected` must be an element of
-`options`; if it is not, no segment renders selected."
-
----
-
-### WR-08: `adjacentSelectedSingleLineRowsEachMeasure36DpAndDoNotOverlap` asserts a tautology
-
-**Severity:** WARNING
 **File:** `library/src/test/kotlin/com/mordred/aero/components/list/AeroListItemLayoutTest.kt:118-124`
 
-**Issue:**
-
-```kotlin
-val bounds1 = onNodeWithTag("row1").fetchSemanticsNode().boundsInRoot
-val bounds2 = onNodeWithTag("row2").fetchSemanticsNode().boundsInRoot
-assertTrue(bounds2.top >= bounds1.bottom, "adjacent selected rows must not overlap: ...")
-```
-
-The two rows are children of a `Column`, which stacks children without overlap by definition. The
-assertion is satisfied by `Column`'s measure policy alone and cannot fail for **any**
-`AeroListItem` implementation — including the pre-G1 fixed-height one, or one that draws its pill
-2000dp tall. It reports coverage of the "adjacent selected pills must not merge into one bar"
-concern (the showcase calls this the "pill adjacency backstop", `ListSection.kt:60-71`) while
-providing none.
-
-**Fix:** measure the thing that can actually regress — the painted gap between the two pills,
-which is `2 * PILL_VERTICAL_INSET = 4.dp`. Since the pill is not a semantics node, assert the
-invariant that produces it instead: that each row's height is exactly `ROW_MIN_HEIGHT` and that
-`bounds2.top - bounds1.bottom == 0` while the inset is non-zero — or, more robustly, capture the
-rendered bitmap and assert the row-boundary scanline is background-coloured. At minimum, delete the
-vacuous assertion so the test's name stops overstating what it proves.
+Re-verified: `adjacentSelectedSingleLineRowsEachMeasure36DpAndDoNotOverlap`'s
+`assertTrue(bounds2.top >= bounds1.bottom, ...)` is unchanged and is still guaranteed true by
+`Column`'s measure policy alone for any `AeroListItem` implementation, including a broken one. Not
+addressed by this round.
 
 ---
 
-### WR-09: The named G2 regression test does not test the focus-visible gate
+### WR-09 (carried forward, partially mitigated): `AeroSwitchSemanticsTest`'s named G2 regression test still doesn't test the focus-visible gate
 
-**Severity:** WARNING
-**File:** `library/src/test/kotlin/com/mordred/aero/components/selection/AeroSwitchSemanticsTest.kt:86-120`
+**File:** `library/src/test/kotlin/com/mordred/aero/components/selection/AeroSwitchSemanticsTest.kt:91-120`
 
-**Issue:** `aeroSwitchStaysFocusedAndSpaceStillTogglesAfterTheFocusVisibleGate` carries a KDoc
-declaring it the "19-05/gap G2 regression" proof. What it actually does:
-
-```kotlin
-node.requestFocus()
-node.assert(SemanticsMatcher.expectValue(SemanticsProperties.Focused, true))
-node.performKeyInput { pressKey(Key.Spacebar) }
-assertEquals(1, invocationCount, ...)
-assertEquals(true, checked, ...)
-node.assert(SemanticsMatcher.expectValue(SemanticsProperties.Focused, true))
-```
-
-That is a near-verbatim duplicate of `aeroSwitchSpaceKeyFlipsCheckedExactlyOnceAfterFocus`
-(line 59) plus one extra `Focused` assertion. It never issues a pointer gesture, never touches
-`focusVisible`, and would pass unchanged if `AeroSwitch.kt:104` were reverted to
-`active = state.focused && enabled`. It proves only "the gate did not break Space", never "the gate
-works".
-
-Across the whole suite there is **no** composed test that asserts anything about whether a focus
-cue is drawn. The only real G2 coverage is the pure `FocusVisibilityTest` fold — which is why
-CR-02 shipped undetected.
-
-**Fix:** either rename the test to what it is
-(`aeroSwitchFocusAndSpaceBindingSurviveTheFocusVisibleGate`) and drop the G2-proof claim from its
-KDoc, or make it real: drive `performMouseInput { moveTo(center); press(); release() }` against the
-switch and assert via a captured `AeroInteractionState` (or a test-only `onSemantics`/testTag on the
-glow-ring node) that the ring is not active, then `requestFocus()` and assert it is.
+Re-verified: `aeroSwitchStaysFocusedAndSpaceStillTogglesAfterTheFocusVisibleGate` is unchanged and
+still would pass unmodified if `AeroSwitch.kt`'s focus gate were reverted to the raw `focused` flag
+— it asserts only that Space still toggles and the node stays focused, never anything about whether
+a ring is drawn. This is now **partially mitigated** rather than fully open: 19-09 separately added
+`AeroSwitchFocusVisibleWiringTest.kt`, which is a genuine composed proof that does assert on
+`state.focusVisible` through a real focus-loss/re-focus sequence with a real `AeroSwitch`. The
+originally-named test's misleading KDoc/coverage claim itself is still not corrected, so the
+underlying naming/documentation issue stands, but the "no composed test proves the gate" premise the
+original finding rested on no longer holds library-wide.
 
 ---
 
-### WR-10: Bare `kotlin.assert` in an otherwise `kotlin.test`-based styles suite
+### WR-10 (carried forward, still open): Bare `kotlin.assert` in `AeroSegmentedControlStylesTest`
 
-**Severity:** WARNING
-**File:** `library/src/test/kotlin/com/mordred/aero/components/selection/AeroSegmentedControlStylesTest.kt:190-193`
+**File:** `library/src/test/kotlin/com/mordred/aero/components/selection/AeroSegmentedControlStylesTest.kt:200-203`
 
-**Issue:**
-
-```kotlin
-val unselectedHoverStyle = expectedRaised(colors).hoverLighten()
-assert(resolved != unselectedHoverStyle) {
-    "hovered + selected must NEVER equal the unselected-hover style for $colors"
-}
-```
-
-`kotlin.assert` compiles to `if (_Assertions.ENABLED) { ... }`, gated on the JVM `-ea` flag. Every
-other assertion in this file (and in the sibling `AeroListItemStylesTest`, which uses
-`assertNotEquals` for the exact same invariant at line 118) uses `kotlin.test`, which always runs.
-Gradle's `Test` task defaults `enableAssertions = true`, so it executes today — but any change to
-`jvmArgs`/`enableAssertions` silently deletes this check with no test failure to signal it.
-
-**Fix:**
-
-```kotlin
-assertNotEquals(
-    expectedRaised(colors).hoverLighten(),
-    resolved,
-    "hovered + selected must NEVER equal the unselected-hover style for $colors",
-)
-```
+Re-verified: `hoveredSelectedEqualsRecessedHoverLightenNeverUnselectedHoverStyle` still uses bare
+`assert(resolved != unselectedHoverStyle) { ... }`, gated on the JVM `-ea` flag rather than
+`kotlin.test.assertNotEquals` (used for the equivalent invariant elsewhere in this same file and in
+`AeroListItemStylesTest`). Not addressed by this round.
 
 ---
 
-### WR-11: `FocusVisibilityTest` covers only paths the implementation already satisfies
+### WR-11 (carried forward, partially mitigated): `FocusVisibilityTest` still doesn't cover duplicate-emission or Release/Cancel paths
 
-**Severity:** WARNING
 **File:** `library/src/test/kotlin/com/mordred/aero/components/common/FocusVisibilityTest.kt`
 
-**Issue:** All nine cases are happy paths. The reducer's actual failure surface is untested:
-
-- **`Unfocus` while hovered, then re-`Focus`, then `Press`** — the CR-02 defect.
-  `recoveryUnfocusThenFreshFocusWithNoHoverIsVisibleAgain` (line 94) stops one interaction short.
-- **Duplicate `Enter`/`Exit` pairs.** The shared `InteractionSource` really does emit two of each
-  (see WR-04), and the reducer's boolean model handles them differently from
-  `collectIsHoveredAsState`. Nothing folds `Enter, Enter, Exit` and asserts `hovered`.
-- **`PressInteraction.Release` / `PressInteraction.Cancel`.** Both fall into `else -> this` on
-  line 124. Falling through is the intended design, but nothing pins it, so a future edit that
-  clears `pointerAcquired` on `Release` would reintroduce the residual-ring symptom with a green
-  suite.
-- **Repeated `Focus` without an intervening `Unfocus`**, which Compose can emit on window
-  re-activation.
-
-`defaultStateIsNotVisible` (line 143) asserts only that a freshly-constructed data class holds its
-own default values — it exercises no reducer logic at all.
-
-**Fix:** add the four cases above. The CR-02 case is written out in that finding.
+19-09 added the missing CR-02 regression case
+(`mouseClickAfterATabAwayAndBackWithTheStationaryPointerStaysSuppressed`), closing the specific gap
+CR-01/CR-02 review round called out. Still not covered, and now slightly more relevant given WR-04's
+fix relies on each interaction modifier being the *sole* hover emitter on its source: a fold proving
+`Enter, Enter, Exit` still resolves `hovered` sensibly (duplicate emission would no longer occur in
+production per WR-04's fix, but nothing pins that assumption at the reducer level should a future
+edit reintroduce a second emitter), and nothing pins `PressInteraction.Release`/`Cancel` falling
+through to `else -> this` rather than clearing `pointerAcquired`. Not addressed by this round.
 
 ---
 
 ## Info
 
-### IN-01: `animatedAlpha` and `ANIMATION_DURATION_MS` are dead code
+### IN-01 (carried forward, still open): `animatedAlpha`/`ANIMATION_DURATION_MS` remain dead code
 
-**Severity:** INFO
 **File:** `library/src/main/kotlin/com/mordred/aero/components/common/InteractionStates.kt:22,36-42`
 
-`animatedAlpha` has no call site in `library/` or `showcase/` (grep confirms declaration only), and
-`ANIMATION_DURATION_MS` exists solely to feed it. Both are `internal`, so nothing outside the module
-can be relying on them. `rememberHoverState`/`rememberPressedState`/`rememberFocusState` above them
-are still live (`AeroIconButton.kt:61-63`) but are now a second, parallel way to read the same three
-booleans that `rememberAeroInteractionState` bundles — worth migrating `AeroIconButton` and deleting
-them so there is one collection point, matching the file's own stated "single connection point"
-rationale (line 45-52).
-
-**Fix:** delete `animatedAlpha` and `ANIMATION_DURATION_MS`; file the `AeroIconButton` migration as
-follow-up.
+Re-verified: still no call site in `library/` or `showcase/`. Not addressed by this round.
 
 ---
 
-### IN-02: Source-scan guards ban identifiers rather than behaviour
+### IN-02 (carried forward, still open): Source-scan guards ban identifiers rather than behaviour
 
-**Severity:** INFO
-**Files:** `library/src/test/kotlin/com/mordred/aero/components/list/AeroListItemSourceTest.kt:133-142`,
-`library/src/test/kotlin/com/mordred/aero/components/selection/AeroSegmentedControlSourceTest.kt:76-80`
+**Files:** `library/src/test/kotlin/com/mordred/aero/components/list/AeroListItemSourceTest.kt:140-162`,
+`library/src/test/kotlin/com/mordred/aero/components/selection/AeroSegmentedControlSourceTest.kt:65-81`
 
-Two issues:
-
-1. `aeroListItemRowGrowthContractSurvives` forbids the bare tokens `maxLines` and `TextOverflow`
-   anywhere in non-comment source, permanently. That also bans legitimate future uses — a
-   `maxLines = Int.MAX_VALUE` written for clarity, a parameter named `maxLines`, or an ellipsis on
-   an unrelated slot such as a trailing badge. `AeroListItemLayoutTest` already proves row growth by
-   **measurement**, which is the stronger and more durable guarantee; the token ban adds no signal
-   the measurement lacks and will eventually produce a confusing failure whose message
-   ("truncation was explicitly rejected") does not match what the developer did.
-2. `sourceUsesSelectableRoleRadioButtonNotBareClickable` scans `aeroSegmentedControlSource` (raw)
-   rather than `nonCommentSource` for its `assertFalse(... "clickable(")` guard, unlike the sibling
-   guards at lines 154 and 161 which deliberately strip comments. A KDoc sentence explaining
-   "replaces the bare `clickable(...)`" — exactly the kind of prose this file is full of — would
-   fail the test.
-
-**Fix:** drop the `maxLines`/`TextOverflow` bans in favour of the measured-height tests; switch the
-`clickable(` guard to `nonCommentSource` for consistency with the file's own convention.
+Re-verified: `aeroListItemRowGrowthContractSurvives` still permanently bans the bare tokens
+`maxLines`/`TextOverflow` anywhere in non-comment source (rather than relying on the stronger
+measured-height tests already present), and `sourceUsesSelectableRoleRadioButtonNotBareClickable`
+still scans the raw (not comment-stripped) source for its `clickable(` ban, unlike sibling guards in
+the same file that deliberately strip comments first. Not addressed by this round.
 
 ---
 
-### IN-03: `AeroListItem` hardcodes content-padding magic numbers
+### IN-03 (carried forward, still open): `AeroListItem` hardcodes content-padding magic numbers
 
-**Severity:** INFO
-**File:** `library/src/main/kotlin/com/mordred/aero/components/list/AeroListItem.kt:137,140`
+**File:** `library/src/main/kotlin/com/mordred/aero/components/list/AeroListItem.kt:143,146`
 
-`padding(horizontal = 12.dp, ...)` and `Arrangement.spacedBy(8.dp)` are inline literals in a file
-where every other geometry value (`PILL_CORNER_RADIUS`, `PILL_VERTICAL_INSET`, `ROW_MIN_HEIGHT`,
-`ROW_VERTICAL_PADDING`, `FOCUS_STROKE_WIDTH`) is a named `private val` carrying a KDoc rationale.
-The horizontal padding in particular defines where content sits relative to the pill's rounded
-edge, which is the same concern `ROW_VERTICAL_PADDING` was extracted for in G1.
-
-**Fix:** extract `ROW_HORIZONTAL_PADDING = 12.dp` and `ROW_CONTENT_SPACING = 8.dp` alongside them.
+Re-verified: `padding(horizontal = 12.dp, ...)` and `Arrangement.spacedBy(8.dp)` are still inline
+literals, unlike every other geometry constant in this file. Not addressed by this round.
 
 ---
 
-### IN-04: `SelectionSection.kt` uses wildcard imports
+### IN-04 (carried forward, still open): `SelectionSection.kt` still uses wildcard imports
 
-**Severity:** INFO
 **File:** `showcase/src/main/kotlin/com/mordred/showcase/sections/SelectionSection.kt:3,5,11`
 
-`androidx.compose.foundation.layout.*`, `androidx.compose.runtime.*` and
-`com.mordred.aero.components.selection.*` — while the sibling `ListSection.kt` (edited in the same
-plan, 19-04) uses explicit imports throughout. The library wildcard in particular hides which
-public components the showcase actually exercises, which matters for a file whose job is to be the
-reviewable state matrix.
-
-**Fix:** expand to explicit imports, matching `ListSection.kt`.
+Re-verified: `androidx.compose.foundation.layout.*`, `androidx.compose.runtime.*` and
+`com.mordred.aero.components.selection.*` are all still wildcards, unlike the sibling
+`ListSection.kt`. Not addressed by this round.
 
 ---
 
-### IN-05: Showcase "disabled" segmented strip shares live state
+### IN-05 (carried forward, still open): Showcase "disabled" segmented strip still shares live state
 
-**Severity:** INFO
-**File:** `showcase/src/main/kotlin/com/mordred/showcase/sections/SelectionSection.kt:87-89`
+**File:** `showcase/src/main/kotlin/com/mordred/showcase/sections/SelectionSection.kt:88`
 
-```kotlin
-AeroSegmentedControl(options = listOf("Day","Week","Month"), selected = segValue, onSelect = {}, enabled = false)
-```
-
-The disabled strip binds `selected = segValue` — the *live* strip's state — so its highlighted
-segment silently moves whenever the reviewer clicks the live strip above it. For a row whose stated
-purpose is pinning a state for visual sign-off, that is a moving target.
-
-**Fix:** pin it — `selected = "Day"`.
+Re-verified: `AeroSegmentedControl(options = listOf("Day","Week","Month"), selected = segValue, onSelect = {}, enabled = false)`
+still binds `selected = segValue` — the live strip's own state — so the disabled row's highlighted
+segment still silently follows whatever the reviewer clicks in the live strip above it. Not
+addressed by this round.
 
 ---
 
