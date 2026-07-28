@@ -263,7 +263,7 @@ Plans:
 **Wave 7** *(gap closure round 2 — blocked on the code review and verification that reopened VSEL-02/03/04 and VLST-03)*
 
 - [x] 19-09-PLAN.md — CR-02 TRACER: the shared focus-visible reducer stops discarding the pointer flag on focus loss, proven end-to-end against a real AeroSwitch; plus WR-01 putting the button family on the same gate (VSEL-02, VSEL-04, VLST-03)
-- [ ] 19-10-PLAN.md — CR-01: the raised segment base darkened so the on-surface label survives on it, guarded by twelve value-level contrast assertions across all three schemes at both ends of the selection axis (VSEL-03)
+- [x] 19-10-PLAN.md — CR-01: the raised segment base darkened so the on-surface label survives on it, guarded by twelve value-level contrast assertions across all three schemes at both ends of the selection axis (VSEL-03)
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
@@ -315,7 +315,7 @@ Plans:
 | 16. Foundation — Aero Primitives Layer | v3.0 | 5/5 | Complete    | 2026-07-23 |
 | 17. Buttons | v3.0 | 5/5 | Complete    | 2026-07-23 |
 | 18. Range | v3.0 | 4/4 | Complete    | 2026-07-24 |
-| 19. Selectors + Lists | v3.0 | 9/12 | In Progress|  |
+| 19. Selectors + Lists | v3.0 | 10/12 | In Progress|  |
 | 20. Verification | v3.0 | 0/TBD | Not started | - |
 
 ## Next Milestone
