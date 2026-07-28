@@ -26,9 +26,9 @@ files_reviewed_list:
   - showcase/src/main/kotlin/com/mordred/showcase/sections/SelectionSection.kt
 findings:
   critical: 0
-  warning: 10
+  warning: 9
   info: 5
-  total: 15
+  total: 14
 status: issues_found
 ---
 
@@ -153,7 +153,18 @@ sole hover emitters are the enabled-aware `toggleable`/`selectable` modifiers th
 
 ## Warnings
 
-### WR-12 (new): CR-01's contrast fix clears a 3.0 floor, not the 4.5 normal-text floor the label actually needs
+### WR-12 (new) — CLOSED in `5cca3a1`: CR-01's contrast fix clears a 3.0 floor, not the 4.5 normal-text floor the label actually needs
+
+**Resolution:** Fix option (a) applied at the user's direction. `MIN_LABEL_CONTRAST` raised to `4.5f`
+and `RAISED_FILL_TOP_DARKEN` retuned `0.45f` → `0.58f` (`RAISED_FILL_BOTTOM_DARKEN` 0.61f and
+`RECESSED_FILL_DARKEN` 0.20f already cleared 4.5:1 and were left alone). Guard observed RED at the
+raised floor with the old constants — exactly one failing assertion, AeroDark unselected `fillTop` —
+then GREEN after the retune. All 12 ratios (3 schemes × 2 selection endpoints × 2 fill stops) now
+clear 4.5:1; tightest margin is AeroDark unselected `fillTop` at **4.858**. Darken-before-`pressedRecess`
+ordering and the raised-vs-recessed value relationship both preserved; no `theme/` file touched.
+
+Original finding follows.
+
 
 **File:** `library/src/test/kotlin/com/mordred/aero/components/selection/AeroSegmentedControlStylesTest.kt:351-357`,
 `library/src/main/kotlin/com/mordred/aero/components/selection/AeroSegmentedControl.kt:238-241`
