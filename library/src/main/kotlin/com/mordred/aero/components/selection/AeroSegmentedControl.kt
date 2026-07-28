@@ -145,7 +145,12 @@ public fun <T> AeroSegmentedControl(
                             indication = null,
                             onClick = { onSelect(opt) },
                         )
-                        .hoverable(segSource)
+                        // WR-04: the per-segment explicit hoverable emitter was removed — the
+                        // selectable modifier immediately above already emits hover on segSource
+                        // (proven by HoverEmissionTest), so a second emitter double-fed the same
+                        // source. The outer strip Row's own hoverable call stays: the control-level
+                        // interactionSource has no other interaction modifier at all, so that call
+                        // is its only emitter, not a duplicate.
                         .aeroSurface(style, RoundedCornerShape(SEGMENT_CORNER_RADIUS))
                         .then(
                             if (segState.focusVisible && enabled) {

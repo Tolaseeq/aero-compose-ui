@@ -91,11 +91,27 @@ class AeroSegmentedControlSourceTest {
     }
 
     @Test
-    fun sourceCollectsHoverViaHoverableNotPointerTracking() {
-        // (f) VLST-04: hover must be collected via Modifier.hoverable, never raw pointer-position tracking.
+    fun sourceHasExactlyOneHoverEmitterAndNoRawPointerTracking() {
+        // (f) WR-04: the per-segment duplicate hoverable emitter was removed because the selectable
+        // modifier already emits hover on the segment source (proven by HoverEmissionTest); the
+        // outer strip's hoverable call must stay because the control-level source has no other
+        // emitter. VLST-04: hover must still be collected via Modifier.hoverable, never raw
+        // pointer-position tracking.
+        val hoverableCount = nonCommentSource
+            .split(".hoverable(")
+            .size - 1
         assertTrue(
-            aeroSegmentedControlSource.contains(".hoverable("),
-            "AeroSegmentedControl.kt must chain .hoverable( per segment to collect hover state (VLST-04)"
+            hoverableCount == 1,
+            "AeroSegmentedControl.kt must contain exactly ONE .hoverable( call — the outer strip's. " +
+                "The per-segment duplicate was removed because the selectable modifier already " +
+                "emits hover on the segment source (WR-04); the outer call must stay because the " +
+                "control-level source has no other emitter. Found $hoverableCount occurrences."
+        )
+        assertTrue(
+            nonCommentSource.contains("interactionSource = segSource"),
+            "AeroSegmentedControl.kt must pass interactionSource = segSource to the per-segment " +
+                "selectable( call — pinning the per-segment source-sharing the focus-visibility " +
+                "reducer depends on"
         )
         assertFalse(
             aeroSegmentedControlSource.contains("pointerInput") ||

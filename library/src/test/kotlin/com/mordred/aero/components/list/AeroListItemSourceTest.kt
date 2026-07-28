@@ -82,10 +82,29 @@ class AeroListItemSourceTest {
     }
 
     @Test
-    fun aeroListItemKeepsHoverableAndAvoidsRawPointerTracking() {
+    fun aeroListItemHasExactlyOneHoverEmitterOnEachPathAndNoRawPointerTracking() {
+        // WR-04: the clickable path's emitter is the click modifier and the display-only path's is
+        // the explicit hoverable call — two emitters on one source would double-emit into the
+        // focus-visibility reducer's boolean hover model, and zero emitters on the display-only
+        // path would silently delete hover from a shipped state.
+        val hoverableCount = nonCommentSource
+            .split(".hoverable(")
+            .size - 1
         assertTrue(
-            aeroListItemSource.contains(".hoverable("),
-            "AeroListItem.kt must keep Modifier.hoverable(interactionSource) as its hover source (VLST-04)"
+            hoverableCount == 1,
+            "AeroListItem.kt must contain exactly ONE .hoverable( call — the display-only path's " +
+                "emitter. The clickable path's emitter is the click modifier instead (WR-04). Found " +
+                "$hoverableCount occurrences."
+        )
+        assertTrue(
+            nonCommentSource.contains(".hoverable(interactionSource, enabled = enabled)"),
+            "AeroListItem.kt's display-only-path hoverable( call must pass the enabled flag, so a " +
+                "disabled display-only row no longer reports itself hovered (WR-04)"
+        )
+        assertTrue(
+            aeroListItemSource.contains("interactionSource = interactionSource"),
+            "AeroListItem.kt's clickable( call must be fed the same interactionSource the collector " +
+                "reads, so the click modifier is the single emitter for the shared source on that path"
         )
         assertFalse(
             aeroListItemSource.contains("pointerInput"),

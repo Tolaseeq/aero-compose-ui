@@ -91,9 +91,11 @@ public fun AeroListItem(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = ROW_MIN_HEIGHT)
-            .hoverable(interactionSource)
             .then(
                 if (onClick != null) {
+                    // WR-04: the clickable modifier below already emits hover on interactionSource
+                    // (proven by HoverEmissionTest), so the explicit hover emitter that used to sit
+                    // unconditionally above this .then( was a duplicate on this path.
                     Modifier.clickable(
                         enabled = enabled,
                         interactionSource = interactionSource,
@@ -101,7 +103,11 @@ public fun AeroListItem(
                         onClick = onClick,
                     )
                 } else {
-                    Modifier
+                    // A display-only row (onClick == null) carries no other interaction modifier at
+                    // all, so this explicit hover emitter must stay — removing it here would
+                    // silently delete hover from a shipped state (VLST-04). Passing enabled means a
+                    // disabled display-only row no longer reports itself hovered either (WR-04).
+                    Modifier.hoverable(interactionSource, enabled = enabled)
                 }
             )
     ) {

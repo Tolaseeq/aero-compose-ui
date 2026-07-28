@@ -3,7 +3,6 @@ package com.mordred.aero.components.selection
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
@@ -99,7 +98,12 @@ public fun AeroSwitch(
                 indication = null,
                 onValueChange = { onCheckedChange?.invoke(it) }
             )
-            .hoverable(interactionSource)
+            // WR-04: hover reaches the shared interaction source through the toggle modifier
+            // immediately above, which already emits hover on the source it is given (proven by
+            // HoverEmissionTest). A second explicit hoverable emitter was removed here because it
+            // double-emitted into a hover model that is not reference-counted; this also means a
+            // disabled switch no longer reports itself hovered, since the toggle modifier is
+            // enabled-aware.
             .aeroGlowRing(
                 active = state.focusVisible && enabled,
                 glowColor = colors.borderSelected,

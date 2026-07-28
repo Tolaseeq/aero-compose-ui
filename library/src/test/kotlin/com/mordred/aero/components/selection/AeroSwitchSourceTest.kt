@@ -17,7 +17,12 @@ import kotlin.test.assertTrue
  *   resolvers rather than an inline color pick.
  * - D-05: the source does NOT call the button's pressed-recess transform — a thumb riding in an
  *   already-recessed groove stays raised, it does not invert/recede further.
- * - VLST-04: the source collects hover via `.hoverable(`, never raw pointer-event modifiers.
+ * - VLST-04: hover is collected through one shared interaction source paired with the shared
+ *   collector, never through raw pointer-position tracking. The old wording's claim that the
+ *   toggle modifier "does not report hover for free" was refuted directly by
+ *   [com.mordred.aero.components.common.HoverEmissionTest] against the library's own Compose
+ *   build (WR-04) — the toggle modifier IS the switch's single hover emitter now, and that
+ *   behavioural claim is covered by that suite rather than asserted here.
  * - P-01: the source suppresses the platform indication (`indication = null`) since the new
  *   custom-painted hover/press cues replace it.
  * - PRIM-14: the source never uses the fully-transparent color constant as a gradient/fade target.
@@ -74,10 +79,27 @@ class AeroSwitchSourceTest {
     }
 
     @Test
-    fun aeroSwitchCollectsHoverThroughHoverableNotRawPointerTracking() {
+    fun aeroSwitchCollectsHoverThroughOneSharedInteractionSourceNotRawPointerTracking() {
+        // WR-04: the explicit hoverable emitter was removed — the toggle modifier already emits
+        // hover on the supplied interaction source (proven directly by HoverEmissionTest against
+        // the library's own Compose build), so a second emitter would double-emit into a boolean
+        // hover model that is not reference-counted.
         assertTrue(
-            aeroSwitchSource.contains(".hoverable("),
-            "AeroSwitch.kt must collect hover via Modifier.hoverable(interactionSource) — toggleable does not report hover for free (VLST-04)"
+            aeroSwitchSource.contains("rememberAeroInteractionState(interactionSource)"),
+            "AeroSwitch.kt must collect hover through rememberAeroInteractionState(interactionSource) " +
+                "— hover is collected through one shared interaction source paired with the shared " +
+                "collector, never through raw pointer-position tracking (VLST-04)"
+        )
+        assertTrue(
+            aeroSwitchSource.contains("interactionSource = interactionSource"),
+            "AeroSwitch.kt's toggleable( call must be fed the same interactionSource the collector " +
+                "reads, so the toggle modifier is the single emitter for the shared source (WR-04)"
+        )
+        assertFalse(
+            nonCommentSource.contains(".hoverable("),
+            "AeroSwitch.kt must not contain an explicit .hoverable( call — the toggle modifier " +
+                "already emits hover on the supplied interaction source, so a second emitter would " +
+                "double-emit into a boolean hover model that is not reference-counted (WR-04)"
         )
         assertFalse(
             aeroSwitchSource.contains("pointerInput"),
@@ -122,6 +144,21 @@ class AeroSwitchSourceTest {
     }
 
     private val aeroSwitchSource: String get() = sourceFile("AeroSwitch.kt").readText()
+
+    /**
+     * [aeroSwitchSource] with every line whose trimmed form starts with a line-comment marker, a
+     * block-comment opener, or a KDoc/block-comment continuation asterisk removed — so negative
+     * guards over the real code cannot be satisfied or broken by KDoc prose that merely discusses
+     * a forbidden identifier.
+     */
+    private val nonCommentSource: String
+        get() = aeroSwitchSource
+            .lineSequence()
+            .filterNot { line ->
+                val trimmed = line.trimStart()
+                trimmed.startsWith("*") || trimmed.startsWith("//") || trimmed.startsWith("/*")
+            }
+            .joinToString("\n")
 
     /** cwd-independent resolution — Gradle's test task cwd varies between `library/` and repo root. */
     private fun sourceFile(name: String): File {
