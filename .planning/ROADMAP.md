@@ -292,7 +292,7 @@ Plans:
 **Wave 1**
 
 - [x] 20-01-PLAN.md — Tracer: VER-01 gradient end-stop gate end-to-end with its in-file fail-then-pass fixtures, then the chain-aware VER-02 clip-order gate (VER-01, VER-02, VER-06)
-- [ ] 20-02-PLAN.md — Permanent "Verification" showcase section holding all eight components at equal weight, plus a state-completeness audit of the four existing sections (SHW-15)
+- [x] 20-02-PLAN.md — Permanent "Verification" showcase section holding all eight components at equal weight, plus a state-completeness audit of the four existing sections (SHW-15)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -335,7 +335,7 @@ Plans:
 | 17. Buttons | v3.0 | 5/5 | Complete    | 2026-07-23 |
 | 18. Range | v3.0 | 4/4 | Complete    | 2026-07-24 |
 | 19. Selectors + Lists | v3.0 | 12/12 | Complete    | 2026-07-28 |
-| 20. Verification | v3.0 | 1/7 | In Progress|  |
+| 20. Verification | v3.0 | 2/7 | In Progress|  |
 
 ## Next Milestone
 
