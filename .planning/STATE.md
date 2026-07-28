@@ -5,14 +5,14 @@ milestone_name: Glass Refinement
 current_phase: 19
 current_phase_name: selectors-lists
 status: executing
-stopped_at: Completed 19-06-PLAN.md
-last_updated: "2026-07-27T16:43:41.189Z"
-last_activity: 2026-07-27
+stopped_at: Completed 19-07-PLAN.md
+last_updated: "2026-07-28T08:04:52.177Z"
+last_activity: 2026-07-28
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 28
-  completed_plans: 21
+  completed_plans: 22
   percent: 50
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refin
 
 Milestone: v3.0 Glass Refinement
 Phase: 19 (selectors-lists) — EXECUTING
-Plan: 3 of 8
+Plan: 4 of 8
 Status: Ready to execute
-Last activity: 2026-07-27
+Last activity: 2026-07-28
 
-Progress: [████████░░] 75%
+Progress: [████████░░] 79%
 
 ## v3.0 Roadmap (2026-07-21)
 
@@ -126,6 +126,7 @@ Research flags carried into planning: Phases 15, 16, 18 likely need `/gsd:resear
 | Phase 19 P03 | 21min | 2 tasks | 5 files |
 | Phase 19 P05 | 15min | 2 tasks | 5 files |
 | Phase 19 P06 | 24min | 2 tasks | 3 files |
+| Phase 19 P07 | 22min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -197,6 +198,9 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase ?]: 19-05: interaction-derived FocusVisibility reducer (not LocalInputModeManager) gates AeroSwitch's focus glow ring, per this plan's planner_finding — platform focus-visible only gates Indication, which the library disables everywhere
 - [Phase ?]: [Phase 19, Plan 06]: AeroListItem's row height changed from fixed .height(36.dp) to .heightIn(min = ROW_MIN_HEIGHT); pill/focus Boxes switched from fill-the-parent to matchParentSize() so they inherit the row's resolved (not fixed) size, closing gap G1
 - [Phase ?]: [Phase 19, Plan 06]: AeroListItem's in-bounds focus stroke gated on state.focusVisible (19-05's shared mechanism) instead of the raw focused flag, closing gap G2 for the third of three components sharing that gap
+- [Phase ?]: [Phase 19, Plan 07]: RECESSED_FILL_DARKEN = 0.20f applied via copy(...) to resolveSegmentStyle's recessed fillTop/fillBottom AFTER the imported pressedRecess(PRESSED_INNER_SHADOW) transform, matching AeroButtonSurface's own FILLED_FILL_TOP_DARKEN so the recessed segment lands in the same value neighbourhood as the pressed AeroButton; theme/ and buttons/ provably untouched (git status --porcelain gate)
+- [Phase ?]: [Phase 19, Plan 07]: Segment label collapsed to one content token (colors.onSurface) in every state, deleting the per-segment animateColorAsState inversion that used colors.surface (a background token carrying 0xCC alpha on AeroBlue/AeroDark) — closing gap G3's label fault; contrast restored by darkening the recessed fill instead of re-inverting the label
+- [Phase ?]: [Phase 19, Plan 07]: AeroSegmentedControl's per-segment focus stroke gated on state.focusVisible (19-05's shared reducer), the third and final Phase 19 component to adopt it, closing gap G2 across AeroSwitch/AeroListItem/AeroSegmentedControl
 
 ### Pending Todos
 
@@ -211,7 +215,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-07-27T16:43:41.176Z
-Stopped at: Completed 19-06-PLAN.md
+Last session: 2026-07-28T08:04:52.166Z
+Stopped at: Completed 19-07-PLAN.md
 Resume file: None
 Next action: `/gsd:plan-phase 15` (Toolchain Upgrade — consider `/gsd:research-phase 15` first per research flag)
