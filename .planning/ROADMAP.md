@@ -231,7 +231,7 @@ Plans:
   3. `AeroSegmentedControl`'s selected segment appears recessed (inverted gradient + inner shadow) by reusing the pressed-button code from Phase 17, and the control gains hover and focus for the first time
   4. `AeroListItem`'s selection highlight is clipped to a rounded pill with gradient and rim light, hover remains visible on an already-selected row (the two states combine instead of one suppressing the other), a focus visual exists, and all newly-hover-wired components reuse `AeroListItem`'s existing `Modifier.hoverable` + `collectIsHoveredAsState` pattern rather than inventing pointer-position tracking
 
-**Plans**: 9/12 plans executed
+**Plans**: 11/12 plans executed
 
 Plans:
 **Wave 1**
@@ -267,7 +267,7 @@ Plans:
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
-- [ ] 19-11-PLAN.md — WR-03 + WR-04: per-segment state keyed to option identity, and exactly one hover emitter per interaction source across all three components, with the emission premise turned into a test (VSEL-02, VSEL-04, VLST-03, VLST-04)
+- [x] 19-11-PLAN.md — WR-03 + WR-04: per-segment state keyed to option identity, and exactly one hover emitter per interaction source across all three components, with the emission premise turned into a test (VSEL-02, VSEL-04, VLST-03, VLST-04)
 
 **Wave 9** *(blocked on Wave 8 completion)*
 
@@ -315,7 +315,7 @@ Plans:
 | 16. Foundation — Aero Primitives Layer | v3.0 | 5/5 | Complete    | 2026-07-23 |
 | 17. Buttons | v3.0 | 5/5 | Complete    | 2026-07-23 |
 | 18. Range | v3.0 | 4/4 | Complete    | 2026-07-24 |
-| 19. Selectors + Lists | v3.0 | 10/12 | In Progress|  |
+| 19. Selectors + Lists | v3.0 | 11/12 | In Progress|  |
 | 20. Verification | v3.0 | 0/TBD | Not started | - |
 
 ## Next Milestone

@@ -168,6 +168,10 @@ None - no external service configuration required.
 - Plan 19-12 (three-theme re-sign-off) should visually confirm the segmented control's per-segment hover still renders correctly on all three themes — this is the human-judgment coverage item (D3 above) this plan could not close automatically.
 - No blockers.
 
+## Self-Check: PASSED
+
+All 7 created/modified files verified present on disk; all 3 task commits (`77bfa59`, `ddd7bf4`, `4048c57`) and the docs commit (`299ff51`) verified present in git log.
+
 ---
 *Phase: 19-selectors-lists*
 *Completed: 2026-07-28*

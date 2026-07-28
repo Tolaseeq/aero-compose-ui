@@ -2,16 +2,18 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Glass Refinement
+current_phase: 19
+current_phase_name: selectors-lists
 status: executing
-stopped_at: Completed 19-10-PLAN.md — CR-01 raised-segment fill contrast fix + 12-assertion WCAG guard
-last_updated: "2026-07-28T10:19:38.442Z"
+stopped_at: Completed 19-11-PLAN.md — WR-03 segment identity keying + WR-04 single hover emitter across AeroSwitch/AeroSegmentedControl/AeroListItem
+last_updated: "2026-07-28T10:30:56.206Z"
 last_activity: 2026-07-28
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 3
   total_plans: 32
-  completed_plans: 30
-  percent: 94
+  completed_plans: 26
+  percent: 50
 ---
 
 # Project State
@@ -27,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refin
 
 Milestone: v3.0 Glass Refinement
 Phase: 19 (selectors-lists) — EXECUTING
-Plan: 10 of 12 complete (next: 19-11)
+Plan: 11 of 12 complete (next: 19-11)
 Status: Completed 19-10-PLAN.md — CR-01 raised-segment fill contrast fix + 12-assertion WCAG guard
 Last activity: 2026-07-28
 
-Progress: [█████████░] 94%
+Progress: [████████░░] 81%
 
 ## v3.0 Roadmap (2026-07-21)
 
@@ -128,6 +130,7 @@ Research flags carried into planning: Phases 15, 16, 18 likely need `/gsd:resear
 | Phase 19 P08 | 12min | 2 tasks | 3 files |
 | Phase 19 P09 | 20min | 2 tasks | 5 files |
 | Phase 19 P10 | 18min | 2 tasks | 2 files |
+| Phase 19 P11 | 20min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -208,6 +211,9 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase ?]: [Phase 19, Plan 09]: Reducer fix scoped to FocusVisibility(hovered = hovered) one-argument change - WR-04's counted-hover field-shape alternative deliberately not taken here, deferred to 19-11
 - [Phase ?]: [Phase 19, Plan 09]: AeroButtonSurface focus glow moved to state.focusVisible, matching AeroSwitch/AeroSegmentedControl/AeroListItem - closes WR-01, resolveButtonStyle's dead focused parameter left untouched
 - [Phase ?]: [Phase 19, Plan 10]: RAISED_FILL_TOP_DARKEN/RAISED_FILL_BOTTOM_DARKEN landed at 0.45f/0.61f (colors.primary darken, applied before pressedRecess) - materially darker than AeroButtonSurface's 0.20f/0.36f precedent because this label is locked to the on-surface content token; new 12-assertion WCAG contrast test (MIN_LABEL_CONTRAST=3f) gates the regression closing CR-01
+- [Phase ?]: [Phase 19, Plan 11]: Segment key uses index-and-value, not value alone - duplicate options remain unguarded (WR-07 deferred) so a value-only key could collide
+- [Phase ?]: [Phase 19, Plan 11]: Three different hover-emitter removal treatments (switch: delete outright, segmented control: delete per-segment/keep outer, list row: move into else-branch) because each component's OTHER interaction modifier relates to the shared source differently
+- [Phase ?]: [Phase 19, Plan 11]: WR-04 premise (toggleable/selectable/clickable emit hover on their own) proven via new HoverEmissionTest suite against the library's own Compose build BEFORE removal, per plan's explicit fallback-clause requirement - all 3 premise tests and 2 post-removal component tests passed on first run
 
 ### Pending Todos
 
@@ -222,7 +228,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-07-28T10:19:38.434Z
-Stopped at: Completed 19-10-PLAN.md — CR-01 raised-segment fill contrast fix + 12-assertion WCAG guard
+Last session: 2026-07-28T10:30:56.194Z
+Stopped at: Completed 19-11-PLAN.md — WR-03 segment identity keying + WR-04 single hover emitter across AeroSwitch/AeroSegmentedControl/AeroListItem
 Resume file: None
 Next action: `/gsd:plan-phase 15` (Toolchain Upgrade — consider `/gsd:research-phase 15` first per research flag)
