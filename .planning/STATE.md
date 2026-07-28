@@ -5,15 +5,15 @@ milestone_name: Glass Refinement
 current_phase: 19
 current_phase_name: selectors-lists
 status: executing
-stopped_at: Completed 19-11-PLAN.md — WR-03 segment identity keying + WR-04 single hover emitter across AeroSwitch/AeroSegmentedControl/AeroListItem
-last_updated: "2026-07-28T10:30:56.206Z"
+stopped_at: Completed 19-12-PLAN.md — gap-round re-sign-off, G5 opened (AeroSegmentedControl needs unified fill/label-token with AeroButton), Phase 19 gate not closed
+last_updated: "2026-07-28T12:31:12.555Z"
 last_activity: 2026-07-28
 progress:
   total_phases: 6
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 32
-  completed_plans: 26
-  percent: 50
+  completed_plans: 27
+  percent: 67
 ---
 
 # Project State
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refin
 
 Milestone: v3.0 Glass Refinement
 Phase: 19 (selectors-lists) — EXECUTING
-Plan: 11 of 12 complete (next: 19-11)
+Plan: 12 of 12 complete (next: 19-11)
 Status: Completed 19-10-PLAN.md — CR-01 raised-segment fill contrast fix + 12-assertion WCAG guard
 Last activity: 2026-07-28
 
-Progress: [████████░░] 81%
+Progress: [████████░░] 84%
 
 ## v3.0 Roadmap (2026-07-21)
 
@@ -131,6 +131,7 @@ Research flags carried into planning: Phases 15, 16, 18 likely need `/gsd:resear
 | Phase 19 P09 | 20min | 2 tasks | 5 files |
 | Phase 19 P10 | 18min | 2 tasks | 2 files |
 | Phase 19 P11 | 20min | 3 tasks | 7 files |
+| Phase 19 P12 | 10min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -214,6 +215,9 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase ?]: [Phase 19, Plan 11]: Segment key uses index-and-value, not value alone - duplicate options remain unguarded (WR-07 deferred) so a value-only key could collide
 - [Phase ?]: [Phase 19, Plan 11]: Three different hover-emitter removal treatments (switch: delete outright, segmented control: delete per-segment/keep outer, list row: move into else-branch) because each component's OTHER interaction modifier relates to the shared source differently
 - [Phase ?]: [Phase 19, Plan 11]: WR-04 premise (toggleable/selectable/clickable emit hover on their own) proven via new HoverEmissionTest suite against the library's own Compose build BEFORE removal, per plan's explicit fallback-clause requirement - all 3 premise tests and 2 post-removal component tests passed on first run
+- [Phase ?]: [Phase 19, Plan 12] Gate NOT approved this round — blocks A-F (CR-01/CR-02/WR-01/WR-03/WR-04) PASSED, block G FAILED opening gap G5
+- [Phase ?]: [Phase 19, Plan 12] G5: AeroSegmentedControl's raised fill (CR-01/WR-12 darken, chasing contrast vs colors.onSurface) has drifted into a bespoke colour unlike AeroButton's own on-fill token; fix direction is to unify with AeroButton/AeroButtonSurface's code path, not further retune segment-specific constants
+- [Phase ?]: [Phase 19, Plan 12] Depth/recess judgement explicitly accepted by the developer and excluded from G5's scope
 
 ### Pending Todos
 
@@ -228,7 +232,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-07-28T10:30:56.194Z
-Stopped at: Completed 19-11-PLAN.md — WR-03 segment identity keying + WR-04 single hover emitter across AeroSwitch/AeroSegmentedControl/AeroListItem
+Last session: 2026-07-28T12:31:12.542Z
+Stopped at: Completed 19-12-PLAN.md — gap-round re-sign-off, G5 opened (AeroSegmentedControl needs unified fill/label-token with AeroButton), Phase 19 gate not closed
 Resume file: None
 Next action: `/gsd:plan-phase 15` (Toolchain Upgrade — consider `/gsd:research-phase 15` first per research flag)
