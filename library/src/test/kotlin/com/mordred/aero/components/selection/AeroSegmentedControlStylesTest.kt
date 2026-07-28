@@ -17,25 +17,31 @@ import kotlin.test.assertTrue
 /**
  * Value-level JVM tests (no `runComposeUiTest`, no Compose runtime) for [resolveSegmentStyle] —
  * the pure per-segment style resolution point wired into [AeroSegmentedControl] in 19-03 Task 1.
- * Exercised over both [AeroColorScheme.AeroBlue] (translucent tokens) and
- * [AeroColorScheme.Classic] (fully-opaque tokens), mirroring
+ * Exercised over all three shipped schemes — [AeroColorScheme.AeroBlue] (translucent tokens),
+ * [AeroColorScheme.AeroDark] (the scheme where CR-01's label-legibility defect measured worst) and
+ * [AeroColorScheme.Classic] (fully-opaque tokens) — mirroring
  * [com.mordred.aero.components.range.AeroSliderStylesTest]'s "reconstruct-expected-from-scratch"
  * convention.
  *
  * Corner radius is independently hardcoded as `4.dp` below, matching
- * [AeroSegmentedControl.kt]'s own private `SEGMENT_CORNER_RADIUS` constant — this file
- * deliberately never imports that constant or calls [resolveSegmentStyle] to build an expectation,
- * so a drift in either constant is caught rather than silently agreeing with itself.
+ * [AeroSegmentedControl.kt]'s own private `SEGMENT_CORNER_RADIUS` constant, and the raised/recessed
+ * darken literals below are likewise hardcoded to match `RAISED_FILL_TOP_DARKEN`/
+ * `RAISED_FILL_BOTTOM_DARKEN`/`RECESSED_FILL_DARKEN` (CR-01) — this file deliberately never
+ * imports any of those constants or calls [resolveSegmentStyle] to build an expectation, so a
+ * drift in either place is caught rather than silently agreeing with itself.
  */
 class AeroSegmentedControlStylesTest {
 
-    private val schemes = listOf(AeroColorScheme.AeroBlue, AeroColorScheme.Classic)
+    private val schemes = listOf(AeroColorScheme.AeroBlue, AeroColorScheme.AeroDark, AeroColorScheme.Classic)
 
     private fun expectedRaised(colors: AeroColorScheme): AeroSurfaceStyle =
-        AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp)
+        AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp).copy(
+            fillTop = colors.primary.darken(0.20f),
+            fillBottom = colors.primary.darken(0.36f),
+        )
 
     private fun expectedRecessed(colors: AeroColorScheme): AeroSurfaceStyle {
-        val pressedTransform = AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp).pressedRecess(PRESSED_INNER_SHADOW)
+        val pressedTransform = expectedRaised(colors).pressedRecess(PRESSED_INNER_SHADOW)
         return pressedTransform.copy(
             fillTop = pressedTransform.fillTop.darken(0.20f),
             fillBottom = pressedTransform.fillBottom.darken(0.20f),
@@ -43,7 +49,7 @@ class AeroSegmentedControlStylesTest {
     }
 
     @Test
-    fun unselectedEnabledNoHoverNoPressEqualsRaisedRest() {
+    fun unselectedEnabledNoHoverNoPressEqualsTheDarkenedRaisedBase() {
         schemes.forEach { colors ->
             val resolved = resolveSegmentStyle(
                 colors = colors,
@@ -55,7 +61,9 @@ class AeroSegmentedControlStylesTest {
             assertEquals(
                 expectedRaised(colors),
                 resolved,
-                "unselected, enabled, no hover/press must equal AeroSurfaceStyle.rest(colors, 4.dp) for $colors",
+                "unselected, enabled, no hover/press must equal the rest preset with both fill " +
+                    "stops replaced by the darkened accent token for $colors — a bare, unmodified " +
+                    "rest preset here is the CR-01 illegible-label defect",
             )
         }
     }
@@ -73,10 +81,10 @@ class AeroSegmentedControlStylesTest {
             assertEquals(
                 expectedRecessed(colors),
                 resolved,
-                "VSEL-03 ANTI-DRIFT: selected (selectedProgress = 1f) must equal " +
-                    "AeroSurfaceStyle.rest(colors, 4.dp).pressedRecess(PRESSED_INNER_SHADOW) exactly " +
-                    "for $colors — a mismatch means the segmented control and the pressed button " +
-                    "have forked",
+                "VSEL-03 ANTI-DRIFT: selected (selectedProgress = 1f) must equal the darkened " +
+                    "raised base put through pressedRecess(PRESSED_INNER_SHADOW) and then " +
+                    "recess-darkened exactly for $colors — a mismatch means the segmented control " +
+                    "and the pressed button have forked",
             )
         }
     }

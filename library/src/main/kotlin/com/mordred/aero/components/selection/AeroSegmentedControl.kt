@@ -73,9 +73,11 @@ import com.mordred.aero.theme.pressedRecess
  * used for text; and (b) on AeroBlue/AeroDark that token carries an `0xCC` alpha, so the selected
  * label was also rendered roughly 80% opaque — the "near-black, semi-transparent" defect the user
  * reported. Neither fault is fixed by substituting a different special-case colour for the
- * selected state — the fix is that there is no special case; contrast against the recessed fill
- * is restored instead by darkening that fill (see [resolveSegmentStyle]'s `RECESSED_FILL_DARKEN`
- * KDoc). A future reviewer must not reintroduce a per-state label colour to "fix" contrast.
+ * selected state — the fix is that there is no special case; contrast against both the raised and
+ * the recessed fill is restored instead by darkening those fills (see [resolveSegmentStyle]'s
+ * `RAISED_FILL_TOP_DARKEN`/`RAISED_FILL_BOTTOM_DARKEN` and `RECESSED_FILL_DARKEN` KDoc, CR-01). A
+ * future reviewer must not reintroduce a STATE-DEPENDENT label colour to "fix" contrast —
+ * contrast is fixed in the fill instead, and this is where that was done.
  *
  * @param interactionSource Additive trailing parameter (D-04) observing the control as a whole;
  * each segment additionally holds its own remembered interaction source for per-segment
@@ -191,6 +193,36 @@ private const val FOCUS_STROKE_ALPHA: Float = 0.8f
 private const val RECESSED_FILL_DARKEN: Float = 0.20f
 
 /**
+ * Downward value shift applied to the two fill stops of the RAISED (unselected) segment base,
+ * before the imported [pressedRecess] transform ever runs (CR-01, VSEL-03).
+ *
+ * The ornament-derived fill [AeroSurfaceStyle.rest] resolves is an opaque accent-derived plate —
+ * a light lighten and a light darken of [AeroColorScheme.primary] — and the segment label is
+ * [AeroColorScheme.onSurface] at full alpha in every state. On [AeroColorScheme.AeroDark] those
+ * two colors measure a near-identical value: the label sits on a fill of nearly its own
+ * brightness and effectively disappears. `AeroButtonSurface`'s filled-fill diagnosed and
+ * corrected this exact failure mode two phases earlier for the identical fill shape (its own
+ * `FILLED_FILL_TOP_DARKEN` / `FILLED_FILL_BOTTOM_DARKEN`); this is that same correction applied
+ * to this component's raised base.
+ *
+ * The correction lands on the RAISED base specifically, before [pressedRecess] runs — that
+ * transform exchanges [AeroSurfaceStyle.fillTop]/[AeroSurfaceStyle.fillBottom], so darkening the
+ * base first means the recessed style inherits the correction through the exchange, both
+ * segments move down together, and the pre-existing "recessed strictly darker than raised"
+ * invariant is preserved because both sides scale by the same factor. Applying the darken AFTER
+ * the exchange instead would darken only the raised segments and leave the selected one on the
+ * old base, silently inverting that invariant.
+ *
+ * The magnitude here is Claude's discretion, gated by the styles suite's contrast test and
+ * retunable at the 19-12 sign-off. The DIRECTION — the raised base moving strictly downward from
+ * the ornament-derived fill, never re-tinted and never inverted — is not.
+ */
+private const val RAISED_FILL_TOP_DARKEN: Float = 0.20f
+
+/** @see RAISED_FILL_TOP_DARKEN — same rationale, applied to the bottom fill stop. */
+private const val RAISED_FILL_BOTTOM_DARKEN: Float = 0.36f
+
+/**
  * Pure, Compose-free per-segment resolution point (19-UI-SPEC.md "AeroSegmentedControl —
  * per-state contract"), consumed by [AeroSegmentedControl].
  *
@@ -210,15 +242,17 @@ private const val RECESSED_FILL_DARKEN: Float = 0.20f
  * mirroring [com.mordred.aero.components.buttons.resolveButtonStyle].
  *
  * Invariant asserted at value level by `AeroSegmentedControlStylesTest` (the VSEL-03 anti-drift
- * guarantee): at `selectedProgress = 1f, pressed = false, hovered = false, enabled = true` this
- * returns a style identical to an independently reconstructed
- * `AeroSurfaceStyle.rest(colors, 4.dp).pressedRecess(PRESSED_INNER_SHADOW)` in every field EXCEPT
- * `fillTop`/`fillBottom`, which additionally carry this component's own documented downward value
- * shift ([RECESSED_FILL_DARKEN], gap G3) — the recessed style is the imported pressed-button
- * transform, cross-package reuse unchanged, with only its two fill stops darkened afterward; at
- * `selectedProgress = 0f` (same other args) it is byte-identical to
- * `AeroSurfaceStyle.rest(colors, 4.dp)` unmodified. The anti-drift guarantee now lives in this
- * phrasing and in the test's from-scratch reconstruction (which applies the same literal darken).
+ * guarantee): at `selectedProgress = 0f, pressed = false, hovered = false, enabled = true` (the
+ * unselected end) this returns the shared rest preset with its two fill stops replaced by
+ * [AeroColorScheme.primary] darkened by [RAISED_FILL_TOP_DARKEN]/[RAISED_FILL_BOTTOM_DARKEN]
+ * (CR-01) — every other field is unchanged from `AeroSurfaceStyle.rest(colors, 4.dp)`. At
+ * `selectedProgress = 1f` (the fully-selected end, same other args) it is that same raised base
+ * put through the imported [pressedRecess] transform and then darkened by [RECESSED_FILL_DARKEN]
+ * on both stops — identical in every field to an independently reconstructed version. The
+ * anti-drift guarantee now lives in this phrasing and in the test's from-scratch reconstruction
+ * (which writes both sets of darken literals out by hand rather than importing them). The
+ * imported [pressedRecess] transform and [PRESSED_INNER_SHADOW] value are still consumed
+ * unchanged — the cross-package reuse VSEL-03 requires is not weakened by this fill correction.
  */
 internal fun resolveSegmentStyle(
     colors: AeroColorScheme,
@@ -227,7 +261,11 @@ internal fun resolveSegmentStyle(
     pressed: Boolean,
     enabled: Boolean,
 ): AeroSurfaceStyle {
-    val base = AeroSurfaceStyle.rest(colors, cornerRadius = SEGMENT_CORNER_RADIUS)
+    val restPreset = AeroSurfaceStyle.rest(colors, cornerRadius = SEGMENT_CORNER_RADIUS)
+    val base = restPreset.copy(
+        fillTop = colors.primary.darken(RAISED_FILL_TOP_DARKEN),
+        fillBottom = colors.primary.darken(RAISED_FILL_BOTTOM_DARKEN),
+    )
     val pressedTransform = base.pressedRecess(PRESSED_INNER_SHADOW)
     val recessed = pressedTransform.copy(
         fillTop = pressedTransform.fillTop.darken(RECESSED_FILL_DARKEN),
