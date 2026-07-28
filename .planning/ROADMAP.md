@@ -286,11 +286,17 @@ Plans:
   4. A snapshot test confirms component default sizes and corner radii match the pre-migration baseline (no silent layout creep)
   5. A UI test confirms keyboard activation works for both converted buttons, and a minimal scratch-consumer outside the showcase's own conventions builds against the new artifact
 
-**Plans**: TBD
+**Plans**: 7 plans in 5 waves
 
 Plans:
 
-- [ ] 20-01: TBD (planned via `/gsd:plan-phase 20` — standard pattern, mirrors v2.0.2/v2.0.4 three-theme sign-off precedent)
+- [ ] 20-01-PLAN.md — Tracer: VER-01 gradient end-stop gate end-to-end with its in-file fail-then-pass fixtures, then the chain-aware VER-02 clip-order gate (VER-01, VER-02, VER-06)
+- [ ] 20-02-PLAN.md — Permanent "Verification" showcase section holding all eight components at equal weight, plus a state-completeness audit of the four existing sections (SHW-15)
+- [ ] 20-03-PLAN.md — VER-03 default size/corner-radius snapshot against the real v2.0.4 baseline, plus the VER-04 audit closing it on the existing AeroButtonSemanticsTest (VER-03, VER-04, VER-06)
+- [ ] 20-04-PLAN.md — Folded label-contrast fix: one shared resolveLabelColor mechanism for AeroButton/AeroSegmentedControl plus its value-level WCAG regression guard (SHW-16)
+- [ ] 20-05-PLAN.md — Code review of the eleven never-reviewed Phase 16/17 files and Phase 20's own diff, findings closed BEFORE the sign-off (SHW-16)
+- [ ] 20-06-PLAN.md — VER-05 scratch consumer: throwaway JitPack tag, a standalone project outside this repo, launching and rendering all eight (VER-05)
+- [ ] 20-07-PLAN.md — Human three-theme sign-off plus two exact non-100% DPI passes on AeroBlue, capture-backed and per-theme (SHW-15, SHW-16)
 
 ## Progress
 
