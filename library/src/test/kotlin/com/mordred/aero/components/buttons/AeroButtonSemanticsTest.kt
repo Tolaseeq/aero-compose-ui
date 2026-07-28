@@ -14,7 +14,7 @@ import androidx.compose.ui.test.requestFocus
 import androidx.compose.ui.test.runComposeUiTest
 import com.mordred.aero.theme.AeroTheme
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
 
 /**
  * VBTN-04 — proves `Role.Button` semantics are present and that Space/Enter keyboard activation
@@ -32,6 +32,27 @@ import kotlin.test.assertTrue
  * `dropShadow`/`innerShadow` package-correction precedent from Phase 15). All four symbols
  * resolved exactly as assumed; no package-location surprise this time. See 17-03-SUMMARY.md for
  * the recorded javap output.
+ *
+ * **VER-04 closure (Phase 20 Plan 03, D-16).** This pre-existing file — not a new keyboard-
+ * activation test class — is recorded as closing VER-04. Audited against VER-04's four explicit
+ * criteria:
+ * - **separately asserted** — `AeroButton` and `AeroOutlinedButton` each have their own test
+ *   methods below, so a single shared assertion could never pass with only one button wired.
+ * - **no vacuous pass on a missing node** — every activation test now calls `assertExists()`
+ *   before `requestFocus()`, so a missing button node fails with an explicit "node not found"
+ *   message rather than surfacing as a confusing focus error.
+ * - **order independence** — each test method runs its own independent `runComposeUiTest`
+ *   composition; none shares state with another.
+ * - **invocation count** — every activation test now increments an `Int` counter inside `onClick`,
+ *   presses the activation key TWICE, and asserts the counter equals exactly `2` — "at least once"
+ *   cannot distinguish a handler that fires once from one wired to a latch, so a boolean `clicked`
+ *   flag is no longer sufficient here.
+ *
+ * **Deliberately NOT asserted (recorded, not silently dropped):** key-event delivery interleaved
+ * with a recomposition in the same frame. `runComposeUiTest` (the v1, non-`StandardTestDispatcher`
+ * API this project deliberately stays on per TOOL-04) drives a single-threaded test clock, so a
+ * real-device input/recomposition race has no equivalent here — this stays outside what this test
+ * can reach, and is not a gap this file can close.
  */
 @OptIn(ExperimentalTestApi::class)
 class AeroButtonSemanticsTest {
@@ -52,40 +73,44 @@ class AeroButtonSemanticsTest {
 
     @Test
     fun aeroButtonSpaceKeyInvokesOnClickAfterFocus() = runComposeUiTest {
-        var clicked = false
+        var clickCount = 0
         setContent {
             AeroTheme {
-                AeroButton(text = "Save Changes", onClick = { clicked = true })
+                AeroButton(text = "Save Changes", onClick = { clickCount++ })
             }
         }
         waitForIdle()
 
         val node = onNodeWithText("Save Changes")
+        node.assertExists()
         node.requestFocus()
         waitForIdle()
         node.performKeyInput { pressKey(Key.Spacebar) }
+        node.performKeyInput { pressKey(Key.Spacebar) }
         waitForIdle()
 
-        assertTrue(clicked, "Space must invoke onClick once the button node is focused")
+        assertEquals(2, clickCount, "Space pressed twice must invoke onClick exactly twice")
     }
 
     @Test
     fun aeroButtonEnterKeyInvokesOnClickAfterFocus() = runComposeUiTest {
-        var clicked = false
+        var clickCount = 0
         setContent {
             AeroTheme {
-                AeroButton(text = "Save Changes", onClick = { clicked = true })
+                AeroButton(text = "Save Changes", onClick = { clickCount++ })
             }
         }
         waitForIdle()
 
         val node = onNodeWithText("Save Changes")
+        node.assertExists()
         node.requestFocus()
         waitForIdle()
         node.performKeyInput { pressKey(Key.Enter) }
+        node.performKeyInput { pressKey(Key.Enter) }
         waitForIdle()
 
-        assertTrue(clicked, "Enter must invoke onClick once the button node is focused")
+        assertEquals(2, clickCount, "Enter pressed twice must invoke onClick exactly twice")
     }
 
     @Test
@@ -104,20 +129,43 @@ class AeroButtonSemanticsTest {
 
     @Test
     fun aeroOutlinedButtonEnterKeyInvokesOnClickAfterFocus() = runComposeUiTest {
-        var clicked = false
+        var clickCount = 0
         setContent {
             AeroTheme {
-                AeroOutlinedButton(text = "Cancel", onClick = { clicked = true })
+                AeroOutlinedButton(text = "Cancel", onClick = { clickCount++ })
             }
         }
         waitForIdle()
 
         val node = onNodeWithText("Cancel")
+        node.assertExists()
         node.requestFocus()
         waitForIdle()
         node.performKeyInput { pressKey(Key.Enter) }
+        node.performKeyInput { pressKey(Key.Enter) }
         waitForIdle()
 
-        assertTrue(clicked, "Enter must invoke onClick once the outlined button node is focused")
+        assertEquals(2, clickCount, "Enter pressed twice must invoke onClick exactly twice")
+    }
+
+    @Test
+    fun aeroOutlinedButtonSpaceKeyInvokesOnClickAfterFocus() = runComposeUiTest {
+        var clickCount = 0
+        setContent {
+            AeroTheme {
+                AeroOutlinedButton(text = "Cancel", onClick = { clickCount++ })
+            }
+        }
+        waitForIdle()
+
+        val node = onNodeWithText("Cancel")
+        node.assertExists()
+        node.requestFocus()
+        waitForIdle()
+        node.performKeyInput { pressKey(Key.Spacebar) }
+        node.performKeyInput { pressKey(Key.Spacebar) }
+        waitForIdle()
+
+        assertEquals(2, clickCount, "Space pressed twice must invoke onClick exactly twice")
     }
 }
