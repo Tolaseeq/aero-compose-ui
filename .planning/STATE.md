@@ -2,19 +2,16 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Glass Refinement
-current_phase: 20
-current_phase_name: Verification
 status: executing
-stopped_at: Phase 20 UI-SPEC approved
-last_updated: "2026-07-28T16:09:48.628Z"
+stopped_at: Completed 20-01-PLAN.md (VER-01/VER-02 gates)
+last_updated: "2026-07-28T16:38:02.214Z"
 last_activity: 2026-07-28
-last_activity_desc: Phase 19 complete, transitioned to Phase 20
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 39
-  completed_plans: 27
-  percent: 67
+  completed_plans: 33
+  percent: 83
 ---
 
 # Project State
@@ -24,17 +21,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refinement)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, typed `AeroIcons`, and a showcase — no manual style work or icon-pack hunting required.
-**Current focus:** Phase 19 — selectors-lists
+**Current focus:** Phase 20 — verification
 
 ## Current Position
 
 Milestone: v3.0 Glass Refinement
-Phase: 20 — Verification
-Plan: Not started
+Phase: 20 (verification) — EXECUTING
+Plan: 2 of 7
 Status: Ready to execute
-Last activity: 2026-07-28 — Phase 19 complete, transitioned to Phase 20
+Last activity: 2026-07-28
 
-Progress: [████████░░] 84%
+Progress: [█████████░] 85%
 
 ## v3.0 Roadmap (2026-07-21)
 
@@ -133,6 +130,7 @@ Research flags carried into planning: Phases 15, 16, 18 likely need `/gsd:resear
 | Phase 19 P10 | 18min | 2 tasks | 2 files |
 | Phase 19 P11 | 20min | 3 tasks | 7 files |
 | Phase 19 P12 | 10min | 2 tasks | 2 files |
+| Phase 20 P01 | 11min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -219,6 +217,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase ?]: [Phase 19, Plan 12] Gate NOT approved this round — blocks A-F (CR-01/CR-02/WR-01/WR-03/WR-04) PASSED, block G FAILED opening gap G5
 - [Phase ?]: [Phase 19, Plan 12] G5: AeroSegmentedControl's raised fill (CR-01/WR-12 darken, chasing contrast vs colors.onSurface) has drifted into a bespoke colour unlike AeroButton's own on-fill token; fix direction is to unify with AeroButton/AeroButtonSurface's code path, not further retune segment-specific constants
 - [Phase ?]: [Phase 19, Plan 12] Depth/recess judgement explicitly accepted by the developer and excluded from G5's scope
+- [Phase ?]: Tracer checkpoint (Task 1) approved as-is - START coords stay outside D-05, named constant carrying no size. is a violation, three-layer shape (pure detector -> in-file fixtures -> real-source scan) locked as the template all later gates replicate
+- [Phase ?]: VER-02 modifierChains() excludes fun-declaration lines from chain-start detection - without this, AeroSurfacePrimitives.kt's own fun Modifier.aeroSurface(...) declaration would self-flag its internal .clip(shape) as a false VER-02 violation
 
 ### Pending Todos
 
@@ -233,7 +233,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-07-28T14:57:53.931Z
-Stopped at: Phase 20 UI-SPEC approved
-Resume file: .planning/phases/20-verification/20-UI-SPEC.md
+Last session: 2026-07-28T16:38:02.208Z
+Stopped at: Completed 20-01-PLAN.md (VER-01/VER-02 gates)
+Resume file: None
 Next action: `/gsd:plan-phase 15` (Toolchain Upgrade — consider `/gsd:research-phase 15` first per research flag)
