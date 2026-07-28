@@ -36,6 +36,7 @@ import com.mordred.showcase.sections.PrimitivesSection
 import com.mordred.showcase.sections.RangeSection
 import com.mordred.showcase.sections.SelectionSection
 import com.mordred.showcase.sections.ThemeSwitcher
+import com.mordred.showcase.sections.VerificationSection
 
 /**
  * ShowcaseApp now accepts the active color scheme from its caller (Main.kt) so that
@@ -73,6 +74,8 @@ fun ShowcaseApp(
                     current = currentScheme,
                     onSelect = onSchemeChange
                 )
+
+                VerificationSection()
 
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Text(
