@@ -34,6 +34,7 @@ import com.mordred.aero.theme.AeroColorScheme
 import com.mordred.aero.theme.AeroSurfaceStyle
 import com.mordred.aero.theme.AeroTheme
 import com.mordred.aero.theme.aeroSurface
+import com.mordred.aero.theme.darken
 import com.mordred.aero.theme.flattenDisabled
 import com.mordred.aero.theme.hoverLighten
 import com.mordred.aero.theme.pressedRecess
@@ -166,6 +167,24 @@ private val FOCUS_STROKE_WIDTH = 1.dp
 private const val FOCUS_STROKE_ALPHA: Float = 0.8f
 
 /**
+ * Downward value shift applied to the recessed selected segment's two fill stops, on top of the
+ * imported [pressedRecess] geometry (gap G3, VSEL-03).
+ *
+ * A pushed-in surface catches less light and must read darker than its raised neighbours.
+ * [pressedRecess] exchanges [AeroSurfaceStyle.fillTop]/[AeroSurfaceStyle.fillBottom] (plus the two
+ * bevel tones), which preserves their mean exactly — the recessed style therefore has the same
+ * average value as the raised style, differing only by gradient direction, missing gloss and the
+ * inner shadow. On dark themes that is not a readable difference, so the recess needs a downward
+ * value change on top of that geometry, not instead of it.
+ *
+ * `0.20f` matches [com.mordred.aero.components.buttons] `AeroButtonSurface`'s own filled-fill top
+ * darken, so the recessed segment lands in the same value neighbourhood as the pressed `AeroButton`
+ * it is compared against at sign-off. This magnitude is Claude's discretion (retunable at sign-off
+ * per 19-CONTEXT.md); the DIRECTION — strictly darker, never inverted or re-tinted — is not.
+ */
+private const val RECESSED_FILL_DARKEN: Float = 0.20f
+
+/**
  * Pure, Compose-free per-segment resolution point (19-UI-SPEC.md "AeroSegmentedControl —
  * per-state contract"), consumed by [AeroSegmentedControl].
  *
@@ -186,10 +205,14 @@ private const val FOCUS_STROKE_ALPHA: Float = 0.8f
  *
  * Invariant asserted at value level by `AeroSegmentedControlStylesTest` (the VSEL-03 anti-drift
  * guarantee): at `selectedProgress = 1f, pressed = false, hovered = false, enabled = true` this
- * returns a style byte-identical to an independently reconstructed
- * `AeroSurfaceStyle.rest(colors, 4.dp).pressedRecess(PRESSED_INNER_SHADOW)`; at
+ * returns a style identical to an independently reconstructed
+ * `AeroSurfaceStyle.rest(colors, 4.dp).pressedRecess(PRESSED_INNER_SHADOW)` in every field EXCEPT
+ * `fillTop`/`fillBottom`, which additionally carry this component's own documented downward value
+ * shift ([RECESSED_FILL_DARKEN], gap G3) — the recessed style is the imported pressed-button
+ * transform, cross-package reuse unchanged, with only its two fill stops darkened afterward; at
  * `selectedProgress = 0f` (same other args) it is byte-identical to
- * `AeroSurfaceStyle.rest(colors, 4.dp)` unmodified.
+ * `AeroSurfaceStyle.rest(colors, 4.dp)` unmodified. The anti-drift guarantee now lives in this
+ * phrasing and in the test's from-scratch reconstruction (which applies the same literal darken).
  */
 internal fun resolveSegmentStyle(
     colors: AeroColorScheme,
@@ -199,7 +222,11 @@ internal fun resolveSegmentStyle(
     enabled: Boolean,
 ): AeroSurfaceStyle {
     val base = AeroSurfaceStyle.rest(colors, cornerRadius = SEGMENT_CORNER_RADIUS)
-    val recessed = base.pressedRecess(PRESSED_INNER_SHADOW)
+    val pressedTransform = base.pressedRecess(PRESSED_INNER_SHADOW)
+    val recessed = pressedTransform.copy(
+        fillTop = pressedTransform.fillTop.darken(RECESSED_FILL_DARKEN),
+        fillBottom = pressedTransform.fillBottom.darken(RECESSED_FILL_DARKEN),
+    )
     val effectiveProgress = if (pressed) 1f else selectedProgress
     val target = if (effectiveProgress >= 0.5f) recessed else base
     val depthResolved = target.copy(

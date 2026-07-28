@@ -1,15 +1,18 @@
 package com.mordred.aero.components.selection
 
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import com.mordred.aero.components.buttons.PRESSED_INNER_SHADOW
 import com.mordred.aero.theme.AeroColorScheme
 import com.mordred.aero.theme.AeroSurfaceStyle
+import com.mordred.aero.theme.darken
 import com.mordred.aero.theme.flattenDisabled
 import com.mordred.aero.theme.hoverLighten
 import com.mordred.aero.theme.pressedRecess
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * Value-level JVM tests (no `runComposeUiTest`, no Compose runtime) for [resolveSegmentStyle] —
@@ -31,8 +34,13 @@ class AeroSegmentedControlStylesTest {
     private fun expectedRaised(colors: AeroColorScheme): AeroSurfaceStyle =
         AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp)
 
-    private fun expectedRecessed(colors: AeroColorScheme): AeroSurfaceStyle =
-        AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp).pressedRecess(PRESSED_INNER_SHADOW)
+    private fun expectedRecessed(colors: AeroColorScheme): AeroSurfaceStyle {
+        val pressedTransform = AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp).pressedRecess(PRESSED_INNER_SHADOW)
+        return pressedTransform.copy(
+            fillTop = pressedTransform.fillTop.darken(0.20f),
+            fillBottom = pressedTransform.fillBottom.darken(0.20f),
+        )
+    }
 
     @Test
     fun unselectedEnabledNoHoverNoPressEqualsRaisedRest() {
@@ -231,6 +239,48 @@ class AeroSegmentedControlStylesTest {
                 disabledSelected,
                 disabledEverything,
                 "disabled must win over every other flag combined for $colors",
+            )
+        }
+    }
+
+    @Test
+    fun recessedFillIsStrictlyDarkerThanRaisedFillNeverJustExchanged() {
+        // Gap G3 (VSEL-03): exchanging the two fill stops preserves their mean exactly, so a
+        // recessed segment that is not darker than its raised neighbour cannot satisfy "exactly
+        // one visibly pushed in" — this proves the DIRECTION of the value change, not the exact
+        // magnitude (which remains Claude's discretion, retunable at sign-off).
+        schemes.forEach { colors ->
+            val unselected = resolveSegmentStyle(
+                colors = colors,
+                selectedProgress = 0f,
+                hovered = false,
+                pressed = false,
+                enabled = true,
+            )
+            val selected = resolveSegmentStyle(
+                colors = colors,
+                selectedProgress = 1f,
+                hovered = false,
+                pressed = false,
+                enabled = true,
+            )
+
+            val unselectedLuminanceSum = unselected.fillTop.luminance() + unselected.fillBottom.luminance()
+            val selectedLuminanceSum = selected.fillTop.luminance() + selected.fillBottom.luminance()
+
+            assertTrue(
+                selectedLuminanceSum < unselectedLuminanceSum,
+                "the recessed (selected) segment's total fill luminance ($selectedLuminanceSum) must " +
+                    "be strictly below the raised (unselected) segment's ($unselectedLuminanceSum) for " +
+                    "$colors — a recessed segment that is not darker than its raised neighbours cannot " +
+                    "satisfy VSEL-03's 'exactly one visibly pushed in' (gap G3)",
+            )
+            assertEquals(
+                0f,
+                selected.glossAlpha,
+                "the recessed (selected) segment must have glossAlpha = 0f — gloss suppression is " +
+                    "part of the imported pressedRecess transform and must survive the fill " +
+                    "correction unchanged for $colors",
             )
         }
     }
