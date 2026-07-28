@@ -1,7 +1,7 @@
 ---
 phase: 20
 slug: verification
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-07-28
@@ -190,16 +190,21 @@ scope, unchanged framing from Phases 16–19). What IS new this phase:
 
 ## UI Considerations
 
-> Populated by the ui-phase UI-consideration probe (post-verification). This phase's only new
-> user-facing surface is the permanent **Verification** review section (SHW-15/D-04); the four
-> existing sections are audited for state completeness only (no restructuring), and the scratch
-> consumer is a separate, minimal window (VER-05) outside the showcase's own conventions. Element
-> classification: **E1** the Verification section's eight-component grid = `list-collection`,
-> **E2** each individual demo control inside it = `interactive-control` (identical classification
-> to every prior phase's per-component demo — these are the SAME shipped components, not new
-> ones), **E3** the per-component caption row = `static-content`, **E4** the scratch-consumer
-> window = `interactive-control` (renders all eight, no new interaction beyond what each
-> component already has).
+> Populated by the ui-phase UI-consideration probe (post-verification, engine-computed —
+> `ui-consideration-probe.cjs`, 20 applicable / 0 unclassified). This phase's only new user-facing
+> surface is the permanent **Verification** review section (SHW-15/D-04); the four existing
+> sections are audited for state completeness only (no restructuring), and the scratch consumer is
+> a separate, minimal window (VER-05) outside the showcase's own conventions.
+>
+> **Element kinds (probe-detected, then human-confirmed — the confirm step is what makes coverage
+> sound, not the heuristic cue-match):**
+>
+> | Element | Surface | Kinds | Source |
+> |---------|---------|-------|--------|
+> | **E1** | Verification section's eight-component grid | `list-collection`, `static-content` | detected, confirmed |
+> | **E2** | Each individual demo control inside it | `interactive-control`, `static-content` | detected, confirmed |
+> | **E3** | Per-component caption row | `static-content` | detected `list-collection` + `static-content`; **narrowed by human confirm** — eight hardcoded caption strings are not a data-bearing collection, so the empty/loading/error/partial/populated/zero-one-many rows would have dismissed on E1's identical compile-time-list reason |
+> | **E4** | Scratch-consumer window (VER-05) | `interactive-control`, `list-collection` | **detected NOTHING (unclassified) — kinds added by human confirm.** The prose classifier tripped no cue; without the override E4 would have contributed zero tracked rows and VER-05's render/clip and exactly-eight coverage would have rested on prose alone |
 
 **Focal point (Dimension 2):** each component's own rendered surface is the primary anchor inside
 its demo block — unchanged from every prior phase's precedent (16/17/18/19), since no component's
@@ -209,20 +214,19 @@ side-by-side comparison question — no single component may be given more visua
 another, e.g. via a larger card or a highlighted border, or the coherence judgment itself would be
 biased by the layout).
 
-**Probe coverage: 21 applicable — 6 covered, 6 backstop, 9 dismissed, 0 unresolved.**
+**Probe coverage: 20 applicable — 5 covered, 7 backstop, 8 dismissed, 0 unresolved, 0 unclassified.**
 
-### ✅ Covered (6)
+### ✅ Covered (5)
 
 | Category | Element | Truth |
 |----------|---------|-------|
 | populated | E1 | The happy path IS the section's entire purpose: all eight already-shipped components render in their normal rest state, one per demo block, inside the section's `list-collection` layout. No new populated-state logic is introduced — each component's own populated contract (Phases 16–19 UI-SPECs) is reused verbatim. |
 | zero-one-many | E1 | Fixed count of exactly eight, compile-time, never dynamic — the milestone's own named component list (`ROADMAP.md`). No zero/one/many variance exists for this grid; each of the eight always renders exactly once. |
-| populated | E2 | Every individual demo control's per-state contract (default/hover/press/focus/disabled) was already fully specified and three-theme-approved in Phases 17/18/19's own UI-SPECs — this phase's D-01 hybrid sign-off re-reviews only `AeroButton`/`AeroOutlinedButton` state-by-state (touched since their own sign-off) and does a coherence-only pass on the rest (untouched since 18-04/19-12). No new per-state design is authored here. |
-| zero-one-many | E2 | Each demoed control's own zero/one/many contract (e.g. `AeroSegmentedControl`'s N-segment behavior, `AeroListItem`'s single-row-in-a-caller-list framing) is unchanged and already covered by its own phase's UI-SPEC — not re-derived. |
-| populated | E3 | Fully specified above (Copywriting Contract): exactly eight fixed captions, one per component, in the milestone's own listed order — a static, compile-time list with no variable-population state. |
-| zero-one-many | E3 | Same fixed-eight-captions basis as the populated row directly above — no zero/one/many variance is possible for a hardcoded list of exactly eight strings. |
+| overflow | E3 | Each demo block's width is `max(caption, control)` — the block sizes to whichever is wider, so the caption never truncates. This is load-bearing for the narrow controls: `"AeroSwitch"` at `typography.label` (11sp/Bold) is wider than the 36.dp switch track it labels, so the block is caption-driven there and control-driven for the wide ones (`AeroSegmentedControl`, `AeroListItem`). Captions are single-line and do not wrap. |
+| long-text | E3 | Eight fixed compile-time strings, longest is `"AeroSegmentedControl"` (20 chars). No user-supplied, localized, or otherwise variable text ever reaches this row, so there is no unbounded-length case to design for — the `max(caption, control)` block sizing above absorbs the known worst case. |
+| populated | E4 | The happy path is D-15's own acceptance bar: the scratch-consumer window launches and visibly renders all eight components pulled from the published JitPack artifact. Nothing beyond "launches and renders" is contracted — the window is deliberately minimal (D-15). |
 
-### 🧪 Backstop (6)
+### 🧪 Backstop (7)
 
 Each lifts into `must_haves.truths`. At verify time a backstop is confirmed only by explicit
 evidence or routes to `insufficient_spec → human_needed` — never a silent pass.
@@ -235,9 +239,17 @@ evidence or routes to `insufficient_spec → human_needed` — never a silent pa
 - **statement:** Two of the eight components carry the pre-existing, documented overflow risk from Phase 19's own UI-SPEC (`AeroSegmentedControl`'s and `AeroListItem`'s long-label backstops, both PRE-EXISTING and explicitly out of VSEL/VLST scope). Placing all eight side-by-side in one dense grid is a NEW context for that pre-existing risk — a long label in the coherence grid could visually distort the grid's uniform-weight framing (Focal point note above) more noticeably than it did in `SelectionSection`/`ListSection`'s own spaced-out demo rows.
 - **backstop:** At the three-theme sign-off, confirm the coherence grid's realistic (short, representative) captions/labels do not trigger this pre-existing overflow; if the reviewer deliberately exercises a long label to test it, confirm the grid's layout absorbs one widened block without breaking the row/grid alignment of its neighbors (each block's own bounds, not a shared fixed-width column, per the Focal-point equal-weight note).
 
-**E2 · overflow / long-text** (combined, single risk per the established de-dup rule) — `verification: backstop`
-- **statement:** Identical to the risk already recorded in the Phase 17/19 UI-SPECs for `AeroSegmentedControl`/`AeroButton` label truncation and `AeroListItem` text overflow against its clipped pill — nothing new is introduced by this phase's controls themselves. The NEW factor is the contrast fix (D-12): a black-on-light or white-on-dark label, once resolved algorithmically, must remain legible at every label length the existing backstops already cover, not just the short demo strings.
-- **backstop:** Re-confirmed as part of THIS phase's three-theme sign-off (D-01's hybrid scope explicitly covers `AeroButton`/`AeroOutlinedButton` state-by-state because they changed) — the reviewer checks the contrast-fixed label against a long/truncating label, not only the default short one.
+**E2 · overflow** — `verification: backstop`
+- **statement:** The per-component truncation/clip contracts already recorded in the Phase 17/19 UI-SPECs (`AeroButton`/`AeroSegmentedControl` label truncation, `AeroListItem` text against its clipped pill) are unchanged by this phase — no control is resized (see the locked VER-03 geometry table). What must not happen is a silent regression of those contracts via the shared-mechanism edit to `AeroButtonSurface.kt` (D-12), which both converted buttons and the segmented control consume.
+- **backstop:** Re-confirmed as part of THIS phase's three-theme sign-off — D-01's hybrid scope covers `AeroButton`/`AeroOutlinedButton` state-by-state precisely because they were touched.
+
+**E2 · long-text** — `verification: backstop`
+- **statement:** The NEW factor is the contrast fix (D-12): an algorithmically-resolved black-on-light or white-on-dark label must remain legible at every label length the existing backstops already cover, not just the short demo strings. A truncating label puts the ellipsis and the final glyphs over the *darkest* part of the gradient (`fillBottom`), which is the lower-contrast stop in all three themes per the Color table above — the exact place AeroBlue's thin 4.56 margin sits.
+- **backstop:** At the three-theme sign-off the reviewer checks the contrast-fixed label against a long/truncating label, not only the default short one.
+
+**E4 · partial** — `verification: backstop`
+- **statement:** A partially-rendering scratch consumer is the precise failure VER-05 exists to catch: if the published artifact's public API surface is incomplete or a symbol is not exported, some components fail to compile or silently do not appear, while the window itself still launches. "It opened" must not be mistaken for "it works."
+- **backstop:** At the D-15 run, confirm no component of the eight is absent — checked against the milestone's named list, not against whatever the window happens to show.
 
 **E4 · overflow** — `verification: backstop`
 - **statement:** The scratch consumer (VER-05) is deliberately written outside the showcase's own layout conventions (D-15) — it has no inherited scroll/padding contract to rely on. All eight components must render inside its window without clipping, at whatever minimal layout the scratch consumer author chooses.
@@ -245,21 +257,20 @@ evidence or routes to `insufficient_spec → human_needed` — never a silent pa
 
 **E4 · zero-one-many** — `verification: backstop`
 - **statement:** The scratch consumer must render exactly the milestone's eight named components (same fixed list as E1/E3), proving the published artifact's public API surface is reachable by a stranger — not a subset chosen for convenience.
-- **backstop:** Confirmed by the same run as the row directly above (D-15) — checked against the milestone's own eight-component list, not left to the scratch consumer author's discretion on which subset "counts."
+- **backstop:** Confirmed by the same run as the two rows directly above (D-15) — checked against the milestone's own eight-component list, not left to the scratch consumer author's discretion on which subset "counts."
 
-### ⊘ Dismissed (9 — reason is the audit trail)
+### ⊘ Dismissed (8 — reason is the audit trail)
 
 | Category | Element | Reason |
 |----------|---------|--------|
 | empty | E1 | Fixed, compile-time set of exactly eight components — never dynamically empty. Same basis as `PrimitivesSection`'s Phase 16 dismissal for its six primitive groups. |
 | loading | E1 | Everything renders synchronously at composition time — no async fetch exists anywhere in this phase. |
 | error | E1 | No data load/submit surface exists in this phase's new UI (see Copywriting Contract's not-applicable error-state row). |
-| partial | E1 | Each of the eight either fully renders (compiles and composes) or the section fails to build — no partial-render concept applies to a fixed compile-time list. |
-| empty | E2 | Each demoed control's own empty-state contract (or explicit not-applicable) is already settled in its own phase's UI-SPEC — not re-derived here. |
-| loading | E2 | No async/in-flight state exists in any of the eight components (confirmed across Phases 16–19) — unchanged. |
-| error | E2 | `enabled = false` is each component's own only negative state, already contracted per-component in Phases 17–19's UI-SPECs — not re-specified here. |
-| empty | E3 / E4 | Fixed eight-item caption list / fixed eight-component render target — never dynamically empty, by the same construction as E1. |
-| loading | E3 / E4 | No async state — captions are static strings; the scratch consumer renders synchronously on launch (D-15). |
+| partial | E1 | Each of the eight either fully renders (compiles and composes) or the section fails to build — no partial-render concept applies to a fixed compile-time list inside the showcase's own module. (Contrast E4, where the artifact boundary makes partial render a real failure mode — that one is a backstop, not a dismissal.) |
+| empty | E4 | Fixed eight-component render target, compile-time — never dynamically empty, by the same construction as E1. |
+| loading | E4 | No async state — the scratch consumer renders synchronously on launch (D-15). |
+| error | E4 | No data load/submit surface. A failure to resolve the JitPack artifact is a BUILD failure, caught by VER-05's own "builds against the new artifact" gate, not a UI error state the window has to render. |
+| long-text | E4 | The scratch consumer uses each component's default short demo labels; long-text legibility against the contrast-fixed label is already backstopped at E2 for the same shipped components — de-duped rather than restated. |
 
 ---
 
@@ -280,11 +291,12 @@ renders" acceptance bar (D-15).
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: PASS — all page-level surfaces correctly N/A with justification; new section/window titles specific and precedent-consistent
+- [x] Dimension 2 Visuals: PASS — focal point and uniform-grid-of-equals hierarchy explicitly declared
+- [x] Dimension 3 Color: PASS — accent reserved to specific per-component resolvers (not "all interactive elements"); 60/30/10 declared
+- [x] Dimension 4 Typography: PASS — 2 sizes / 1 weight reused from the existing scale, well within limits
+- [x] Dimension 5 Spacing: PASS — all values in the standard 4/8/16/24/32/48/64 set, no exceptions
+- [x] Dimension 6 Registry Safety: PASS — not applicable (non-shadcn stack); JitPack is an own-artifact pull, not a third-party registry
 
-**Approval:** pending
+**Approval:** approved by gsd-ui-checker — 6/6 dimensions PASS, no blocking issues, no recommendations.
+**UI-consideration probe:** 20 applicable — 5 covered / 7 backstop / 8 dismissed / 0 unresolved / 0 unclassified.
