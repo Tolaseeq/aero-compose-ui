@@ -4,16 +4,16 @@ milestone: v3.0
 milestone_name: Glass Refinement
 current_phase: 19
 current_phase_name: selectors-lists
-status: executing
-stopped_at: Completed 19-07-PLAN.md
-last_updated: "2026-07-28T08:04:52.177Z"
+status: verifying
+stopped_at: Completed 19-08-PLAN.md — Phase 19 sign-off APPROVED, phase complete
+last_updated: "2026-07-28T08:34:22.271Z"
 last_activity: 2026-07-28
 progress:
   total_phases: 6
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 28
-  completed_plans: 22
-  percent: 50
+  completed_plans: 23
+  percent: 67
 ---
 
 # Project State
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refin
 
 Milestone: v3.0 Glass Refinement
 Phase: 19 (selectors-lists) — EXECUTING
-Plan: 4 of 8
-Status: Ready to execute
+Plan: 8 of 8
+Status: Phase complete — ready for verification
 Last activity: 2026-07-28
 
-Progress: [████████░░] 79%
+Progress: [████████░░] 82%
 
 ## v3.0 Roadmap (2026-07-21)
 
@@ -127,6 +127,7 @@ Research flags carried into planning: Phases 15, 16, 18 likely need `/gsd:resear
 | Phase 19 P05 | 15min | 2 tasks | 5 files |
 | Phase 19 P06 | 24min | 2 tasks | 3 files |
 | Phase 19 P07 | 22min | 3 tasks | 3 files |
+| Phase 19 P08 | 12min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -201,6 +202,9 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase ?]: [Phase 19, Plan 07]: RECESSED_FILL_DARKEN = 0.20f applied via copy(...) to resolveSegmentStyle's recessed fillTop/fillBottom AFTER the imported pressedRecess(PRESSED_INNER_SHADOW) transform, matching AeroButtonSurface's own FILLED_FILL_TOP_DARKEN so the recessed segment lands in the same value neighbourhood as the pressed AeroButton; theme/ and buttons/ provably untouched (git status --porcelain gate)
 - [Phase ?]: [Phase 19, Plan 07]: Segment label collapsed to one content token (colors.onSurface) in every state, deleting the per-segment animateColorAsState inversion that used colors.surface (a background token carrying 0xCC alpha on AeroBlue/AeroDark) — closing gap G3's label fault; contrast restored by darkening the recessed fill instead of re-inverting the label
 - [Phase ?]: [Phase 19, Plan 07]: AeroSegmentedControl's per-segment focus stroke gated on state.focusVisible (19-05's shared reducer), the third and final Phase 19 component to adopt it, closing gap G2 across AeroSwitch/AeroListItem/AeroSegmentedControl
+- [Phase ?]: [Phase 19, Plan 08]: Three-theme re-sign-off APPROVED — G1/G2/G3 confirmed closed by eye on AeroBlue, AeroDark and Classic; no defects routed back to 19-05/06/07
+- [Phase ?]: [Phase 19, Plan 08]: G4 (AeroOrnamentTokens brightness on AeroBlue/AeroDark) re-confirmed but stays deferred by explicit reviewer decision — routes to a separate Phase 16 foundation session, with a new direction to try darker values specifically for those two themes
+- [Phase ?]: [Phase 19, Plan 08]: RECESSED_FILL_DARKEN = 0.20f (19-07's open judgement call) confirmed correct by the reviewer ('в самый раз' / just right) — kept unchanged, no follow-up tuning
 
 ### Pending Todos
 
@@ -215,7 +219,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-07-28T08:04:52.166Z
-Stopped at: Completed 19-07-PLAN.md
+Last session: 2026-07-28T08:34:22.259Z
+Stopped at: Completed 19-08-PLAN.md — Phase 19 sign-off APPROVED, phase complete
 Resume file: None
 Next action: `/gsd:plan-phase 15` (Toolchain Upgrade — consider `/gsd:research-phase 15` first per research flag)

@@ -141,7 +141,7 @@ Roadmap: `.planning/ROADMAP.md` (created 2026-07-21, Phases 15–20).
 | PRIM-01..18 | Phase 16 (Foundation — Aero Primitives Layer) | Pending |
 | VBTN-01..06 | Phase 17 (Buttons) | Complete |
 | VRNG-01..09 | Phase 18 (Range) | Pending |
-| VSEL-01..04, VLST-01..04 | Phase 19 (Selectors + Lists) | Pending |
+| VSEL-01..04, VLST-01..04 | Phase 19 (Selectors + Lists) | Complete |
 | SHW-15..16, VER-01..06 | Phase 20 (Verification) | Pending |
 
 **Coverage:**
