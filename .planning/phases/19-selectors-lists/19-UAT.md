@@ -1,19 +1,20 @@
 ---
-status: diagnosed
+status: passed
 phase: 19-selectors-lists
-source: [19-04-PLAN.md task 2 human-verify checkpoint]
+source: [19-04-PLAN.md task 2 human-verify checkpoint, 19-08-PLAN.md task 2 three-theme re-sign-off]
 started: 2026-07-27T14:31:42Z
-updated: 2026-07-27T14:31:42Z
+updated: 2026-07-28T08:26:50Z
 ---
 
 ## Current Test
 
-number: 4
-name: Remaining state matrix — AeroSwitch / AeroSegmentedControl / AeroListItem states not exercised in the 2026-07-27 pass
+number: 11
+name: Classic theme — full matrix, all three components (closes the 2026-07-27 pending row)
 expected: |
   Every state listed in 19-04-PLAN.md task 2 walked in all three themes
   (AeroBlue, AeroDark, Classic) and explicitly reported pass or fail.
-awaiting: user response
+awaiting: none — resolved 2026-07-28. Gate APPROVED. G1/G2/G3 confirmed closed by eye on all
+  three themes; G4 remains deferred by explicit reviewer decision.
 
 ## Tests
 
@@ -27,11 +28,17 @@ v2.0.3 / v2.0.4 false-positive sign-off lesson is cited in 19-04-PLAN.md as the 
 this gate cannot be automated or inferred; marking an unexercised state as passing
 would repeat exactly that failure.
 
+A second sign-off pass ran on 2026-07-28 (19-08 Task 2), after gap plans 19-05/19-06/19-07
+closed G1, G2 and G3, against the running showcase at commit `4d92c13` in all three themes
+(AeroBlue, AeroDark, Classic). Its findings are recorded inline against the tests they
+resolve, and separately for the four rows that stood at `pending`.
+
 ### 1. AeroListItem — long-label selected row, pill bounded edge
 expected: Long primary label plus secondary line stays within the pill's bounded edge.
-result: FAILED — text overflows the pill's bottom edge. Visible in the supplied screenshot on both the "Sent" row (its `secondary line` spills past the pill) and the deliberately-long-label row (text cut at the pill boundary).
-reported_by: user
-gap: G1
+result: FAILED (2026-07-27) — text overflows the pill's bottom edge. Visible in the supplied screenshot on both the "Sent" row (its `secondary line` spills past the pill) and the deliberately-long-label row (text cut at the pill boundary).
+result_2026-07-28: PASSED — G1 closed by 19-06 (`AeroListItem.kt`'s row height changed from a fixed `.height(36.dp)` to `.heightIn(min = 36.dp)`, commit `08ed471`). Exercised across all three themes as part of the 2026-07-28 reviewer's blanket "остальное passed" ("everything else passed") report covering Blocks A, B, D, E, F, G; no defect was raised against this row.
+reported_by: user (2026-07-27 failure), user (2026-07-28 re-verification)
+gap: G1 — resolved
 
 ### 2. AeroSegmentedControl — long-label segment overflow behaviour
 expected: Scope decision — segment widens cleanly, or truncation should be added.
@@ -45,58 +52,75 @@ reported_by: assistant, confirmed against user screenshot
 
 ### 4. AeroSwitch — focus cue after mouse click
 expected: Hover glow appears on mouse-over and clears when the pointer leaves.
-result: FAILED — after clicking and moving the pointer away, a highlight remains until focus moves elsewhere. User: "неясно, зачем нужна подсветка, остающаяся после нажатия, выглядит лишней". Hover glow itself is correct and is not in scope to change.
-reported_by: user
-gap: G2
+result: FAILED (2026-07-27) — after clicking and moving the pointer away, a highlight remains until focus moves elsewhere. User: "неясно, зачем нужна подсветка, остающаяся после нажатия, выглядит лишней". Hover glow itself is correct and is not in scope to change.
+result_2026-07-28: PASSED — G2 closed by 19-05's shared `FocusVisibility` reducer (`InteractionStates.kt`, commits `36b291a`/`79b11a5`), consumed by `AeroSwitch`. Exercised across all three themes under the 2026-07-28 reviewer's Block B pass and covered by the same blanket "остальное passed" report; no residual focus cue after a mouse click was reported, hover unaffected.
+reported_by: user (2026-07-27 failure), user (2026-07-28 re-verification)
+gap: G2 — resolved
 
 ### 5. AeroSwitch — overall value/brightness on AeroBlue and AeroDark
 expected: Control sits within the theme surface's value range; recessed groove and raised thumb legible.
 result: FAILED — reads as an eye-searingly light element against the dark background. User: "слишком вырвиглазно-светлым получается из-за светло-голубого фона, белого свечения и белого же контура. Возможно, проблема не только переключателя" — the suspicion that this is not switch-specific is confirmed (see G4).
 reported_by: user
-gap: G4
+gap: G4 — deferred (see G4 re-report under 2026-07-28 below; not re-recorded as a separate numbered row per 19-08's resume scope, which named tests 1, 4, 6 and 7 for re-recording)
 
 ### 6. AeroSegmentedControl — overall value/brightness on AeroBlue and AeroDark
 expected: Raised glass segments legible against theme surface; exactly one visibly pushed in (VSEL-03).
-result: FAILED — same eye-searing lightness (light blue fill, white glow, white text, white contour). Additionally, from the screenshot the assistant judges VSEL-03 unmet on dark themes: the strip reads as one uniformly bright block and the recessed segment is not distinguishable by eye. The AeroChip row directly beneath is the in-showcase reference for correctly restrained value.
+result: FAILED (2026-07-27) — same eye-searing lightness (light blue fill, white glow, white text, white contour). Additionally, from the screenshot the assistant judges VSEL-03 unmet on dark themes: the strip reads as one uniformly bright block and the recessed segment is not distinguishable by eye. The AeroChip row directly beneath is the in-showcase reference for correctly restrained value.
 reported_by: user (brightness), assistant (VSEL-03 from screenshot)
 gap: G3, G4
 
+**This is a SPLIT row — the 2026-07-28 re-verification resolves only its G3 half. Both halves are recorded explicitly below; the row as a whole is not silently passed.**
+
+- **6a. G3 half (VSEL-03, "exactly one segment visibly pushed in")** — result: PASSED (2026-07-28). Closed by 19-07 (`AeroSegmentedControl.kt`: single-token `colors.onSurface` label at full alpha, replacing the alpha-carrying `colors.surface` inversion; `RECESSED_FILL_DARKEN = 0.20f` applied after the imported `pressedRecess` transform — commits `5533bcc`, `93da660`). Reviewer's Block C report: every label is the same colour and legible; the recessed segment reads pushed in, comparable to a pressed `AeroButton`; the strip reads darker than the `AeroChip` reference row. Reviewer's explicit judgement-call answer on the `0.20f` darken magnitude: "в самый раз" (just right) — no follow-up tuning. Exercised on all three themes.
+- **6b. G4 half (overall brightness on AeroBlue/AeroDark)** — result: FAILED, still deferred (2026-07-28 re-report). Reviewer confirmed the same known brightness condition persists on the segmented control, not worse than commit `de44669`. See the G4 gap entry below for the verbatim re-report and the new "try darker in these two themes" direction.
+
+reported_by (2026-07-28): user
+
 ### 7. AeroSegmentedControl — selected-segment label colour
 expected: Label legible against the recessed fill in all three themes.
-result: FAILED — selected label turns near-black. User: "странная идея менять цвет текста на чёрный у выбранного элемента, зачем?". Root cause is worse than the reported symptom: the token used carries an alpha, so the selected label is also rendered semi-transparent (see G3).
-reported_by: user
-gap: G3
+result: FAILED (2026-07-27) — selected label turns near-black. User: "странная идея менять цвет текста на чёрный у выбранного элемента, зачем?". Root cause is worse than the reported symptom: the token used carries an alpha, so the selected label is also rendered semi-transparent (see G3).
+result_2026-07-28: PASSED — G3's label fault closed by 19-07 (every segment label now resolves from `colors.onSurface` at full alpha in every state, commit `5533bcc`). Reviewer's Block C report: every label is the same colour, selected or not, and legible on all three themes — not near-black, not washed out, not semi-transparent. Exercised on all three themes.
+reported_by: user (2026-07-27 failure), user (2026-07-28 re-verification)
+gap: G3 — resolved
 
 ### 8. AeroSwitch — rest / toggle / hover / press / disabled matrix, all themes
 expected: Per 19-04-PLAN.md task 2 AeroSwitch checklist.
-result: [pending]
+result: PASSED (2026-07-28 reviewer pass, Block D) — exercised in all three themes (AeroBlue, AeroDark, Classic). Reviewer's report: "остальное passed" ("everything else passed"), which the reviewer confirmed covers Blocks A, B, D, E, F and G. The structural rest/toggle/hover/press/disabled states are confirmed independently of the standing G4 brightness caveat on AeroBlue/AeroDark (test 5), which is a separate, already-tracked, deferred condition and is not reopened by this result.
+reported_by: user (2026-07-28 reviewer pass)
 
 ### 9. AeroSegmentedControl — hover / Tab / Space / N=1 / disabled matrix, all themes
 expected: Per 19-04-PLAN.md task 2 AeroSegmentedControl checklist.
-result: [pending]
+result: PASSED (2026-07-28 reviewer pass, Block E) — exercised in all three themes. Covered by the same blanket "остальное passed" report. The standing G4 brightness caveat on AeroBlue/AeroDark (test 6b) is a separate, already-tracked, deferred condition and is not reopened by this result.
+reported_by: user (2026-07-28 reviewer pass)
 
 ### 10. AeroListItem — VLST-02 selected+hover, focus stroke, display-only non-focusability, disabled
 expected: Per 19-04-PLAN.md task 2 AeroListItem checklist. VLST-02 (hover brightens an already-selected row rather than replacing its treatment) is the phase's headline fix and was not reported on.
-result: [pending]
+result: PASSED (2026-07-28 reviewer pass, Block F) — exercised in all three themes, including VLST-02 (selecting then hovering the same row brightens it rather than flattening or replacing the treatment). Covered by the same blanket "остальное passed" report; no defect raised against `AeroListItem` at all in this pass.
+reported_by: user (2026-07-28 reviewer pass)
 
 ### 11. Classic theme — full matrix for all three components
 expected: Classic is called out in 19-04-PLAN.md as the theme that matters most, because its tokens are fully opaque and several defects are invisible on AeroBlue/AeroDark.
-result: [pending] — the reported pass covered AeroBlue and AeroDark only.
+result: PASSED (2026-07-28 reviewer pass, Block G) — Classic exercised for the first time in this phase. Reviewer's verbatim report: "у classic всё выглядит нормально, проблемы только у первых двух тем" ("on Classic everything looks fine; the problems are only on the first two themes"). This closes the row that stood pending since 2026-07-27 and independently corroborates G4's root-cause analysis: Classic's darker, more restrained `primary` (`0xFF5C8ABF`) is why it is unaffected by the AeroBlue/AeroDark brightness defect.
+reported_by: user (2026-07-28 reviewer pass)
 
 ## Summary
 
 total: 11
-passed: 2
-issues: 5
-pending: 4
+passed: 9
+issues: 2
+pending: 0
 skipped: 0
 blocked: 0
+
+Note: tests 5 and 6 are the 2 counted "issues" — both are the deferred G4 brightness condition
+(6's G3 half is separately resolved and recorded inline as 6a). No row is counted as passed
+that the reviewer did not actually report on.
 
 ## Gaps
 
 ### G1 — AeroListItem row cannot grow, content overflows the pill
-status: failed
-routes_to: 19-01 (AeroListItem)
+status: resolved
+routes_to: 19-06 (AeroListItem)
 requirement: VLST-01, VLST-03
 root_cause: |
   `library/src/main/kotlin/com/mordred/aero/components/list/AeroListItem.kt:84` sets a fixed
@@ -108,10 +132,18 @@ fix_direction: |
   the pill grows with the row. Truncation was explicitly NOT chosen — it would mask a layout
   defect rather than fix it, and the user's complaint is that text escapes the pill, not that
   it is long.
+resolution: |
+  Closed 2026-07-28. 19-06 (commit `08ed471`) replaced the fixed height with
+  `.heightIn(min = ROW_MIN_HEIGHT)` and switched the pill/focus Boxes to `matchParentSize()` so
+  they grow with the row instead of collapsing to zero height. Confirmed by the 19-08 three-theme
+  reviewer pass (UAT test 1, Block A): the long-label-plus-secondary row and the "Sent" row both
+  keep their text inside the pill's bounded edge on all three themes; the two adjacent
+  pinned-selected pills still read as two separate pills with a gap; a plain single-line row is
+  unchanged at its original height.
 
 ### G2 — Focus ring shown for pointer-acquired focus (no focus-visible semantics)
-status: failed
-routes_to: 19-01, 19-02, 19-03 (shared concern across all three components)
+status: resolved
+routes_to: 19-05 (mechanism), 19-06 (AeroListItem), 19-07 (AeroSegmentedControl)
 requirement: VSEL-02, VSEL-04, VLST-03
 root_cause: |
   `AeroSwitch.kt:97` gates the focus glow on `state.focused && enabled`, and
@@ -124,10 +156,21 @@ fix_direction: |
   element holds focus. The element must remain focused and keyboard-operable either way — only
   the drawing is suppressed. The separate hover glow ring is correct and must NOT be changed;
   the user explicitly wants hover indication retained.
+resolution: |
+  Closed 2026-07-28 for all three components. 19-05 built a pure, Compose-free
+  `FocusVisibility`/`reduce`/`rememberFocusVisible` reducer (deviating from the
+  `LocalInputModeManager` wording above for verified platform-behaviour reasons — see
+  19-05-SUMMARY.md's Decisions Made) and wired it through `AeroSwitch` (commits `36b291a`,
+  `79b11a5`). 19-06 applied the same `state.focusVisible` gate to `AeroListItem`'s in-bounds
+  focus stroke (commit `3127f3a`). 19-07 applied it to `AeroSegmentedControl`'s per-segment focus
+  stroke (commit `cb64605`). Confirmed by the 19-08 three-theme reviewer pass (Block B, and the
+  blanket "остальное passed" report covering tests 8-10): on all three components, a mouse click
+  followed by moving the pointer away leaves no focus cue; Tab still draws one; Space/Enter still
+  operates the control; hover indication is unchanged.
 
 ### G3 — Selected segment: wrong label token and wrong fill direction
-status: failed
-routes_to: 19-03 (AeroSegmentedControl)
+status: resolved
+routes_to: 19-07 (AeroSegmentedControl)
 requirement: VSEL-03, VSEL-04
 root_cause: |
   `AeroSegmentedControl.kt:100` resolves the label as
@@ -145,10 +188,21 @@ fix_direction: |
   by a downward value change plus the existing bevel/inner-shadow geometry, not by a colour
   inversion. Re-check against a pressed `AeroButton` in the Buttons section, which is the
   reference depth the plan reuses verbatim.
+resolution: |
+  Closed 2026-07-28. 19-07 (commits `5533bcc`, `93da660`) collapsed every segment label to the
+  single `colors.onSurface` content token at full alpha, and declared
+  `RECESSED_FILL_DARKEN = 0.20f` applied via `copy(...)` to the recessed style's `fillTop`/
+  `fillBottom` strictly after the imported `pressedRecess` transform — matching
+  `AeroButtonSurface`'s own `FILLED_FILL_TOP_DARKEN` so the recessed segment lands in the same
+  value neighbourhood as a pressed `AeroButton`. Confirmed by the 19-08 three-theme reviewer pass
+  (UAT tests 6a and 7, Block C): every label reads the same colour and is legible; exactly one
+  segment reads visibly pushed in, comparable to a pressed `AeroButton`; the strip reads darker
+  than the `AeroChip` reference row. Reviewer's explicit judgement call on the `0.20f` darken
+  magnitude: "в самый раз" (just right) — no follow-up tuning needed.
 
 ### G4 — Ornament token derivation blows out on light-primary themes
 status: deferred
-routes_to: separate foundation session (Phase 16 territory) — user decision 2026-07-27
+routes_to: separate foundation session (Phase 16 territory) — user decision 2026-07-27, reaffirmed 2026-07-28
 requirement: cross-cutting
 root_cause: |
   `library/src/main/kotlin/com/mordred/aero/theme/AeroOrnamentTokens.kt:43` derives
@@ -167,16 +221,51 @@ scope_note: |
   affect every component in the library, including work already accepted in phases 16-18.
   Changing them inside the phase 19 gap round would alter the appearance of accepted work
   without re-verifying it. To be handled in a separate foundation session.
+re-report_2026-07-28: |
+  Reviewer re-exercised AeroDark and AeroBlue during the 19-08 three-theme sign-off and confirmed
+  the same condition persists on both `AeroSwitch` and `AeroSegmentedControl`. Verbatim:
+  "Светло-голубой цвет в AeroDark и AeroBlue всё ещё слишком яркий и светлый, при добавлении
+  белого контура или свечений выглядит вообще вырвиглазно, его надо в этих темах пробовать
+  делать темнее" (the light-blue is still too bright and light on AeroDark and AeroBlue; with the
+  white contour and glows added it looks outright eye-searing; it should be tried darker in
+  these themes). The reviewer did NOT report this as worse than commit `de44669` — it is the
+  same known condition, now confirmed by eye a second time, which strengthens the evidence rather
+  than reopening scope.
+
+  Newly confirmed by this pass: Classic is unaffected (UAT test 11, "у classic всё выглядит
+  нормально, проблемы только у первых двух тем") — this independently corroborates G4's own
+  root-cause analysis above, since Classic's `primary` (`0xFF5C8ABF`) stays restrained under the
+  same `+30%` lighten formula that blows out AeroBlue's and AeroDark's lighter primaries.
+
+  New direction for the eventual foundation-session fix, additive to the existing `fix_direction`:
+  the reviewer's explicit suggestion is to try darker values specifically for AeroDark and
+  AeroBlue (not a global change to the derivation formula's magnitude), alongside the existing
+  relative-luminance-derivation and `borderSelected = primary` reconsideration.
+
+  Decision: when asked directly whether to reopen G4 or close Phase 19 with it deferred, the
+  reviewer chose to keep G4 deferred and close Phase 19. G4 remains routed to the separate
+  Phase 16 foundation session; no work on it is authorized inside Phase 19.
 
 ## Notes
 
-- Phase 19 is NOT complete. Plan 19-04 stands at its open human-verify checkpoint: task 1
-  (`de44669`, showcase state matrix) is committed, task 2 is unapproved, no 19-04-SUMMARY.md
-  exists, and STATE.md has not been advanced. This is the correct state for a failed gate.
-- Plans 19-01, 19-02 and 19-03 are complete and their test suites are green; the defects above
-  are visual/behavioural and were not detectable by their unit tests.
-- Next step: `/gsd-plan-phase 19 --gaps` — it should produce gap-closure plans for G1, G2 and G3
-  only. G4 is deferred and must not be pulled into that round.
+- **Reviewer question, not a gap (2026-07-28):** the reviewer asked whether it is expected that
+  clicking an "adjacent selected" `AeroListItem` row (the two pinned-selected demo rows added in
+  19-04 Task 1 for the pill-adjacency backstop) produces no visual change. Resolved: YES, expected
+  — verified against source. Those two rows at `ListSection.kt:68-69` are
+  `AeroListItem(text = "Pinned selected — first"/"second", onClick = {}, selected = true)`:
+  `selected` is a hardcoded literal, not state-bound, and `onClick` is an empty lambda. They exist
+  solely so two selected pills read as two, with a visible gap between them (UAT test 3). Live
+  selection switching is demonstrated separately by the "Inbox" / "Sent" / "Drafts" group at
+  `ListSection.kt:49-55`, which is bound to `selectedIndex` and does change on click. This is a
+  clarifying question with a resolution, not a defect — it routes nowhere and required no code
+  change.
+- Phase 19's sign-off gate is **APPROVED** as of 2026-07-28 (19-08 Task 2). Gaps G1, G2 and G3 are
+  confirmed closed by eye across all three themes. G4 remains deferred by explicit, twice-made
+  user decision and is out of Phase 19's scope; it routes to a separate Phase 16 foundation
+  session. No defect from this pass routes back to 19-05, 19-06 or 19-07.
+- Plans 19-01, 19-02 and 19-03 are complete and their test suites are green; plans 19-05, 19-06
+  and 19-07 closed G1/G2/G3 with unit-tested mechanisms and are now human-confirmed end to end.
 - Execution environment note: subagent dispatch for this phase must use `run_in_background: true`.
   Synchronous dispatch was aborted twice mid-plan at 22 and 39 minutes; background dispatch
   completed a 26-minute run. See the project memory entry `subagent-runtime-ceiling`.
+</content>
