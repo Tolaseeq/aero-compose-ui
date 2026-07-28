@@ -138,7 +138,51 @@ class AeroSegmentedControlSourceTest {
         )
     }
 
+    @Test
+    fun sourceUsesOneContentTokenForEveryLabelState() {
+        // (j) gap G3 (VSEL-03): every segment label — selected or not — must resolve from the
+        // theme's on-surface content token at that token's own alpha. The shipped defect used a
+        // background/panel token (colors.surface) for the selected label, which carries an 0xCC
+        // alpha on AeroBlue/AeroDark — a text colour must never inherit a panel-background alpha.
+        // Comment lines are stripped first (nonCommentSource) so this negative guard cannot be
+        // satisfied or broken by KDoc prose describing the old/rejected behaviour.
+        assertTrue(
+            aeroSegmentedControlSource.contains("color = colors.onSurface"),
+            "AeroSegmentedControl.kt's segment Text( call must pass color = colors.onSurface for " +
+                "every state — one content token for the whole strip (gap G3, VSEL-03)"
+        )
+        assertFalse(
+            nonCommentSource.contains("colors.surface"),
+            "AeroSegmentedControl.kt must not reference colors.surface as a label colour — that " +
+                "background/panel token carries an 0xCC alpha on AeroBlue/AeroDark, so using it for " +
+                "text also renders the label ~80% opaque (gap G3, VSEL-03, fault (a) background " +
+                "token used for text and fault (b) that token's alpha bleeding onto text)"
+        )
+        assertFalse(
+            nonCommentSource.contains("animateColorAsState"),
+            "AeroSegmentedControl.kt must not animate a per-segment label colour via " +
+                "animateColorAsState — restoring a per-state label colour for contrast reasons " +
+                "would recreate gap G3's defect class on a different theme; one token serves the " +
+                "whole strip (gap G3, VSEL-03)"
+        )
+    }
+
     private val aeroSegmentedControlSource: String get() = sourceFile("AeroSegmentedControl.kt").readText()
+
+    /**
+     * [aeroSegmentedControlSource] with every line whose trimmed form starts with a line-comment
+     * marker, a block-comment opener, or a KDoc/block-comment continuation asterisk removed — so
+     * negative guards over the real code cannot be satisfied or broken by KDoc prose that merely
+     * discusses a forbidden identifier (e.g. explaining why `colors.surface` was rejected).
+     */
+    private val nonCommentSource: String
+        get() = aeroSegmentedControlSource
+            .lineSequence()
+            .filterNot { line ->
+                val trimmed = line.trimStart()
+                trimmed.startsWith("*") || trimmed.startsWith("//") || trimmed.startsWith("/*")
+            }
+            .joinToString("\n")
 
     /** cwd-independent resolution — Gradle's test task cwd varies between `library/` and repo root. */
     private fun sourceFile(name: String): File {

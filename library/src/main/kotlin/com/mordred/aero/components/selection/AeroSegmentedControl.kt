@@ -1,6 +1,5 @@
 package com.mordred.aero.components.selection
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -61,6 +60,16 @@ import com.mordred.aero.theme.pressedRecess
  * redundant — each segment's own contour now supplies the visual break, the literal Win7 toolbar
  * idiom (adjacent raised buttons need no line drawn between them).
  *
+ * Every segment label — selected or not — resolves from `colors.onSurface` at that token's own
+ * alpha (gap G3, VSEL-03). The label previously animated to `colors.surface` when selected, which
+ * was wrong twice over: (a) `surface` is a background/panel token, not a content token, being
+ * used for text; and (b) on AeroBlue/AeroDark that token carries an `0xCC` alpha, so the selected
+ * label was also rendered roughly 80% opaque — the "near-black, semi-transparent" defect the user
+ * reported. Neither fault is fixed by substituting a different special-case colour for the
+ * selected state — the fix is that there is no special case; contrast against the recessed fill
+ * is restored instead by darkening that fill (see [resolveSegmentStyle]'s `RECESSED_FILL_DARKEN`
+ * KDoc). A future reviewer must not reintroduce a per-state label colour to "fix" contrast.
+ *
  * @param interactionSource Additive trailing parameter (D-04) observing the control as a whole;
  * each segment additionally holds its own remembered interaction source for per-segment
  * hover/press/focus, matching [com.mordred.aero.components.list.AeroListItem]'s shape.
@@ -94,12 +103,6 @@ public fun <T> AeroSegmentedControl(
                 targetValue = if (isSelected) 1f else 0f,
                 animationSpec = tween(150, easing = LinearEasing),
                 label = "segSelected_$index"
-            )
-
-            val textColor by animateColorAsState(
-                targetValue = if (isSelected) colors.surface else colors.onSurface,
-                animationSpec = tween(150, easing = LinearEasing),
-                label = "segText_$index"
             )
 
             val style = resolveSegmentStyle(
@@ -145,7 +148,7 @@ public fun <T> AeroSegmentedControl(
             ) {
                 Text(
                     text = optionLabel(opt),
-                    color = textColor,
+                    color = colors.onSurface,
                     style = AeroTheme.typography.bodyLarge
                 )
             }
