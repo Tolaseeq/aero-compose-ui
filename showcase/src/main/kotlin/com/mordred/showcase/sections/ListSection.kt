@@ -72,9 +72,11 @@ fun ListSection() {
 
         Text(
             text = "AeroListItem — a disabled row (dead pill + dimmed content), a display-only row " +
-                "with no onClick (must gain no focus stop when tabbing), and a selected row with a " +
-                "deliberately long primary label plus a secondary line to exercise the E3 overflow " +
-                "backstop against the pill's bounded edge.",
+                "with no onClick (must gain no focus stop when tabbing), a pinned-selected row with a " +
+                "SHORT primary label plus a secondary line (plain two-line growth, no wrapping), and a " +
+                "selected row with a deliberately long primary label plus a secondary line to exercise " +
+                "the E3 overflow backstop against the pill's bounded edge — the two rows let a reviewer " +
+                "tell \"grew because it has two lines\" apart from \"grew because it wraps\".",
             color = colors.labelText,
             style = typography.bodySmall,
         )
@@ -82,6 +84,11 @@ fun ListSection() {
             Column(Modifier.width(360.dp)) {
                 AeroListItem(text = "Disabled row", onClick = {}, enabled = false)
                 AeroListItem(text = "Display-only row (no onClick)", selected = false)
+                AeroListItem(
+                    text = "Short label",
+                    selected = true,
+                    secondaryText = "Two-line growth without wrapping — compare against the long-label row below"
+                )
                 AeroListItem(
                     text = LONG_LIST_ITEM_LABEL,
                     selected = true,

@@ -74,7 +74,10 @@ fun SelectionSection() {
         Text(
             text = "AeroSegmentedControl — live \"Day\"/\"Week\"/\"Month\" strip, a disabled strip, a " +
                 "single-option (N=1) strip, and a strip with a deliberately long middle-segment label " +
-                "to exercise the E2 overflow backstop now that the inter-segment separator is dropped.",
+                "to exercise the E2 overflow backstop now that the inter-segment separator is dropped. " +
+                "Compare the recessed selected segment's depth against the AeroChip row above and " +
+                "against a pressed AeroButton in the Buttons section — this is the in-showcase " +
+                "reference for correctly restrained value (19-UAT test 6).",
             color = colors.labelText,
             style = typography.bodySmall,
         )
