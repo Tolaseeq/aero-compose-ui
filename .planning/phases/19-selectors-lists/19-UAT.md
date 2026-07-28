@@ -1,9 +1,9 @@
 ---
-status: passed
+status: gap-open
 phase: 19-selectors-lists
-source: [19-04-PLAN.md task 2 human-verify checkpoint, 19-08-PLAN.md task 2 three-theme re-sign-off]
+source: [19-04-PLAN.md task 2 human-verify checkpoint, 19-08-PLAN.md task 2 three-theme re-sign-off, 19-12-PLAN.md task 2 gap-round re-sign-off]
 started: 2026-07-27T14:31:42Z
-updated: 2026-07-28T08:26:50Z
+updated: 2026-07-28T11:15:00Z
 ---
 
 ## Current Test
@@ -103,18 +103,105 @@ expected: Classic is called out in 19-04-PLAN.md as the theme that matters most,
 result: PASSED (2026-07-28 reviewer pass, Block G) — Classic exercised for the first time in this phase. Reviewer's verbatim report: "у classic всё выглядит нормально, проблемы только у первых двух тем" ("on Classic everything looks fine; the problems are only on the first two themes"). This closes the row that stood pending since 2026-07-27 and independently corroborates G4's root-cause analysis: Classic's darker, more restrained `primary` (`0xFF5C8ABF`) is why it is unaffected by the AeroBlue/AeroDark brightness defect.
 reported_by: user (2026-07-28 reviewer pass)
 
+## Round 3 — 2026-07-28 (gap-closure re-sign-off: CR-01, CR-02, WR-01, WR-03, WR-04 — 19-12 Task 2)
+
+Verification performed by the user against the running showcase (`./gradlew :showcase:run`),
+built on top of plan 19-12 Task 1's reachability audit (commit `fc04d17`). The developer answered
+per block (A through G), not per theme. Two screenshots were attached, both taken on **AeroDark**,
+comparing the Selection section's segmented strips against the Buttons section's `AeroButton`
+("Save Changes"). No per-theme breakdown was given for AeroBlue or Classic, and none is recorded
+here as exercised — per this project's standing rule, an unreported theme is not inferred as
+passed just because the block overall reads PASS.
+
+**Developer's response, verbatim:**
+
+```
+A - PASS
+B - PASS
+C - PASS
+D - PASS
+E - PASS
+F - PASS
+G - Получилось плохо. Теперь у нас появился новый цвет только для segmented control. SegmentedControl должен быть сделан ПО ОБРАЗУ И ПОДОБИЮ ОБЫЧНОЙ КНОПКИ
+
+по глубине всё норм вроде, всё понятно, что вдавлено и что нет, но надо ЕДИНЫЙ СТИЛЬ
+```
+
+**Translation of block G:** "This turned out badly. We've now ended up with a new colour that
+belongs only to the segmented control. `AeroSegmentedControl` must be built in the image and
+likeness of an ordinary button. Depth-wise it seems fine — it's clear what's pushed in and what
+isn't — but we need a UNIFIED STYLE."
+
+### 12. Block A — unselected segment labels (CR-01)
+expected: Every unselected segment's label plainly readable against its own fill, on all three themes.
+result: PASSED — developer's per-block verdict. Evidence attached is AeroDark only; AeroBlue and
+  Classic are not separately confirmed and are not claimed as individually exercised.
+reported_by: user
+
+### 13. Block B — depth and darkness judgement (CR-01, the open judgement call)
+expected: Three explicit questions — (1) does the strip still read as raised-glass buttons with
+  one pushed in; (2) should an unselected segment match a filled `AeroButton` more closely even at
+  some cost to label contrast; (3) does the recess still read right against the new, darker base.
+result: PASSED for the depth/recess question — developer's own words: "по глубине всё норм вроде,
+  всё понятно, что вдавлено и что нет" ("depth-wise it seems fine, it's clear what's pushed in and
+  what isn't"). **The recess/pushed-in judgement is explicitly ACCEPTED and is out of scope for
+  any follow-up gap.** Question 2 (match the button more closely, even at some contrast cost) is
+  answered **YES — match the button** — this is the substance of the Block G failure below, not a
+  separate open item. Question 1 (does it still read as raised glass) is subsumed by the same
+  answer: it does not currently read as the same "glass button" language the filled `AeroButton`
+  uses, which is exactly what Block G calls out.
+reported_by: user
+gap: G5 (question 2's answer is the fix direction for G5; recess/depth explicitly NOT part of G5)
+
+### 14. Block C — focus-visible on switch, segment, list row (CR-02)
+expected: No residual focus cue after a mouse click, on all three components.
+result: PASSED — developer's per-block verdict. Per-theme breakdown not given; AeroDark evidenced
+  by screenshot, AeroBlue/Classic not separately confirmed.
+reported_by: user
+
+### 15. Block D — focus-visible on both button variants (WR-01)
+expected: Filled and outlined `AeroButton` no longer keep a residual glow after a click.
+result: PASSED — developer's per-block verdict. Per-theme breakdown not given.
+reported_by: user
+
+### 16. Block E — hover after the emitter change, including disabled (WR-04)
+expected: Hover still lights up switch/segment/row; disabled instances do not.
+result: PASSED — developer's per-block verdict. Per-theme breakdown not given.
+reported_by: user
+
+### 17. Block F — segment identity under an option-list change (WR-03)
+expected: Removing/restoring a segment option never hands one segment's hover/press/focus/animation
+  to another (using the "Remove first" / "Restore full list" affordance added by 19-12 Task 1).
+result: PASSED — developer's per-block verdict. Per-theme breakdown not given.
+reported_by: user
+
+### 18. Block G — anything else / overall impression
+expected: Anything wrong not covered by A-F, distinguished from the twice-deferred G4 condition.
+result: FAILED (2026-07-28) — NOT the deferred G4 ornament-brightness condition; this is a new,
+  distinct defect. `AeroSegmentedControl` has acquired a bespoke colour treatment (the CR-01/WR-12
+  raised-fill darken) that exists nowhere else in the library, so it now reads as a different
+  visual language from a filled `AeroButton` — a dark navy plate next to the button's light blue.
+  Developer's explicit instruction: build the segmented control in the image and likeness of an
+  ordinary button, one unified style. Depth/recess is explicitly excluded from this finding (see
+  test 13/Block B).
+reported_by: user
+gap: G5 — new, open
+
 ## Summary
 
-total: 11
-passed: 9
-issues: 2
+total: 18
+passed: 15
+issues: 3
 pending: 0
 skipped: 0
 blocked: 0
 
-Note: tests 5 and 6 are the 2 counted "issues" — both are the deferred G4 brightness condition
-(6's G3 half is separately resolved and recorded inline as 6a). No row is counted as passed
-that the reviewer did not actually report on.
+Note: tests 5 and 6 are 2 of the 3 counted "issues" — both are the deferred G4 brightness condition
+(6's G3 half is separately resolved and recorded inline as 6a). Test 18 (Block G) is the third —
+the new G5 gap from the 2026-07-28 gap-closure round. No row is counted as passed that the reviewer
+did not actually report on. Tests 12-17's evidence is per-block (A-F), not per-theme; only AeroDark
+is directly evidenced by the attached screenshots, and no other theme is claimed as separately
+exercised for those six blocks.
 
 ## Gaps
 
@@ -246,6 +333,53 @@ re-report_2026-07-28: |
   reviewer chose to keep G4 deferred and close Phase 19. G4 remains routed to the separate
   Phase 16 foundation session; no work on it is authorized inside Phase 19.
 
+### G5 — AeroSegmentedControl's raised fill has drifted into a bespoke colour language, unlike AeroButton
+status: open
+routes_to: AeroSegmentedControl.kt (owned by 19-03/19-07, retuned by 19-10 and WR-12's `5cca3a1`)
+  — no library source may change inside 19-12 per its scope fence; needs a new gap-closure plan.
+requirement: VSEL-03, VSEL-04
+found_2026-07-28: |
+  19-12 Task 2 three-theme re-sign-off, Block G. Developer's verbatim report:
+  "Получилось плохо. Теперь у нас появился новый цвет только для segmented control.
+  SegmentedControl должен быть сделан ПО ОБРАЗУ И ПОДОБИЮ ОБЫЧНОЙ КНОПКИ" ("This turned out badly.
+  We've now ended up with a new colour that belongs only to the segmented control.
+  `AeroSegmentedControl` must be built in the image and likeness of an ordinary button"). Two
+  screenshots attached, both on AeroDark, comparing the Selection section's segmented strips
+  (reading as dark navy plates) directly against the Buttons section's `AeroButton` "Save Changes"
+  (reading as light blue).
+root_cause: |
+  Plan 19-10 (CR-01) introduced `RAISED_FILL_TOP_DARKEN`/`RAISED_FILL_BOTTOM_DARKEN` applied to
+  `colors.primary` for the segment's raised (unselected) fill, at `0.45f`/`0.61f`. The WR-12 retune
+  (commit `5cca3a1`) pushed `RAISED_FILL_TOP_DARKEN` further, to `0.58f`, specifically to clear the
+  4.5:1 normal-text contrast floor against `colors.onSurface`. The result reads as a dark navy
+  plate, while a filled `AeroButton` at rest reads light blue — two different visual languages for
+  what should be the same raised-glass affordance.
+
+  The darkening was chasing contrast against the wrong content token. The segment label is locked
+  to `colors.onSurface` (deliberately, per gap G3's resolution above — a state-dependent label
+  colour must not be reintroduced). The button's label, by contrast, is not locked to `onSurface`:
+  19-10-SUMMARY.md's own key-decisions record that the button's own darken precedent (`0.20f`/
+  `0.36f`) was insufficient for the segment specifically "because this component's label is locked
+  to the on-surface content token (not near-white button text)" — i.e. the button's label resolves
+  to something near-white, its own on-fill content token, which already clears contrast against a
+  much lighter fill without any bespoke darkening. Because the segment kept `onSurface` instead of
+  adopting the button's content token, the only way left to win contrast was to drive the plate
+  dark.
+fix_direction: |
+  Per the developer's explicit instruction: `AeroSegmentedControl` must be built in the image and
+  likeness of an ordinary button — one unified style. The raised segment's fill AND its label
+  content token should derive from the same code path `AeroButton`/`AeroButtonSurface` already
+  uses, rather than from segmented-control-specific darken constants layered on top of a label
+  token (`onSurface`) that was never designed to sit on a bespoke-darkened fill. The recessed/
+  selected treatment (which reuses the Phase 17 pressed-button code, `RECESSED_FILL_DARKEN`) is
+  unaffected by this gap and must be preserved as-is.
+scope_note: |
+  Depth/recess magnitude is explicitly OUT of scope for this gap — the developer accepted it in
+  the same response ("по глубине всё норм вроде, всё понятно, что вдавлено и что нет" / "depth-wise
+  it seems fine, it's clear what's pushed in and what isn't"; recorded as UAT test 13/Block B).
+  This gap is about the raised (unselected) fill's colour identity and its label token only.
+  Not fixed in 19-12: this plan may touch showcase and UAT record only, per its scope fence.
+
 ## Notes
 
 - **Reviewer question, not a gap (2026-07-28):** the reviewer asked whether it is expected that
@@ -268,4 +402,12 @@ re-report_2026-07-28: |
 - Execution environment note: subagent dispatch for this phase must use `run_in_background: true`.
   Synchronous dispatch was aborted twice mid-plan at 22 and 39 minutes; background dispatch
   completed a 26-minute run. See the project memory entry `subagent-runtime-ceiling`.
+- **19-12 gap-closure round (2026-07-28):** CR-01, CR-02, WR-01, WR-03 and WR-04 were re-verified
+  against the live showcase. Blocks A-F all PASSED per the developer's explicit per-block verdict
+  (evidenced on AeroDark; AeroBlue and Classic were not separately broken out and are not claimed
+  as individually exercised for these six blocks). Block B's depth/recess judgement is explicitly
+  ACCEPTED. Block G surfaced a new, distinct defect — G5 — routed above; it is NOT the deferred G4
+  ornament-brightness condition. Phase 19's gate is therefore **NOT closed** as of this round: G5
+  is open and un-fixed (19-12's scope fence forbids touching library source). No approval was
+  recorded or inferred beyond what the developer explicitly stated.
 </content>
