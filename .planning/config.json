@@ -4,6 +4,7 @@
   "parallelization": true,
   "commit_docs": true,
   "model_profile": "balanced",
+  "response_language": "Russian",
   "workflow": {
     "research": true,
     "plan_check": true,
