@@ -235,7 +235,7 @@ private const val RECESSED_FILL_DARKEN: Float = 0.20f
  * retunable at the 19-12 sign-off. The DIRECTION — the raised base moving strictly downward from
  * the ornament-derived fill, never re-tinted and never inverted — is not.
  */
-private const val RAISED_FILL_TOP_DARKEN: Float = 0.45f
+private const val RAISED_FILL_TOP_DARKEN: Float = 0.58f
 
 /** @see RAISED_FILL_TOP_DARKEN — same rationale, applied to the bottom fill stop. */
 private const val RAISED_FILL_BOTTOM_DARKEN: Float = 0.61f

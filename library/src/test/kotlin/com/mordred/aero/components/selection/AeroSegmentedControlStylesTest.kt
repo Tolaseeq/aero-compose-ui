@@ -37,7 +37,7 @@ class AeroSegmentedControlStylesTest {
 
     private fun expectedRaised(colors: AeroColorScheme): AeroSurfaceStyle =
         AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp).copy(
-            fillTop = colors.primary.darken(0.45f),
+            fillTop = colors.primary.darken(0.58f),
             fillBottom = colors.primary.darken(0.61f),
         )
 
@@ -349,12 +349,17 @@ class AeroSegmentedControlStylesTest {
 }
 
 /**
- * WCAG 2.x floor for non-text user-interface contrast — deliberately the 3.0 floor rather than
- * the 4.5 normal-text target, because this is a value-level guard on the resolved fill stops
- * (not a claim about the composited pixel after gloss/bevel/rim are painted on top), and because
- * the developer named 3.0 explicitly for this guard (CR-01).
+ * WCAG 1.4.3 floor for NORMAL-size text contrast (4.5:1) — not the 3.0:1 non-text/large-text
+ * floor this guard used before WR-12. The segment label is 14sp regular body text: it is neither
+ * large-text-exempt (that carve-out needs ~18pt regular or ~14pt bold) nor a graphical "UI
+ * component" in the 3:1-floor sense (borders, icons, focus indicators) — it is rendered text, so
+ * the ratio that actually governs its legibility is 4.5:1, matching every other text-bearing
+ * component in this library (button, list, switch), each of which clears 4.5:1+ via its own
+ * darken constants. This is still a value-level guard on the resolved fill stops (not a claim
+ * about the composited pixel after gloss/bevel/rim are painted on top) — see coverage item D3 in
+ * 19-10-SUMMARY.md for that separate, human-judged claim.
  */
-private const val MIN_LABEL_CONTRAST: Float = 3f
+private const val MIN_LABEL_CONTRAST: Float = 4.5f
 
 /**
  * Standard WCAG 2.x contrast ratio: the lighter of the two relative luminances plus `0.05f`,
