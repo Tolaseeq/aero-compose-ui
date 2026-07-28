@@ -54,6 +54,15 @@ import com.mordred.aero.theme.pressedRecess
  * style from [rememberAeroInteractionState]'s booleans; focus carries no fill delta (it is
  * expressed purely by the persistent [aeroGlowRing] focus call above).
  *
+ * 19-09 (WR-01): the focus `aeroGlowRing` call gates on `state.focusVisible`, not the raw
+ * `focused` flag — the ring now draws for keyboard-acquired focus only and stays suppressed for a
+ * pointer-acquired focus, including after the pointer leaves. This puts [AeroButton] and
+ * [AeroOutlinedButton] on the same gate as `AeroSwitch`, `AeroSegmentedControl` and
+ * `AeroListItem` (19-05/G2), so one gesture produces one cue class library-wide. Focusability and
+ * the Space/Enter activation binding are entirely unaffected — only whether the ring is DRAWN
+ * changes. The hover `aeroGlowRing` call below is untouched and continues to read the raw
+ * `hovered` flag.
+ *
  * @param outlined Differentiates [AeroOutlinedButton] from this filled default; [resolveButtonStyle]
  * applies [AeroSurfaceStyle.outlinedStyle]'s fixed delta (fill alpha × 0.15, gloss 0.22 → 0.15) on
  * top of the per-state filled resolution when `true` (17-03, VBTN-05/06). Rim alpha for both filled
@@ -93,7 +102,7 @@ internal fun AeroButtonSurface(
                 onClick = onClick,
             )
             .aeroGlowRing(
-                active = state.focused && enabled,
+                active = state.focusVisible && enabled,
                 glowColor = AeroTheme.colors.borderSelected,
                 cornerRadius = 4.dp,
             )

@@ -83,8 +83,33 @@ class AeroButtonSurfaceSourceTest {
         )
     }
 
+    /**
+     * 19-09 (WR-01) regression guard: the button family's focus glow must gate on the same
+     * `focusVisible` value AeroSwitch/AeroSegmentedControl/AeroListItem already use (mirroring
+     * [com.mordred.aero.components.selection.AeroSwitchSourceTest]'s
+     * `aeroSwitchGatesOnlyTheFocusRingOnFocusVisibleLeavingHoverOnTheRawFlag` guard shape), so a
+     * mouse click does not leave a residual focus glow after the pointer moves away, while hover
+     * keeps reading the raw flag because the developer explicitly wants hover indication retained.
+     */
+    @Test
+    fun aeroButtonSurfaceGatesOnlyTheFocusGlowOnFocusVisibleLeavingHoverOnTheRawFlag() {
+        assertTrue(
+            aeroButtonSurfaceSource.contains("active = state.focusVisible && enabled"),
+            "AeroButtonSurface.kt's FOCUS aeroGlowRing call must gate on state.focusVisible, not " +
+                "the raw focused flag (WR-01) — a mouse click must not leave a residual focus " +
+                "glow after the pointer moves away"
+        )
+        assertTrue(
+            aeroButtonSurfaceSource.contains("active = state.hovered && enabled"),
+            "AeroButtonSurface.kt's HOVER aeroGlowRing call must keep reading the raw hovered " +
+                "flag — the developer explicitly wants hover indication retained, WR-01 changes " +
+                "the focus cue only"
+        )
+    }
+
     private val aeroButtonSource: String get() = sourceFile("AeroButton.kt").readText()
     private val aeroOutlinedButtonSource: String get() = sourceFile("AeroOutlinedButton.kt").readText()
+    private val aeroButtonSurfaceSource: String get() = sourceFile("AeroButtonSurface.kt").readText()
 
     /** cwd-independent resolution — Gradle's test task cwd varies between `library/` and repo root. */
     private fun sourceFile(name: String): File {
