@@ -3,7 +3,7 @@ status: gap-open
 phase: 19-selectors-lists
 source: [19-04-PLAN.md task 2 human-verify checkpoint, 19-08-PLAN.md task 2 three-theme re-sign-off, 19-12-PLAN.md task 2 gap-round re-sign-off]
 started: 2026-07-27T14:31:42Z
-updated: 2026-07-28T11:15:00Z
+updated: 2026-07-28T12:50:00Z
 ---
 
 ## Current Test
@@ -334,7 +334,7 @@ re-report_2026-07-28: |
   Phase 16 foundation session; no work on it is authorized inside Phase 19.
 
 ### G5 — AeroSegmentedControl's raised fill has drifted into a bespoke colour language, unlike AeroButton
-status: open
+status: resolved
 routes_to: AeroSegmentedControl.kt (owned by 19-03/19-07, retuned by 19-10 and WR-12's `5cca3a1`)
   — no library source may change inside 19-12 per its scope fence; needs a new gap-closure plan.
 requirement: VSEL-03, VSEL-04
@@ -379,6 +379,46 @@ scope_note: |
   it seems fine, it's clear what's pushed in and what isn't"; recorded as UAT test 13/Block B).
   This gap is about the raised (unselected) fill's colour identity and its label token only.
   Not fixed in 19-12: this plan may touch showcase and UAT record only, per its scope fence.
+resolution: |
+  Closed 2026-07-28 by a scoped gap-closure fix (commit `c35f883`, todo commit `615f477`), authorized
+  by an explicit maintainer decision made when shown this gap's own contrast numbers: **"match the
+  button, retire the guard."** The 4.5:1 label-contrast floor introduced by WR-12
+  (`AeroSegmentedControlStylesTest.kt`'s `everySegmentFillKeepsTheOnSurfaceLabelAboveTheMinimumContrastRatio`
+  / `MIN_LABEL_CONTRAST`) was itself the reason the raised fill had been driven dark past the
+  button's own value — that guard is deleted, not retuned.
+
+  `AeroSegmentedControl.kt`'s raised (unselected) segment fill now derives `colors.primary.darken(...)`
+  from the imported `com.mordred.aero.components.buttons.FILLED_FILL_TOP_DARKEN`/
+  `FILLED_FILL_BOTTOM_DARKEN` (promoted `private` → `internal` for this cross-package reuse) — the
+  exact same constants `resolveButtonStyle` applies to a filled `AeroButton`'s rest fill — instead of
+  the segment-only `RAISED_FILL_TOP_DARKEN`/`RAISED_FILL_BOTTOM_DARKEN` (`0.58f`/`0.61f`), both
+  deleted along with their KDoc. The raised segment's fill is therefore now byte-identical to
+  `AeroButton`'s own rest fill in every scheme (verified: AeroBlue `0xFF3F9CC6`/`0xFF337D9E`,
+  AeroDark `0xFF73A2C7`/`0xFF5C819F`, Classic `0xFF4A6E99`/`0xFF3B587A`, top/bottom respectively).
+
+  The segment's label no longer sets an explicit `color` parameter on its `Text` and instead
+  inherits ambient `LocalContentColor`, exactly matching `AeroButtonSurface`'s own label mechanism
+  (gap G3's fix — an explicit `color = colors.onSurface` — was a correct value on the wrong
+  mechanism; G5 removes the re-specified literal). The recessed/selected path
+  (`pressedRecess(PRESSED_INNER_SHADOW)` then `RECESSED_FILL_DARKEN`) is structurally untouched —
+  only the raised base it composes on top of moved, so its rendered value shifted as an accepted
+  side effect; the recess/depth magnitude itself was NOT retuned, per the maintainer's explicit
+  sign-off on that reading (UAT test 13/Block B). `recessedFillIsStrictlyDarkerThanRaisedFillNeverJustExchanged`
+  (value-level, all three schemes) confirms exactly one segment still reads recessed after the
+  raised base moved.
+
+  `AeroButton`'s own appearance is unchanged — only `FILLED_FILL_TOP_DARKEN`'s KDoc was corrected
+  (it incorrectly claimed the darken existed for "legible white button text"; the label actually
+  resolves to ambient `onBackground`/`onSurface`, never white). That component's own sub-4.5:1
+  label contrast (1.70–3.98:1 measured across the three themes) is tracked separately as its own
+  todo (`.planning/todos/pending/2026-07-28-track-aerobutton-label-contrast-below-wcag-4-5-1-floor.md`),
+  not fixed here — fixing it would be a visual change to a Phase-17 signed-off component requiring
+  fresh sign-off of its own.
+
+  `./gradlew build` and the full `*AeroSegmentedControl*`/`*AeroButton*` test suites are green.
+  This closure is authorized by the maintainer's explicit decision recorded above, not by a fresh
+  human visual re-verification pass against the running showcase — no new screenshot-based
+  sign-off was performed for this specific fix.
 
 ## Notes
 
@@ -410,4 +450,16 @@ scope_note: |
   ornament-brightness condition. Phase 19's gate is therefore **NOT closed** as of this round: G5
   is open and un-fixed (19-12's scope fence forbids touching library source). No approval was
   recorded or inferred beyond what the developer explicitly stated.
+- **G5 gap-closure fix (2026-07-28, commit `c35f883`):** the raised (unselected) segment fill and
+  label mechanism were unified with `AeroButton`'s own `resolveButtonStyle`/`AeroButtonSurface`
+  source of truth, per the maintainer's explicit "match the button, retire the guard" decision made
+  after being shown this gap's own contrast measurements. The 4.5:1 label-contrast guard that had
+  forced the segment's raised fill dark is deleted, not retuned; the recessed/selected depth
+  treatment is unchanged. `AeroButton`'s own sub-4.5:1 label contrast is tracked separately (todo
+  committed `615f477`) and was NOT fixed as part of this closure — only its KDoc's inaccurate
+  "white button text" claim was corrected. This closure rests on the maintainer's explicit decision
+  plus green `./gradlew build` and the full `*AeroSegmentedControl*`/`*AeroButton*` suites; no fresh
+  human visual re-verification pass (screenshot-based sign-off) was performed against the running
+  showcase for this specific fix. G4 remains separately deferred and out of Phase 19's scope, as
+  before. See the G5 gap entry above for the full resolution.
 </content>
