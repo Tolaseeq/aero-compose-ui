@@ -93,7 +93,7 @@ Details: `.planning/milestones/v2.0.4-ROADMAP.md` · Summary: `.planning/MILESTO
 - [x] **Phase 16: Foundation — Aero Primitives Layer** — repaired `GlassModifiers`, `AeroSurfaceStyle`/`AeroSurfacePrimitives`, `AeroOrnamentTokens`, shared thumb/groove primitives, full-library smoke pass (completed 2026-07-23)
 - [x] **Phase 17: Buttons** — `AeroButton`, `AeroOutlinedButton` restyled with shared internal surface (completed 2026-07-23)
 - [x] **Phase 18: Range** — `AeroSlider` (M3 slots), `AeroRangeSlider`, `AeroProgressBar` restyled (completed 2026-07-24)
-- [ ] **Phase 19: Selectors + Lists** — `AeroSwitch`, `AeroSegmentedControl`, `AeroListItem` restyled
+- [x] **Phase 19: Selectors + Lists** — `AeroSwitch`, `AeroSegmentedControl`, `AeroListItem` restyled (completed 2026-07-28)
 - [ ] **Phase 20: Verification** — showcase wiring, grep-gates, three-theme sign-off (incl. non-100% DPI pass)
 
 ## Phase Details
@@ -315,7 +315,7 @@ Plans:
 | 16. Foundation — Aero Primitives Layer | v3.0 | 5/5 | Complete    | 2026-07-23 |
 | 17. Buttons | v3.0 | 5/5 | Complete    | 2026-07-23 |
 | 18. Range | v3.0 | 4/4 | Complete    | 2026-07-24 |
-| 19. Selectors + Lists | v3.0 | 12/12 | In Progress|  |
+| 19. Selectors + Lists | v3.0 | 12/12 | Complete    | 2026-07-28 |
 | 20. Verification | v3.0 | 0/TBD | Not started | - |
 
 ## Next Milestone
