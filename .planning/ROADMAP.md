@@ -289,13 +289,26 @@ Plans:
 **Plans**: 7 plans in 5 waves
 
 Plans:
+**Wave 1**
 
 - [ ] 20-01-PLAN.md — Tracer: VER-01 gradient end-stop gate end-to-end with its in-file fail-then-pass fixtures, then the chain-aware VER-02 clip-order gate (VER-01, VER-02, VER-06)
 - [ ] 20-02-PLAN.md — Permanent "Verification" showcase section holding all eight components at equal weight, plus a state-completeness audit of the four existing sections (SHW-15)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 20-03-PLAN.md — VER-03 default size/corner-radius snapshot against the real v2.0.4 baseline, plus the VER-04 audit closing it on the existing AeroButtonSemanticsTest (VER-03, VER-04, VER-06)
 - [ ] 20-04-PLAN.md — Folded label-contrast fix: one shared resolveLabelColor mechanism for AeroButton/AeroSegmentedControl plus its value-level WCAG regression guard (SHW-16)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 20-05-PLAN.md — Code review of the eleven never-reviewed Phase 16/17 files and Phase 20's own diff, findings closed BEFORE the sign-off (SHW-16)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 20-06-PLAN.md — VER-05 scratch consumer: throwaway JitPack tag, a standalone project outside this repo, launching and rendering all eight (VER-05)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 20-07-PLAN.md — Human three-theme sign-off plus two exact non-100% DPI passes on AeroBlue, capture-backed and per-theme (SHW-15, SHW-16)
 
 ## Progress

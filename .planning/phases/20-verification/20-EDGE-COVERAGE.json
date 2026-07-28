@@ -1,0 +1,328 @@
+{
+  "items": [
+    {
+      "requirement_id": "SHW-15",
+      "category": "adjacency",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "Every state tile in the verification showcase section carries a visible text label naming its state, so two states that happen to render identically (e.g. default vs focus on a component without a focus ring) remain distinguishable to the human signer.",
+      "reason": null,
+      "probe": "When two things are exactly equal or just touch, do they merge, collide, or separate?"
+    },
+    {
+      "requirement_id": "SHW-15",
+      "category": "empty",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "A component with no applicable interactive state renders only the tiles for the states it actually supports; the section emits no empty placeholder tile for an inapplicable state.",
+      "reason": null,
+      "probe": "What is the result for empty, single-element, or null input?"
+    },
+    {
+      "requirement_id": "SHW-15",
+      "category": "ordering",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "The eight components appear in a fixed declared order, and within each component the state tiles appear in the fixed order default -> hover -> press -> focus -> disabled, so sign-off captures are positionally comparable across the three themes.",
+      "reason": null,
+      "probe": "When elements compare equal, is output order specified and stable?"
+    },
+    {
+      "requirement_id": "SHW-16",
+      "category": "boundary",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "At least one sign-off pass runs at a DPI scale strictly different from 100%, and the exact scale used is recorded in the sign-off artifact.",
+      "reason": null,
+      "probe": "What happens exactly at each min/max/threshold — and one step either side?"
+    },
+    {
+      "requirement_id": "SHW-16",
+      "category": "adjacency",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "The sign-off artifact records a separate verdict line per theme (AeroBlue, AeroDark, Classic); no theme's verdict is carried over from or derived from another theme's.",
+      "reason": null,
+      "probe": "When two things are exactly equal or just touch, do they merge, collide, or separate?"
+    },
+    {
+      "requirement_id": "SHW-16",
+      "category": "empty",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "The sign-off artifact contains a capture for all three themes; a missing capture is recorded as a FAIL, never treated as an implicit pass.",
+      "reason": null,
+      "probe": "What is the result for empty, single-element, or null input?"
+    },
+    {
+      "requirement_id": "SHW-16",
+      "category": "ordering",
+      "status": "resolved",
+      "verification": "backstop",
+      "resolution": "The human sign-off runs only after the mechanical gates and code review are green (D-03 ordering). If a sign-off verdict predates the gates going green, that verdict is void and must be re-run.",
+      "reason": null,
+      "probe": "When elements compare equal, is output order specified and stable?"
+    },
+    {
+      "requirement_id": "SHW-16",
+      "category": "precision",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "The recorded DPI scale is an exact stated value (e.g. 150%), not a range or an approximation such as 'above 100%'.",
+      "reason": null,
+      "probe": "Where can precision loss, overflow, or rounding/tie-breaking occur — and what is the exact contract (e.g. half-up vs half-to-even, ceil/floor/truncate)?"
+    },
+    {
+      "requirement_id": "VER-01",
+      "category": "adjacency",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "The gate flags a pixel literal used as a gradient stop coordinate but does not flag an unrelated numeric literal appearing in an adjacent argument on the same source line.",
+      "reason": null,
+      "probe": "When two things are exactly equal or just touch, do they merge, collide, or separate?"
+    },
+    {
+      "requirement_id": "VER-01",
+      "category": "empty",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "A source file containing zero gradient call sites passes the gate cleanly; an empty scan set is a pass, not an error and not a vacuous failure.",
+      "reason": null,
+      "probe": "What is the result for empty, single-element, or null input?"
+    },
+    {
+      "requirement_id": "VER-01",
+      "category": "encoding",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "The gate scans comment-stripped source via the existing nonCommentSource helper, so a pixel literal such as endY = 100f discussed inside KDoc or a line comment neither raises a false positive nor masks a real violation.",
+      "reason": null,
+      "probe": "Whose definition of length/equality applies — bytes, code points, grapheme clusters, or normalized form?"
+    },
+    {
+      "requirement_id": "VER-01",
+      "category": "ordering",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "When multiple violations exist the gate's failure message enumerates every offending file and call site, so fixing them in any order cannot hide a remaining violation behind a first-failure abort.",
+      "reason": null,
+      "probe": "When elements compare equal, is output order specified and stable?"
+    },
+    {
+      "requirement_id": "VER-02",
+      "category": "adjacency",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "A file containing both a .clip(...) and an .aeroSurface(...) in separate, unrelated modifier chains passes the gate; only a .clip(...) applied after .aeroSurface(...) within the same chain is a violation. AeroSegmentedControl.kt is the concrete case this must not flag.",
+      "reason": null,
+      "probe": "When two things are exactly equal or just touch, do they merge, collide, or separate?"
+    },
+    {
+      "requirement_id": "VER-02",
+      "category": "empty",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "A source file with zero aeroSurface( call sites passes the gate cleanly rather than erroring or vacuously failing.",
+      "reason": null,
+      "probe": "What is the result for empty, single-element, or null input?"
+    },
+    {
+      "requirement_id": "VER-02",
+      "category": "encoding",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "The gate scans comment-stripped source via the existing nonCommentSource helper, so the literal .clip() appearing in AeroButtonSurface.kt's KDoc prose does not trigger a violation.",
+      "reason": null,
+      "probe": "Whose definition of length/equality applies — bytes, code points, grapheme clusters, or normalized form?"
+    },
+    {
+      "requirement_id": "VER-02",
+      "category": "ordering",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "The gate is order-sensitive within a modifier chain: .aeroSurface(...).clip(...) fails and .clip(...).aeroSurface(...) passes. Order-insensitive substring matching is not sufficient to satisfy this requirement.",
+      "reason": null,
+      "probe": "When elements compare equal, is output order specified and stable?"
+    },
+    {
+      "requirement_id": "VER-03",
+      "category": "boundary",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "Each measured default size and corner radius is asserted exactly equal to its v2.0.4 baseline value; a deviation of one dp in either direction fails the test.",
+      "reason": null,
+      "probe": "What happens exactly at each min/max/threshold — and one step either side?"
+    },
+    {
+      "requirement_id": "VER-03",
+      "category": "adjacency",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "Two components whose baseline values happen to coincide (e.g. both 4.dp corner radius) are asserted independently and keyed by component identity, so a swap between them cannot pass.",
+      "reason": null,
+      "probe": "When two things are exactly equal or just touch, do they merge, collide, or separate?"
+    },
+    {
+      "requirement_id": "VER-03",
+      "category": "empty",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "The test asserts a non-zero expected count of measured components; an empty measurement set fails rather than trivially passing.",
+      "reason": null,
+      "probe": "What is the result for empty, single-element, or null input?"
+    },
+    {
+      "requirement_id": "VER-03",
+      "category": "ordering",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "Measurements are keyed by component identity rather than by list position, so reordering the components under test does not change the verdict.",
+      "reason": null,
+      "probe": "When elements compare equal, is output order specified and stable?"
+    },
+    {
+      "requirement_id": "VER-03",
+      "category": "precision",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "Dp values are compared by exact equality against the baseline constant, not with a float tolerance, so sub-dp rounding drift cannot be silently absorbed.",
+      "reason": null,
+      "probe": "Where can precision loss, overflow, or rounding/tie-breaking occur — and what is the exact contract (e.g. half-up vs half-to-even, ceil/floor/truncate)?"
+    },
+    {
+      "requirement_id": "VER-04",
+      "category": "adjacency",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "Both converted buttons are asserted separately; a single shared assertion that could pass with only one of the two buttons wired is not sufficient.",
+      "reason": null,
+      "probe": "When two things are exactly equal or just touch, do they merge, collide, or separate?"
+    },
+    {
+      "requirement_id": "VER-04",
+      "category": "empty",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "The test fails if the button under test is absent from the semantics tree, rather than passing vacuously on a missing node.",
+      "reason": null,
+      "probe": "What is the result for empty, single-element, or null input?"
+    },
+    {
+      "requirement_id": "VER-04",
+      "category": "ordering",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "The verdict does not depend on the order in which the two buttons are exercised; each button's activation is asserted in its own isolated composition.",
+      "reason": null,
+      "probe": "When elements compare equal, is output order specified and stable?"
+    },
+    {
+      "requirement_id": "VER-04",
+      "category": "idempotency",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "Pressing the activation key twice invokes the click handler twice; the test asserts the invocation count, not merely that the handler was invoked at least once.",
+      "reason": null,
+      "probe": "What happens if this runs twice on the same input?"
+    },
+    {
+      "requirement_id": "VER-04",
+      "category": "concurrency",
+      "status": "resolved",
+      "verification": "backstop",
+      "resolution": "Key-event delivery interleaved with a recomposition in the same frame is not asserted — runComposeUiTest drives a single-threaded test clock, so real-device input/recomposition races remain outside this test's reach.",
+      "reason": null,
+      "probe": "If interrupted or run in parallel, what is guaranteed?"
+    },
+    {
+      "requirement_id": "VER-05",
+      "category": "adjacency",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "The scratch consumer declares the library by its published coordinate and version; it must not resolve the library through includeBuild or project substitution against this repository, which would prove the source tree rather than the artifact.",
+      "reason": null,
+      "probe": "When two things are exactly equal or just touch, do they merge, collide, or separate?"
+    },
+    {
+      "requirement_id": "VER-05",
+      "category": "empty",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "The scratch consumer imports nothing from the showcase module and uses only the library's public API surface; a consumer that compiles only because it borrowed a showcase helper does not satisfy VER-05.",
+      "reason": null,
+      "probe": "What is the result for empty, single-element, or null input?"
+    },
+    {
+      "requirement_id": "VER-05",
+      "category": "ordering",
+      "status": "resolved",
+      "verification": "backstop",
+      "resolution": "All eight components render in the consumer regardless of the order they are declared in the consumer's composable; render order independence is confirmed by visual inspection, not by an automated assertion.",
+      "reason": null,
+      "probe": "When elements compare equal, is output order specified and stable?"
+    },
+    {
+      "requirement_id": "VER-05",
+      "category": "concurrency",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "The consumer build resolves the artifact with a refreshed dependency cache, so a previously cached older artifact cannot satisfy the new coordinate and produce a false pass.",
+      "reason": null,
+      "probe": "If interrupted or run in parallel, what is guaranteed?"
+    },
+    {
+      "requirement_id": "VER-06",
+      "category": "adjacency",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "Each gate's broken fixture differs from its clean fixture by exactly the one property that gate checks, so the red verdict is attributable to that property and nothing else.",
+      "reason": null,
+      "probe": "When two things are exactly equal or just touch, do they merge, collide, or separate?"
+    },
+    {
+      "requirement_id": "VER-06",
+      "category": "empty",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "A gate carrying zero fixtures fails the VER-06 proof; every new gate must ship both a violating fixture and a clean fixture.",
+      "reason": null,
+      "probe": "What is the result for empty, single-element, or null input?"
+    },
+    {
+      "requirement_id": "VER-06",
+      "category": "ordering",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "Each gate's proof asserts red-on-broken-fixture and green-on-clean-fixture, and both assertions live in the same test class so neither can be run or pass in isolation.",
+      "reason": null,
+      "probe": "When elements compare equal, is output order specified and stable?"
+    },
+    {
+      "requirement_id": "VER-06",
+      "category": "idempotency",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "Running the proof twice yields the same verdict; fixtures are in-file constants per D-08, so no fixture file is mutated or left behind between runs.",
+      "reason": null,
+      "probe": "What happens if this runs twice on the same input?"
+    },
+    {
+      "requirement_id": "VER-06",
+      "category": "concurrency",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "Fixtures are in-file string constants and are never written into the source tree, so a parallel or interrupted test run cannot leave deliberately-broken code committed in the repository.",
+      "reason": null,
+      "probe": "If interrupted or run in parallel, what is guaranteed?"
+    }
+  ],
+  "coverage": {
+    "applicable": 35,
+    "resolved": 35,
+    "unresolved": 0,
+    "byVerification": {
+      "explicit": 32,
+      "backstop": 3
+    }
+  }
+}

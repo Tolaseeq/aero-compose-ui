@@ -516,9 +516,12 @@ Phase 20 does not touch that decision.
 by the UI-SPEC itself as needing programmatic (not hand) confirmation, which is exactly what D-13's
 test performs.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Exact detector granularity for VER-02's "no component-authored `.clip(` after `aeroSurface(`" rule**
+> Both questions were resolved at plan time; the deciding record lives in `planner_assumptions` of
+> `20-01-PLAN.md` (Q1) and `20-03-PLAN.md` (Q2). Resolutions are recorded inline below.
+
+1. **Exact detector granularity for VER-02's "no component-authored `.clip(` after `aeroSurface(`" rule** — **RESOLVED**
    - What we know: no shipped component currently violates this (confirmed by direct grep of every
      `.clip(`/`aeroSurface(` call site in `components/`); the rule needs to be chain-aware, not
      merely "any `.clip(` textually after any `aeroSurface(` in the whole file" (a file could
@@ -535,8 +538,12 @@ test performs.
      `AeroSegmentedControl.kt` outer-Row-clip / per-segment-aeroSurface case above is the concrete
      test case to validate the chosen heuristic against, since it's the one real file containing
      both tokens today without being a violation.
+   - **RESOLVED (20-01-PLAN.md):** chain-aware detection — the scan segments modifier chains rather
+     than reading the whole file, and the mandatory clean fixture reproduces the real
+     `AeroSegmentedControl.kt` shape (outer `Row` with `.clip(`, inner `Box` with `aeroSurface(`)
+     so the false-positive case is pinned by a test, not by inspection.
 
-2. **Whether VER-03's runComposeUiTest measurement needs one test class per component or one class covering all eight**
+2. **Whether VER-03's runComposeUiTest measurement needs one test class per component or one class covering all eight** — **RESOLVED**
    - What we know: `AeroPanelGroupRecomposeUiTest` and `AeroButtonSemanticsTest` are both
      single-component, single-class. VER-03 needs to measure eight different components' sizes.
    - What's unclear: whether a single `VER03BaselineSizeSnapshotTest` class with eight `@Test`
@@ -547,6 +554,8 @@ test performs.
      class centralizing all eight measurements against the one `v2.0.4` baseline probably reads
      more coherently as "the VER-03 gate" than eight scattered additions, but this is not
      load-bearing either way.
+   - **RESOLVED (20-03-PLAN.md):** one centralized `VER03BaselineSizeSnapshotTest` class. All three
+     new gates live under the `com.mordred.aero.verification` package.
 
 ## Environment Availability
 
