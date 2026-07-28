@@ -167,6 +167,22 @@ class AeroSegmentedControlSourceTest {
         )
     }
 
+    @Test
+    fun sourceGatesTheFocusStrokeOnFocusVisible() {
+        // (k) gap G2: the per-segment in-bounds focus stroke must draw only for keyboard-acquired
+        // focus (segState.focusVisible), not the raw focused flag — a pointer-acquired focus must
+        // not draw the stroke, while every segment stays its own Tab stop and Space/Enter still
+        // activates it (VSEL-04). See AeroSegmentedControlSemanticsTest for the unaffected
+        // Role.RadioButton/Tab-stop/Space/Enter assertions this gate must not weaken.
+        assertTrue(
+            aeroSegmentedControlSource.contains("segState.focusVisible && enabled"),
+            "AeroSegmentedControl.kt must gate its per-segment in-bounds focus stroke on " +
+                "segState.focusVisible && enabled so a pointer-acquired focus does not draw the " +
+                "stroke, while every segment stays its own Tab stop and Space/Enter still selects " +
+                "it (gap G2, VSEL-04)"
+        )
+    }
+
     private val aeroSegmentedControlSource: String get() = sourceFile("AeroSegmentedControl.kt").readText()
 
     /**

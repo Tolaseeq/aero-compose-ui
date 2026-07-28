@@ -56,6 +56,12 @@ import com.mordred.aero.theme.pressedRecess
  * the library — the in-bounds treatment is required by this component's own clipped geometry, not
  * an oversight.
  *
+ * The in-bounds focus stroke draws only for keyboard-acquired focus (`segState.focusVisible`, gap
+ * G2/VSEL-04) — a mouse click on a segment leaves no stroke once the pointer moves away, while Tab
+ * still walks every segment and draws it inside that segment's own bounds. Per-segment focusability
+ * and the Space/Enter activation binding are unaffected by this gate: only whether the stroke is
+ * DRAWN is suppressed, never whether the segment can be reached or activated by keyboard.
+ *
  * The 1.dp inter-segment divider shipped previously is dropped (D-08/D-10): once every segment
  * carries its own raised or recessed bevel/rim contour via [aeroSurface], that divider is
  * redundant — each segment's own contour now supplies the visual break, the literal Win7 toolbar
@@ -128,7 +134,7 @@ public fun <T> AeroSegmentedControl(
                     .hoverable(segSource)
                     .aeroSurface(style, RoundedCornerShape(SEGMENT_CORNER_RADIUS))
                     .then(
-                        if (segState.focused && enabled) {
+                        if (segState.focusVisible && enabled) {
                             Modifier.drawBehind {
                                 val strokePx = FOCUS_STROKE_WIDTH.toPx()
                                 val cornerPx = SEGMENT_CORNER_RADIUS.toPx()
