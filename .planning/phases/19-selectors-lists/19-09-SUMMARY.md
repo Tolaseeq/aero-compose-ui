@@ -194,3 +194,7 @@ None - no external service configuration required.
 ---
 *Phase: 19-selectors-lists*
 *Completed: 2026-07-28*
+
+## Self-Check: PASSED
+
+All 5 modified/created source files confirmed present on disk; both task commits (`1ad5414`, `0c4cad9`) confirmed in `git log`.
