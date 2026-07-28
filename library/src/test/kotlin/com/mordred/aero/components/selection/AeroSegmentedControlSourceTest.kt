@@ -183,6 +183,20 @@ class AeroSegmentedControlSourceTest {
         )
     }
 
+    @Test
+    fun sourceKeysEachSegmentOnItsOwnIdentity() {
+        // (l) WR-03: per-segment remembered state and the in-flight selection tween must be keyed
+        // to that segment's own identity, not to its slot position, so inserting, removing or
+        // reordering options cannot transfer one option's interaction and animation state to another.
+        assertTrue(
+            nonCommentSource.contains("key(index, opt)"),
+            "AeroSegmentedControl.kt must wrap each segment's body in key(index, opt) — without it, " +
+                "per-segment remembered state and the in-flight selection tween are memoised by slot " +
+                "position, so inserting, removing or reordering options transfers one option's " +
+                "interaction and animation state to another (WR-03)"
+        )
+    }
+
     private val aeroSegmentedControlSource: String get() = sourceFile("AeroSegmentedControl.kt").readText()
 
     /**

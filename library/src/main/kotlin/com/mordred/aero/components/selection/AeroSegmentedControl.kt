@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -104,62 +105,74 @@ public fun <T> AeroSegmentedControl(
             .hoverable(interactionSource)
     ) {
         options.forEachIndexed { index, opt ->
-            val isSelected = (opt == selected)
-            val segSource = remember { MutableInteractionSource() }
-            val segState = rememberAeroInteractionState(segSource)
+            // WR-03: keyed on index AND value, not on value alone. A value-only key would collide
+            // under duplicate options, which this component does not reject (WR-07 deferred).
+            // Index-and-value fully closes WR-03: no slot ever inherits a different option's
+            // remembered interaction source or in-flight selection tween, because any change to
+            // the option occupying a slot changes that slot's key and rebuilds its state fresh.
+            // The tradeoff: index-and-value discards a moved option's state instead of carrying it
+            // along across a reorder — the strictly safer of the two behaviours while duplicate
+            // options remain unguarded. If WR-07 is ever taken up and distinct options become a
+            // precondition, narrowing to a value-only key becomes safe and would additionally
+            // preserve state across a reorder.
+            key(index, opt) {
+                val isSelected = (opt == selected)
+                val segSource = remember { MutableInteractionSource() }
+                val segState = rememberAeroInteractionState(segSource)
 
-            val selectedProgress by animateFloatAsState(
-                targetValue = if (isSelected) 1f else 0f,
-                animationSpec = tween(150, easing = LinearEasing),
-                label = "segSelected_$index"
-            )
-
-            val style = resolveSegmentStyle(
-                colors = colors,
-                selectedProgress = selectedProgress,
-                hovered = segState.hovered,
-                pressed = segState.pressed,
-                enabled = enabled,
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .selectable(
-                        selected = isSelected,
-                        enabled = enabled,
-                        role = Role.RadioButton,
-                        interactionSource = segSource,
-                        indication = null,
-                        onClick = { onSelect(opt) },
-                    )
-                    .hoverable(segSource)
-                    .aeroSurface(style, RoundedCornerShape(SEGMENT_CORNER_RADIUS))
-                    .then(
-                        if (segState.focusVisible && enabled) {
-                            Modifier.drawBehind {
-                                val strokePx = FOCUS_STROKE_WIDTH.toPx()
-                                val cornerPx = SEGMENT_CORNER_RADIUS.toPx()
-                                drawRoundRect(
-                                    color = colors.borderSelected.copy(alpha = FOCUS_STROKE_ALPHA),
-                                    topLeft = Offset(strokePx / 2f, strokePx / 2f),
-                                    size = Size(size.width - strokePx, size.height - strokePx),
-                                    cornerRadius = CornerRadius(cornerPx, cornerPx),
-                                    style = Stroke(width = strokePx),
-                                )
-                            }
-                        } else {
-                            Modifier
-                        }
-                    )
-                    .padding(horizontal = 12.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = optionLabel(opt),
-                    color = colors.onSurface,
-                    style = AeroTheme.typography.bodyLarge
+                val selectedProgress by animateFloatAsState(
+                    targetValue = if (isSelected) 1f else 0f,
+                    animationSpec = tween(150, easing = LinearEasing),
+                    label = "segSelected_$index"
                 )
+
+                val style = resolveSegmentStyle(
+                    colors = colors,
+                    selectedProgress = selectedProgress,
+                    hovered = segState.hovered,
+                    pressed = segState.pressed,
+                    enabled = enabled,
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .selectable(
+                            selected = isSelected,
+                            enabled = enabled,
+                            role = Role.RadioButton,
+                            interactionSource = segSource,
+                            indication = null,
+                            onClick = { onSelect(opt) },
+                        )
+                        .hoverable(segSource)
+                        .aeroSurface(style, RoundedCornerShape(SEGMENT_CORNER_RADIUS))
+                        .then(
+                            if (segState.focusVisible && enabled) {
+                                Modifier.drawBehind {
+                                    val strokePx = FOCUS_STROKE_WIDTH.toPx()
+                                    val cornerPx = SEGMENT_CORNER_RADIUS.toPx()
+                                    drawRoundRect(
+                                        color = colors.borderSelected.copy(alpha = FOCUS_STROKE_ALPHA),
+                                        topLeft = Offset(strokePx / 2f, strokePx / 2f),
+                                        size = Size(size.width - strokePx, size.height - strokePx),
+                                        cornerRadius = CornerRadius(cornerPx, cornerPx),
+                                        style = Stroke(width = strokePx),
+                                    )
+                                }
+                            } else {
+                                Modifier
+                            }
+                        )
+                        .padding(horizontal = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = optionLabel(opt),
+                        color = colors.onSurface,
+                        style = AeroTheme.typography.bodyLarge
+                    )
+                }
             }
         }
     }
