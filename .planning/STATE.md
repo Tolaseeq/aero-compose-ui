@@ -5,16 +5,15 @@ milestone_name: Glass Refinement
 current_phase: 19
 current_phase_name: selectors-lists
 status: executing
-stopped_at: Completed 19-08-PLAN.md — Phase 19 sign-off APPROVED, phase complete
-last_updated: "2026-07-28T09:55:08.978Z"
+stopped_at: Completed 19-09-PLAN.md — CR-02 reducer fix + WR-01 button focus-gate alignment
+last_updated: "2026-07-28T10:07:34.657Z"
 last_activity: 2026-07-28
-last_activity_desc: Phase 19 planning complete
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 3
   total_plans: 32
-  completed_plans: 23
-  percent: 67
+  completed_plans: 24
+  percent: 50
 ---
 
 # Project State
@@ -30,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refin
 
 Milestone: v3.0 Glass Refinement
 Phase: 19 (selectors-lists) — EXECUTING
-Plan: 8 of 8
+Plan: 2 of 12
 Status: Ready to execute
-Last activity: 2026-07-28 — Phase 19 planning complete
+Last activity: 2026-07-28
 
-Progress: [████████░░] 82%
+Progress: [█████████░] 91%
 
 ## v3.0 Roadmap (2026-07-21)
 
@@ -129,6 +128,7 @@ Research flags carried into planning: Phases 15, 16, 18 likely need `/gsd:resear
 | Phase 19 P06 | 24min | 2 tasks | 3 files |
 | Phase 19 P07 | 22min | 3 tasks | 3 files |
 | Phase 19 P08 | 12min | 2 tasks | 3 files |
+| Phase 19 P09 | 20min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -206,6 +206,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase ?]: [Phase 19, Plan 08]: Three-theme re-sign-off APPROVED — G1/G2/G3 confirmed closed by eye on AeroBlue, AeroDark and Classic; no defects routed back to 19-05/06/07
 - [Phase ?]: [Phase 19, Plan 08]: G4 (AeroOrnamentTokens brightness on AeroBlue/AeroDark) re-confirmed but stays deferred by explicit reviewer decision — routes to a separate Phase 16 foundation session, with a new direction to try darker values specifically for those two themes
 - [Phase ?]: [Phase 19, Plan 08]: RECESSED_FILL_DARKEN = 0.20f (19-07's open judgement call) confirmed correct by the reviewer ('в самый раз' / just right) — kept unchanged, no follow-up tuning
+- [Phase ?]: [Phase 19, Plan 09]: Reducer fix scoped to FocusVisibility(hovered = hovered) one-argument change - WR-04's counted-hover field-shape alternative deliberately not taken here, deferred to 19-11
+- [Phase ?]: [Phase 19, Plan 09]: AeroButtonSurface focus glow moved to state.focusVisible, matching AeroSwitch/AeroSegmentedControl/AeroListItem - closes WR-01, resolveButtonStyle's dead focused parameter left untouched
 
 ### Pending Todos
 
@@ -220,7 +222,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-07-28T08:34:22.259Z
-Stopped at: Completed 19-08-PLAN.md — Phase 19 sign-off APPROVED, phase complete
+Last session: 2026-07-28T10:07:34.646Z
+Stopped at: Completed 19-09-PLAN.md — CR-02 reducer fix + WR-01 button focus-gate alignment
 Resume file: None
 Next action: `/gsd:plan-phase 15` (Toolchain Upgrade — consider `/gsd:research-phase 15` first per research flag)
