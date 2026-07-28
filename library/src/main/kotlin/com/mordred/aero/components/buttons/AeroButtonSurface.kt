@@ -178,14 +178,27 @@ private const val OUTLINED_RIM_ALPHA_CAP: Float = 0.70f
  * Darken amount (via [Color.darken]'s RGB-mix, never `.copy(alpha = ...)`, correct on Classic's
  * opaque tokens) applied to [AeroColorScheme.primary] to derive the filled button's rest
  * `fillTop` (17-05 ROUND-2 sign-off gap-fix, FIX B) — the ornament-derived `fillSplitTop`
- * (`primary.lighten(0.08f)`) read too light for legible white button text on the light-blue Aero
- * primaries, so the BUTTON (not the shared ornament tokens the Primitives gallery reads) overrides
- * to a darker two-tone.
+ * (`primary.lighten(0.08f)`) read too light against this fill's own content token, so the BUTTON
+ * (not the shared ornament tokens the Primitives gallery reads) overrides to a darker two-tone.
+ * NOTE: the label does not actually resolve to white — see [AeroButtonSurface]'s `Text`, which
+ * sets no explicit `color` and therefore inherits ambient `LocalContentColor` (`onBackground`,
+ * byte-identical to `onSurface` in every shipped scheme). The "white button text" framing this
+ * KDoc previously carried was never true; corrected as part of closing gap G5
+ * (19-UAT.md) alongside the `AeroButton`-label-contrast tracking todo.
+ *
+ * `internal` (not `private`) — `AeroSegmentedControl` (Phase 19, gap G5, cross-package) imports
+ * this exact constant for its raised (unselected) segment fill so the two components' raised fill
+ * cannot drift into two different colour languages; any future retune applies to both call sites
+ * from this single declaration.
  */
-private const val FILLED_FILL_TOP_DARKEN: Float = 0.20f
+internal const val FILLED_FILL_TOP_DARKEN: Float = 0.20f
 
-/** Darken amount applied to [AeroColorScheme.primary] to derive the filled button's rest `fillBottom`. */
-private const val FILLED_FILL_BOTTOM_DARKEN: Float = 0.36f
+/**
+ * Darken amount applied to [AeroColorScheme.primary] to derive the filled button's rest
+ * `fillBottom`. `internal` for the same cross-package reuse reason as [FILLED_FILL_TOP_DARKEN]
+ * (gap G5).
+ */
+internal const val FILLED_FILL_BOTTOM_DARKEN: Float = 0.36f
 
 /**
  * Fixed-delta transform (D-06, VBTN-05/06) turning an already-resolved filled [AeroSurfaceStyle]
@@ -236,10 +249,11 @@ internal fun AeroSurfaceStyle.outlinedStyle(): AeroSurfaceStyle = copy(
  * **Theme-aware darker filled fill (17-05 ROUND-2 sign-off gap-fix, FIX B).** `rest`'s fill is
  * overridden here (BUTTON-scoped — [AeroOrnamentTokens.fillSplitTop]/`fillSplitBottom` are left
  * alone so the Primitives gallery is untouched) to `colors.primary.darken(...)` two-tone, darker
- * than the ornament-derived fill so white button text stays legible against the light-blue Aero
- * primaries. Everything else (gloss, bevel) still comes from [AeroSurfaceStyle.rest]'s
- * ornament-derived defaults; hover/press/disabled transforms compose on top of this darker rest
- * exactly as before.
+ * than the ornament-derived fill. NOTE: the label itself resolves to ambient `LocalContentColor`
+ * (`onBackground` in the showcase, byte-identical to `onSurface`), not white — see
+ * [FILLED_FILL_TOP_DARKEN]'s KDoc. Everything else (gloss, bevel) still comes from
+ * [AeroSurfaceStyle.rest]'s ornament-derived defaults; hover/press/disabled transforms compose on
+ * top of this darker rest exactly as before.
  *
  * [AeroSurfaceStyle.flattenDisabled] is the TERMINAL transform when disabled (17-05 sign-off
  * gap-fix) — not an input to [AeroSurfaceStyle.outlinedStyle]. When [outlined], `.outlinedStyle()`

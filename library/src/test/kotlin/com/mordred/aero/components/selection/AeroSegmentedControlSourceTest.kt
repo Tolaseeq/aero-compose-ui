@@ -155,17 +155,21 @@ class AeroSegmentedControlSourceTest {
     }
 
     @Test
-    fun sourceUsesOneContentTokenForEveryLabelState() {
-        // (j) gap G3 (VSEL-03): every segment label — selected or not — must resolve from the
-        // theme's on-surface content token at that token's own alpha. The shipped defect used a
-        // background/panel token (colors.surface) for the selected label, which carries an 0xCC
-        // alpha on AeroBlue/AeroDark — a text colour must never inherit a panel-background alpha.
-        // Comment lines are stripped first (nonCommentSource) so this negative guard cannot be
-        // satisfied or broken by KDoc prose describing the old/rejected behaviour.
-        assertTrue(
-            aeroSegmentedControlSource.contains("color = colors.onSurface"),
-            "AeroSegmentedControl.kt's segment Text( call must pass color = colors.onSurface for " +
-                "every state — one content token for the whole strip (gap G3, VSEL-03)"
+    fun sourceLabelInheritsAmbientContentColorLikeAeroButtonSurfaceDoes() {
+        // (j) gap G5 (19-UAT.md), superseding the G3-era guard this replaces: the segment label
+        // must use the SAME mechanism as AeroButtonSurface's label — inheriting ambient
+        // LocalContentColor from an explicit-color-free Text( call, not a re-specified literal
+        // token. The G3 fix (an explicit color = colors.onSurface parameter) was a correct VALUE
+        // but the wrong MECHANISM: it kept the segment on its own bespoke content-token wiring
+        // instead of matching the button's byte-for-byte. Comment lines are stripped first
+        // (nonCommentSource) so these guards cannot be satisfied or broken by KDoc prose
+        // describing rejected behaviour.
+        assertFalse(
+            nonCommentSource.contains("color = colors.onSurface"),
+            "AeroSegmentedControl.kt's segment Text( call must NOT pass an explicit " +
+                "color = colors.onSurface parameter — gap G5 requires the label to inherit ambient " +
+                "LocalContentColor exactly as AeroButtonSurface's Text( does, not a re-specified " +
+                "literal token"
         )
         assertFalse(
             nonCommentSource.contains("colors.surface"),
@@ -178,8 +182,8 @@ class AeroSegmentedControlSourceTest {
             nonCommentSource.contains("animateColorAsState"),
             "AeroSegmentedControl.kt must not animate a per-segment label colour via " +
                 "animateColorAsState — restoring a per-state label colour for contrast reasons " +
-                "would recreate gap G3's defect class on a different theme; one token serves the " +
-                "whole strip (gap G3, VSEL-03)"
+                "would recreate gap G3's defect class on a different theme; the label must inherit " +
+                "ambient content colour, not any per-state colour animation (gap G3/G5, VSEL-03)"
         )
     }
 

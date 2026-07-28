@@ -1,6 +1,5 @@
 package com.mordred.aero.components.selection
 
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
@@ -25,11 +24,18 @@ import kotlin.test.assertTrue
  * convention.
  *
  * Corner radius is independently hardcoded as `4.dp` below, matching
- * [AeroSegmentedControl.kt]'s own private `SEGMENT_CORNER_RADIUS` constant, and the raised/recessed
- * darken literals below are likewise hardcoded to match `RAISED_FILL_TOP_DARKEN`/
- * `RAISED_FILL_BOTTOM_DARKEN`/`RECESSED_FILL_DARKEN` (CR-01) — this file deliberately never
- * imports any of those constants or calls [resolveSegmentStyle] to build an expectation, so a
- * drift in either place is caught rather than silently agreeing with itself.
+ * [AeroSegmentedControl.kt]'s own private `SEGMENT_CORNER_RADIUS` constant. The raised-fill darken
+ * literals (`0.20f`/`0.36f`) below are likewise hardcoded to match
+ * `com.mordred.aero.components.buttons.FILLED_FILL_TOP_DARKEN`/`FILLED_FILL_BOTTOM_DARKEN` — the
+ * gap-G5 (19-UAT.md) unification target, "match the button, retire the guard" — and the recessed
+ * darken literal (`0.20f`) matches `RECESSED_FILL_DARKEN`. This file deliberately never imports
+ * any of those constants or calls [resolveSegmentStyle] to build an expectation, so a drift in
+ * either place is caught rather than silently agreeing with itself. The former
+ * `RAISED_FILL_TOP_DARKEN`/`RAISED_FILL_BOTTOM_DARKEN` (`0.58f`/`0.61f`) segment-only constants
+ * and the 4.5:1 label-contrast guard that forced them are both retired — the maintainer's explicit
+ * decision was to match the button's fill exactly rather than hold this one component to a
+ * contrast floor nothing else in the library meets (see the todo tracking `AeroButton`'s own
+ * sub-4.5:1 label contrast as a separate item).
  */
 class AeroSegmentedControlStylesTest {
 
@@ -37,8 +43,8 @@ class AeroSegmentedControlStylesTest {
 
     private fun expectedRaised(colors: AeroColorScheme): AeroSurfaceStyle =
         AeroSurfaceStyle.rest(colors, cornerRadius = 4.dp).copy(
-            fillTop = colors.primary.darken(0.58f),
-            fillBottom = colors.primary.darken(0.61f),
+            fillTop = colors.primary.darken(0.20f),
+            fillBottom = colors.primary.darken(0.36f),
         )
 
     private fun expectedRecessed(colors: AeroColorScheme): AeroSurfaceStyle {
@@ -293,83 +299,4 @@ class AeroSegmentedControlStylesTest {
             )
         }
     }
-
-    @Test
-    fun everySegmentFillKeepsTheOnSurfaceLabelAboveTheMinimumContrastRatio() {
-        // CR-01: the label is always colors.onSurface at full alpha, so if either resolved fill
-        // stop drops too close to it in value, the label is present, correctly coloured, and
-        // invisible. Both endpoints of the selection axis are checked, because pressedRecess
-        // exchanges fillTop/fillBottom — the top stop is the lighter (worst-case) one at the
-        // unselected end, but the bottom stop is the lighter one once fully selected.
-        schemes.forEach { colors ->
-            listOf(0f, 1f).forEach { selectedProgress ->
-                val resolved = resolveSegmentStyle(
-                    colors = colors,
-                    selectedProgress = selectedProgress,
-                    hovered = false,
-                    pressed = false,
-                    enabled = true,
-                )
-
-                // The ratio below is only meaningful between opaque colours; a translucent fill
-                // stop here would mean this guard has silently stopped measuring anything real.
-                assertEquals(
-                    1f,
-                    resolved.fillTop.alpha,
-                    "fillTop must be fully opaque for $colors at selectedProgress=$selectedProgress " +
-                        "— the contrast ratio below is only meaningful between opaque colours",
-                )
-                assertEquals(
-                    1f,
-                    resolved.fillBottom.alpha,
-                    "fillBottom must be fully opaque for $colors at selectedProgress=$selectedProgress " +
-                        "— the contrast ratio below is only meaningful between opaque colours",
-                )
-
-                val topRatio = contrastRatio(colors.onSurface, resolved.fillTop)
-                val bottomRatio = contrastRatio(colors.onSurface, resolved.fillBottom)
-
-                assertTrue(
-                    topRatio >= MIN_LABEL_CONTRAST,
-                    "label-to-fillTop contrast ratio $topRatio for $colors at " +
-                        "selectedProgress=$selectedProgress must be at least $MIN_LABEL_CONTRAST — " +
-                        "an unselected segment whose label does not clear this ratio is the CR-01 " +
-                        "defect: a label that is present, correctly coloured, and invisible",
-                )
-                assertTrue(
-                    bottomRatio >= MIN_LABEL_CONTRAST,
-                    "label-to-fillBottom contrast ratio $bottomRatio for $colors at " +
-                        "selectedProgress=$selectedProgress must be at least $MIN_LABEL_CONTRAST — " +
-                        "an unselected segment whose label does not clear this ratio is the CR-01 " +
-                        "defect: a label that is present, correctly coloured, and invisible",
-                )
-            }
-        }
-    }
-}
-
-/**
- * WCAG 1.4.3 floor for NORMAL-size text contrast (4.5:1) — not the 3.0:1 non-text/large-text
- * floor this guard used before WR-12. The segment label is 14sp regular body text: it is neither
- * large-text-exempt (that carve-out needs ~18pt regular or ~14pt bold) nor a graphical "UI
- * component" in the 3:1-floor sense (borders, icons, focus indicators) — it is rendered text, so
- * the ratio that actually governs its legibility is 4.5:1, matching every other text-bearing
- * component in this library (button, list, switch), each of which clears 4.5:1+ via its own
- * darken constants. This is still a value-level guard on the resolved fill stops (not a claim
- * about the composited pixel after gloss/bevel/rim are painted on top) — see coverage item D3 in
- * 19-10-SUMMARY.md for that separate, human-judged claim.
- */
-private const val MIN_LABEL_CONTRAST: Float = 4.5f
-
-/**
- * Standard WCAG 2.x contrast ratio: the lighter of the two relative luminances plus `0.05f`,
- * divided by the darker plus `0.05f`. Only meaningful between two fully opaque colours — callers
- * assert opacity first.
- */
-private fun contrastRatio(foreground: Color, background: Color): Float {
-    val l1 = foreground.luminance()
-    val l2 = background.luminance()
-    val lighter = maxOf(l1, l2)
-    val darker = minOf(l1, l2)
-    return (lighter + 0.05f) / (darker + 0.05f)
 }
