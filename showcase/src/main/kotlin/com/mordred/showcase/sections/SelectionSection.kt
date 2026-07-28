@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
 import com.mordred.aero.theme.AeroTheme
+import com.mordred.aero.components.buttons.AeroButton
 import com.mordred.aero.components.selection.*
 
 /**
@@ -31,6 +32,8 @@ fun SelectionSection() {
     var chipSelected by remember { mutableStateOf(false) }
     var segValue by remember { mutableStateOf("Day") }
     var longSegValue by remember { mutableStateOf(LONG_SEGMENT_LABEL) }
+    var identityOptions by remember { mutableStateOf(FULL_IDENTITY_OPTIONS) }
+    var identitySelected by remember { mutableStateOf(FULL_IDENTITY_OPTIONS.first()) }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Selection", color = colors.onBackground, style = typography.title)
@@ -97,12 +100,60 @@ fun SelectionSection() {
                 onSelect = { longSegValue = it }
             )
         }
+
+        // 19-12 block F (WR-03): demo affordance proving per-segment state is keyed to option
+        // identity, not slot position. Remove the first option, then restore the full list — no
+        // segment should briefly render as selected/recessed/hover-lit when it should not, and no
+        // in-flight animation should appear to belong to a different segment after the shift.
+        Text(
+            text = "AeroSegmentedControl (identity backstop, WR-03) — remove the first option, then " +
+                "restore the full list, using the buttons below. Watch for any segment briefly " +
+                "reading selected, recessed, or hover-lit when it should not, or an animation that " +
+                "appears to belong to a different segment after the option list shifts " +
+                "(19-12 checkpoint block F).",
+            color = colors.labelText,
+            style = typography.bodySmall,
+        )
+        SelRow(label = "AeroSegmentedControl (identity)") {
+            AeroSegmentedControl(
+                options = identityOptions,
+                selected = identitySelected,
+                onSelect = { identitySelected = it }
+            )
+        }
+        SelRow(label = "  (identity controls)") {
+            AeroButton(
+                text = "Remove first",
+                onClick = {
+                    if (identityOptions.size > 1) {
+                        val removedOption = identityOptions.first()
+                        val nextOptions = identityOptions.drop(1)
+                        identityOptions = nextOptions
+                        if (identitySelected == removedOption) {
+                            identitySelected = nextOptions.first()
+                        }
+                    }
+                }
+            )
+            AeroButton(
+                text = "Restore full list",
+                onClick = {
+                    identityOptions = FULL_IDENTITY_OPTIONS
+                    if (identitySelected !in FULL_IDENTITY_OPTIONS) {
+                        identitySelected = FULL_IDENTITY_OPTIONS.first()
+                    }
+                }
+            )
+        }
     }
 }
 
 /** Deliberately long (>=60 char) segment label exercising the E2 overflow/long-text backstop (19-UI-SPEC.md). */
 private const val LONG_SEGMENT_LABEL =
     "This Quarter Including All Scheduled Recurring And One Time Events"
+
+/** 19-12 block F (WR-03) identity-backstop demo strip — full option list, restored by the button below. */
+private val FULL_IDENTITY_OPTIONS = listOf("Alpha", "Beta", "Gamma", "Delta")
 
 @Composable
 private fun SelRow(label: String, content: @Composable RowScope.() -> Unit) {
