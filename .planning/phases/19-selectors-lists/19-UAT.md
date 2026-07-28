@@ -1,9 +1,9 @@
 ---
-status: gap-open
+status: passed
 phase: 19-selectors-lists
 source: [19-04-PLAN.md task 2 human-verify checkpoint, 19-08-PLAN.md task 2 three-theme re-sign-off, 19-12-PLAN.md task 2 gap-round re-sign-off]
 started: 2026-07-27T14:31:42Z
-updated: 2026-07-28T12:50:00Z
+updated: 2026-07-28T13:40:00Z
 ---
 
 ## Current Test
@@ -458,8 +458,15 @@ resolution: |
   treatment is unchanged. `AeroButton`'s own sub-4.5:1 label contrast is tracked separately (todo
   committed `615f477`) and was NOT fixed as part of this closure — only its KDoc's inaccurate
   "white button text" claim was corrected. This closure rests on the maintainer's explicit decision
-  plus green `./gradlew build` and the full `*AeroSegmentedControl*`/`*AeroButton*` suites; no fresh
-  human visual re-verification pass (screenshot-based sign-off) was performed against the running
-  showcase for this specific fix. G4 remains separately deferred and out of Phase 19's scope, as
-  before. See the G5 gap entry above for the full resolution.
+  plus green `./gradlew build` and the full `*AeroSegmentedControl*`/`*AeroButton*` suites. G4
+  remains separately deferred and out of Phase 19's scope, as before. See the G5 gap entry above
+  for the full resolution.
+- **G5 human visual confirmation (2026-07-28):** the developer was asked to run the showcase and
+  judge two things against the unified fill — whether the segment now reads as the same object as
+  an `AeroButton`, and whether it is still clear which segment is pushed in. They were explicitly
+  warned first that label contrast would be lower than the dark plate they had just seen, that being
+  the accepted trade. Their verdict, verbatim: *"одобряю, да, всё хорошо"* ("I approve, yes, all
+  good"). Recorded as APPROVED. As with the block A-F verdict above, this was a single overall
+  approval rather than a per-theme breakdown, and no per-theme claim is made beyond it. This
+  supersedes the earlier note on this entry that no human pass had been run for the G5 fix.
 </content>
