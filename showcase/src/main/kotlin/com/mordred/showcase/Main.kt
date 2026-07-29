@@ -18,6 +18,20 @@ import com.mordred.aero.components.navigation.AeroTitleBar
 import com.mordred.aero.theme.AeroColorScheme
 import com.mordred.aero.theme.AeroTheme
 
+/**
+ * Scheme the showcase opens on, from `-Daero.scheme=AeroBlue|AeroDark|Classic`.
+ *
+ * Exists so a review pass can capture a specific theme by launching it directly, instead of
+ * clicking the theme switcher — driving the switcher means injecting synthetic mouse input into
+ * whatever desktop the reviewer is using at the time. Unrecognised or absent values fall back to
+ * [AeroColorScheme.AeroBlue], so the default launch is unchanged.
+ */
+private fun initialScheme(): AeroColorScheme = when (System.getProperty("aero.scheme")) {
+    "AeroDark" -> AeroColorScheme.AeroDark
+    "Classic" -> AeroColorScheme.Classic
+    else -> AeroColorScheme.AeroBlue
+}
+
 fun main() = application {
     val windowState = rememberWindowState(width = 1200.dp, height = 800.dp)
     Window(
@@ -29,7 +43,7 @@ fun main() = application {
         undecorated = true,
         transparent = false
     ) {
-        var currentScheme by remember { mutableStateOf(AeroColorScheme.AeroBlue) }
+        var currentScheme by remember { mutableStateOf(initialScheme()) }
         AeroTheme(colorScheme = currentScheme) {
             Box(Modifier.fillMaxSize().border(1.dp, AeroTheme.colors.titleBarGradientStart)) {
                 Column(Modifier.fillMaxSize()) {

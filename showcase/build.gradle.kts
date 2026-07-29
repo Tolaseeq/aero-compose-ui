@@ -20,6 +20,16 @@ dependencies {
     implementation(libs.kotlinx.datetime)
 }
 
+// Forward -Paero.scheme=<name> to the run task as a system property, so a review pass can open a
+// specific theme directly (see initialScheme() in Main.kt) instead of clicking the theme switcher.
+// withType(...).configureEach is lazy: the Compose Desktop plugin registers `run` after this
+// script is evaluated, so tasks.named("run") would fail with "Task with name 'run' not found".
+tasks.withType<JavaExec>().configureEach {
+    if (name == "run") {
+        (project.findProperty("aero.scheme") as String?)?.let { systemProperty("aero.scheme", it) }
+    }
+}
+
 compose.desktop {
     application {
         mainClass = "com.mordred.showcase.MainKt"
