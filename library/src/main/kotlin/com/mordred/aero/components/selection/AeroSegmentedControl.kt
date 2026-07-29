@@ -29,13 +29,13 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import com.mordred.aero.components.buttons.FILLED_FILL_BOTTOM_DARKEN
-import com.mordred.aero.components.buttons.FILLED_FILL_TOP_DARKEN
 import com.mordred.aero.components.buttons.PRESSED_INNER_SHADOW
 import com.mordred.aero.components.common.rememberAeroInteractionState
 import com.mordred.aero.theme.AeroColorScheme
 import com.mordred.aero.theme.AeroSurfaceStyle
 import com.mordred.aero.theme.AeroTheme
+import com.mordred.aero.theme.FILLED_FILL_BOTTOM_DARKEN
+import com.mordred.aero.theme.FILLED_FILL_TOP_DARKEN
 import com.mordred.aero.theme.aeroSurface
 import com.mordred.aero.theme.darken
 import com.mordred.aero.theme.flattenDisabled
@@ -74,8 +74,8 @@ import com.mordred.aero.theme.pressedRecess
  * its label both now derive from the exact same source `AeroButtonSurface` uses, rather than from
  * segmented-control-specific darken constants layered on a re-specified label token:
  * - Fill: [resolveSegmentStyle]'s raised base darkens `colors.primary` by the imported
- *   [com.mordred.aero.components.buttons.FILLED_FILL_TOP_DARKEN]/
- *   [com.mordred.aero.components.buttons.FILLED_FILL_BOTTOM_DARKEN] — the same constants
+ *   [com.mordred.aero.theme.FILLED_FILL_TOP_DARKEN]/
+ *   [com.mordred.aero.theme.FILLED_FILL_BOTTOM_DARKEN] — the same constants
  *   `resolveButtonStyle` applies to a filled `AeroButton`'s rest fill. The segment-only
  *   `RAISED_FILL_TOP_DARKEN`/`RAISED_FILL_BOTTOM_DARKEN` constants this gap superseded (CR-01,
  *   retuned to `0.58f`/`0.61f` by WR-12 specifically to satisfy a 4.5:1 label-contrast floor) are
@@ -265,8 +265,8 @@ private const val RECESSED_FILL_DARKEN: Float = 0.20f
  * guarantee, superseding the earlier CR-01/VSEL-03 phrasing): at `selectedProgress = 0f,
  * pressed = false, hovered = false, enabled = true` (the unselected end) this returns the shared
  * rest preset with its two fill stops replaced by [AeroColorScheme.primary] darkened by the
- * imported [com.mordred.aero.components.buttons.FILLED_FILL_TOP_DARKEN]/
- * [com.mordred.aero.components.buttons.FILLED_FILL_BOTTOM_DARKEN] — the SAME constants
+ * imported [com.mordred.aero.theme.FILLED_FILL_TOP_DARKEN]/
+ * [com.mordred.aero.theme.FILLED_FILL_BOTTOM_DARKEN] — the SAME constants
  * `resolveButtonStyle` applies to a filled `AeroButton`'s rest fill (gap G5, "match the button,
  * retire the guard") — every other field is unchanged from `AeroSurfaceStyle.rest(colors, 4.dp)`.
  * At `selectedProgress = 1f` (the fully-selected end, same other args) it is that same raised base

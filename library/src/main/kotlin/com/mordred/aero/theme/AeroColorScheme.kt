@@ -67,12 +67,25 @@ public data class AeroColorScheme(
      *
      * Trailing and defaulted exactly like [ornamentOverride], for the same reason: every
      * pre-existing positional/named constructor call keeps compiling unchanged. The default is
-     * derived from [primary] (a rough proxy for "how light this scheme's opaque fills read") rather
-     * than hard-coded, so a custom scheme built via [copy] that specifies neither label token still
-     * resolves a sensible label colour instead of throwing or rendering invisible text — it will not
-     * necessarily match a hand-tuned built-in value, but it will not be illegible either.
+     * derived from [primary] via [defaultLabelColorForOpaqueFill] rather than hard-coded, so a
+     * custom scheme built via [copy] that specifies neither label token still resolves a sensible
+     * label colour instead of throwing or rendering invisible text.
+     *
+     * **WR-04 fix (20-REVIEW.md addendum 2, closed 2026-07-29).** The default previously evaluated
+     * a plain luminance split against raw, un-darkened [primary] — a reference colour no on-fill
+     * label is ever actually painted against, since both real consumers
+     * ([com.mordred.aero.components.buttons.resolveButtonStyle]'s rest fill,
+     * [com.mordred.aero.components.selection.resolveSegmentStyle]'s raised base) always darken
+     * `primary` by `FILLED_FILL_TOP_DARKEN`/`FILLED_FILL_BOTTOM_DARKEN` first. That mismatch let a
+     * plausible custom `primary` (e.g. `#BABABA`) pick the wrong candidate and measure as low as
+     * 3.00:1 against the surface actually painted, contradicting this KDoc's own former "will not
+     * be illegible" promise. [defaultLabelColorForOpaqueFill] now evaluates both real darkened
+     * stops and picks whichever pure candidate has the better WORST-CASE ratio across both — never
+     * the average, mirroring how the retired per-call-site `resolveLabelColor` reasoned — so the
+     * same `#BABABA` example now resolves Black at 4.692:1 on its worst stop, clearing the 4.5:1
+     * floor instead of missing it.
      */
-    public val labelOnFilledSurface: Color = defaultLabelColorForSurface(primary),
+    public val labelOnFilledSurface: Color = defaultLabelColorForOpaqueFill(primary),
     /**
      * On-fill label colour for OUTLINED surfaces (the outlined button variant) — see
      * [labelOnFilledSurface]'s KDoc for why this is a second, independent token rather than one
@@ -80,6 +93,19 @@ public data class AeroColorScheme(
      * [AeroColorScheme.background], so the effective surface is dominated by the (dark, on every
      * shipped scheme) backdrop rather than by `primary` itself — the default below is therefore
      * derived from [background], not [primary].
+     *
+     * **WR-04 follow-up: this fallback was checked for the same class of error and found NOT to
+     * have it, so it is deliberately left unchanged.** Unlike [labelOnFilledSurface]'s fallback
+     * (which evaluated raw `primary`, a colour 100% different in composition from the actually
+     * painted, wholly-opaque darkened fill), this fallback's [background] proxy IS the dominant
+     * 85% of the actually-painted composite (`primary` at ~15% alpha over `background`) — the
+     * un-composited reference and the real one differ by construction only in that remaining ~15%
+     * weight, not by an unrelated transform. A polarity flip is possible only if [background]'s own
+     * luminance sits almost exactly at the 0.5 split AND [primary] is near a luminance extreme —
+     * for every shipped scheme, [background] is a deliberately dark, near-black desktop-app
+     * backdrop (luminance well under 0.1), far from that boundary, and a hypothetical custom scheme
+     * choosing a near-0.5-luminance app background is a materially less ordinary choice than
+     * [labelOnFilledSurface]'s demonstrated failure mode (an ordinary mid-tone brand `primary`).
      *
      * Trailing, defaulted, and fallback-derived for the same source-compatibility reason as
      * [labelOnFilledSurface].
@@ -211,16 +237,56 @@ public data class AeroColorScheme(
 }
 
 /**
- * Fallback heuristic for [AeroColorScheme.labelOnFilledSurface]/[AeroColorScheme.labelOnOutlinedSurface]'s
- * default values — exercised only when a custom [AeroColorScheme.copy] omits both tokens, since
- * every shipped scheme sets them explicitly from
+ * Fallback heuristic for [AeroColorScheme.labelOnOutlinedSurface]'s default value — exercised only
+ * when a custom [AeroColorScheme.copy] omits the token, since every shipped scheme sets it
+ * explicitly from
  * [com.mordred.aero.components.buttons.AeroButtonContrastRegressionTest]/
  * [com.mordred.aero.verification.VER10OneLabelColorPerThemeTest]'s measured tables. A plain
  * luminance split on the passed-in [surface] proxy (never a hard-coded literal, never a throw) —
- * a light proxy colour picks [Color.Black], a dark one picks [Color.White]. This is deliberately
- * simpler than the retired per-fill `resolveLabelColor` worst-case-across-two-stops algorithm: it
- * only has to be a SENSIBLE fallback for an unknown custom scheme, not a bit-for-bit reproduction
- * of a hand-tuned built-in value.
+ * a light proxy colour picks [Color.Black], a dark one picks [Color.White].
+ *
+ * **Not used for [AeroColorScheme.labelOnFilledSurface] any more** — see
+ * [defaultLabelColorForOpaqueFill] and [AeroColorScheme.labelOnFilledSurface]'s KDoc (WR-04). Still
+ * used for [AeroColorScheme.labelOnOutlinedSurface]: that fallback's [background] proxy dominates
+ * the real ~15%-alpha composite closely enough that this simpler split remains a reasonable
+ * approximation there — see [AeroColorScheme.labelOnOutlinedSurface]'s KDoc for the full reasoning.
  */
 private fun defaultLabelColorForSurface(surface: Color): Color =
     if (surface.luminance() > 0.5f) Color.Black else Color.White
+
+/**
+ * Fallback heuristic for [AeroColorScheme.labelOnFilledSurface]'s default value (WR-04,
+ * 20-REVIEW.md addendum 2) — exercised only when a custom [AeroColorScheme.copy] omits the token.
+ * Evaluates BOTH real darkened fill stops a filled/raised-segment surface is actually painted
+ * with ([primary] darkened by [FILLED_FILL_TOP_DARKEN] and by [FILLED_FILL_BOTTOM_DARKEN] — the
+ * exact transform [com.mordred.aero.components.buttons.resolveButtonStyle]/
+ * [com.mordred.aero.components.selection.resolveSegmentStyle] apply), computes each pure
+ * candidate's WORST-CASE (minimum) contrast ratio across both stops, and returns whichever
+ * candidate's worst case is higher — never the average of the two stops, mirroring how the retired
+ * per-call-site `resolveLabelColor` reasoned, so a candidate that wins on one stop and fails the
+ * other cannot win here either.
+ */
+private fun defaultLabelColorForOpaqueFill(primary: Color): Color {
+    val top = primary.darken(FILLED_FILL_TOP_DARKEN)
+    val bottom = primary.darken(FILLED_FILL_BOTTOM_DARKEN)
+    val blackWorstCase = minOf(contrastRatio(Color.Black, top), contrastRatio(Color.Black, bottom))
+    val whiteWorstCase = minOf(contrastRatio(Color.White, top), contrastRatio(Color.White, bottom))
+    return if (blackWorstCase >= whiteWorstCase) Color.Black else Color.White
+}
+
+/**
+ * Standard WCAG 2.x contrast ratio (the lighter of the two relative luminances plus `0.05f`,
+ * divided by the darker plus `0.05f`) — the same formula every test file in this codebase
+ * independently re-derives (D-13: tests never import a production formula, so a wrong one cannot
+ * certify itself). This IS production code, not a test — [defaultLabelColorForOpaqueFill] needs a
+ * real ratio to pick between its two candidates, so D-13's "don't self-certify" concern does not
+ * apply here; it applies to the *test* files that measure this fallback's output independently
+ * (see `AeroColorSchemeTest`'s WR-04 regression coverage).
+ */
+private fun contrastRatio(foreground: Color, background: Color): Float {
+    val l1 = foreground.luminance()
+    val l2 = background.luminance()
+    val lighter = maxOf(l1, l2)
+    val darker = minOf(l1, l2)
+    return (lighter + 0.05f) / (darker + 0.05f)
+}

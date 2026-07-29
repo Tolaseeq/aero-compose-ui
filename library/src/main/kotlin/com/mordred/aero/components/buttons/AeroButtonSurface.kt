@@ -24,6 +24,8 @@ import com.mordred.aero.theme.AeroColorScheme
 import com.mordred.aero.theme.AeroOrnamentTokens
 import com.mordred.aero.theme.AeroSurfaceStyle
 import com.mordred.aero.theme.AeroTheme
+import com.mordred.aero.theme.FILLED_FILL_BOTTOM_DARKEN
+import com.mordred.aero.theme.FILLED_FILL_TOP_DARKEN
 import com.mordred.aero.theme.aeroGlowRing
 import com.mordred.aero.theme.aeroSurface
 import com.mordred.aero.theme.darken
@@ -190,31 +192,18 @@ private const val OUTLINED_RIM_ALPHA_MULTIPLIER: Float = 1.7f
 /** Ceiling applied to the outlined rim's alpha after [OUTLINED_RIM_ALPHA_MULTIPLIER] is applied. */
 private const val OUTLINED_RIM_ALPHA_CAP: Float = 0.70f
 
-/**
- * Darken amount (via [Color.darken]'s RGB-mix, never `.copy(alpha = ...)`, correct on Classic's
- * opaque tokens) applied to [AeroColorScheme.primary] to derive the filled button's rest
- * `fillTop` (17-05 ROUND-2 sign-off gap-fix, FIX B) — the ornament-derived `fillSplitTop`
- * (`primary.lighten(0.08f)`) read too light against this fill's own content token, so the BUTTON
- * (not the shared ornament tokens the Primitives gallery reads) overrides to a darker two-tone.
- * NOTE: the label does not actually resolve to white — see [AeroButtonSurface]'s `Text`, which
- * sets no explicit `color` and therefore inherits ambient `LocalContentColor` (`onBackground`,
- * byte-identical to `onSurface` in every shipped scheme). The "white button text" framing this
- * KDoc previously carried was never true; corrected as part of closing gap G5
- * (19-UAT.md) alongside the `AeroButton`-label-contrast tracking todo.
- *
- * `internal` (not `private`) — `AeroSegmentedControl` (Phase 19, gap G5, cross-package) imports
- * this exact constant for its raised (unselected) segment fill so the two components' raised fill
- * cannot drift into two different colour languages; any future retune applies to both call sites
- * from this single declaration.
- */
-internal const val FILLED_FILL_TOP_DARKEN: Float = 0.20f
-
-/**
- * Darken amount applied to [AeroColorScheme.primary] to derive the filled button's rest
- * `fillBottom`. `internal` for the same cross-package reuse reason as [FILLED_FILL_TOP_DARKEN]
- * (gap G5).
- */
-internal const val FILLED_FILL_BOTTOM_DARKEN: Float = 0.36f
+// FILLED_FILL_TOP_DARKEN / FILLED_FILL_BOTTOM_DARKEN (the darken amounts, via [Color.darken]'s
+// RGB-mix, applied to [AeroColorScheme.primary] to derive the filled button's rest fillTop/
+// fillBottom — 17-05 ROUND-2 sign-off gap-fix, FIX B) moved to `theme/ColorMath.kt` as part of the
+// WR-04 fix (20-REVIEW.md addendum 2, closed 2026-07-29): [AeroColorScheme.labelOnFilledSurface]'s
+// fallback needs this exact value and the theme package cannot import from this one without a
+// cycle (this file already imports theme.*). See ColorMath.kt's KDoc on FILLED_FILL_TOP_DARKEN for
+// the full rationale — the value and every consumer's rendered output are unchanged, only the
+// declaration's package moved.
+//
+// NOTE: the label does not actually resolve to white via these darkened fills alone — see
+// [AeroButtonSurface]'s `Text`, which reads [AeroColorScheme.labelOnFilledSurface] /
+// [AeroColorScheme.labelOnOutlinedSurface] directly (SHW-16/VER-06, 20-09).
 
 /**
  * Fixed-delta transform (D-06, VBTN-05/06) turning an already-resolved filled [AeroSurfaceStyle]
