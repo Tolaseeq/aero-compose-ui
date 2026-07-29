@@ -10,6 +10,30 @@ files:
   - library/src/test/kotlin/com/mordred/aero/components/buttons/AeroButtonContrastRegressionTest.kt
 ---
 
+## Closed — superseded by the same-day 20-09 revision (2026-07-29)
+
+This finding's premise (`AeroColorScheme.labelOnFilledSurface = Color.Black` for AeroBlue/AeroDark,
+under the surface-polarity rule) no longer describes the code. The maintainer reviewed that rule
+running live, across all three themes, and rejected it on appearance in favor of white on both
+polarities in both schemes, matching Classic. `AeroColorScheme.AeroBlue`/`AeroDark` now set
+`labelOnFilledSurface = Color.White`.
+
+**The `3.218`-`4.228`/black recessed-segment-only exception this todo tracked is VOID** — it is not
+a variant or ancestor of the current deviation, it depended on the black-label polarity rule that
+has been reverted. Under white, AeroBlue's recessed segment at rest actually CLEARS the floor
+(`6.525`/`4.602`) rather than needing an exception at all; AeroDark's recessed segment and both
+schemes' recessed-hover case, along with most of their filled/raised-segment rest/hover/press cases,
+now sit below the floor instead — a larger, differently-shaped deviation than the one this todo
+described.
+
+**Replacement todo (still open, tracks the current, larger deviation and its known-but-not-taken
+remedy):**
+`.planning/todos/pending/2026-07-29-aeroblue-aerodark-opaque-fill-label-below-wcag-floor-white-decision.md`
+
+Original finding preserved below for history — do not treat its numbers or mechanism as current.
+
+---
+
 ## Problem
 
 Filed while closing plan 20-09 (label-colour-per-theme rule), replacing

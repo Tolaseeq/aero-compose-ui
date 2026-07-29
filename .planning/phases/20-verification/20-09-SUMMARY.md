@@ -99,6 +99,16 @@ status: complete
 
 # Phase 20 Plan 09: One Label Colour Per Theme, Resolved by Surface Polarity — Summary
 
+> **⚠ REVISED SAME DAY (2026-07-29) — read the "Amendment" section near the end before trusting
+> the black/white polarity table below as current.** The surface-polarity split described in this
+> document (dark label on AeroBlue/AeroDark's opaque fills, light on outlined) was shipped, then the
+> maintainer reviewed it running live across all three themes and rejected it on appearance. Their
+> final decision reverts `labelOnFilledSurface` to White for AeroBlue/AeroDark too — matching
+> Classic on both tokens. Consequently the "Three Surviving Exceptions" section's exception 1 (black
+> token, recessed segment, 3.218-4.228) below is **itself now void** — see the Amendment for its
+> replacement. Everything else in this document (the two-token scheme-level mechanism, the retained
+> `VER10OneLabelColorPerThemeTest` measurement, `MIN_LABEL_CONTRAST` staying 4.5f) still stands.
+
 **`AeroColorScheme` gains `labelOnFilledSurface`/`labelOnOutlinedSurface`, resolved once per scheme by surface polarity rather than recomputed per call site from an animating fill; both `AeroButton` and `AeroSegmentedControl` labels now read the fixed token in every state; 452 -> 467 tests, 0 failures, and 20-04's 4.079/white recessed-segment exception is VOID — re-derived from scratch as a different value (3.218-4.228, black).**
 
 ## Performance
@@ -134,6 +144,10 @@ During the 20-08 checkpoint the maintainer observed that in AeroBlue and AeroDar
 3. **Task 3 — Gate the invariance, re-derive the contrast table (`34ff18f`).** `VER08SegmentLabelFlipTest` strengthened from "the label changes at most once across the selection animation" to true invariance — never changes, across the animation and across hover/press/focus/disabled — with its D-08 fail-then-pass proof updated to match. `AeroButtonContrastRegressionTest` was re-derived from scratch (not narrowed from the 20-04 version) against every fill the new fixed-per-scheme label lands on. `MIN_LABEL_CONTRAST` stays `4.5f` in both test files, never lowered (D-13).
 
 ## The Three Surviving Exceptions — re-derived from scratch, NOT inherited from 20-04
+
+> **⚠ Exception 1 below is ITSELF now void** — see the "Amendment" section near the end of this
+> document. It described the black-token recessed-segment exception under the surface-polarity
+> rule; that rule was reverted the same day. Left here as history rather than deleted.
 
 1. **Recessed (selected) segment `fillTop`, dark token, AeroBlue and AeroDark.** AeroBlue rest/press `3.218`, hover `3.853`; AeroDark rest/press `3.538`, hover `4.228` (`fillBottom` always clears comfortably — 4.563-5.910). Flipping to a light label here would reintroduce state-dependent colour — the exact defect this plan removes, since every other opaque fill in these two schemes (filled button, raised segment) stays black. Retuning `RECESSED_FILL_DARKEN` to rescue this is forbidden by that constant's own KDoc (the maintainer's 19-08 acceptance of the recess/depth reading).
 
@@ -214,9 +228,89 @@ None. All changes are theme-token resolution and test-file changes to existing s
 - **SHW-16 remains open.** 20-07 must still run its cross-component coherence pass, its two live non-100%-DPI passes, and — specific to this plan — a FRESH legibility judgment on the recessed-segment exception's NEW numbers (black, 3.218-4.228 on AeroBlue/AeroDark), not the old 4.079/white number that 20-08's own SUMMARY still records for historical reasons. A reader consulting only 20-08's SUMMARY for "the" AeroDark recessed-segment contrast value would carry forward a void number; this SUMMARY is the correction.
 - Phase 20 now has **9** plans (20-01 through 20-09) — `ROADMAP.md` and `STATE.md` updated accordingly in this closeout.
 
+## Amendment (2026-07-29, same-day revision): white label reinstated on both polarities
+
+**This section appends to the document above; nothing above was rewritten, only marked where it is
+now superseded (see the warning blockquotes near the top and above "The Three Surviving
+Exceptions").**
+
+**What happened.** The surface-polarity rule this plan shipped — `labelOnFilledSurface = Black` for
+AeroBlue/AeroDark, `White` for Classic — was measurement-driven and correctly cleared the 4.5:1
+floor on the opaque-fill polarity (with the one recessed-segment exception documented above). The
+maintainer then reviewed it running live, across all three themes, at the 20-09 checkpoint that
+followed this plan's original completion. They rejected the polarity rule on appearance, not on
+correctness: with a dark label on filled surfaces, AeroBlue and AeroDark read as a visually distinct
+approach from Classic and from the rest of the library, which is light-on-dark throughout.
+
+**Why rejected, in the maintainer's own framing.** The polarity rule was measured correctly and did
+exactly what it was asked to do — clear the contrast floor by choosing the better candidate per
+surface. What it did not account for is that AeroBlue/AeroDark's dark-on-fill / light-on-outline
+split makes those two themes look like a different design language from Classic's uniform white,
+breaking the cross-theme visual coherence the library otherwise maintains. The maintainer was shown
+this trade-off in writing twice — including a live run of the white variant across all three
+themes captured to `.planning/phases/20-verification/signoff-capture/trial-white-{aeroblue,aerodark,classic}.png`
+— before approving white on both polarities in both dark schemes ("одобряю").
+
+**The decision.** `AeroColorScheme.AeroBlue` and `AeroColorScheme.AeroDark` now set BOTH
+`labelOnFilledSurface` and `labelOnOutlinedSurface` to `Color.White`, matching Classic exactly.
+
+**Accepted cost — full measured table** (white label, both fill stops, re-measured against the real
+`resolveButtonStyle`/`resolveSegmentStyle` outputs, not hand-computed):
+
+| Case                          | AeroBlue top / bottom | AeroDark top / bottom |
+|-------------------------------|-------------------------|--------------------------|
+| filled-rest / segment-raised  | 3.096 / 4.597           | 2.720 / 4.121            |
+| filled-hover / raised-hover    | 2.801 / 3.996           | 2.493 / 3.589            |
+| filled-press                  | 4.597 / 3.096           | 4.121 / 2.720            |
+| filled-disabled (exempt)       | 7.304 (clears)          | 8.845 (clears)           |
+| outlined (all states)          | 13.8 – 14.8 (clears)    | 15.8 – 16.9 (clears)     |
+| segment-recessed (rest)        | 6.525 / 4.602 (clears)  | 5.936 / 4.079            |
+| segment-recessed-hover         | 5.450 / 4.002           | 4.966 / 3.553            |
+
+Most of AeroBlue/AeroDark's opaque-fill (filled button, segment-raised, segment-recessed-hover)
+rest/hover/press cases now sit below the WCAG 4.5:1 normal-text floor. What the white choice also
+BUYS, which the black polarity rule could not: AeroBlue's recessed (selected) segment at rest fully
+clears the floor (6.525/4.602) without reintroducing state-dependent label colour.
+
+**How it is encoded — one named, scheme-level deviation, not fifteen scattered exceptions.**
+`MIN_LABEL_CONTRAST` stays `4.5f`, never lowered (D-13). Every case above that misses the floor is
+pinned as a regression bound (must stay `>=` the measured value, never silently regress further
+below it) in ONE test method,
+`AeroButtonContrastRegressionTest.aeroBlueAeroDarkAcceptedSubFloorLabelDeviation`, replacing the
+now-void black-token recessed-segment-only exception this document's "Three Surviving Exceptions"
+section described. Every case that still clears the floor (outlined, disabled, AeroBlue's
+recessed-rest) keeps a plain `>= MIN_LABEL_CONTRAST` assertion elsewhere in the same file, unchanged.
+`contrastRatio` in both `AeroButtonContrastRegressionTest` and `VER10OneLabelColorPerThemeTest`
+remains an independently-written implementation that does not import production code (D-13).
+
+**What was deliberately NOT done.** No fill constant changed (`FILLED_FILL_TOP_DARKEN`,
+`FILLED_FILL_BOTTOM_DARKEN`, `RECESSED_FILL_DARKEN` are untouched) and
+`VER10OneLabelColorPerThemeTest`'s measured table is intact — the polarity measurement that
+surfaced this trade-off is retained as history, not deleted, per the maintainer's own framing that
+the measurement was correct and only the choice of which side to take changed. Darkening the
+opaque fills (as Classic's dark `primary` already does) is the known remedy that would remove this
+deviation entirely, and was deliberately not taken now because it would change button appearance
+signed off in Phase 17 — tracked as a pending todo for a future plan, not silently deferred (see
+`.planning/todos/pending/2026-07-29-aeroblue-aerodark-opaque-fill-label-below-wcag-floor-white-decision.md`).
+
+**Commits (revision, this session):**
+
+1. `feat(20-09): white label on both polarities in AeroBlue and AeroDark` — KDoc rewrite in
+   `AeroColorScheme.kt`, no behavior change (the working-tree trial value was already White).
+2. `test(20-09): encode the accepted sub-floor label contrast in AeroBlue/AeroDark` — the new
+   `aeroBlueAeroDarkAcceptedSubFloorLabelDeviation` test, `AeroColorSchemeTest` expectation update,
+   `VER10OneLabelColorPerThemeTest` addendum update. `./gradlew :library:test`: 467 tests, 0 failures.
+3. `feat(showcase): launch on a chosen theme via -Paero.scheme` — showcase-only, unrelated to the
+   label-colour decision itself; exists so a review pass can open a specific theme directly for
+   screenshot capture.
+
+**SHW-16 remains open**, unaffected by this revision — 20-07's human three-theme sign-off still owns
+its closure and has not been given.
+
 ---
 *Phase: 20-verification*
 *Completed: 2026-07-29*
+*Revised: 2026-07-29*
 
 ## Self-Check: PASSED
 
