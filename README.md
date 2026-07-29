@@ -70,12 +70,16 @@ Then declare the dependency:
 
 ```kotlin
 dependencies {
-    implementation("com.github.Tolaseeq:aero-compose-ui:v2.0.0")
+    implementation("com.github.Tolaseeq:aero-compose-ui:v3.0.0")
 }
 ```
 
 Your consuming module also needs the Compose Multiplatform plugin applied (the library
 exposes Compose types in its public API). [See available versions on JitPack →](https://jitpack.io/#Tolaseeq/aero-compose-ui)
+
+**Toolchain requirement.** `v3.0.0` is built on **Kotlin 2.4.10 + Compose Multiplatform 1.11.1**
+and cannot be consumed from an older Compose toolchain. If your project is still on Compose 1.7.3,
+stay on **`v2.0.4`** — that line remains functional and is the last release before the migration.
 
 ### Usage
 
