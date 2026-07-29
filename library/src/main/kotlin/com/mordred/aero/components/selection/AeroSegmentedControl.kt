@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.dp
 import com.mordred.aero.components.buttons.FILLED_FILL_BOTTOM_DARKEN
 import com.mordred.aero.components.buttons.FILLED_FILL_TOP_DARKEN
 import com.mordred.aero.components.buttons.PRESSED_INNER_SHADOW
-import com.mordred.aero.components.buttons.resolveLabelColor
 import com.mordred.aero.components.common.rememberAeroInteractionState
 import com.mordred.aero.theme.AeroColorScheme
 import com.mordred.aero.theme.AeroSurfaceStyle
@@ -85,18 +84,19 @@ import com.mordred.aero.theme.pressedRecess
  *   The maintainer's explicit decision closing G5 was "match the button, retire the guard" — the
  *   4.5:1 floor is retired for this component (tracked separately for `AeroButton` itself, whose
  *   own label never actually cleared it either — see the todo filed alongside this gap's fix).
- * - Label (superseded again at 20-04, D-12/D-13): the segment's `Text` now passes
- *   `color = `[com.mordred.aero.components.buttons.resolveLabelColor]`(style.fillTop,
- *   style.fillBottom, colors.background)` — the SAME shared function
- *   [com.mordred.aero.components.buttons.AeroButtonSurface]'s `Text` calls, imported
- *   cross-package. The G5-era "inherits ambient `LocalContentColor`" mechanism this paragraph
- *   previously described is retired: ambient resolution never actually cleared the WCAG 4.5:1
- *   floor (the todo filed alongside G5's own closure), so both components now ASK for their label
- *   colour algorithmically from their own resolved fill instead of leaving it to inherited
- *   context. Gap G3's actual fault (a background/panel token carrying alpha used for text) stays
- *   fixed either way; G5's byte-for-byte-with-the-button intent is preserved and strengthened by
- *   this later step, since both components now share the same resolver, not merely the same
- *   resulting ambient colour.
+ * - Label (superseded again at 20-09, SHW-16/VER-06 — retiring the 20-04/D-12/D-13
+ *   `resolveLabelColor` mechanism this paragraph previously described): the segment's `Text` now
+ *   passes `color = colors.labelOnFilledSurface` — a value resolved ONCE per scheme
+ *   ([com.mordred.aero.theme.AeroColorScheme]), not recomputed per call site from the
+ *   currently-animating fill. The per-call-site `resolveLabelColor(style.fillTop, style.fillBottom,
+ *   colors.background)` mechanism flipped the label black/white whenever hover/press/the selection
+ *   tween moved the fill across the contrast midpoint — text that changed colour because the
+ *   pointer passed over it, exactly the defect the maintainer's 20-08 checkpoint rule ("per theme,
+ *   ONE text colour, not per element, not per state") forbids. Segments are always the OPAQUE-fill
+ *   polarity (raised AND recessed both read `labelOnFilledSurface`; only the button's outlined
+ *   variant reads the other, `labelOnOutlinedSurface`, token) — see
+ *   [com.mordred.aero.theme.AeroColorScheme.labelOnFilledSurface]'s KDoc for the two-polarity
+ *   rationale.
  *
  * The recessed/selected treatment (`pressedRecess` plus [RECESSED_FILL_DARKEN]) is UNCHANGED
  * structurally by this gap — only the raised base it now composes on top of moved. A future
@@ -199,7 +199,10 @@ public fun <T> AeroSegmentedControl(
                     Text(
                         text = optionLabel(opt),
                         style = AeroTheme.typography.bodyLarge,
-                        color = resolveLabelColor(style.fillTop, style.fillBottom, colors.background),
+                        // Segments are always the OPAQUE-fill polarity (raised AND recessed) —
+                        // never outlined — so the label reads the same scheme token regardless of
+                        // selection/hover/press state (SHW-16/VER-06, 20-09).
+                        color = colors.labelOnFilledSurface,
                     )
                 }
             }

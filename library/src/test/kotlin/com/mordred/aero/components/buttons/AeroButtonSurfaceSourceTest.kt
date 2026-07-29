@@ -108,20 +108,36 @@ class AeroButtonSurfaceSourceTest {
     }
 
     /**
-     * D-12/D-13 (20-04): the button's own `Text` must obtain its label colour from
-     * [com.mordred.aero.components.buttons.resolveLabelColor], the same shared function
-     * `AeroSegmentedControl`'s segment `Text` imports cross-package — mirrors
+     * SHW-16/VER-06 (20-09), superseding the D-12/D-13 (20-04) `resolveLabelColor` guard this test
+     * previously asserted: the button's `Text` must read its label colour from the SCHEME
+     * ([com.mordred.aero.theme.AeroColorScheme.labelOnFilledSurface] /
+     * `labelOnOutlinedSurface`), resolved once per theme — never recomputed per call site from the
+     * currently-animating fill via the retired `resolveLabelColor(style.fillTop, style.fillBottom,
+     * ...)` mechanism, which is exactly the state-dependent label-colour flip the maintainer's
+     * 20-08 checkpoint rule forbids. Mirrors
      * [com.mordred.aero.components.selection.AeroSegmentedControlSourceTest]'s
-     * `sourceLabelUsesTheSharedResolveLabelColorMechanismNeverAPerComponentLiteral` guard, so
-     * neither component can silently drift back to a private/ambient label colour.
+     * `sourceLabelReadsTheSchemeLevelTokenNeverAPerComponentLiteralOrTheRetiredResolver` guard, so
+     * neither component can silently drift back to a per-fill or ambient label colour.
      */
     @Test
-    fun aeroButtonSurfaceTextUsesTheSharedResolveLabelColorMechanism() {
+    fun aeroButtonSurfaceTextReadsTheSchemeLevelLabelToken() {
         assertTrue(
-            aeroButtonSurfaceSource.contains("color = resolveLabelColor("),
-            "AeroButtonSurface.kt's Text( call must pass color = resolveLabelColor(...) — the " +
-                "single source of truth for the on-fill label colour that AeroSegmentedControl's " +
-                "segment Text( also calls cross-package (D-12/D-13)"
+            aeroButtonSurfaceSource.contains("colors.labelOnOutlinedSurface"),
+            "AeroButtonSurface.kt's Text( call must read colors.labelOnOutlinedSurface for the " +
+                "outlined polarity — a scheme-level token resolved once, never a per-fill " +
+                "computation (SHW-16/VER-06)"
+        )
+        assertTrue(
+            aeroButtonSurfaceSource.contains("colors.labelOnFilledSurface"),
+            "AeroButtonSurface.kt's Text( call must read colors.labelOnFilledSurface for the " +
+                "opaque-fill polarity — a scheme-level token resolved once, never a per-fill " +
+                "computation (SHW-16/VER-06)"
+        )
+        assertFalse(
+            aeroButtonSurfaceSource.contains("resolveLabelColor("),
+            "AeroButtonSurface.kt must not call the retired per-fill resolveLabelColor(...) — it " +
+                "recomputed the label from the currently-animating fill, reintroducing the " +
+                "state-dependent label-colour flip 20-09 removes (SHW-16/VER-06)"
         )
     }
 

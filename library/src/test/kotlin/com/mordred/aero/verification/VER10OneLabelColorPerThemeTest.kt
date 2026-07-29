@@ -26,10 +26,22 @@ import kotlin.test.assertTrue
  * that rescue is gone (this plan's own `<the_trap>`); these numbers are re-derived fresh, from
  * the real [resolveButtonStyle]/[resolveSegmentStyle] outputs, not hand-computed or inherited.
  *
- * **No production code changes here** (20-09 `<order_discipline>`) — Task 2 reads the winner
- * this test pins per scheme and writes it into [AeroColorScheme]; Task 3 re-derives the
- * surviving-exception list against that same winner. This file is the numbers those two tasks are
- * built on, asserted so it re-executes rather than a one-off scratch calculation.
+ * **No production code changes here** (20-09 `<order_discipline>`) — this file is the raw
+ * measurement Task 2/Task 3 are built on, asserted so it re-executes rather than a one-off scratch
+ * calculation.
+ *
+ * **Post-measurement addendum (Task 2/3, maintainer decision 2026-07-29).** The single
+ * scheme-wide "winner" pinned below is the best ONE candidate across BOTH opaque and outlined
+ * fills combined — and for every scheme it comes out White, because the outlined fill's near-black
+ * composited stop makes Black catastrophic there (1.2–1.4:1). The maintainer's actual decision does
+ * NOT ship that single combined winner: it splits the choice by SURFACE POLARITY instead — see
+ * [AeroColorScheme.labelOnFilledSurface] (Black for AeroBlue/AeroDark, White for Classic) and
+ * [AeroColorScheme.labelOnOutlinedSurface] (White for all three). AeroBlue/AeroDark's opaque fills
+ * (filled button, raised/recessed segment) therefore ship BLACK in production even though this
+ * file's combined-worst-case measurement below picks White for those two schemes — that is not a
+ * contradiction, it is exactly why a single scheme-wide winner was rejected in favour of the
+ * two-token polarity split. This file's pinned constants and assertions are left unchanged (the
+ * measurement itself is still correct and re-executes); only this note is new.
  *
  * The independent [contrastRatio] below deliberately does NOT import the production
  * `labelContrastRatio` (D-13 convention, `AeroButtonContrastRegressionTest`) — a wrong production

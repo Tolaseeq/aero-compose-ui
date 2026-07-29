@@ -12,8 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.compositeOver
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
@@ -119,7 +117,7 @@ internal fun AeroButtonSurface(
         Text(
             text = text,
             style = AeroTheme.typography.bodyLarge,
-            color = resolveLabelColor(style.fillTop, style.fillBottom, colors.background),
+            color = if (outlined) colors.labelOnOutlinedSurface else colors.labelOnFilledSurface,
             fontSize = 14.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -143,68 +141,18 @@ internal val PRESSED_INNER_SHADOW: Shadow = Shadow(
 )
 
 /**
- * The dark candidate [resolveLabelColor] picks between (D-12/D-13, closing the AeroButton
- * label-contrast todo). Pure `Color.Black`, not an off-black — the 20-UI-SPEC.md Color section's
- * own per-theme contrast table (point 2) was computed against the pure value, and its point 5
- * ("a hard-black or hard-white label ... is the expected, intended look") argues for it
- * explicitly. Held behind this named constant (not inlined at the call site) so a later shift
- * toward an off-black token is a one-line change behind [resolveLabelColor], never a second
- * per-component retune.
+ * RETIRED (SHW-16/VER-06, 20-09): this per-call-site worst-case-across-two-stops resolver (D-12,
+ * 20-04) — and its `LABEL_CANDIDATE_DARK`/`LABEL_CANDIDATE_LIGHT`/`labelContrastRatio` helpers — is
+ * deleted, not narrowed. It recomputed the label from whatever fill happened to be animating
+ * (hover-lightened, press-recessed, mid-selection-tween), which is exactly the state-dependent
+ * label-colour jump the maintainer's 20-08 checkpoint rule forbids ("per theme, ONE text colour,
+ * not per element, not per state"). [AeroButtonSurface]'s `Text` now reads
+ * [com.mordred.aero.theme.AeroColorScheme.labelOnFilledSurface] /
+ * [com.mordred.aero.theme.AeroColorScheme.labelOnOutlinedSurface] directly — a value resolved once
+ * per scheme, never per fill. There is deliberately no surviving "internal use" form of the old
+ * algorithm: the new scheme-level tokens are not derived by running it, so keeping it around would
+ * be exactly the "two live mechanisms" this retirement is required to avoid.
  */
-internal val LABEL_CANDIDATE_DARK: Color = Color.Black
-
-/** The light candidate [resolveLabelColor] picks between — see [LABEL_CANDIDATE_DARK]'s KDoc. */
-internal val LABEL_CANDIDATE_LIGHT: Color = Color.White
-
-/**
- * Standard WCAG 2.x contrast ratio: the lighter of the two relative luminances plus `0.05f`,
- * divided by the darker plus `0.05f`, via Compose's own [androidx.compose.ui.graphics.luminance]
- * extension (correct gamma/coefficients — never hand-rolled). Only meaningful between two fully
- * opaque colours; [resolveLabelColor] composites over [AeroColorScheme.background] before calling
- * this so an uncomposited translucent fill stop (e.g. the outlined variant's 0.15x-alpha fill)
- * never reaches it.
- */
-private fun labelContrastRatio(a: Color, b: Color): Float {
-    val l1 = a.luminance()
-    val l2 = b.luminance()
-    val lighter = maxOf(l1, l2)
-    val darker = minOf(l1, l2)
-    return (lighter + 0.05f) / (darker + 0.05f)
-}
-
-/**
- * D-12's single source of truth for the on-fill label colour — both [AeroButtonSurface]'s `Text`
- * and `AeroSegmentedControl`'s segment `Text` (Phase 19, cross-package import) call this
- * identically. This is a colour a component ASKS FOR by resolving it algorithmically from its
- * OWN actual fill, never a colour a component author picks by eye or tunes as a per-component
- * constant — that per-component-constant path is exactly the gap-G5 lesson (19-UAT.md): the
- * segmented control's raised fill was darkened chasing contrast for a fixed label token until it
- * became a bespoke colour unlike the button's own fill. Per-component constant retuning to chase
- * contrast is forbidden; the mechanism below is the only sanctioned lever.
- *
- * [fillTop]/[fillBottom] are composited over [backdrop] via [Color.compositeOver] before either
- * candidate is measured against them — [Color.luminance] ignores alpha entirely, so an
- * uncomposited translucent stop (the outlined variant multiplies fill alpha by 0.15) would report
- * a luminance for the raw fill colour, not for what is actually visible behind it.
- *
- * For each of [LABEL_CANDIDATE_DARK]/[LABEL_CANDIDATE_LIGHT], the WORST-case ratio against the two
- * composited stops is computed (`minOf`, never an average) — a candidate that wins big on one stop
- * and fails the other must not be chosen over one that clears the floor on both, since the label
- * is legible everywhere on the gradient or it is not legible at all.
- */
-internal fun resolveLabelColor(fillTop: Color, fillBottom: Color, backdrop: Color): Color {
-    val compositedTop = fillTop.compositeOver(backdrop)
-    val compositedBottom = fillBottom.compositeOver(backdrop)
-    val darkWorstCase = minOf(
-        labelContrastRatio(LABEL_CANDIDATE_DARK, compositedTop),
-        labelContrastRatio(LABEL_CANDIDATE_DARK, compositedBottom),
-    )
-    val lightWorstCase = minOf(
-        labelContrastRatio(LABEL_CANDIDATE_LIGHT, compositedTop),
-        labelContrastRatio(LABEL_CANDIDATE_LIGHT, compositedBottom),
-    )
-    return if (darkWorstCase >= lightWorstCase) LABEL_CANDIDATE_DARK else LABEL_CANDIDATE_LIGHT
-}
 
 /** Filled → outlined fill-alpha multiplier (17-UI-SPEC.md Outlined contract, D-06). */
 private const val OUTLINED_FILL_ALPHA_MULTIPLIER: Float = 0.15f

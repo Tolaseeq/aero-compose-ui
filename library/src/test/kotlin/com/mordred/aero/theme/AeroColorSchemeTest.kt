@@ -54,12 +54,19 @@ class AeroColorSchemeTest {
     }
 
     @Test
-    fun aeroColorSchemeHasTwentyFourTokensAfterOrnamentOverrideAppend() {
-        // PRIM-03: a trailing, defaulted ornamentOverride field was appended (23 -> 24).
-        // The append itself is source-compatible (no existing constructor call needs edits);
-        // only this structural-count assertion is updated to match.
+    fun aeroColorSchemeHasTwentySixTokensAfterLabelPolarityTokensAppend() {
+        // PRIM-03/SHW-16/VER-06: a trailing, defaulted ornamentOverride field was appended
+        // (23 -> 24, Phase 16); labelOnFilledSurface/labelOnOutlinedSurface were appended next,
+        // the same trailing-and-defaulted way (24 -> 26, 20-09). Both appends are
+        // source-compatible (no existing constructor call needs edits); only this structural-count
+        // assertion is updated to match.
         val count = AeroColorScheme::class.declaredMemberProperties.size
-        assertEquals(24, count, "AeroColorScheme must declare 23 original color tokens + 1 ornamentOverride")
+        assertEquals(
+            26,
+            count,
+            "AeroColorScheme must declare 23 original color tokens + ornamentOverride + " +
+                "labelOnFilledSurface + labelOnOutlinedSurface"
+        )
     }
 
     @Test
@@ -106,5 +113,79 @@ class AeroColorSchemeTest {
         val override = AeroOrnamentTokens.derive(AeroColorScheme.AeroBlue)
         val custom = AeroColorScheme.AeroBlue.copy(ornamentOverride = override)
         assertEquals(override, custom.ornamentOverride, "ornamentOverride must be settable via copy")
+    }
+
+    // ---- SHW-16/VER-06 (20-09): labelOnFilledSurface/labelOnOutlinedSurface polarity tokens. ----
+
+    @Test
+    fun builtInPresetsCarryTheDecidedPolarityTable() {
+        // The maintainer's 2026-07-29 decision table (20-09): AeroBlue/AeroDark's light `primary`
+        // makes their opaque fills want a dark label while their near-transparent outlined fill
+        // (composited onto the dark backdrop) wants a light one; Classic's dark `primary` means
+        // both polarities coincide on white, unchanged from its historical "white everywhere".
+        assertEquals(Color.Black, AeroColorScheme.AeroBlue.labelOnFilledSurface, "AeroBlue.labelOnFilledSurface")
+        assertEquals(Color.White, AeroColorScheme.AeroBlue.labelOnOutlinedSurface, "AeroBlue.labelOnOutlinedSurface")
+        assertEquals(Color.Black, AeroColorScheme.AeroDark.labelOnFilledSurface, "AeroDark.labelOnFilledSurface")
+        assertEquals(Color.White, AeroColorScheme.AeroDark.labelOnOutlinedSurface, "AeroDark.labelOnOutlinedSurface")
+        assertEquals(Color.White, AeroColorScheme.Classic.labelOnFilledSurface, "Classic.labelOnFilledSurface")
+        assertEquals(Color.White, AeroColorScheme.Classic.labelOnOutlinedSurface, "Classic.labelOnOutlinedSurface")
+    }
+
+    @Test
+    fun existingTwentyFourArgConstructorCallStillCompilesAndDefaultsLabelTokens() {
+        // Mirrors existingTwentyThreeArgConstructorCallStillCompilesAndDefaultsOverrideToNull's
+        // source-compatibility proof, extended to the 24-arg (post-ornamentOverride) shape: a call
+        // that omits BOTH new trailing tokens must still compile and resolve non-null, sensible
+        // fallbacks rather than throwing or defaulting to an invisible/transparent colour.
+        // primary/background are unambiguous extremes (not AeroBlue's own borderline-luminance
+        // values) so this test exercises the fallback heuristic itself, not a coincidence of a
+        // real preset's exact luminance sitting close to the 0.5 split.
+        val scheme = AeroColorScheme(
+            primary = Color.White,
+            onPrimary = Color(0xFF000000),
+            secondary = Color(0xFF000000),
+            onSecondary = Color(0xFF000000),
+            surface = Color(0xFF000000),
+            onSurface = Color(0xFF000000),
+            background = Color.Black,
+            onBackground = Color(0xFF000000),
+            error = Color(0xFF000000),
+            onError = Color(0xFF000000),
+            cardBackground = Color(0xFF000000),
+            borderDefault = Color(0xFF000000),
+            borderSelected = Color(0xFF000000),
+            labelText = Color(0xFF000000),
+            glassSurface = Color(0xFF000000),
+            glassBorder = Color(0xFF000000),
+            glassHighlight = Color(0xFF000000),
+            titleBarGradientStart = Color(0xFF000000),
+            titleBarGradientEnd = Color(0xFF000000),
+            titleBarText = Color(0xFF000000),
+            buttonHover = Color(0xFF000000),
+            closeButtonHover = Color(0xFF000000),
+            panelBackground = Color(0xFF000000),
+            ornamentOverride = null,
+        )
+        // primary is white (luminance 1.0) -> fallback picks the dark candidate;
+        // background is black (luminance 0.0) -> fallback picks the light candidate.
+        assertEquals(Color.Black, scheme.labelOnFilledSurface, "fallback labelOnFilledSurface for a light primary")
+        assertEquals(Color.White, scheme.labelOnOutlinedSurface, "fallback labelOnOutlinedSurface for a dark background")
+    }
+
+    @Test
+    fun copyOmittingBothLabelTokensStillResolvesSensiblyRatherThanThrowing() {
+        // AeroColorScheme.copy() re-supplies every field from the receiver by default, so this
+        // proves the FIELD ITSELF never throws/renders invisible when a caller builds a scheme
+        // through copy() without touching label tokens (the fallback expression only runs when a
+        // constructor call omits the argument entirely, e.g. this class's own 24-arg test above).
+        val custom = AeroColorScheme.Classic.copy(primary = Color(0xFF123456))
+        assertEquals(
+            AeroColorScheme.Classic.labelOnFilledSurface, custom.labelOnFilledSurface,
+            "copy() must preserve labelOnFilledSurface when not explicitly overridden"
+        )
+        assertEquals(
+            AeroColorScheme.Classic.labelOnOutlinedSurface, custom.labelOnOutlinedSurface,
+            "copy() must preserve labelOnOutlinedSurface when not explicitly overridden"
+        )
     }
 }
