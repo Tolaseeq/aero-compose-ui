@@ -59,6 +59,12 @@ fun ShowcaseApp(
     val toastState = remember { AeroToastHostState() }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // NOTE (20-06/SHW-16): AeroTheme itself now paints a fillMaxSize Surface(colors.background)
+        // around its content (Main.kt wraps this whole app in AeroTheme {}), so this Surface call
+        // is now redundant with the identical color underneath it - kept as-is rather than removed:
+        // ShowcaseApp is reachable from places that may not always sit directly under an
+        // AeroTheme-owned background Surface, and a same-color redundant paint changes nothing
+        // visible (verified: no elevation/shadow/shape difference between the two Surface calls).
         Surface(
             color = colors.background,
             modifier = Modifier.fillMaxSize()
