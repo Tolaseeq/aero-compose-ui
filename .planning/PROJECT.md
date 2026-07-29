@@ -8,7 +8,7 @@
 
 Разработчик подключает одну зависимость и получает полный набор Aero-styled компонентов с тремя темами, кастомной шапкой окна, типизированным набором иконок и демо-витриной — без необходимости реализовывать стиль или искать совместимый icon pack самостоятельно.
 
-## Current State (Shipped: v2.0.4 PanelGroup Recompose Fix, 2026-06-26)
+## Current State (Shipped: v3.0 Glass Refinement, 2026-07-29)
 
 - **v1.0 MVP** (3 фазы, 53 требования): Foundation + Atomic Components + Composite/Navigation. Все компоненты библиотеки реализованы, три темы работают, showcase демонстрирует всё.
 - **v1.1 Icon System** (3 фазы, 17 требований): 138 векторных иконок `AeroIcons` (порт Phosphor Regular) заменили все текстовые символы и `Icons.Outlined.*`; `compose.materialIconsExtended` удалён из Gradle dependency graph; showcase содержит `IconsSection` с поиском.
@@ -17,9 +17,18 @@
 - **v2.0.4 PanelGroup Recompose Fix** (1 фаза 14, 8 требований): устранено дублирование header-полос в горизонтальном CONTROLLED `AeroPanelGroup` при перетаскивании разделителя во время рекомпозиции родителя. **v2.0.3 был неудачной попыткой** (фикс не той причины — `SideEffect`/`isExpanded()`); баг воспроизвёлся в реальном приложении. Настоящая первопричина: section-DSL-лямбда `content` была `@Composable` → имела свой recompose-scope → при drag + рекомпоз дописывала `section()` в persisted `scope` (3→9→…→33). Фикс: DSL-лямбда стала не-`@Composable` (как `LazyListScope`). Добавлен детерминированный Compose UI-тест с программным drag (11→1). Подтверждено в реальном приложении. Source-compatible, zero new runtime deps.
 - **v2.0.2 AeroPanelGroup** (2 фазы 13 + 13.1, 18 + 1 требований): аддитивный layout-компонент `AeroPanelGroup` (+ `AeroPanelSection` через scope-DSL) — N секций заполняют родителя, сворачиваются в ~36dp полоску-заголовок (соседи забирают высоту), drag-resize между соседними раскрытыми секциями (модель VS Code Side Bar); fraction-based размеры переживают ресайз окна; гибридный controlled/uncontrolled API по паттерну `AeroAccordion`; Pattern 3 (animate-target vs. drag-write + `isDragging`→`snap()`) разрешает PNL-PITFALL-01; 12 чистых JVM-юнит-тестов без Compose; Win7 Aero визуал (glassPanel, CaretRight 0°→90°, headerActions, grip dots). Вставленная Phase 13.1 добавила горизонтальную ориентацию через общий internal-core `AeroPanelGroupImpl(orientation)` + аддитивный default-param — zero breaking change, zero vertical regression (PNL-HORIZ-01). Three-theme sign-off PASSED на обеих ориентациях. Zero new dependencies.
 
-**Codebase:** Kotlin / Compose Desktop 1.7.3, Kotlin 2.1.21, Gradle 8.14.3, JDK 17. v2.0 added 152 files changed (+27,406 / −2,285) across phases 7–11; v2.0.1 added 9 code files (+520 / −14) in Phase 12; v2.0.2 added 4 code files (+1,516: `AeroPanelGroup.kt` 818, `PanelDistribution.kt` 245, `PanelGroupLogicTest.kt` 235, `LayoutSection.kt` +218) across Phases 13 + 13.1. Project version bumped to `2.0.2` (`build.gradle.kts`).
+- **v3.0 Glass Refinement** (6 фаз 15–20, 57 требований): обязательная миграция тулчейна на Kotlin 2.4.10 + Compose Multiplatform 1.11.1 (Material3 припинен к стабильной 1.9.0), доказанно инертная — 232/232 теста зелёные и человеческий вердикт «нет визуального дрейфа», подтверждённый пиксельным diff. Новый общий слой Aero-примитивов: единственная реализация отрисовки `drawAeroSurfaceCore` с четырьмя путями наружу (`Modifier.aeroSurface`, прямой `DrawScope`-вызов, `aeroGlowRing`, `aeroThumbSurface`/`aeroGroove`), алгоритмически выводимые `AeroOrnamentTokens.derive` поверх новой RGB-математики `Color.lighten()`/`darken()`, исходно-совместимый `ornamentOverride`. Починены три давних дефекта `GlassModifiers.kt` (пиксельный литерал глянца, срезаемый бордер, мёртвый `elevation`). Восемь компонентов переведены на этот слой без изменения публичного API и поведения; `AeroSwitch` и `AeroSegmentedControl` впервые получили hover/press/focus, `AeroListItem` — клипованную «пилюлю» выделения, где ховер компонуется поверх выделения. Добавлен общий механизм focus-visible (клавиатура показывает фокус, указатель — нет). Тесты 232 → 467. Внешний scratch-потребитель поймал реальный дефект (`AeroTheme` не рисовал фон), скрытый собственным showcase.
 
-## Current Milestone: v3.0 Glass Refinement
+**Codebase:** Kotlin 2.4.10 / Compose Multiplatform 1.11.1 (Material3 припинен к стабильной 1.9.0), Gradle 8.14.3, JDK 17. 35 975 строк Kotlin в 351 файле. v2.0 added 152 files changed (+27,406 / −2,285) across phases 7–11; v2.0.1 added 9 code files (+520 / −14) in Phase 12; v2.0.2 added 4 code files (+1,516) across Phases 13 + 13.1; v3.0 changed 248 files (+43,770 / −2,638), of which 71 code files (+11,104 / −409), across Phases 15–20. Project version bumped `2.0.4` → `3.0.0` at milestone close (`build.gradle.kts`), per the locked bump-on-milestone rule — Phase 15 deliberately proved JitPack with throwaway tags (`v3.0.0-alpha01`, `-verify01/02`) instead of bumping mid-milestone.
+
+## Last Milestone: v3.0 Glass Refinement — SHIPPED 2026-07-29
+
+Шесть фаз (15–20), 41 план, 57/57 требований. Восемь компонентов, читавшихся как Material3, переведены на новый общий слой Aero-примитивов поверх мигрированного тулчейна — публичный API и поведение не изменились. Приёмка мейнтейнера на трёх темах пройдена на 100% DPI и подтверждена захватами; прогоны на 125%/200% DPI, которых требовал SHW-16, сознательно отменены решением мейнтейнера — пробел зафиксирован, а не выдан за пройденный. Тип закрытия — `override_closeout`: девять принятых отложенных позиций перечислены в STATE.md § Deferred Items. Подробности: MILESTONES.md, `.planning/milestones/v3.0-ROADMAP.md`, RETROSPECTIVE.md.
+
+**Что осталось открытым после v3.0:** яркость `AeroOrnamentTokens` на AeroBlue/AeroDark (G4, направление — пробовать более тёмные значения именно для этих двух тем); отсутствие клавиатурного фокуса у `AeroRangeSlider` (доставшееся по наследству); клип-пробел в `GlassModifiers.kt` (IN-01, радиус поражения ~40 компонентов); scratch/proof-файлы, до сих пор лежащие в `showcase/src/main` (WR-01); контраст ярлыков ниже WCAG-порога 4.5:1 у части поверхностей.
+
+<details>
+<summary>📦 v3.0 Glass Refinement — milestone goal & target features (scoped 2026-07-21)</summary>
 
 **Goal:** Переделать визуал восьми компонентов, которые сейчас читаются как Material3, в узнаваемо-стеклянный Aero-облик — опираясь на расширенный и починенный общий слой Aero-примитивов, поверх мигрированного на актуальный стабильный Compose Multiplatform тулчейна. Функционал и публичный API компонентов не меняются.
 
@@ -41,11 +50,23 @@
 - Сначала слой примитивов, затем перевод компонентов на него (повторяет удачную схему Phase 7 в v2.0).
 - Вернность: «дух Aero, современное исполнение» — узнаваемо стеклянно и объёмно, без буквального копирования пропорций Win7.
 
-## Last Milestone: v2.0.4 PanelGroup Recompose Fix — SHIPPED 2026-06-26
+</details>
+
+<details>
+<summary>📦 v2.0.4 PanelGroup Recompose Fix — shipped 2026-06-26</summary>
 
 Patch milestone (Phase 14). Eliminated header-strip duplication in horizontal CONTROLLED `AeroPanelGroup` under drag-while-recompose. **v2.0.3 shipped a wrong-cause fix** (`SideEffect`/`isExpanded()`, a write-during-composition theory) and the bug persisted in a real consumer; the real cause was the `@Composable` section-DSL lambda accumulating `scope.sections` (3→9→…→33) when re-run independently during an active drag. **v2.0.4 fix:** non-`@Composable` DSL lambda (like `LazyListScope`), guarded by a deterministic `runComposeUiTest` programmatic-drag test. See MILESTONES.md / RETROSPECTIVE.md and the `project_panelgroup_composable_dsl_pitfall` + `feedback_repro_must_exercise_path` memories. Confirmed working in the consumer app. Released as `com.github.Tolaseeq:aero-compose-ui:2.0.4`; v2.0.3 remains tagged but superseded.
 
-**Открытые кандидаты на будущие milestone:**
+</details>
+
+## Next Milestone Goals
+
+Веха не поставлена — `/gsd-new-milestone` (questioning → research → requirements → roadmap). Нумерация фаз продолжается с **21**.
+
+**Открытые кандидаты:**
+- **Долг v3.0:** G4 (яркость ornament-токенов на AeroBlue/AeroDark), клавиатурный фокус `AeroRangeSlider`, IN-01 (клип-пробел `GlassModifiers.kt`, ~40 компонентов), вынос scratch/proof-файлов из `showcase/src/main`, контраст ярлыков до WCAG 4.5:1, квадратная тень ховера `AeroRadioButton`, ABI-совместимость `AeroTheme.establishBackground`, расширение теста контраста на outlined и disabled-сегменты.
+- **VIS-F01** — ревизия визуала остальных ~40 компонентов: восемь теперь стеклянные, остальные всё ещё нет. Самый естественный преемник v3.0.
+- Отложенное из v3.0: VLST-F01 (зеркальное отражение строки списка), VRNG-F01 (Win7-ping-pong для indeterminate).
 - AeroPanelGroup: drag-to-reorder секций (PNL-REORDER-01), вложенные `AeroPanelGroup` как first-class API (PNL-NEST-01), клавиатурный ресайз разделителей (PNL-KBD-01).
 - Carry-over: AeroDropdown popup-offset regression (DROP-FIX-01, v1.0).
 - Прежний candidate-список: inline pickers, DataTable cell-edit/reorder/filter, TreeView DnD, ColorPicker eyedropper, StepperWizard branching, Sidebar drag-resize, AeroDateTimeRangePicker hover-preview.
@@ -150,18 +171,22 @@ Patch milestone (Phase 14). Eliminated header-strip duplication in horizontal CO
 - ✓ **AeroPanelGroup поведение + визуал** (PNL-14..18) — Win7 Aero glassPanel-заголовок (CaretRight 0°→90°, `leadingIcon`, `headerActions`); краевые случаи (все свёрнуты / одна раскрыта); 12 чистых JVM-юнит-тестов (`PanelGroupLogicTest`); showcase демо + three-theme sign-off PASSED; KDoc с REQ-ID + PITFALL — Phase 13 — v2.0.2
 - ✓ **AeroPanelGroup horizontal orientation** (PNL-HORIZ-01) — горизонтальная ориентация через общий internal-core `AeroPanelGroupImpl(orientation)` + аддитивный `orientation` default-param; N колонок, vertical dividers, drag-resizes-width, rotated header strip; zero breaking change, zero vertical regression; three-theme sign-off на обеих ориентациях — Phase 13.1 — v2.0.2
 
+**v2.0.4 (8):**
+- ✓ **PanelGroup recompose fix** (RCMP-01..04, REG-01..02, REL-01..02) — non-`@Composable` section-DSL лямбда устраняет накопление `scope.sections` при drag-во-время-рекомпозиции; детерминированный `runComposeUiTest` drag-тест 11→1 — Phase 14 — v2.0.4
+
+**v3.0 (57):**
+- ✓ **Toolchain Migration** (TOOL-01..08) — Kotlin 2.4.10 + CMP 1.11.1 собрались с первой попытки, Material3 припинен к стабильной 1.9.0; RCMP-страж портирован и заново доказан падающим на несломанном коде; 232/232 теста + человеческий вердикт «нет визуального дрейфа»; сигнатуры `dropShadow`/`innerShadow` подтверждены bytecode-инспекцией реального артефакта; JitPack зелёный — Phase 15 — v3.0
+- ✓ **Aero Primitives Foundation** (PRIM-01..18) — `Color.lighten()`/`darken()`, `AeroOrnamentTokens.derive` + исходно-совместимый `ornamentOverride`, декларативный `AeroSurfaceStyle`, единственная реализация `drawAeroSurfaceCore` с четырьмя путями наружу, `aeroGlowRing`/`aeroThumbSurface`/`aeroGroove`, три починенных дефекта `GlassModifiers.kt`, `drawWithCache`-геометрия, `rememberAeroInteractionState()` в `components/common/`, дымовой прогон всей библиотеки, спайк M3-слотов PASS — Phase 16 — v3.0
+- ✓ **Buttons** (VBTN-01..06) — общий internal `AeroButtonSurface` (M3-контейнер убран), пять состояний, клип ховера по форме, `Role.Button` + Space/Enter, outlined как фиксированная дельта заливной — Phase 17 — v3.0
+- ✓ **Range** (VRNG-01..09) — `AeroSlider` сохраняет M3 `Slider` с кастомными слотами, `AeroRangeSlider` перерисован при byte-identical drag-логике, `AeroProgressBar` на `aeroGroove`/`aeroSurface` с опциональным (по умолчанию выключенным) бликом и сохранённым таймингом 1500ms — Phase 18 — v3.0
+- ✓ **Selectors + Lists** (VSEL-01..04, VLST-01..04) — `AeroSwitch` и `AeroSegmentedControl` впервые получили hover/press/focus, выбранный сегмент утоплен кодом нажатой кнопки, `AeroListItem` клипует выделение в «пилюлю», ховер компонуется поверх выделения — Phase 19 — v3.0
+- ✓ **Showcase + Verification** (SHW-15..16, VER-01..06) — постоянная секция Verification со всеми восемью компонентами, два grep-гейта, snapshot размеров/радиусов против тега v2.0.4, UI-тесты клавиатуры, внешний scratch-потребитель, каждый гейт доказан падающим на несломанном коде; приёмка на трёх темах пройдена на 100% DPI, прогоны 125%/200% отменены решением мейнтейнера — Phase 20 — v3.0
+
 ### Active
 
-<!-- v3.0 Glass Refinement — scoped 2026-07-21. Требования с REQ-ID будут в .planning/REQUIREMENTS.md после стадии research. -->
+<!-- Веха не поставлена. `/gsd-new-milestone` создаст свежий .planning/REQUIREMENTS.md. -->
 
-**v3.0 Glass Refinement** (требования определяются — research → REQUIREMENTS.md):
-- [ ] Миграция на актуальный стабильный Compose Multiplatform (+ Kotlin/Gradle/JDK), зелёный тест-сьют как гейт
-- [ ] Слой Aero-примитивов: починка `GlassModifiers` + новые визуальные приёмы + токены тем
-- [x] `AeroButton`, `AeroOutlinedButton` — Aero-облик и состояния — **Phase 17 завершена (2026-07-23)**: общий internal `AeroButtonSurface` (M3-контейнер убран), 5 состояний, `Role.Button`+Space/Enter, three-theme visual sign-off PASSED (после 2 раундов калибровки rim/fill/disabled)
-- [ ] `AeroSwitch`, `AeroSegmentedControl` — объём, состояния
-- [x] `AeroSlider`, `AeroRangeSlider`, `AeroProgressBar` — желобок, градиентная заливка, объёмные ручки — **Phase 18 завершена (2026-07-24)**: общий `neutralRest` factory + slider-resolvers + `drawAeroGlowRing` primitive; AeroSlider на M3 custom slots, AeroRangeSlider Canvas-рестайл (drag-логика byte-identical, guard-тест), AeroProgressBar на `aeroGroove`/`aeroSurface` + optional sheen (1500ms indeterminate сохранён); rich focus/press/lift реакция унифицирована на все ползунки; three-theme sign-off PASSED (2 раунда калибровки); code-review 2 warnings пофикшены (WR-01 hover-leak + regression-тест, WR-02 offscreen mask)
-- [ ] `AeroListItem` — клипованное Aero-выделение
-- [ ] Showcase + three-theme visual sign-off
+Пусто — v3.0 отгружена, следующая веха не определена. Кандидаты перечислены выше в «Next Milestone Goals».
 
 ### Out of Scope
 
@@ -174,7 +199,7 @@ Patch milestone (Phase 14). Eliminated header-strip duplication in horizontal CO
 - Кастомные пользовательские иконки через AeroIcons API — пользователь использует обычный `ImageVector` напрямую
 - Иконки в отдельном Gradle-модуле — всё в `:library` для v1.x (отделение возможно в v2.0+)
 - Настоящий DWM Aero blur через JNI/WinAPI — симуляция через градиенты визуально достаточна
-- WCAG-совместимость гарантии — цвета Aero-тем не оптимизированы под контрастность
+- WCAG-совместимость как гарантия уровня библиотеки — цвета Aero-тем не оптимизированы под контрастность. Уточнено в v3.0: контраст ярлыков на кнопках и сегментах теперь охраняется value-level тестами, но часть поверхностей остаётся ниже порога 4.5:1 (заведено в `.planning/todos/pending/`), и гарантии на весь набор компонентов по-прежнему нет
 - Aero Snap на кастомном окне — `WindowDraggableArea` не передаёт HTCAPTION OS, известное ограничение
 - v2.0-specific exclusions:
   - **Inline-mode date/time pickers** — только popup-based варианты; inline-режим (всегда видимый календарь) откладывается до v2.x
@@ -198,8 +223,8 @@ Patch milestone (Phase 14). Eliminated header-strip duplication in horizontal CO
 
 ## Constraints
 
-- **Tech stack:** Kotlin 2.1.21 + Compose Desktop 1.7.3, Gradle Kotlin DSL 8.14.3, JDK 17
-- **Зависимости:** Material 3 как основа, кастомный стиль поверх — не заменять Material полностью, а оборачивать/расширять. `compose.materialIconsExtended` НЕ используется (удалён в v1.1).
+- **Tech stack:** Kotlin 2.4.10 + Compose Multiplatform 1.11.1, Gradle Kotlin DSL 8.14.3, JDK 17 (поднято в v3.0 с Kotlin 2.1.21 / Compose 1.7.3 — линия 2.x остаётся рабочей на старом тулчейне, последняя `2.0.4`)
+- **Зависимости:** Material 3 как основа, кастомный стиль поверх — не заменять Material полностью, а оборачивать/расширять. Координата Material3 припинена явно к стабильной `1.9.0`: алиас `compose.material3` на CMP 1.11.x молча резолвится в alpha. `compose.materialIconsExtended` НЕ используется (удалён в v1.1).
 - **Совместимость:** Compose Desktop (Windows primary, Linux/macOS secondary)
 - **Именование:** Все компоненты с префиксом `Aero` (AeroButton, AeroTextField и т.д.); иконки следуют Phosphor verbatim (`AeroIcons.X`, `AeroIcons.CaretDown`)
 - **Распространение:** Maven/JAR артефакт — `com.mordred:aero-compose-ui`
@@ -248,6 +273,14 @@ Patch milestone (Phase 14). Eliminated header-strip duplication in horizontal CO
 | **v2.0.2:** Rotated header strip через `BoxWithConstraints` + `requiredWidth(maxHeight)` + `rotate(-90f)` | `graphicsLayer`-only и `placeRelativeWithLayer` подходы давали неправильную ширину/позицию вертикального заголовка (GAP-1, пойман на sign-off) | ✓ Good — корректный bottom-to-top заголовок в 36dp полоске; подходы-кандидаты отброшены |
 | **v2.0.3:** `AeroPanelGroup` size-math читает `isExpanded()` каждую композицию; sync `expandedState` перенесён в `SideEffect` | Теория write-during-composition внутри `BoxWithConstraints`/`SubcomposeLayout` | ⚠️ Superseded — НЕ та причина; баг воспроизвёлся в реальном приложении. Правка безвредна, но не лечит. Реальный фикс — v2.0.4 ниже |
 | **v2.0.4:** section-DSL-лямбда `content` сделана НЕ-`@Composable` (`content: AeroPanelGroupScope.() -> Unit`, как `LazyListScope`) | Реальная первопричина RCMP: `@Composable` DSL-лямбда имела свой recompose-scope → при активном drag рекомпоз родителя перезапускал её независимо, дописывая `section()` в persisted `scope` (3→9→…→33), `key()`-цикл рендерил всё больше header-полос | ✓ Good — подтверждено инструментированием; детерминированный `runComposeUiTest` drag-тест 11→1; 232 теста GREEN; подтверждено в реальном приложении. Builder/DSL-лямбды с side-effect в коллекцию НИКОГДА не должны быть `@Composable` |
+| **v3.0:** Миграция тулчейна изолирована в отдельную первую фазу с нулевыми визуальными правками | Смешать риск апгрейда зависимостей с риском кода отрисовки — значит потерять возможность отнести регрессию к одной из причин | ✓ Good — пара Kotlin 2.4.10 + CMP 1.11.1 (никогда не выпускавшаяся согласованной) собралась с первой попытки; «нет дрейфа» доказано и тестами, и пиксельным diff, потому что визуальный код был неподвижен |
+| **v3.0:** Одна `drawAeroSurfaceCore`, наружу четырьмя путями (`aeroSurface`, прямой `DrawScope`-вызов, `aeroGlowRing`, `aeroThumbSurface`/`aeroGroove`) — вместо независимых реализаций | Три копии градиентно-бевельной логики разойдутся визуально; повторяет удачную схему enabling-фазы Phase 7 в v2.0 | ✓ Good — все производные примитивы получены `style.copy()`-подменой полей, ни одной кустарной градиентной реализации ниже по стеку |
+| **v3.0:** `AeroOrnamentTokens.derive(base)` выводит токены алгоритмически через RGB `lighten`/`darken`, а не десятком литералов на тему | `.copy(alpha=)` умеет гасить, но не осветлять, а в Classic токены непрозрачные — альфа-манипуляция там не работает вовсе | ✓ Good — три темы обслуживаются одной формулой; ⚠️ Revisit — G4: на AeroBlue/AeroDark яркость всё ещё великовата, направление правки — более тёмные значения именно для этих двух тем |
+| **v3.0:** `AeroSlider` СОХРАНЯЕТ M3 `Slider` и передаёт кастомные `thumb =`/`track =` слоты; спайк выполнен до, а не после планирования фазы | Полное удаление M3 переносит на себя drag/keyboard/steps/семантику — самый дорогой из возможных вариантов; допущение проверено bytecode-инспекцией реального артефакта | ✓ Good — спайк PASS понизил сложность Phase 18 с HIGH до MEDIUM; поведение слайдера не регрессировало |
+| **v3.0:** focus-visible выведен из потока interaction'ов (свой reducer), а не из `LocalInputModeManager` | Платформенный focus-visible гейтит только `Indication`, которую библиотека повсеместно отключает — то есть на этом коде он не работает в принципе | ✓ Good — одна общая механика гейтит кольца фокуса на switch, сегментах, строках списка и обеих кнопках; клавиатура показывает фокус, указатель — нет |
+| **v3.0:** Цвет ярлыка — свойство схемы, выбираемое по полярности поверхности (`labelOnFilledSurface` / `labelOnOutlinedSurface`), а не вычисление на месте вызова из анимирующейся заливки | Пер-компонентная подкрутка констант уже дважды разъезжалась (сегмент против кнопки); вычисление из анимирующегося цвета даёт мигание и неповторяемые замеры | ✓ Good — сегменты и кнопки перестали расходиться; ⚠️ Revisit — часть поверхностей всё ещё ниже WCAG 4.5:1, заведено в todos |
+| **v3.0:** Каждый гейт (grep, snapshot, contrast, UI-тест) доказывается падающим на намеренно сломанном коде до того, как ему верят | Прямое следствие урока v2.0.3: страж, который не был проверен на red, — не страж | ✓ Good — VER-06 закрыт для всех новых гейтов; тесты 232 → 467 |
+| **v3.0:** Приёмка через внешний scratch-потребитель, собранный против опубликованного тега, а не через собственный showcase | Ни `aska`, ни `satellite-control` эту веху не отслеживают — исторически сильнейший ловец регрессий недоступен | ✓ Good — поймал реальный дефект (`AeroTheme` не рисовал фон), который собственный `Surface` showcase'а маскировал; починено в библиотеке, а не обойдено |
 
 ---
-*Last updated: 2026-07-28 — Phase 19 (Selectors + Lists) complete, 8/8 must-haves verified: `AeroSwitch` (recessed groove + raised glossy thumb, first-ever hover/press/focus), `AeroSegmentedControl` (raised strip with one visibly pushed-in segment, reusing Phase 17 pressed-button code), `AeroListItem` (clipped Aero selection pill, base-then-transform composition so selection can no longer suppress hover). Added a shared focus-visible mechanism (pointer- vs keyboard-acquired focus) now gating focus rings on switch, segments, list rows and both button variants. Two gap-closure rounds: code review found CR-01/CR-02 + wiring warnings (all closed), then human sign-off rejected the segmented control's bespoke dark plate — resolved by unifying its fill and label mechanism onto `AeroButton`'s own constants, one source of truth instead of two hand-authored styles. Three-theme sign-off passed. Known open item, deliberately out of scope: `AeroButton`'s own label contrast measures 1.70–3.98:1, below the WCAG 4.5:1 normal-text floor, untested — tracked in `.planning/todos/pending/`*
+*Last updated: 2026-07-29 after v3.0 Glass Refinement milestone — 6 phases (15–20), 41 plans, 57/57 requirements. Toolchain raised to Kotlin 2.4.10 + Compose Multiplatform 1.11.1 and proven inert; a single shared Aero-primitives layer now backs eight restyled components with unchanged public API and behavior; `GlassModifiers.kt`'s three long-standing defects fixed; tests 232 → 467. Closed as `override_closeout`: SHW-16's 125%/200% DPI passes were explicitly waived by the maintainer, and 9 acknowledged items are deferred (STATE.md § Deferred Items). Project version bumped to `3.0.0`.*

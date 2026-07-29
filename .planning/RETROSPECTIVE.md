@@ -204,6 +204,50 @@
 
 ---
 
+## Milestone: v3.0 — Glass Refinement
+
+**Shipped:** 2026-07-29
+**Phases:** 6 (15–20) | **Plans:** 41 | **Tasks:** 85 | **Sessions:** 2026-07-22 → 2026-07-29, 252 commits. Closed as `override_closeout` (9 acknowledged deferred items).
+
+### What Was Built
+- **Toolchain migration as an isolated first phase (15):** Kotlin 2.4.10 + Compose Multiplatform 1.11.1 — a pairing JetBrains never shipped matched — built green on the first bundled attempt, with Material3 pinned to explicit stable 1.9.0. Proven inert both behaviorally (232/232 tests, including the ported RCMP guard re-proven to fail on reverted code) and visually (human verdict + pixel diff against a pre-migration screenshot baseline).
+- **A shared Aero primitives layer (16):** one `drawAeroSurfaceCore` exposed four ways, `AeroOrnamentTokens.derive` on new RGB `lighten`/`darken` math, a source-compatible `ornamentOverride` escape hatch, and three long-standing `GlassModifiers.kt` defects fixed in place (pixel-literal gloss, clipped border, dead `elevation`).
+- **Eight components restyled (17–19)** with public API and behavior held constant: both buttons dropped the M3 container but kept `Role.Button` + keyboard; `AeroSlider` kept M3's `Slider` behind custom slots; `AeroRangeSlider`'s drag logic proven byte-identical; `AeroSwitch` and `AeroSegmentedControl` got hover/press/focus for the first time; `AeroListItem`'s highlight became a clipped pill that hover composes on top of.
+- **A verification phase that actually gated (20):** two grep-gates, a size/radius snapshot against the real v2.0.4 tag, keyboard-activation tests, four new Compose UI gates, an external scratch consumer, and a three-theme human sign-off. Tests 232 → 467.
+
+### What Worked
+- **Isolating the toolchain migration paid for itself immediately.** Because zero visual code moved in Phase 15, "no drift" was a claim that could be proven rather than argued. Every later visual regression was unambiguously attributable to the visual work.
+- **Spikes placed before the phase that depends on them.** PRIM-18 (do custom-sized M3 `Slider` slots survive its internal layout math?) was answered in Phase 16, not discovered in Phase 18 — it downgraded Phase 18 from HIGH to MEDIUM complexity instead of blowing it up mid-execution.
+- **Bytecode inspection over documentation.** Twice (`dropShadow`/`innerShadow` packages in Phase 15, keyboard test APIs in Phase 17) the research-stated signature was wrong and `javap` against the real artifact was right. This is now the project's default for "does this API exist and where".
+- **The external scratch consumer found what the showcase structurally could not.** `AeroTheme` had never painted a background; the showcase's own `Surface` had been covering for it since v1.0. No internal test could have caught it.
+- **Code review before the visual gate, not after.** The eye reports "too bright"; it does not report which layer owes the contrast. Review of the eleven never-reviewed foundation/button files (20-05) caught defects the sign-off would have surfaced only as vague dissatisfaction.
+
+### What Was Inefficient
+- **Phase 19 needed nine plans past its planned four.** Three gap-closure rounds (19-05..07, 19-09..11, 19-12) chased the same class of problem: per-component constants hand-tuned toward a target instead of one shared mechanism. The final fix — label colour as a scheme-level property resolved by surface polarity — was available from the start and would have avoided two of the three rounds.
+- **Contrast was chased twice in opposite directions.** 20-04 established a white-label exception with a 4.079 figure; 20-09 voided it and replaced it with a black-label exception at 3.218–4.228. Both rounds were real work; only the second was structural.
+- **The audit heuristic cried wolf at close.** Two "UAT gaps" flagged phases whose UAT files were `passed` with zero open scenarios, and a "verification gap" pointed at Phase 10 from a milestone shipped six weeks earlier — noise that had to be manually adjudicated before a clean close was possible.
+- **No milestone audit was run.** v2.0 had one; v3.0 shipped without, so cross-phase integration was verified only by the phase-level gates.
+
+### Patterns Established
+- **One implementation, many exposure paths.** Glow ring, thumb, and groove are `style.copy()` field swaps over a single draw core — they are structurally incapable of drifting apart. This is the shape any future shared visual layer should take.
+- **Base-then-transform state resolution.** Resolve the base state first, compose the modifier state second. This structurally eliminates the "selection suppresses hover" bug class rather than testing for it.
+- **Ordering rules belong in the primitive's contract.** `aeroGlowRing` must be chained outside any clip — discovered by a glow that was invisible in its own gallery, then documented as a binding rule for every downstream component.
+- **Derive shared visual properties at the scheme level, not the call site.** The segmented control drifted into a bespoke colour language precisely because its label was resolved locally from an animating fill.
+- **A gate is not a gate until it has been red.** Applied uniformly this milestone: every new grep-gate, snapshot, and source-scan guard was demonstrated failing on deliberately-broken code before being trusted.
+
+### Key Lessons
+1. **When two related controls need the same visual property, unify the mechanism — do not tune both.** Phase 19's three gap rounds and Phase 20's two contrast rounds are the same lesson learned five times. The reviewer rejected per-component constant tuning explicitly; one source of truth was the only accepted answer.
+2. **Human visual gates and code review catch disjoint defect sets.** The eye caught the segmented control's bespoke plate; only review caught which layer owed the contrast. Running the gate without the review means re-running the gate.
+3. **Verify a claimed API against the artifact, not the docs.** Two of two documented signatures were wrong this milestone.
+4. **A milestone can ship with a waived requirement, but the waiver must be recorded as a gap, not absorbed into a pass.** SHW-16's DPI passes were waived by the maintainer; that is recorded next to the gate status and carried into the next milestone's known-unknowns, not quietly marked green.
+
+### Cost Observations
+- Model mix: opus for orchestration, planning, and the sign-off/review rounds; sonnet for plan execution. 41 plans across 8 days.
+- Cost concentrated in Phase 19 (12 plans for 8 requirements) — the gap-closure rounds, not the original implementation. Per-plan code execution was routinely 3–25 minutes; the expensive units were human-in-the-loop calibration cycles.
+- The one-off spends that clearly earned their cost: the pre-migration screenshot baseline (made "no drift" provable), the M3 slot spike (avoided a HIGH-complexity fallback), and the external scratch consumer (found a defect no internal artifact could).
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -216,6 +260,7 @@
 | v2.0.1 | ~2h20m | 1 (12) | First patch milestone — single phase, verification-only gate (no separate audit); established nullable-formatter dispatch, fraction-as-stable-coordinate dividers, and verbatim state-machine reuse; confirmed that documented lessons must be applied at write-time (v2.0 lesson #3 regressed before the sign-off caught it) |
 | v2.0.2 | ~1 day | 2 (13 + 13.1) | Single additive layout component + inserted orientation variant; established mandatory-spike-before-component for the highest-risk interaction (Pattern 3 two-writer coexistence), public-wrapper + internal-core for orientation symmetry, and refactor-then-extend (core extraction as its own zero-regression plan); confirmed "strictly one phase" is a soft boundary (deferred horizontal re-entered as Phase 13.1) |
 | v2.0.3 | single-day | 1 (14) | Smallest patch milestone — 3 plans (fix, repro, release); established `SideEffect`-for-snapshot-state-sync rule for `BoxWithConstraints`/`SubcomposeLayout` context and `isExpanded()`-as-structural-source-of-truth; confirmed that write-during-composition inside `SubcomposeLayout` amplifies to ×N recompose loops |
+| v3.0 | 8 days | 6 (15–20) | First milestone to migrate the toolchain, and the first to isolate that migration in its own zero-visual-change phase so "no drift" became provable. Established one-implementation-many-exposure-paths for the shared visual layer, base-then-transform state resolution, scheme-level derivation of shared visual properties (over per-call-site computation), ordering rules written into a primitive's contract, and bytecode-inspection-over-documentation for API verification. Confirmed that the external-consumer check is irreplaceable — and that per-component constant tuning is a rework generator, not a fix |
 
 ### Cumulative Quality
 
@@ -227,10 +272,13 @@
 | v2.0.1 | ~63 (+1: `AeroDateTimeRangePicker`) | 138 (unchanged) | 3 (unchanged) | 12 (PickersSection + LayoutSection demos extended) | unchanged (zero new dependencies) |
 | v2.0.2 | ~64 (+1: `AeroPanelGroup`, vertical + horizontal orientations) | 138 (unchanged) | 3 (unchanged) | 12 (LayoutSection: + vertical + 2 horizontal AeroPanelGroup demos) | unchanged (zero new dependencies) |
 | v2.0.3 | ~64 (no new components — bug fix only) | 138 (unchanged) | 3 (unchanged) | 12 (LayoutSection: + RCMP-04 permanent recompose-during-drag repro) | unchanged (zero new dependencies) |
+| v3.0 | ~64 (no new components — 8 restyled onto a new shared primitives layer) | 138 (unchanged) | 3 (unchanged) | 14 (+ Primitives gallery, + permanent Verification section) | unchanged deps; toolchain floor raised to Kotlin 2.4.10 / CMP 1.11.1, Material3 pinned to stable 1.9.0. Tests 232 → 467 |
 
 ### Top Lessons (Verified Across Milestones)
 
 1. **Visual checkpoints belong in plans, not afterthoughts.** v1.0 final visual checkpoint (Phase 3 P08) and v1.1 sign-off (Phase 6 P03) both produced clean approval records by being formal plans with their own `SUMMARY.md`. Off-the-cuff "let's just look at it" checkpoints are not auditable later. **v2.0 sharpened this:** deferring *all* visual verification to one end-of-milestone phase produced a 16-defect batch — checkpoints should be per-component-phase, not only at the showcase phase.
 2. **Pre-flight checks catch silent disasters.** Phase 1 doctrine "no `transparent=true`" survives every milestone; v1.1 Phase 5 wave-ordering prevented broken-build commits; v2.0 generalized this into per-plan zero-match grep-gates for every banned API and a front-loaded PITFALLS catalog. Both were enforced via plan-level rules, not afterthought QA.
 3. **Wrap, don't replace, Material3.** v1.0 chose to keep `Icon()` from material3 directly without an `AeroIcon()` wrapper; v1.1 reused that decision verbatim; v2.0 layered new stateful components on top without touching the v1.x API surface (no breaking changes). Less surface area, more interop, no consumer surprises.
-4. **Test the correctness-critical logic without the UI runtime.** v1.1 proved generated code via `compileKotlin`; v2.0 extended it — sealed state machines and pure transition functions (range commit, lazy-expand guard, HSV math) unit-tested without Compose caught the hardest pitfalls before any rendering existed.
+4. **Test the correctness-critical logic without the UI runtime.** v1.1 proved generated code via `compileKotlin`; v2.0 extended it — sealed state machines and pure transition functions (range commit, lazy-expand guard, HSV math) unit-tested without Compose caught the hardest pitfalls before any rendering existed. **v3.0 extended it again:** style resolution was written as pure, Compose-free transforms, so contrast and state-precedence became value-level assertions rather than things only an eye could judge.
+5. **When two things must look alike, share the mechanism — never tune both toward each other.** v3.0's most expensive lesson, learned across five separate rounds: the segmented control and the button were repeatedly recalibrated against one another until their fill and label resolution were unified onto one source of truth. Per-component constant tuning generates rework; it does not converge.
+6. **Isolate a risky migration into its own zero-change phase.** v3.0's toolchain jump (Kotlin 2.4.10 + CMP 1.11.1, an unmatched pairing) was provably inert only because no visual code moved alongside it. Mixing the two would have made every subsequent regression unattributable.

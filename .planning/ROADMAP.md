@@ -10,7 +10,8 @@ A Compose Desktop UI component library styled after Windows Aero (Windows 7): gl
 - ✅ **v2.0.1 Picker & SplitPane Fixes** — Phase 12 (shipped 2026-06-22) — 2 bug fixes + `AeroDateTimeRangePicker`
 - ✅ **v2.0.2 AeroPanelGroup** — Phases 13 + 13.1 (shipped 2026-06-23) — N-section collapsible+resizable layout, vertical + horizontal orientations
 - ✅ **v2.0.4 PanelGroup Recompose Fix** — Phase 14 (shipped 2026-06-26) — horizontal-controlled recompose-during-drag duplication fix (real root cause: non-`@Composable` DSL); v2.0.3 was a superseded wrong-cause release
-- 🚧 **v3.0 Glass Refinement** — Phases 15–20 (in progress) — toolchain migration (Kotlin 2.4.10 / CMP 1.11.1), repaired Aero primitives layer, eight components restyled to genuine Win7 glass
+- ✅ **v3.0 Glass Refinement** — Phases 15–20 (shipped 2026-07-29) — toolchain migration (Kotlin 2.4.10 / CMP 1.11.1), repaired + extended Aero primitives layer, eight components restyled to genuine Win7 glass
+- 📋 **v3.x / next** — not yet scoped (`/gsd-new-milestone`)
 
 Full ship-time snapshots (milestone goal, all phase details, decisions, tech debt) are archived per milestone:
 
@@ -19,6 +20,7 @@ Full ship-time snapshots (milestone goal, all phase details, decisions, tech deb
 - `.planning/milestones/v2.0.1-ROADMAP.md`
 - `.planning/milestones/v2.0.2-ROADMAP.md`
 - `.planning/milestones/v2.0.4-ROADMAP.md`
+- `.planning/milestones/v3.0-ROADMAP.md`
 
 ## Phases
 
@@ -83,239 +85,22 @@ Details: `.planning/milestones/v2.0.2-ROADMAP.md` · Summary: `.planning/MILESTO
 Details: `.planning/milestones/v2.0.4-ROADMAP.md` · Summary: `.planning/MILESTONES.md` · Retrospective: `.planning/RETROSPECTIVE.md`
 </details>
 
-### 🚧 v3.0 Glass Refinement (In Progress)
+<details>
+<summary>✅ v3.0 Glass Refinement (Phases 15–20) — SHIPPED 2026-07-29</summary>
 
-**Milestone Goal:** Restyle eight Material3-looking components (`AeroButton`, `AeroOutlinedButton`, `AeroSwitch`, `AeroSegmentedControl`, `AeroSlider`, `AeroRangeSlider`, `AeroProgressBar`, `AeroListItem`) into genuinely Aero-glass surfaces — on a repaired and extended shared Aero-primitives layer, on top of a migrated, current-stable Compose Multiplatform toolchain. Public API and behavior do not change. Major version because the mandatory toolchain migration raises the minimum Kotlin/Compose for all consumers.
+**Milestone Goal:** Restyle eight Material3-looking components (`AeroButton`, `AeroOutlinedButton`, `AeroSwitch`, `AeroSegmentedControl`, `AeroSlider`, `AeroRangeSlider`, `AeroProgressBar`, `AeroListItem`) into genuinely Aero-glass surfaces — on a repaired and extended shared Aero-primitives layer, on top of a migrated, current-stable Compose Multiplatform toolchain. Public API and behavior did not change. Major version because the mandatory toolchain migration raises the minimum Kotlin/Compose for all consumers.
 
-**Phase numbering continues from 15** (project shipped through Phase 14 / v2.0.4).
+- [x] **Phase 15: Toolchain Upgrade** — Kotlin 2.4.10 + Compose Multiplatform 1.11.1, Material3 pinned to stable 1.9.0, RCMP guard ported and re-proven non-inert, migration proven behaviorally and visually inert (6/6 plans, 2026-07-22)
+- [x] **Phase 16: Foundation — Aero Primitives Layer** — repaired `GlassModifiers`, `AeroSurfaceStyle`/`AeroSurfacePrimitives`, derived `AeroOrnamentTokens`, shared thumb/groove/glow primitives, full-library smoke pass (5/5 plans, 2026-07-23)
+- [x] **Phase 17: Buttons** — `AeroButton`, `AeroOutlinedButton` restyled on one shared internal `AeroButtonSurface`; M3 container dropped, `Role.Button` + keyboard kept (5/5 plans, 2026-07-23)
+- [x] **Phase 18: Range** — `AeroSlider` (M3 custom slots), `AeroRangeSlider` (Canvas, drag logic byte-identical), `AeroProgressBar` restyled (4/4 plans, 2026-07-24)
+- [x] **Phase 19: Selectors + Lists** — `AeroSwitch`, `AeroSegmentedControl`, `AeroListItem` restyled; first-ever hover/press/focus; shared focus-visible mechanism (12/12 plans, 2026-07-28)
+- [x] **Phase 20: Verification** — showcase wiring, fail-then-pass grep gates, size/radius snapshot, external scratch consumer, three-theme sign-off (9/9 plans, 2026-07-29)
 
-- [x] **Phase 15: Toolchain Upgrade** — Kotlin 2.4.10 + Compose Multiplatform 1.11.1, isolated from all visual work
-- [x] **Phase 16: Foundation — Aero Primitives Layer** — repaired `GlassModifiers`, `AeroSurfaceStyle`/`AeroSurfacePrimitives`, `AeroOrnamentTokens`, shared thumb/groove primitives, full-library smoke pass (completed 2026-07-23)
-- [x] **Phase 17: Buttons** — `AeroButton`, `AeroOutlinedButton` restyled with shared internal surface (completed 2026-07-23)
-- [x] **Phase 18: Range** — `AeroSlider` (M3 slots), `AeroRangeSlider`, `AeroProgressBar` restyled (completed 2026-07-24)
-- [x] **Phase 19: Selectors + Lists** — `AeroSwitch`, `AeroSegmentedControl`, `AeroListItem` restyled (completed 2026-07-28)
-- [x] **Phase 20: Verification** — showcase wiring, grep-gates, three-theme sign-off (incl. non-100% DPI pass) (completed 2026-07-29)
+**Closeout:** `override_closeout` — SHW-16's 125%/200% DPI passes explicitly waived by the maintainer, plus 9 acknowledged deferred items (STATE.md § Deferred Items).
 
-## Phase Details
-
-### Phase 15: Toolchain Upgrade
-
-**Goal**: The library builds, tests, and ships on Kotlin 2.4.10 + Compose Multiplatform 1.11.1 (or an explicitly user-approved fallback), with zero visual-code changes mixed in — so any later regression is unambiguously attributable to either the toolchain or the visual work, never both.
-**Depends on**: Phase 14 (v2.0.4, last shipped state)
-**Requirements**: TOOL-01, TOOL-02, TOOL-03, TOOL-04, TOOL-05, TOOL-06, TOOL-07, TOOL-08
-**Success Criteria** (what must be TRUE):
-
-  1. `./gradlew build` succeeds on Kotlin 2.4.10 + Compose Multiplatform 1.11.1 — or, if that untested pairing fails, one of the three named fallbacks is selected only after escalating to the user (never substituted silently)
-  2. `compose.material3` resolves to an explicitly pinned stable coordinate, not the alpha the bare alias would silently resolve to
-  3. `AeroPanelGroupRecomposeUiTest` is ported to the CMP 1.11 test-infrastructure changes and is re-proven to FAIL when the non-`@Composable` DSL fix is temporarily reverted, then passes again once restored — a ported-but-inert guard is not acceptable
-  4. The full library test suite (232+ tests, including all 12 `PanelGroupLogicTest`) is green, and the showcase compiles, launches, and smoke-runs on all three themes with no observable change from the pre-migration baseline
-  5. A `dropShadow`/`innerShadow` scratch composable compiles against the real 1.11.1 artifact (not just documentation), and the JitPack build passes on the new toolchain
-
-**Plans**: 6/6 plans executed
-
-Plans:
-
-- [x] 15-01-PLAN.md — Pre-migration baseline capture (before-screenshots, 3 themes) [Wave 1]
-- [x] 15-02-PLAN.md — Build gate + stable Material3 1.9.0 pin (HARD STOP + escalation) [Wave 2]
-- [x] 15-03-PLAN.md — RCMP test port + re-proof (fail-on-unfixed) [Wave 3]
-- [x] 15-04-PLAN.md — Full 232-test suite + showcase smoke & baseline diff [Wave 4]
-- [x] 15-05-PLAN.md — dropShadow/innerShadow scratch composable (Phase 16 handoff) [Wave 3]
-- [x] 15-06-PLAN.md — JitPack release proof (throwaway pre-release tag) [Wave 5]
-
-### Phase 16: Foundation — Aero Primitives Layer
-
-**Goal**: A single, shared, three-theme-proven Aero drawing/token layer exists so every visual component phase consumes it rather than re-deriving gradients, gloss, bevel, and grooves independently.
-**Depends on**: Phase 15
-**Requirements**: PRIM-01, PRIM-02, PRIM-03, PRIM-04, PRIM-05, PRIM-06, PRIM-07, PRIM-08, PRIM-09, PRIM-10, PRIM-11, PRIM-12, PRIM-13, PRIM-14, PRIM-15, PRIM-16, PRIM-17, PRIM-18
-**Success Criteria** (what must be TRUE):
-
-  1. `Color.lighten()`/`darken()` exist and `AeroOrnamentTokens.derive(base)` produces algorithmically-derived ornament tokens for all three themes, reachable through an additive `ornamentOverride` escape hatch on `AeroColorScheme` with no breaking change to existing constructor calls
-  2. A single `drawAeroSurfaceCore(style, cornerPx)` backs `Modifier.aeroSurface()` (Box-owning components), a direct-call path (Canvas-owning components), `Modifier.aeroGlowRing` (hover/focus), and a raised-thumb + recessed-track-groove primitive pair — one implementation exposed multiple ways, not independent copies
-  3. `GlassModifiers.kt`'s three confirmed defects are fixed: `glassSurface`'s gloss is proportional to component height (no `endY = 100f` literal), its border renders at full declared thickness (clip-order fixed), and `glassEffect(elevation)` either draws a real shadow or the dead parameter is removed
-  4. Every new gradient fades toward `baseColor.copy(alpha = 0f)` (never hardcoded `Color.Transparent`) and is spot-checked on AeroBlue/AeroDark/Classic at first implementation, not deferred; geometry/brushes are built in `drawWithCache`, not rebuilt per frame
-  5. A full-library smoke pass across all ~50 components (not just the eight targets) shows no regression from the `GlassModifiers.kt` fixes, `rememberAeroInteractionState()` is available from `components/common/`, and the M3 `Slider` thumb/track slot-sizing spike either confirms custom-sized slots fit cleanly or is documented as failed with the `AeroSlider` fallback noted
-
-**Plans**: 0/5 plans executed
-
-Plans:
-
-- [x] 16-01-primitives-spine-tracer-PLAN.md
-- [x] 16-02-draw-primitives-expansion-PLAN.md
-- [x] 16-03-glassmodifiers-fixes-PLAN.md
-- [x] 16-04-interaction-states-common-PLAN.md
-- [x] 16-05-verification-spike-smoke-PLAN.md
-
-- [x] 16-01-PLAN.md — Primitives spine tracer: ColorMath + AeroOrnamentTokens.derive + source-compatible ornamentOverride + AeroSurfaceStyle + drawAeroSurfaceCore/aeroSurface + Primitives gallery, end-to-end on three themes [Wave 1]
-- [x] 16-02-PLAN.md — Draw-primitives expansion: aeroGlowRing, raised-thumb (aeroThumbSurface/drawAeroThumb), recessed track-groove + gallery demos [Wave 2]
-- [x] 16-03-PLAN.md — GlassModifiers.kt three defect fixes: proportional gloss, full-thickness border/clip order, glassEffect elevation revived-or-removed [Wave 1]
-- [x] 16-04-PLAN.md — InteractionStates.kt → components/common/ + rememberAeroInteractionState() [Wave 1]
-- [x] 16-05-PLAN.md — PRIM-18 M3 Slider slot-sizing spike + full-library smoke pass + Primitives gallery three-theme sign-off (D-03 glassEffect call) [Wave 3]
-
-**Cross-cutting constraints:**
-
-- { statement: "caption row width fits the demo-card column at all three theme densities (AeroBlue/AeroDark/Classic) without pushing layout", verification: backstop }
-
-### Phase 17: Buttons
-
-**Goal**: `AeroButton` and `AeroOutlinedButton` read as genuine Aero glass controls with correct hover/press/focus/disabled states, while keeping keyboard activation and button semantics.
-**Depends on**: Phase 16
-**Requirements**: VBTN-01, VBTN-02, VBTN-03, VBTN-04, VBTN-05, VBTN-06
-**Success Criteria** (what must be TRUE):
-
-  1. `AeroButton` renders a two-tone gradient fill with a visible seam, proportional top gloss, inner bevel, and outer contour
-  2. Hover shows a glow, press inverts the gradient, focus is visible, and disabled reads distinctly — all in Aero idiom, and the hover overlay is clipped to the button's rounded shape (no square corners bleeding past the corner radius)
-  3. `Role.Button` semantics and keyboard activation (Space/Enter) still work after the M3 container is dropped, via `Modifier.clickable(role = Role.Button, ...)` — not a zero-semantics hand-roll
-  4. `AeroOutlinedButton` shows the equivalent outlined-variant treatment and cannot visually drift from `AeroButton`, because both consume one shared internal surface composable
-
-**Plans**: 5/5 plans executed
-
-Plans:
-**Wave 1**
-
-- [x] 17-01-PLAN.md — Tracer: shared internal surface + filled AeroButton rest state end-to-end (M3 container removed, Role.Button, showcase wired) [Wave 1]
-
-**Wave 2** *(blocked on Wave 1 completion)*
-
-- [x] 17-02-PLAN.md — Per-state style transforms (pressedRecess/flattenDisabled/hoverLighten in theme/) + resolveButtonStyle; all five filled states [Wave 2]
-
-**Wave 3** *(blocked on Wave 2 completion)*
-
-- [x] 17-03-PLAN.md — Outlined variant as fixed delta of filled; Role.Button+keyboard test; VBTN-03/VBTN-06 source-scan guards [Wave 3]
-
-**Wave 4** *(blocked on Wave 3 completion)*
-
-- [x] 17-04-PLAN.md — Showcase state-matrix demo rows for both variants (three-theme × five-state review target) [Wave 4]
-
-**Wave 5** *(blocked on Wave 4 completion)*
-
-- [x] 17-05-PLAN.md — Human three-theme × five-state sign-off checkpoint (blocking) [Wave 5]
-
-### Phase 18: Range
-
-**Goal**: `AeroSlider`, `AeroRangeSlider`, and `AeroProgressBar` show recessed track grooves and raised, glossy thumbs/fills, with zero regression to slider drag/keyboard/step behavior.
-**Depends on**: Phase 16 (consumes Buttons' pressed-fill code only indirectly via Foundation; no hard Phase 17 dependency)
-**Requirements**: VRNG-01, VRNG-02, VRNG-03, VRNG-04, VRNG-05, VRNG-06, VRNG-07, VRNG-08, VRNG-09
-**Success Criteria** (what must be TRUE):
-
-  1. `AeroSlider` keeps Material3's `Slider` and supplies custom `thumb =`/`track =` slots showing a recessed groove and a raised, glossy thumb with hover/focus — the M3 container is not removed
-  2. `AeroSlider`'s drag, keyboard-arrow nudge, `steps` snapping, `onValueChangeFinished`, and semantics all behave identically to before the restyle
-  3. `AeroRangeSlider` shows the same groove + raised-thumb treatment with independent hover/press per thumb, while its existing drag logic is untouched
-  4. `AeroProgressBar` shows a recessed track bed and a gradient fill with gloss; the periodic sheen is present but OFF by default; indeterminate mode is restyled but keeps its existing 1500ms restart timing with no ping-pong introduced
-  5. Anywhere animation and drag write the same value (slider/range-slider thumbs), the locked Pattern 3 is reused: animation reads a target-only value, drag writes directly, `isDragging` switches to `snap()`
-
-**Plans**: 4/4 plans executed
-
-Plans:
-**Wave 1**
-
-- [x] 18-01-PLAN.md — TRACER: neutralRest factory + slider resolvers + AeroSlider custom-slot restyle end-to-end, Wave-0 guards (VRNG-01/02/03/09)
-
-**Wave 2** *(blocked on Wave 1 completion)*
-
-- [x] 18-02-PLAN.md — AeroRangeSlider Canvas draw-block restyle + per-thumb interaction, drag-logic-untouched guard (VRNG-04/05/09)
-- [x] 18-03-PLAN.md — AeroProgressBar recessed bed + glossy fill + default-off running sheen + indeterminate sweep, invariant guard (VRNG-06/07/08)
-
-**Wave 3** *(blocked on Wave 2 completion)*
-
-- [x] 18-04-PLAN.md — RangeSection showcase states × three themes + human three-theme visual sign-off (VRNG-03/05/06/08)
-
-### Phase 19: Selectors + Lists
-
-**Goal**: `AeroSwitch` and `AeroSegmentedControl` gain their first-ever hover/press/focus states and Aero volume, and `AeroListItem`'s selection highlight is finally clipped to a proper Aero pill with a visible focus state.
-**Depends on**: Phase 17 (`AeroSegmentedControl` reuses the pressed-button fill code), Phase 18 (`AeroSwitch`'s thumb/groove primitives are built and proven by Range)
-**Requirements**: VSEL-01, VSEL-02, VSEL-03, VSEL-04, VLST-01, VLST-02, VLST-03, VLST-04
-**Success Criteria** (what must be TRUE):
-
-  1. `AeroSwitch` shows a recessed track groove and a raised thumb with gloss and shadow, replacing the current fully-flat rendering
-  2. `AeroSwitch` has working hover, press, and focus states for the first time (currently absent entirely)
-  3. `AeroSegmentedControl`'s selected segment appears recessed (inverted gradient + inner shadow) by reusing the pressed-button code from Phase 17, and the control gains hover and focus for the first time
-  4. `AeroListItem`'s selection highlight is clipped to a rounded pill with gradient and rim light, hover remains visible on an already-selected row (the two states combine instead of one suppressing the other), a focus visual exists, and all newly-hover-wired components reuse `AeroListItem`'s existing `Modifier.hoverable` + `collectIsHoveredAsState` pattern rather than inventing pointer-position tracking
-
-**Plans**: 12/12 plans executed
-
-Plans:
-**Wave 1**
-
-- [x] 19-01-PLAN.md — TRACER: AeroListItem end-to-end — base-then-transform pill resolver, clipped Aero pill, in-bounds focus stroke, two fail-then-pass Wave-0 guards (VLST-01/02/03/04)
-
-**Wave 2** *(blocked on Wave 1 completion)*
-
-- [x] 19-02-PLAN.md — AeroSwitch recessed accent groove + raised glossy thumb, first-ever hover/press/focus/disabled, three Wave-0 guards (VSEL-01/02, VLST-04)
-- [x] 19-03-PLAN.md — AeroSegmentedControl raised/recessed segments reusing the pressed-button code verbatim, Role.RadioButton semantics, in-bounds hover/focus, three Wave-0 guards (VSEL-03/04, VLST-04)
-
-**Wave 3** *(blocked on Wave 2 completion)*
-
-- [x] 19-04-PLAN.md — SelectionSection + ListSection state-matrix demos and the human three-theme × per-state visual sign-off (VSEL-01/02/03/04, VLST-01/02/03)
-
-**Wave 4** *(gap closure — blocked on Wave 3's failed sign-off)*
-
-- [x] 19-05-PLAN.md — GAP G2 TRACER: focus-visible reducer in the shared interaction collector, wired end-to-end through AeroSwitch's focus glow ring (VSEL-02)
-
-**Wave 5** *(blocked on Wave 4 completion)*
-
-- [x] 19-06-PLAN.md — GAP G1 + G2: AeroListItem row grows with its content so the pill contains its text, focus stroke gated on focus-visible (VLST-01, VLST-03)
-- [x] 19-07-PLAN.md — GAP G3 + G2: AeroSegmentedControl single-token label at full alpha, recessed fill moved downward so exactly one segment reads pushed in, focus stroke gated on focus-visible (VSEL-03, VSEL-04)
-
-**Wave 6** *(blocked on Wave 5 completion)*
-
-- [x] 19-08-PLAN.md — Three-theme re-sign-off: the three closed gaps plus UAT tests 8/9/10/11, including the full Classic matrix that has never been reviewed (all eight requirements)
-
-**Wave 7** *(gap closure round 2 — blocked on the code review and verification that reopened VSEL-02/03/04 and VLST-03)*
-
-- [x] 19-09-PLAN.md — CR-02 TRACER: the shared focus-visible reducer stops discarding the pointer flag on focus loss, proven end-to-end against a real AeroSwitch; plus WR-01 putting the button family on the same gate (VSEL-02, VSEL-04, VLST-03)
-- [x] 19-10-PLAN.md — CR-01: the raised segment base darkened so the on-surface label survives on it, guarded by twelve value-level contrast assertions across all three schemes at both ends of the selection axis (VSEL-03)
-
-**Wave 8** *(blocked on Wave 7 completion)*
-
-- [x] 19-11-PLAN.md — WR-03 + WR-04: per-segment state keyed to option identity, and exactly one hover emitter per interaction source across all three components, with the emission premise turned into a test (VSEL-02, VSEL-04, VLST-03, VLST-04)
-
-**Wave 9** *(blocked on Wave 8 completion)*
-
-- [x] 19-12-PLAN.md — Three-theme re-sign-off for the gap round: CR-01's darken magnitude judged by eye, CR-02/WR-01's focus behaviour exercised by the gesture that used to fail, WR-04's hover confirmed intact (VSEL-02, VSEL-03, VSEL-04, VLST-03)
-
-### Phase 20: Verification
-
-**Goal**: The milestone's visual work is demonstrated, mechanically gated, and human-approved across all three themes before shipping — closing the loop the v2.0.3 false-positive-sign-off lesson demands.
-**Depends on**: Phase 17, Phase 18, Phase 19
-**Requirements**: SHW-15, SHW-16, VER-01, VER-02, VER-03, VER-04, VER-05, VER-06
-**Success Criteria** (what must be TRUE):
-
-  1. The showcase demonstrates all eight restyled components in every state (default/hover/press/focus/disabled where applicable)
-  2. A human three-theme sign-off (AeroBlue / AeroDark / Classic) passes, including at least one pass at a non-100% DPI scale
-  3. Both new grep-gates (no pixel literals in gradient stops; no bypass of `aeroSurface()`'s centralized clip order) are proven to FAIL on deliberately-broken code before being proven to pass on the real code — matching VER-06's "provably fail on unfixed code" requirement, not "run the test"
-  4. A snapshot test confirms component default sizes and corner radii match the pre-migration baseline (no silent layout creep)
-  5. A UI test confirms keyboard activation works for both converted buttons, and a minimal scratch-consumer outside the showcase's own conventions builds against the new artifact
-
-**Plans**: 9/9 plans executed
-
-Plans:
-
-**Wave 1**
-
-- [x] 20-01-PLAN.md — Tracer: VER-01 gradient end-stop gate end-to-end with its in-file fail-then-pass fixtures, then the chain-aware VER-02 clip-order gate (VER-01, VER-02, VER-06)
-- [x] 20-02-PLAN.md — Permanent "Verification" showcase section holding all eight components at equal weight, plus a state-completeness audit of the four existing sections (SHW-15)
-
-**Wave 2** *(blocked on Wave 1 completion)*
-
-- [x] 20-03-PLAN.md — VER-03 default size/corner-radius snapshot against the real v2.0.4 baseline, plus the VER-04 audit closing it on the existing AeroButtonSemanticsTest (VER-03, VER-04, VER-06)
-- [x] 20-04-PLAN.md — Folded label-contrast fix: one shared resolveLabelColor mechanism for AeroButton/AeroSegmentedControl plus its value-level WCAG regression guard (SHW-16)
-
-**Wave 3** *(blocked on Wave 2 completion)*
-
-- [x] 20-05-PLAN.md — Code review of the eleven never-reviewed Phase 16/17 files and Phase 20's own diff, findings closed BEFORE the sign-off (SHW-16)
-
-**Wave 4** *(blocked on Wave 3 completion)*
-
-- [x] 20-06-PLAN.md — VER-05 scratch consumer: throwaway JitPack tag, a standalone project outside this repo, launching and rendering all eight (VER-05)
-
-**Wave 5** *(blocked on Wave 4 completion)*
-
-- [x] 20-07-PLAN.md — Human three-theme sign-off plus two exact non-100% DPI passes on AeroBlue, capture-backed and per-theme (SHW-15, SHW-16)
-- [x] 20-08-PLAN.md — Compose test-API gates for the mechanical half of SHW-16: per-state matrix, segment label-flip, AeroIconButton focus wiring (WR-02), fractional-density contour rounding — 435 -> 452 tests, zero production change; SHW-16 itself remains open for 20-07 (VER-06)
-
-**Wave 6** *(depends on 20-04, 20-08 — not gated on 20-07)*
-
-- [x] 20-09-PLAN.md — Label colour becomes a scheme-level property resolved by surface polarity (labelOnFilledSurface/labelOnOutlinedSurface), not a per-call-site computation from an animating fill; VER08 strengthened to true invariance; 452 -> 467 tests. VOIDS 20-04's 4.079/white recessed-segment exception, replaced by a fresh black 3.218-4.228 exception — SHW-16 itself remains open for 20-07 (SHW-16, VER-06)
+Details: `.planning/milestones/v3.0-ROADMAP.md` · Requirements: `.planning/milestones/v3.0-REQUIREMENTS.md` · Phase artifacts: `.planning/milestones/v3.0-phases/` · Summary: `.planning/MILESTONES.md`
+</details>
 
 ## Progress
 
@@ -334,19 +119,26 @@ Plans:
 | 11. Showcase + v2.0 Visual Sign-off | v2.0 | 11/11 | Complete | 2026-06-18 |
 | 12. Seconds Fix + SplitPane Fix + AeroDateTimeRangePicker | v2.0.1 | 4/4 | Complete | 2026-06-22 |
 | 13. AeroPanelGroup | v2.0.2 | 5/5 | Complete | 2026-06-23 |
-| 13.1. AeroPanelGroup horizontal orientation variant | v2.0.2 | 3/3 | Complete | 2026-06-23 |
+| 13.1. AeroPanelGroup horizontal orientation | v2.0.2 | 3/3 | Complete | 2026-06-23 |
 | 14. PanelGroup Recompose Fix | v2.0.4 | 3/3 | Complete | 2026-06-26 |
-| 15. Toolchain Upgrade | v3.0 | 6/6 | In Progress|  |
-| 16. Foundation — Aero Primitives Layer | v3.0 | 5/5 | Complete    | 2026-07-23 |
-| 17. Buttons | v3.0 | 5/5 | Complete    | 2026-07-23 |
-| 18. Range | v3.0 | 4/4 | Complete    | 2026-07-24 |
-| 19. Selectors + Lists | v3.0 | 12/12 | Complete    | 2026-07-28 |
-| 20. Verification | v3.0 | 9/9 | Complete    | 2026-07-29 |
+| 15. Toolchain Upgrade | v3.0 | 6/6 | Complete | 2026-07-22 |
+| 16. Foundation — Aero Primitives Layer | v3.0 | 5/5 | Complete | 2026-07-23 |
+| 17. Buttons | v3.0 | 5/5 | Complete | 2026-07-23 |
+| 18. Range | v3.0 | 4/4 | Complete | 2026-07-24 |
+| 19. Selectors + Lists | v3.0 | 12/12 | Complete | 2026-07-28 |
+| 20. Verification | v3.0 | 9/9 | Complete | 2026-07-29 |
 
 ## Next Milestone
 
-🚧 **v3.0 Glass Refinement** in progress (Phases 15–20). Next: `/gsd:plan-phase 15`.
+Not yet scoped. Run `/gsd-new-milestone` — questioning → research → requirements → roadmap. Phase numbering continues from **21**.
+
+Candidate carry-overs for scoping (full list in PROJECT.md and `.planning/todos/pending/`):
+
+- Deferred from v3.0: G4 ornament-token brightness on AeroBlue/AeroDark; `AeroRangeSlider` keyboard focus; IN-01 `GlassModifiers.kt` clip gap (~40-component blast radius); scratch/proof files still under `showcase/src/main`; label-contrast WCAG floor
+- VIS-F01 — visual sweep of the remaining ~40 components; VLST-F01 list-item mirror reflection; VRNG-F01 Win7 ping-pong indeterminate
+- DROP-FIX-01 — `AeroDropdown` popup offset regression (carried since v1.0)
+- `AeroPanelGroup`: PNL-REORDER-01, PNL-NEST-01, PNL-KBD-01
 
 ---
 
-*Roadmap last updated: 2026-07-21 — v3.0 Glass Refinement roadmap created (Phases 15–20, 57/57 requirements mapped).*
+*Roadmap last updated: 2026-07-29 — v3.0 Glass Refinement shipped and archived (Phases 15–20, 41 plans, 57/57 requirements).*
