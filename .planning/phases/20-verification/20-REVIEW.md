@@ -2,7 +2,7 @@
 phase: 20-verification
 reviewed: 2026-07-29T00:00:00Z
 depth: standard
-files_reviewed: 7
+files_reviewed: 23
 files_reviewed_list:
   - library/src/main/kotlin/com/mordred/aero/theme/GlassModifiers.kt
   - library/src/main/kotlin/com/mordred/aero/theme/ColorMath.kt
@@ -11,11 +11,27 @@ files_reviewed_list:
   - library/src/main/kotlin/com/mordred/aero/theme/AeroTheme.kt
   - showcase/src/main/kotlin/com/mordred/showcase/scratch/ScratchAeroShadowProof.kt
   - showcase/src/main/kotlin/com/mordred/showcase/scratch/ScratchSliderSlotSpike.kt
+  - library/src/main/kotlin/com/mordred/aero/components/buttons/AeroButton.kt
+  - library/src/main/kotlin/com/mordred/aero/components/buttons/AeroOutlinedButton.kt
+  - library/src/main/kotlin/com/mordred/aero/components/buttons/AeroIconButton.kt
+  - showcase/src/main/kotlin/com/mordred/showcase/ShowcaseApp.kt
+  - showcase/src/main/kotlin/com/mordred/showcase/sections/ButtonsSection.kt
+  - showcase/src/main/kotlin/com/mordred/showcase/sections/PrimitivesSection.kt
+  - library/src/test/kotlin/com/mordred/aero/verification/VER01GradientProportionalitySourceTest.kt
+  - library/src/test/kotlin/com/mordred/aero/verification/VER02AeroSurfaceClipOrderSourceTest.kt
+  - showcase/src/main/kotlin/com/mordred/showcase/sections/VerificationSection.kt
+  - library/src/test/kotlin/com/mordred/aero/verification/VER03BaselineSizeSnapshotTest.kt
+  - library/src/test/kotlin/com/mordred/aero/components/buttons/AeroButtonSemanticsTest.kt
+  - library/src/test/kotlin/com/mordred/aero/components/buttons/AeroButtonContrastRegressionTest.kt
+  - library/src/main/kotlin/com/mordred/aero/components/buttons/AeroButtonSurface.kt (20-04 diff only)
+  - library/src/main/kotlin/com/mordred/aero/components/selection/AeroSegmentedControl.kt (20-04 diff only)
+  - library/src/test/kotlin/com/mordred/aero/components/buttons/AeroButtonSurfaceSourceTest.kt (20-04 diff only)
+  - library/src/test/kotlin/com/mordred/aero/components/selection/AeroSegmentedControlSourceTest.kt (20-04 diff only)
 findings:
   critical: 0
-  warning: 1
-  info: 1
-  total: 2
+  warning: 2
+  info: 2
+  total: 4
 status: issues_found
 ---
 
@@ -23,8 +39,8 @@ status: issues_found
 
 **Reviewed:** 2026-07-29
 **Depth:** standard
-**Status:** issues_found (in progress — Task 1 of 2 review tasks; Task 2 appends the
-buttons/showcase tier plus Phase 20's own diff)
+**Status:** issues_found — all eleven never-reviewed files plus Phase 20's own diff covered;
+4 findings (0 critical, 2 warning, 2 info), disposition of each recorded in `20-REVIEW-FIX.md`.
 
 ## Scope Derivation
 
@@ -165,8 +181,132 @@ Gradle source sets is a build-topology change adjacent to Rule 4 (architectural)
 are explicitly historical evidence rather than a functional defect; routed to the maintainer/backlog
 for a decision at a future foundation-tier plan, not fixed blind in this one.
 
+## Findings — Buttons/Showcase Tier (Task 2)
+
+### `components/buttons/AeroButton.kt` / `AeroOutlinedButton.kt`
+
+Both are thin public wrappers delegating all painting to `AeroButtonSurface` (already covered by
+`19-REVIEW.md`) with only their variant's locked defaults (height, content padding, `outlined`
+flag). No logic of their own beyond assembling the call. No defect found.
+
+### `components/buttons/AeroIconButton.kt`
+
+**WR-02: `AeroIconButton`'s focus ring gates on the raw `focused` flag
+(`rememberFocusState`/`collectIsFocusedAsState`), not `focusVisible` — the one button-family
+component never migrated to the pointer-acquired-suppression fix WR-01/CR-02/G2 applied
+everywhere else in the library.**
+
+**File:** `library/src/main/kotlin/com/mordred/aero/components/buttons/AeroIconButton.kt:63,73-77`
+
+**Issue:** `AeroButtonSurface` (WR-01, closed at 19-09), `AeroSwitch`/`AeroSegmentedControl`/
+`AeroListItem` (G2, closed at 19-05/06/07) all gate their focus glow/ring on
+`state.focusVisible`/`rememberFocusVisible(...)` — a reducer that suppresses the ring when focus
+was pointer-acquired (a mouse click), showing it only for genuine keyboard-Tab focus.
+`AeroIconButton` still calls `rememberFocusState(interactionSource)` (`= collectIsFocusedAsState()`,
+the pre-fix raw signal) and gates its `2.dp` `borderSelected` border on `focused && enabled`
+directly — so clicking an `AeroIconButton` with a mouse draws the focus border immediately, the
+exact defect class every other Aero component in the library was fixed to not exhibit. This
+component is in the milestone's own diff (`M`, changed this milestone) and was never previously
+reviewed, so it is squarely in scope here rather than a pre-existing item to defer.
+
+**Fix:** Replace `rememberFocusState` with the shared `rememberFocusVisible` reducer (already
+`internal` in `components/common/InteractionStates.kt`, no new symbol needed) and gate the border
+on the resolved `focusVisible` boolean instead of the raw `focused` flag. **Severity: warning.
+Disposition: fixed in `20-REVIEW-FIX.md`** (mechanical, local, matches the library-wide precedent
+exactly — no architectural decision required).
+
+### `showcase/ShowcaseApp.kt`
+
+`VerificationSection()` is registered as the first content section, immediately after
+`ThemeSwitcher` and before "Foundation" — matches the 20-02-SUMMARY claim exactly. No defect
+found.
+
+### `showcase/sections/ButtonsSection.kt`
+
+Table-style rows for `AeroButton`/`AeroOutlinedButton`/`AeroIconButton`/`AeroToolbar`, each composing
+the real component with no forked demo styling and no style resolver called from showcase code. No
+defect found.
+
+### `showcase/sections/PrimitivesSection.kt`
+
+**IN-02: Calls `AeroOrnamentTokens.derive(colors)` directly instead of `AeroTheme.ornaments` —
+bypasses the `ornamentOverride` escape hatch (PRIM-03) for this one demo section.**
+
+**File:** `showcase/src/main/kotlin/com/mordred/showcase/sections/PrimitivesSection.kt:36`
+
+**Issue:** `AeroTheme.ornaments` (in `theme/AeroTheme.kt`, reviewed above) is the documented
+accessor: it resolves `colorScheme.ornamentOverride` first and only falls back to
+`AeroOrnamentTokens.derive(it)` when no override is set. `PrimitivesSection.kt` instead calls
+`AeroOrnamentTokens.derive(colors)` directly, so if a future custom `AeroColorScheme` supplies an
+`ornamentOverride`, this one gallery section's `aeroGlowRing` demo tile would silently show the
+algorithmically-derived tokens instead of the override — a showcase-only display bug (the real
+components elsewhere all read via `AeroTheme.ornaments` or an equivalent resolved path), not a
+library defect. **Severity: info. Disposition: fixed in `20-REVIEW-FIX.md`** (one-line swap, local,
+obviously safe per this plan's info-finding discretion).
+
+## Findings — Phase 20's Own Diff
+
+Reviewed the four sibling plans' output against the four checks this plan's Task 2 names.
+
+### 20-01 (VER-01/VER-02 gates): gate falsifiability — VERIFIED
+
+Both `VER01GradientProportionalitySourceTest.kt` and `VER02AeroSurfaceClipOrderSourceTest.kt`
+follow the D-08 three-layer shape: a pure detector over source text, in-file `const val` fixture
+pairs, and a real-source scan. Spot-checked directly (not just trusted from the SUMMARY): each file
+carries explicit `@Test` methods asserting a **non-empty** violation list against a `VIOLATING_*`
+fixture (the RED half) alongside methods asserting an **empty** list against `CLEAN_*` fixtures
+(the GREEN half) — e.g. `VER01...Test`'s `bareNumericPixelLiteralEndYIsFlagged`/
+`namedPixelConstantEndYIsFlagged` (RED) vs. `sizeRelativeEndYIsClean`/`noExplicitStopsIsClean` etc.
+(GREEN); `VER02...Test`'s `glowRingAfterSurfaceIsFlagged`/`clipAfterSurfaceIsFlagged` (RED) vs. the
+clean/two-unrelated-chains fixtures (GREEN). Each detector is genuinely capable of failing — a
+detector whose rule could not match a realistic violation would have no RED-half assertion at all;
+both files have one for each gate half. Neither class writes to the source tree (both operate on
+in-memory `String`/comment-stripped source, confirmed by reading the imports and function
+signatures — no `File(...).writeText` or similar anywhere in either file). **No finding.**
+
+### 20-02 (Verification showcase section): composition/style-resolver/nested-scroll — VERIFIED
+
+Read `VerificationSection.kt` in full: it imports and calls the eight real shipped components
+(`AeroButton`, `AeroOutlinedButton`, `AeroSwitch`, `AeroSegmentedControl`, `AeroSlider`,
+`AeroRangeSlider`, `AeroProgressBar`, `AeroListItem`) with no forked demo styling and no call to any
+`resolve*Style`/`resolveLabelColor`-class internal resolver from showcase code. Its own KDoc states
+explicitly "This section reuses `ShowcaseApp`'s existing outer scrolling `Column`... introduces no
+second, nested scroll region," and the file's `Column`/`Row` composition confirms this (no
+`verticalScroll`/`LazyColumn`/`AeroScrollArea` anywhere in the file). **No finding.**
+
+### 20-03 (VER-03 baseline provenance) — VERIFIED (spot-check)
+
+Read the `BASELINE` map (`VER03BaselineSizeSnapshotTest.kt:292-306`, 14 entries) and independently
+cross-checked one entry against the actual `v2.0.4` tag rather than trusting the SUMMARY's own
+claim: `git show v2.0.4:.../AeroButton.kt` confirms `height: Dp = 30.dp`, matching
+`"AeroButton.height" to 30.dp` exactly. No float-tolerance construct appears in the comparison
+(`baselineDeviations` compares by exact `Dp` equality, confirmed via the SUMMARY's own quoted
+implementation and this file's fixture set, which includes a deliberate ±1.dp-shift RED case that
+would be pointless if the real comparison tolerated any drift). **No finding.**
+
+### 20-04 (contrast fix scope) — VERIFIED
+
+Diffed `AeroButtonSurface.kt`/`AeroSegmentedControl.kt` directly between the commits Plan 20-04
+introduced (`b25ca73`..`dcc7087`) rather than trusting the SUMMARY's claim alone:
+- Both `Text` call sites read `color = resolveLabelColor(style.fillTop, style.fillBottom,
+  colors.background)` — the same shared, cross-package-imported function. Confirmed.
+- No `.dp`/`RoundedCornerShape`/`PaddingValues`/geometry token changed in either file's diff — the
+  entire diff is additive (`resolveLabelColor`, `LABEL_CANDIDATE_DARK/LIGHT`, `labelContrastRatio`)
+  plus the two `Text` color-parameter wirings and KDoc prose. Confirmed.
+- `RECESSED_FILL_DARKEN` does not appear anywhere in the diff (only KDoc prose referencing it by
+  name changed) — confirmed untouched.
+- `AeroButtonContrastRegressionTest.kt`'s `contrastRatio` (line 321) is a private, test-local
+  function; the file's imports (`grep '^import'`) show no import of `resolveLabelColor` or
+  `labelContrastRatio` from production — confirmed independently-derived (D-13), matching the
+  SUMMARY's claim.
+
+**No finding.** The one open item from this plan (AeroDark recessed-segment `fillBottom` at
+4.0787, below the 4.5 floor) is the already-authorized, tracked exception per this plan's own
+`<prior_phase_context>` — **not relitigated here**, consistent with the instruction not to
+re-file it as a new review finding.
+
 ---
 
-_Reviewed: 2026-07-29 (Task 1 of 2)_
+_Reviewed: 2026-07-29_
 _Reviewer: Claude (gsd-executor, inline review per this plan's `planner_assumptions`)_
 _Depth: standard_
