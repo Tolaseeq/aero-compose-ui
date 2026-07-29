@@ -107,6 +107,24 @@ class AeroButtonSurfaceSourceTest {
         )
     }
 
+    /**
+     * D-12/D-13 (20-04): the button's own `Text` must obtain its label colour from
+     * [com.mordred.aero.components.buttons.resolveLabelColor], the same shared function
+     * `AeroSegmentedControl`'s segment `Text` imports cross-package — mirrors
+     * [com.mordred.aero.components.selection.AeroSegmentedControlSourceTest]'s
+     * `sourceLabelUsesTheSharedResolveLabelColorMechanismNeverAPerComponentLiteral` guard, so
+     * neither component can silently drift back to a private/ambient label colour.
+     */
+    @Test
+    fun aeroButtonSurfaceTextUsesTheSharedResolveLabelColorMechanism() {
+        assertTrue(
+            aeroButtonSurfaceSource.contains("color = resolveLabelColor("),
+            "AeroButtonSurface.kt's Text( call must pass color = resolveLabelColor(...) — the " +
+                "single source of truth for the on-fill label colour that AeroSegmentedControl's " +
+                "segment Text( also calls cross-package (D-12/D-13)"
+        )
+    }
+
     private val aeroButtonSource: String get() = sourceFile("AeroButton.kt").readText()
     private val aeroOutlinedButtonSource: String get() = sourceFile("AeroOutlinedButton.kt").readText()
     private val aeroButtonSurfaceSource: String get() = sourceFile("AeroButtonSurface.kt").readText()

@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.mordred.aero.components.buttons.FILLED_FILL_BOTTOM_DARKEN
 import com.mordred.aero.components.buttons.FILLED_FILL_TOP_DARKEN
 import com.mordred.aero.components.buttons.PRESSED_INNER_SHADOW
+import com.mordred.aero.components.buttons.resolveLabelColor
 import com.mordred.aero.components.common.rememberAeroInteractionState
 import com.mordred.aero.theme.AeroColorScheme
 import com.mordred.aero.theme.AeroSurfaceStyle
@@ -84,13 +85,18 @@ import com.mordred.aero.theme.pressedRecess
  *   The maintainer's explicit decision closing G5 was "match the button, retire the guard" — the
  *   4.5:1 floor is retired for this component (tracked separately for `AeroButton` itself, whose
  *   own label never actually cleared it either — see the todo filed alongside this gap's fix).
- * - Label: the segment's `Text` sets no explicit `color` parameter, exactly like
- *   [com.mordred.aero.components.buttons.AeroButtonSurface]'s `Text` — it inherits ambient
- *   `LocalContentColor` rather than a re-specified `colors.onSurface` literal. Gap G3's actual
- *   fault (a background/panel token carrying alpha used for text) stays fixed either way — the
- *   label was never intentionally re-specified as a distinguishing feature, only left explicit
- *   when G3 was closed; G5 removes that redundant literal so the mechanism matches the button's
- *   byte-for-byte, not merely its resulting colour.
+ * - Label (superseded again at 20-04, D-12/D-13): the segment's `Text` now passes
+ *   `color = `[com.mordred.aero.components.buttons.resolveLabelColor]`(style.fillTop,
+ *   style.fillBottom, colors.background)` — the SAME shared function
+ *   [com.mordred.aero.components.buttons.AeroButtonSurface]'s `Text` calls, imported
+ *   cross-package. The G5-era "inherits ambient `LocalContentColor`" mechanism this paragraph
+ *   previously described is retired: ambient resolution never actually cleared the WCAG 4.5:1
+ *   floor (the todo filed alongside G5's own closure), so both components now ASK for their label
+ *   colour algorithmically from their own resolved fill instead of leaving it to inherited
+ *   context. Gap G3's actual fault (a background/panel token carrying alpha used for text) stays
+ *   fixed either way; G5's byte-for-byte-with-the-button intent is preserved and strengthened by
+ *   this later step, since both components now share the same resolver, not merely the same
+ *   resulting ambient colour.
  *
  * The recessed/selected treatment (`pressedRecess` plus [RECESSED_FILL_DARKEN]) is UNCHANGED
  * structurally by this gap — only the raised base it now composes on top of moved. A future
@@ -192,7 +198,8 @@ public fun <T> AeroSegmentedControl(
                 ) {
                     Text(
                         text = optionLabel(opt),
-                        style = AeroTheme.typography.bodyLarge
+                        style = AeroTheme.typography.bodyLarge,
+                        color = resolveLabelColor(style.fillTop, style.fillBottom, colors.background),
                     )
                 }
             }

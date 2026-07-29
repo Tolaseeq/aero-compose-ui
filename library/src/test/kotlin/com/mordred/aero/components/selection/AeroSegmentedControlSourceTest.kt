@@ -155,21 +155,34 @@ class AeroSegmentedControlSourceTest {
     }
 
     @Test
-    fun sourceLabelInheritsAmbientContentColorLikeAeroButtonSurfaceDoes() {
-        // (j) gap G5 (19-UAT.md), superseding the G3-era guard this replaces: the segment label
-        // must use the SAME mechanism as AeroButtonSurface's label — inheriting ambient
-        // LocalContentColor from an explicit-color-free Text( call, not a re-specified literal
-        // token. The G3 fix (an explicit color = colors.onSurface parameter) was a correct VALUE
-        // but the wrong MECHANISM: it kept the segment on its own bespoke content-token wiring
-        // instead of matching the button's byte-for-byte. Comment lines are stripped first
-        // (nonCommentSource) so these guards cannot be satisfied or broken by KDoc prose
-        // describing rejected behaviour.
+    fun sourceLabelUsesTheSharedResolveLabelColorMechanismNeverAPerComponentLiteral() {
+        // (j) D-12/D-13 (20-04), superseding the G5-era "inherits ambient LocalContentColor"
+        // guard this replaces: BOTH labels (button and segment) must come from ONE shared
+        // resolver function, never a per-component literal or ambient-inheritance mechanism. The
+        // G5 fix (no explicit color = param, inheriting ambient LocalContentColor) was correct in
+        // spirit — one shared mechanism, not a per-component constant — but ambient resolution
+        // never actually cleared the WCAG 4.5:1 floor (the todo filed alongside G5's own
+        // closure), so this guard is updated again to require the label ASK for its colour
+        // algorithmically via the shared resolveLabelColor(...) call, imported cross-package from
+        // AeroButtonSurface.kt (D-12). Comment lines are stripped first (nonCommentSource) so
+        // these guards cannot be satisfied or broken by KDoc prose describing rejected behaviour.
+        assertTrue(
+            nonCommentSource.contains("import com.mordred.aero.components.buttons.resolveLabelColor"),
+            "AeroSegmentedControl.kt must import com.mordred.aero.components.buttons.resolveLabelColor " +
+                "— the segment label must use the SAME shared resolver AeroButtonSurface's Text( does, " +
+                "never a re-derived per-component mechanism (D-12)"
+        )
+        assertTrue(
+            nonCommentSource.contains("color = resolveLabelColor("),
+            "AeroSegmentedControl.kt's segment Text( call must pass color = resolveLabelColor(...) " +
+                "— the label colour must be ASKED FOR algorithmically from the shared resolver, never " +
+                "left to ambient inheritance or a per-component literal (D-12/D-13)"
+        )
         assertFalse(
             nonCommentSource.contains("color = colors.onSurface"),
             "AeroSegmentedControl.kt's segment Text( call must NOT pass an explicit " +
-                "color = colors.onSurface parameter — gap G5 requires the label to inherit ambient " +
-                "LocalContentColor exactly as AeroButtonSurface's Text( does, not a re-specified " +
-                "literal token"
+                "color = colors.onSurface parameter — the label colour comes from the shared " +
+                "resolveLabelColor(...) mechanism, not a re-specified literal token"
         )
         assertFalse(
             nonCommentSource.contains("colors.surface"),
@@ -181,9 +194,9 @@ class AeroSegmentedControlSourceTest {
         assertFalse(
             nonCommentSource.contains("animateColorAsState"),
             "AeroSegmentedControl.kt must not animate a per-segment label colour via " +
-                "animateColorAsState — restoring a per-state label colour for contrast reasons " +
-                "would recreate gap G3's defect class on a different theme; the label must inherit " +
-                "ambient content colour, not any per-state colour animation (gap G3/G5, VSEL-03)"
+                "animateColorAsState — the resolved fill already drives resolveLabelColor(...) on " +
+                "every recomposition, so a separate colour animation would recreate gap G3's defect " +
+                "class on a different theme (gap G3/G5, VSEL-03)"
         )
     }
 
