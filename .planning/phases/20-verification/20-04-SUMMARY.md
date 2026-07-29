@@ -42,7 +42,7 @@ key-decisions:
   - "AeroButtonContrastRegressionTest's contrastRatio is a separate, independently-written implementation (recovered verbatim from the retired AeroSegmentedControlStylesTest.kt guard via git show c35f883~1) — it does not import the production labelContrastRatio, so a wrong production formula cannot certify itself (D-13)."
   - "Open finding, NOT auto-fixed: AeroDark's recessed (selected) segment fails the 4.5:1 floor on fillBottom (best worst-case candidate measures 4.0787). Proven not fixable by the candidate flip alone (black's worst-case there is 3.5377, strictly worse). No sanctioned remedy applies — the plan's ONE authorized remedy (widening FILLED_FILL_BOTTOM_DARKEN slightly) is scoped to the filled-button-rest case only, and retuning RECESSED_FILL_DARKEN or introducing a segment-specific constant is explicitly forbidden (D-12; the maintainer's 19-08 acceptance of the recess/depth reading). Left deliberately failing, routed to 20-07 sign-off as a visual judgment call."
 
-requirements-completed: [SHW-16]
+requirements-completed: []
 
 coverage:
   - id: D1
@@ -143,9 +143,21 @@ See `key-decisions` in frontmatter — summarized: worst-case (not average) cand
 
 None — plan executed exactly as specified, including its own explicitly-authorized "leave the test red" branch for a segment case the candidate flip cannot fix (Task 2 `<action>` step 3). No forbidden remedy (constant retuning) was applied.
 
+**Post-completion correction (2026-07-29, user-directed at the 20-04 orchestrator checkpoint):**
+this SUMMARY's frontmatter originally listed `requirements-completed: [SHW-16]`, and
+`.planning/REQUIREMENTS.md` was checked off accordingly. That was a mis-attribution: SHW-16 is the
+**human three-theme visual sign-off**, owned and performed by plan **20-07**, which has not yet
+run — no human reviewed anything as part of this plan. The mis-attribution came from `20-04-PLAN.md`'s
+frontmatter declaring `requirements: [SHW-16]` for what is actually a code-mechanism change (D1/D2/D3
+above are real, but they verify the label-contrast *mechanism*, not the human sign-off itself).
+`requirements-completed` here has been corrected to `[]`, and `REQUIREMENTS.md`'s SHW-16 checkbox has
+been reverted to `- [ ]`. `20-04-PLAN.md` itself is left untouched as a historical record — this note
+is the correction. This is precisely the class of defect Phase 20 exists to catch: a sign-off recorded
+without the evidence to back it (cf. v2.0.3).
+
 ## Issues Encountered
 
-- The full `./gradlew :library:test` run does not currently exit 0 (1 of 433 tests fails: the AeroDark recessed-segment open finding above). This is a known, plan-sanctioned state, not an unexpected build break — see "Open Finding" above for the full reasoning and the exact assertion message.
+- At the time this plan completed, the full `./gradlew :library:test` run did not exit 0 (1 of 433 tests failed: the AeroDark recessed-segment open finding above) — a known, plan-sanctioned state, not an unexpected build break. **Update (2026-07-29, same checkpoint as the SHW-16 correction above):** the failing test was subsequently converted into a named, guarded, hard-bounded exception (`aeroDarkRecessedSegmentFillBottomIsTheOneAuthorizedContrastException` in `AeroButtonContrastRegressionTest.kt`) rather than the plan's originally-committed red assertion — see the pending todo `.planning/todos/pending/2026-07-29-aerodark-recessed-segment-label-contrast-below-wcag-floor.md`. `./gradlew :library:test` now exits 0 with zero failures; the underlying finding itself is unchanged and still awaits 20-07's visual sign-off.
 
 ## User Setup Required
 
