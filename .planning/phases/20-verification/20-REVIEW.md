@@ -2,7 +2,7 @@
 phase: 20-verification
 reviewed: 2026-07-29T00:00:00Z
 depth: standard
-files_reviewed: 23
+files_reviewed: 24
 files_reviewed_list:
   - library/src/main/kotlin/com/mordred/aero/theme/GlassModifiers.kt
   - library/src/main/kotlin/com/mordred/aero/theme/ColorMath.kt
@@ -27,11 +27,12 @@ files_reviewed_list:
   - library/src/main/kotlin/com/mordred/aero/components/selection/AeroSegmentedControl.kt (20-04 diff only)
   - library/src/test/kotlin/com/mordred/aero/components/buttons/AeroButtonSurfaceSourceTest.kt (20-04 diff only)
   - library/src/test/kotlin/com/mordred/aero/components/selection/AeroSegmentedControlSourceTest.kt (20-04 diff only)
+  - library/src/test/kotlin/com/mordred/aero/theme/AeroThemeBackgroundEstablishmentTest.kt (addendum — 20-06 diff only)
 findings:
   critical: 0
-  warning: 2
-  info: 2
-  total: 4
+  warning: 3
+  info: 4
+  total: 7
 status: issues_found
 ---
 
@@ -41,6 +42,9 @@ status: issues_found
 **Depth:** standard
 **Status:** issues_found — all eleven never-reviewed files plus Phase 20's own diff covered;
 4 findings (0 critical, 2 warning, 2 info), disposition of each recorded in `20-REVIEW-FIX.md`.
+An addendum below covers two commits (`1d139a7`, `ff577fc`) that landed after this document
+closed, adding 1 warning and 2 info findings (7 total across the whole document; see the
+addendum's own status line).
 
 ## Scope Derivation
 
@@ -157,6 +161,12 @@ Aero tokens into Material3's `darkColorScheme`/`Typography`, and the `AeroTheme`
 `ornamentOverride` before falling back to `AeroOrnamentTokens.derive(it)` (PRIM-03 honored). No
 defect found in this file itself — see `PrimitivesSection.kt` in Task 2 for a call site that
 bypasses this accessor.
+
+**Note (superseded by the addendum below):** at the time this section was written, `AeroTheme`
+provided composition locals only and painted no background of its own. Commits `1d139a7`/`ff577fc`,
+landing after this document closed, changed that file; see the addendum for the review of that
+diff specifically. The finding-free verdict above stands for the file **as it existed at this
+review's HEAD** and is not retroactively edited.
 
 ### `showcase/scratch/ScratchAeroShadowProof.kt` and `ScratchSliderSlotSpike.kt` — ship-or-remove verdict
 
@@ -307,6 +317,182 @@ re-file it as a new review finding.
 
 ---
 
+## Addendum: `1d139a7` / `ff577fc` — AeroTheme Background Establishment (post-close, pre-SHW-16-sign-off)
+
+**Reviewed:** 2026-07-29 (addendum pass, after this document's original close)
+**Depth:** standard, focused — exactly two commits, per D-03's requirement that code landing after
+this review closed must clear review before the SHW-16 human sign-off
+**Commits in scope:**
+- `1d139a7` — `fix(20-06): AeroTheme establishes its themed background` (`library/.../theme/AeroTheme.kt`, `showcase/.../ShowcaseApp.kt`)
+- `ff577fc` — `test(20-06): gate AeroTheme background establishment` (new file `library/src/test/kotlin/com/mordred/aero/theme/AeroThemeBackgroundEstablishmentTest.kt`)
+
+**Status:** issues_found — 0 critical, 1 warning (WR-03), 2 info (IN-03, IN-04). No blocker: the
+core defect this pair of commits fixes (VER-05's naive-consumer light-background/dark-label
+mismatch) is genuinely closed, the layout-constraint regression the author avoided is genuinely
+avoided, and the new gate is genuinely falsifiable. The findings below are about the edges of the
+fix, not its center.
+
+### Verified clean (with evidence, not asserted)
+
+**1. `Box` vs. `Surface` — `propagateMinConstraints` claim holds.** Traced Compose Foundation
+Layout 1.11.1's actual measure policies rather than trusting the commit message:
+`BoxMeasurePolicy` (default `propagateMinConstraints = false`, which `Box` uses and `Surface`'s
+internal container does not) computes `contentConstraints = constraints.copy(minWidth = 0, minHeight
+= 0)` for any non-`matchParentSize` child — i.e. content gets the incoming `max` back with `min`
+zeroed, which is exactly the loose constraint content received pre-fix (no Box/Surface existed
+between `MaterialTheme` and `content` at all). The two regression tests the commit message cites
+were read directly, not trusted from prose: `AeroListItemLayoutTest.singleLineRowMeasuresExactly36Dp`
+asserts `assertHeightIsEqualTo(36.dp)` and
+`AeroRangeSliderHoverCancellationTest.hoverGlowDoesNotStickOnAfterEnabledToggleCancelsHoverPointerInput`
+asserts pixel-level ring state around a fixed-width slider — both would fail immediately if the
+old `Surface` attempt (`propagateMinConstraints = true`, forcing every non-filling child up to full
+window height) had shipped instead, and both pass against the current `Box`-based code. No defect
+found in this part of the diff.
+
+**2. Double background — genuinely inert, not merely assumed inert.** `ShowcaseApp.kt`'s
+`Surface(color = colors.background, modifier = Modifier.fillMaxSize())` has no `tonalElevation`/
+`shadowElevation`/`shape`/`border` argument, so all default to `0.dp`/`RectangleShape`/`null`.
+Material3's `Surface` only applies a tonal-elevation color overlay when the caller's `color`
+parameter equals `MaterialTheme.colorScheme.surface` (its own internal elevation-tint branch) —
+here the caller passes an explicit, different `color = colors.background`, so no overlay applies
+regardless of elevation value, and elevation is `0.dp` in any case. The new `AeroTheme`-level `Box`
+paints the identical `colorScheme.background` via a flat `.background(...)` modifier with no shape/
+shadow of its own. Same color, same flatness, same shape (rectangle, unclipped) in both layers —
+confirmed via Material3's actual elevation-overlay precondition, not merely "looks the same."
+No defect found.
+
+**3. New gate — falsifiability is real, not vacuous.** `AeroThemeBackgroundEstablishmentTest`'s RED
+half (`establishBackgroundFalseLeavesTheCornerUnpainted`) drives the real, shipped
+`establishBackground = false` code path — no reverted or hand-edited fixture — and asserts the
+sampled corner pixel is `assertNotEquals` to `AeroColorScheme.AeroBlue.background`; since
+`AeroColorScheme.AeroBlue.background = Color(0xFF0D1B2A)` is a distinctive, fully-opaque dark navy
+(confirmed in `AeroColorScheme.kt:53`) vastly unlike any Compose Desktop test-harness default
+backdrop, this assertion is a real, non-degenerate check that the sampling methodology can detect
+an unpainted background, not a tautology. The GREEN half exercises the real production default
+(`establishBackground` omitted) and does an exact `assertEquals` against the same opaque color —
+exact-equality is safe here specifically because the background color has `alpha = 0xFF` (no
+blending/antialiasing ambiguity at a solid-fill corner pixel). `onRoot()` (not a tagged node) is
+the correct scope for this specific defect class, since the defect is about the full window canvas
+outside whatever `content` itself draws — a tagged-node capture could never see that. This test
+would fail today if a future change silently removed the `Box`/background from `AeroTheme`. No
+defect found.
+
+**4. `fillMaxSize()` inside an unbounded parent does not crash.** Risk item 5 asked whether the new
+`Box`'s `Modifier.fillMaxSize()` is safe if `AeroTheme {}` is embedded inside a constrained/unbounded
+parent (e.g. a vertically-scrolling `Column` item, which measures children with an unbounded max
+height). This was **not** taken on faith: `FillNode.measure-3p2s80s` was read directly from the
+decompiled `foundation-layout-desktop-1.11.1.jar` bytecode. The width/height override branch is
+gated on `Constraints.getHasBoundedWidth-impl`/`getHasBoundedHeight-impl`; when a dimension is
+unbounded, that branch is skipped entirely rather than throwing — this Compose version's
+`fillMaxSize()` degrades gracefully on unbounded constraints rather than crashing (older Compose
+releases used to throw `IllegalStateException` here; this codebase's pinned `composeMultiplatform =
+"1.11.1"` does not). So embedding `AeroTheme {}` inside a scrolling/unbounded parent will not crash;
+the caveat is narrower than a crash risk (see IN-03 below) and is, in any case, a generic
+`fillMaxSize()`-in-a-scroll-container caveat applicable to any Compose layout, not something this
+diff introduced.
+
+### WR-03: New public parameter is source-compatible but not verified binary-compatible for a JitPack-published artifact
+
+**File:** `library/src/main/kotlin/com/mordred/aero/theme/AeroTheme.kt:86` (`establishBackground:
+Boolean = true`, inserted between `typography` and the trailing `content` lambda)
+
+**Issue:** `library/build.gradle.kts` applies `maven-publish` and the module is distributed via
+JitPack by git tag (confirmed in `20-06-PLAN.md`'s own mechanism and `library/build.gradle.kts`'s
+`publishing {}` block) — this is a genuinely externally-consumed published artifact, not an
+internal-only module. Inserting a new parameter into a public `@Composable` function is
+source-compatible by construction (Kotlin resolves the trailing-lambda `content` positionally
+against the *last* parameter regardless of how many defaulted parameters precede it, so every
+existing `AeroTheme { ... }` / `AeroTheme(colorScheme = ...) { ... }` call site — recompiled against
+the new source — keeps compiling with zero edits; verified this is in fact the only call-site shape
+in this repository via `grep -rn "AeroTheme(" --include="*.kt"`, one production call site in
+`showcase/.../Main.kt` plus ~12 files using the bare `AeroTheme { ... }` form). What was **not**
+established, and the commit does not claim to have checked, is binary compatibility: Kotlin compiles
+default-parameter functions to a synthetic bridge method carrying a bitmask over the parameter list;
+adding a parameter changes that bitmask's shape and the primary method's descriptor. A consumer
+holding an **already-compiled** artifact built against a previous published version of this library
+(rather than one recompiled from source against the new version) would fail to link against a new
+publish of this JAR with a `NoSuchMethodError`-class failure if it called `AeroTheme` positionally/by
+name in a way that resolved to the old descriptor. No `@JvmOverloads` is used anywhere in this file
+or, per a full-library grep, anywhere else in `library/src/main` — no binary-compatibility validator
+(`kotlinx-binary-compatibility-validator` or similar) is configured in either `build.gradle.kts`
+either — so this is a systemic gap in the library's public-API-evolution discipline that this commit
+inherits and does not introduce new to this file specifically, but this is the first commit in the
+milestone to add a *parameter* (rather than a data-class field, as `AeroColorScheme.ornamentOverride`
+did, which is a structurally different and lower-risk kind of addition) to an existing public
+`@Composable` signature, so it is the first place this gap becomes concretely exercisable.
+
+**Fix:** Either (a) add `@JvmOverloads` to `AeroTheme` so the compiler emits the pre-existing
+3-parameter overload as a real, separately-callable JVM method alongside the new 4-parameter one
+(restores binary compatibility for old callers, zero source change required elsewhere), or (b)
+explicitly accept and document that this library's published-artifact compatibility guarantee is
+source-level only (recompile-to-upgrade), consistent with its current practice everywhere else, so
+this is not treated as a regression unique to this diff. Either is a reasonable disposition; leaving
+it silently undecided is the actual gap. **Severity: warning.**
+
+### IN-03: `establishBackground` default changes rendered output for every existing embedding pattern, with no changelog trail
+
+**File:** `library/src/main/kotlin/com/mordred/aero/theme/AeroTheme.kt:75-80` (KDoc), `86`
+(the parameter default itself)
+
+**Issue:** `establishBackground` defaults to `true`, so as of this commit *every* consumer of
+`AeroTheme {}` — including a hypothetical existing consumer who was deliberately relying on
+`AeroTheme`'s prior no-op-background behavior to compose it inside a foreign surface that already
+owns its own background/blur/translucency — gets an opaque `colorScheme.background` painted behind
+their content whether they asked for it or not, unless they add `establishBackground = false`. This
+is the intended fix for VER-05 and is clearly the right default for the overwhelmingly common case
+(a naive consumer with no `Surface` of their own), and it is thoroughly documented in the function's
+own KDoc (`@param establishBackground` explicitly names the opt-out and when to use it) — but there
+is no `CHANGELOG.md` anywhere in this repository (confirmed: none exists at the repo root) and the
+root `build.gradle.kts`'s `version = "2.0.4"` field is deliberately left unbumped this entire
+milestone (per `20-06-PLAN.md`'s own `<planner_assumptions>`, since JitPack resolves by git tag, not
+this field) — so there is no version-level signal anywhere that a default rendering behavior changed
+for `AeroTheme`, only the KDoc a consumer would have to think to go read. This is partially
+self-mitigating: JitPack tags are immutable, so any consumer already pinned to an existing tag is
+unaffected; the exposure is limited to future consumers who pull a tag cut after this commit. Still,
+"the opt-out is discoverable enough to be a real remedy" (risk item 5) is true only for a consumer
+who already suspects `AeroTheme` might be painting something and goes looking — it is not surfaced
+anywhere a first-time integrator would trip over it before shipping (not in the showcase, not in the
+scratch-consumer's own `Main.kt`, not in any top-level README/CHANGELOG this repository does not
+have).
+
+**Fix:** No code change required to close this — it is a documentation-and-release-process gap, not
+a defect in the diff. If/when this library gains a `CHANGELOG.md` or release notes process, this
+change belongs in it as a "behavior change" entry, not just an "addition" entry. **Severity: info.**
+
+### IN-04: New test's KDoc slightly overstates its own precedent
+
+**File:** `library/src/test/kotlin/com/mordred/aero/theme/AeroThemeBackgroundEstablishmentTest.kt:25-26`
+
+**Issue:** The class KDoc states the `onRoot().captureToImage()` idiom is "the same
+`captureToImage()`/`toPixelMap()` idiom already proven in
+`AeroRangeSliderHoverCancellationTest`" — true only for the `captureToImage()`/`toPixelMap()` half.
+`AeroRangeSliderHoverCancellationTest` actually calls
+`onNodeWithTag("slider").captureToImage()` (a tagged-node capture scoped to the slider's own
+bounds), not `onRoot()` (a full-window capture) — a distinction the same KDoc correctly explains two
+sentences later ("`onRoot()` is used ... specifically because the defect ... could never" be seen by
+a node-scoped capture). The precedent citation is imprecise about which *part* of the prior test it
+is reusing; it does not misstate anything that affects the test's own correctness, since the
+following sentences self-correct the scoping distinction accurately.
+
+**Fix:** Reword the citation to something like "the same `captureToImage()`/`toPixelMap()` pixel-
+sampling idiom already proven in `AeroRangeSliderHoverCancellationTest`, here scoped to `onRoot()`
+instead of a tagged node — see below for why." Purely a comment-precision nit; no test behavior is
+affected. **Severity: info.**
+
+### Addendum disposition summary
+
+| ID | Severity | Finding | Disposition |
+|----|----------|---------|-------------|
+| WR-03 | warning | `AeroTheme`'s new `establishBackground` parameter is source- but not verified binary-compatible for the JitPack-published artifact; no `@JvmOverloads`/ABI validator anywhere in the library | recorded, not fixed here — routed to maintainer/backlog as an API-evolution-policy decision, not a local mechanical fix |
+| IN-03 | info | `establishBackground = true` default silently changes rendered output for any future consumer wanting a transparent `AeroTheme {}` slot; no changelog exists to record this as a behavior change | recorded — documentation/process gap, not a code defect |
+| IN-04 | info | New test's KDoc slightly overstates precedent from `AeroRangeSliderHoverCancellationTest` (tagged-node vs. `onRoot()` capture) | recorded — comment-precision nit only |
+
+---
+
 _Reviewed: 2026-07-29_
 _Reviewer: Claude (gsd-executor, inline review per this plan's `planner_assumptions`)_
 _Depth: standard_
+
+_Addendum reviewed: 2026-07-29_
+_Addendum reviewer: Claude (gsd-code-reviewer, dispatched for commits `1d139a7`/`ff577fc` per D-03)_
+_Addendum depth: standard, scope-limited to the two named commits_
