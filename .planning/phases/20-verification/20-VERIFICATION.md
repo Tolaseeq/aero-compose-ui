@@ -1,8 +1,15 @@
 ---
 phase: 20-verification
 verified: 2026-07-29T18:00:00Z
-status: human_needed
+status: passed
 score: 10/10 must-haves verified (2 via override)
+human_verification_resolved:
+  - item: "AeroBlue/AeroDark white-on-opaque-fill label legibility below the WCAG floor (worst case 2.801:1)"
+    resolution: answered
+    answer: "Approved by the maintainer. They reviewed all three themes running live with the white label in place, gave the verdict \"остальное pass\", and — asked directly at the phase-closure checkpoint whether this item counted as answered — confirmed \"Да, закрываем\". The item was never re-opened by verification; it is recorded as resolved rather than outstanding because the perceptual judgment it asks for had already been given, on the shipped code, before this report was written."
+    resolved_by: "maintainer"
+    resolved_at: "2026-07-29"
+    note: "The verifier's stated reason for holding this item open was that 20-08-SUMMARY.md still carried the voided 4.079/white figure, so a future reader consulting only that file would carry forward a wrong number. That was fixed in commit 7255923: both 20-04-SUMMARY.md and 20-08-SUMMARY.md now decline to quote any contrast figure and point at AeroButtonContrastRegressionTest.aeroBlueAeroDarkAcceptedSubFloorLabelDeviation, where the live numbers are pinned and regression-bounded. Prose copies of these figures went stale three times in this phase; the record now has a single source of truth in code."
 behavior_unverified: 0
 overrides_applied: 2
 overrides:
