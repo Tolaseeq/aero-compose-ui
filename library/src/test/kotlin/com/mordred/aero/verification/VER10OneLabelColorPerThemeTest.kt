@@ -30,18 +30,28 @@ import kotlin.test.assertTrue
  * measurement Task 2/Task 3 are built on, asserted so it re-executes rather than a one-off scratch
  * calculation.
  *
- * **Post-measurement addendum (Task 2/3, maintainer decision 2026-07-29).** The single
- * scheme-wide "winner" pinned below is the best ONE candidate across BOTH opaque and outlined
- * fills combined — and for every scheme it comes out White, because the outlined fill's near-black
- * composited stop makes Black catastrophic there (1.2–1.4:1). The maintainer's actual decision does
- * NOT ship that single combined winner: it splits the choice by SURFACE POLARITY instead — see
- * [AeroColorScheme.labelOnFilledSurface] (Black for AeroBlue/AeroDark, White for Classic) and
- * [AeroColorScheme.labelOnOutlinedSurface] (White for all three). AeroBlue/AeroDark's opaque fills
- * (filled button, raised/recessed segment) therefore ship BLACK in production even though this
- * file's combined-worst-case measurement below picks White for those two schemes — that is not a
- * contradiction, it is exactly why a single scheme-wide winner was rejected in favour of the
- * two-token polarity split. This file's pinned constants and assertions are left unchanged (the
- * measurement itself is still correct and re-executes); only this note is new.
+ * **Post-measurement addendum (Task 2/3, maintainer decision 2026-07-29, revised same day).** The
+ * single scheme-wide "winner" pinned below is the best ONE candidate across BOTH opaque and
+ * outlined fills combined — and for every scheme it comes out White, because the outlined fill's
+ * near-black composited stop makes Black catastrophic there (1.2–1.4:1).
+ *
+ * The maintainer's decision went through two stages. First, they did NOT ship that single combined
+ * winner: they split the choice by SURFACE POLARITY instead — [AeroColorScheme.labelOnFilledSurface]
+ * Black for AeroBlue/AeroDark (dark label on opaque fills), White for Classic, with
+ * [AeroColorScheme.labelOnOutlinedSurface] White for all three. That polarity split cleared this
+ * floor on AeroBlue/AeroDark's opaque fills where the combined winner below could not.
+ *
+ * They then reviewed the polarity split running live, across all three themes, and rejected it on
+ * appearance: with a dark label on filled surfaces, AeroBlue/AeroDark read as a different visual
+ * language from Classic and the rest of the library. Their final decision reverts
+ * `labelOnFilledSurface` to White for AeroBlue/AeroDark too — i.e. it now ships exactly this file's
+ * combined-worst-case winner for every scheme, not the polarity-split rescue. The accepted cost of
+ * that reversion (most of AeroBlue/AeroDark's opaque-fill rest/hover/press cases sit below 4.5:1) is
+ * pinned as one named, regression-bounded deviation in
+ * `AeroButtonContrastRegressionTest.aeroBlueAeroDarkAcceptedSubFloorLabelDeviation` — not lowering
+ * [MIN_LABEL_CONTRAST] itself (D-13). This file's pinned constants and assertions are left
+ * unchanged throughout both stages (the measurement itself is still correct and re-executes); only
+ * this note tracks which stage is currently shipped.
  *
  * The independent [contrastRatio] below deliberately does NOT import the production
  * `labelContrastRatio` (D-13 convention, `AeroButtonContrastRegressionTest`) — a wrong production

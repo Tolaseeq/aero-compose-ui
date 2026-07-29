@@ -119,13 +119,18 @@ class AeroColorSchemeTest {
 
     @Test
     fun builtInPresetsCarryTheDecidedPolarityTable() {
-        // The maintainer's 2026-07-29 decision table (20-09): AeroBlue/AeroDark's light `primary`
-        // makes their opaque fills want a dark label while their near-transparent outlined fill
-        // (composited onto the dark backdrop) wants a light one; Classic's dark `primary` means
-        // both polarities coincide on white, unchanged from its historical "white everywhere".
-        assertEquals(Color.Black, AeroColorScheme.AeroBlue.labelOnFilledSurface, "AeroBlue.labelOnFilledSurface")
+        // The maintainer's 2026-07-29 decision table (20-09, revised same day): AeroBlue/AeroDark's
+        // light `primary` would make a surface-polarity split want a dark label on opaque fills and
+        // a light one on their near-transparent outlined fill — that split was measured, shown to the
+        // maintainer running live, and REJECTED on appearance in favor of white on both polarities in
+        // both schemes, matching Classic, for cross-theme visual coherence. Classic's dark `primary`
+        // means both polarities coincide on white regardless, unchanged from its historical
+        // "white everywhere". See AeroColorScheme.kt's AeroBlue/AeroDark KDoc comments and
+        // AeroButtonContrastRegressionTest.aeroBlueAeroDarkAcceptedSubFloorLabelDeviation for the
+        // accepted sub-floor contrast cost of this choice.
+        assertEquals(Color.White, AeroColorScheme.AeroBlue.labelOnFilledSurface, "AeroBlue.labelOnFilledSurface")
         assertEquals(Color.White, AeroColorScheme.AeroBlue.labelOnOutlinedSurface, "AeroBlue.labelOnOutlinedSurface")
-        assertEquals(Color.Black, AeroColorScheme.AeroDark.labelOnFilledSurface, "AeroDark.labelOnFilledSurface")
+        assertEquals(Color.White, AeroColorScheme.AeroDark.labelOnFilledSurface, "AeroDark.labelOnFilledSurface")
         assertEquals(Color.White, AeroColorScheme.AeroDark.labelOnOutlinedSurface, "AeroDark.labelOnOutlinedSurface")
         assertEquals(Color.White, AeroColorScheme.Classic.labelOnFilledSurface, "Classic.labelOnFilledSurface")
         assertEquals(Color.White, AeroColorScheme.Classic.labelOnOutlinedSurface, "Classic.labelOnOutlinedSurface")

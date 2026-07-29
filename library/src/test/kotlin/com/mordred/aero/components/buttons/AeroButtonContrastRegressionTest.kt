@@ -10,8 +10,8 @@ import kotlin.test.Test
 import kotlin.test.assertTrue
 
 /**
- * Value-level WCAG 4.5:1 contrast regression guard (SHW-16/VER-06, 20-09), superseding the
- * 20-04/D-12/D-13 version of this file that measured the retired per-call-site
+ * Value-level WCAG 4.5:1 contrast regression guard (SHW-16/VER-06, 20-09, revised 2026-07-29),
+ * superseding the 20-04/D-12/D-13 version of this file that measured the retired per-call-site
  * `resolveLabelColor(fillTop, fillBottom, backdrop)` mechanism. That mechanism is now gone —
  * [AeroColorScheme.labelOnFilledSurface]/[AeroColorScheme.labelOnOutlinedSurface] are resolved ONCE
  * per scheme (the maintainer's 20-08 checkpoint rule: "per theme, ONE text colour, not per element,
@@ -32,9 +32,21 @@ import kotlin.test.assertTrue
  * "raised-pressed" fill to measure). Disabled states are WCAG-1.4.3-exempt (below) rather than
  * asserted against the floor.
  *
- * **Exactly three named below-floor exceptions survive this re-derivation** — see each exception
- * test's own KDoc for its measured value and justification. [MIN_LABEL_CONTRAST] is never lowered
- * (D-13) to accommodate any of them.
+ * **Revised 2026-07-29** (same-day 20-09 checkpoint): the maintainer rejected the surface-polarity
+ * rule (dark label on opaque fills) on appearance and directed white on both polarities in
+ * AeroBlue/AeroDark, matching Classic. That reopens most of the opaque-fill (filled button,
+ * segment-raised, segment-recessed-hover) rest/hover/press cases in those two schemes below the
+ * floor — accepted as ONE named, scoped, regression-bounded deviation
+ * ([aeroBlueAeroDarkAcceptedSubFloorLabelDeviation]), not scattered across many small exceptions.
+ * Filled/raised-segment assertions above therefore now cover Classic only — AeroBlue/AeroDark's
+ * equivalent cases live in that one deviation test instead.
+ *
+ * **Exactly three named below-floor exceptions survive this revision** — see each exception test's
+ * own KDoc for its measured values and justification. [MIN_LABEL_CONTRAST] is never lowered (D-13)
+ * to accommodate any of them:
+ * 1. [aeroBlueAeroDarkAcceptedSubFloorLabelDeviation] — AeroBlue/AeroDark opaque-fill white label.
+ * 2. [classicFilledHoverIsTheOneAuthorizedLightTokenException] — Classic filled/raised hover, 4.455.
+ * 3. [disabledSurfacesAreExemptFromTheContrastFloorPerWcag143] — WCAG 1.4.3 disabled-state exemption.
  */
 class AeroButtonContrastRegressionTest {
 
@@ -69,23 +81,25 @@ class AeroButtonContrastRegressionTest {
         )
     }
 
-    // ---- Filled AeroButton — rest/hover/press, both stops, all three themes. ----
-    // (disabled excluded here — see disabledSurfacesAreExemptFromTheContrastFloorPerWcag143.
-    // Classic's hover case is excluded too — it is authorized exception 2 of 3, asserted by name
-    // in classicFilledHoverIsTheOneAuthorizedLightTokenException below rather than here.)
+    // ---- Filled AeroButton — rest/hover/press, both stops. ----
+    // Classic only, as of the 2026-07-29 revision (disabled excluded — see
+    // disabledSurfacesAreExemptFromTheContrastFloorPerWcag143. Classic's hover case is excluded too
+    // — it is authorized exception 2 of 3, asserted by name in
+    // classicFilledHoverIsTheOneAuthorizedLightTokenException below rather than here). AeroBlue and
+    // AeroDark's filled-button rest/hover/press now live in
+    // aeroBlueAeroDarkAcceptedSubFloorLabelDeviation instead — the maintainer's white-on-both-
+    // polarities decision puts most of their rest/hover/press cases below the floor, so asserting
+    // them here (implying they clear) would be dishonest.
 
     @Test
-    fun filledButtonRestHoverPressClearTheFloorOnBothStopsInAllThreeThemes() {
-        schemes.forEach { (name, colors) ->
-            val label = colors.labelOnFilledSurface
-            listOf(
-                "rest" to resolveButtonStyle(colors, outlined = false, hovered = false, pressed = false, focused = false, enabled = true),
-                "hover" to resolveButtonStyle(colors, outlined = false, hovered = true, pressed = false, focused = false, enabled = true),
-                "press" to resolveButtonStyle(colors, outlined = false, hovered = false, pressed = true, focused = false, enabled = true),
-            ).forEach { (state, style) ->
-                if (name == "Classic" && state == "hover") return@forEach
-                assertClearsFloor(label, colors, style, "$name filled-button-$state")
-            }
+    fun classicFilledButtonRestAndPressClearTheFloorOnBothStops() {
+        val colors = AeroColorScheme.Classic
+        val label = colors.labelOnFilledSurface
+        listOf(
+            "rest" to resolveButtonStyle(colors, outlined = false, hovered = false, pressed = false, focused = false, enabled = true),
+            "press" to resolveButtonStyle(colors, outlined = false, hovered = false, pressed = true, focused = false, enabled = true),
+        ).forEach { (state, style) ->
+            assertClearsFloor(label, colors, style, "Classic filled-button-$state")
         }
     }
 
@@ -105,24 +119,21 @@ class AeroButtonContrastRegressionTest {
         }
     }
 
-    // ---- Raised (unselected) segment — rest/hover, both stops, all three themes. ----
-    // (Raised-pressed does not exist as a distinct fill — resolveSegmentStyle snaps ANY pressed
-    // segment to full recess, so "pressed while raised" measures identically to recessed below.
-    // Classic's raised-hover case is excluded — it shares the FILLED button's exact hover fill
-    // (gap G5 unification) and is covered by the same authorized exception 2 of 3 below.)
+    // ---- Raised (unselected) segment — rest, both stops. ----
+    // Classic only, as of the 2026-07-29 revision. (Raised-pressed does not exist as a distinct
+    // fill — resolveSegmentStyle snaps ANY pressed segment to full recess, so "pressed while raised"
+    // measures identically to recessed below. Classic's raised-hover case is excluded — it shares
+    // the FILLED button's exact hover fill (gap G5 unification) and is covered by the same
+    // authorized exception 2 of 3 below.) AeroBlue/AeroDark's segment-raised rest/hover now live in
+    // aeroBlueAeroDarkAcceptedSubFloorLabelDeviation instead, same reasoning as the filled button
+    // above — they share the exact same fill formula (gap G5), so the same values apply.
 
     @Test
-    fun raisedSegmentRestAndHoverClearTheFloorOnBothStopsInAllThreeThemes() {
-        schemes.forEach { (name, colors) ->
-            val label = colors.labelOnFilledSurface
-            listOf(
-                "rest" to resolveSegmentStyle(colors, selectedProgress = 0f, hovered = false, pressed = false, enabled = true),
-                "hover" to resolveSegmentStyle(colors, selectedProgress = 0f, hovered = true, pressed = false, enabled = true),
-            ).forEach { (state, style) ->
-                if (name == "Classic" && state == "hover") return@forEach
-                assertClearsFloor(label, colors, style, "$name segment-raised-$state")
-            }
-        }
+    fun classicRaisedSegmentRestClearsTheFloorOnBothStops() {
+        val colors = AeroColorScheme.Classic
+        val label = colors.labelOnFilledSurface
+        val style = resolveSegmentStyle(colors, selectedProgress = 0f, hovered = false, pressed = false, enabled = true)
+        assertClearsFloor(label, colors, style, "Classic segment-raised-rest")
     }
 
     // ---- Recessed (selected) segment — Classic clears; AeroBlue/AeroDark are the ONE segment
@@ -141,61 +152,154 @@ class AeroButtonContrastRegressionTest {
     }
 
     /**
-     * **Authorized exception 1 of 3 — recessed (selected) segment `fillTop`, dark token, AeroBlue
-     * and AeroDark.** Re-derived from scratch under the NEW polarity rule (superseding the 20-04
-     * exception this replaces, which was derived under the retired per-fill algorithm and is no
-     * longer valid — it authorized a different candidate, white, for this exact fill; that rescue
-     * no longer exists once the label is fixed per scheme).
+     * AeroBlue's recessed (selected) segment at rest fully clears the floor with the white label
+     * (`6.525`/`4.602`, both stops) — unlike AeroDark's equivalent case and unlike either scheme's
+     * recessed-hover case, both of which are below the floor and covered by
+     * [aeroBlueAeroDarkAcceptedSubFloorLabelDeviation] instead. Asserted here, normally, rather than
+     * folded into that deviation, because it is NOT an exception — it is a fill that already meets
+     * [MIN_LABEL_CONTRAST] on its own.
+     */
+    @Test
+    fun recessedSegmentAlsoClearsTheFloorInAeroBlueAtRest() {
+        val colors = AeroColorScheme.AeroBlue
+        val label = colors.labelOnFilledSurface
+        val style = resolveSegmentStyle(colors, selectedProgress = 1f, hovered = false, pressed = false, enabled = true)
+        assertClearsFloor(label, colors, style, "AeroBlue segment-recessed-rest")
+    }
+
+    /**
+     * **Authorized exception 1 of 3 — the ONE accepted scheme-level label-contrast deviation:
+     * AeroBlue/AeroDark's white label sits below the WCAG 4.5:1 floor on most of their opaque-fill
+     * (filled button, segment-raised, segment-recessed-hover) rest/hover/press cases.**
      *
-     * Both schemes assign `labelOnFilledSurface = Color.Black` (AeroBlue/AeroDark's `primary` is a
-     * light blue, so their OTHER opaque fills read comfortably with black — see
-     * [AeroColorScheme.labelOnFilledSurface]'s KDoc). The recessed segment's fill is that same base
-     * darkened further by `RECESSED_FILL_DARKEN` (0.20) on top of the pressed-recess transform,
-     * which pushes `fillTop` past the point where black still clears 4.5:1:
-     * - AeroBlue: rest/press `fillTop` = 3.218, hover `fillTop` = 3.853 (both < 4.5).
-     * - AeroDark: rest/press `fillTop` = 3.538, hover `fillTop` = 4.228 (both < 4.5).
-     * (`fillBottom` clears comfortably in every one of these cases — 4.563/5.248 AeroBlue,
-     * 5.149/5.910 AeroDark — so only `fillTop` is the exception.)
+     * **History.** Plan 20-09 originally shipped a surface-polarity rule here — dark label on
+     * opaque fills, light on outlined — which was measurement-driven and cleared this floor on the
+     * opaque polarity (that rule's own now-void exception covered only the recessed segment's
+     * `fillTop`, black token, 3.218-4.228 — see git history / `20-09-SUMMARY.md`'s amendment). The
+     * maintainer then reviewed that rule running live across all three themes and rejected it on
+     * appearance: with a dark label on filled surfaces, AeroBlue/AeroDark read as a different visual
+     * language from Classic and from the rest of the library, which is light-on-dark throughout.
+     * They were shown this exact cost table, below, in writing twice — including a live run of the
+     * white variant across all three themes — before approving white on both polarities
+     * ("одобряю", 2026-07-29). The surface-polarity measurement that surfaced this trade-off in the
+     * first place, [com.mordred.aero.verification.VER10OneLabelColorPerThemeTest], is unchanged —
+     * it has always measured white as the single best candidate for every scheme; this decision
+     * reverts to exactly that combined-winner measurement rather than the per-polarity rescue.
      *
-     * **Why this is accepted rather than fixed by flipping to white:** flipping the recessed
-     * segment's label to white would make THIS ONE fill legible again at the cost of reintroducing
-     * exactly the defect this plan exists to remove — a label that changes colour depending on
-     * selection state, since every OTHER opaque fill in these two schemes (filled button, raised
-     * segment) stays black. The maintainer's own framing names this precisely: "flipping to light
-     * would reintroduce state-dependent colour — the very defect being removed." Retuning
-     * `RECESSED_FILL_DARKEN` to rescue this instead is forbidden by that same constant's own KDoc
-     * (the maintainer's 19-08 acceptance of the recess/depth reading, unchanged since).
+     * **Full measured table** (white label, both fill stops, from the real
+     * [resolveButtonStyle]/[resolveSegmentStyle] outputs — re-verify via
+     * `VER10OneLabelColorPerThemeTest.printsFullPerSchemePerFillContrastTable` rather than trusting
+     * this transcription):
+     *
+     * | Case                          | AeroBlue top / bottom     | AeroDark top / bottom     |
+     * |-------------------------------|----------------------------|-----------------------------|
+     * | filled-rest / segment-raised  | 3.096 / **4.597**          | 2.720 / 4.121               |
+     * | filled-hover / raised-hover    | 2.801 / 3.996              | 2.493 / 3.589               |
+     * | filled-press                  | **4.597** / 3.096          | 4.121 / 2.720               |
+     * | segment-recessed-hover        | 5.450 / 4.002              | 4.966 / 3.553               |
+     * | segment-recessed (rest)       | 6.525 / 4.602 — clears, see [recessedSegmentAlsoClearsTheFloorInAeroBlueAtRest] | 5.936 / **4.079** |
+     *
+     * (Bold values already clear 4.5:1 on their own — pinned as regression bounds here anyway, for
+     * one uniform mechanism per state rather than splitting stops across two code paths.)
+     *
+     * Segment-raised shares the filled button's exact fill formula (gap G5 unification) — both
+     * consumers are asserted below against the real `resolveSegmentStyle` output, not assumed
+     * identical from that shared-formula fact.
+     *
+     * **Why accepted rather than fixed:** flipping any of these fills back to black would rescue
+     * that one case at the cost of reintroducing exactly the defect plan 20-09 removed — a label
+     * that changes colour depending on element or interaction state. Retuning `RECESSED_FILL_DARKEN`
+     * or `FILLED_FILL_TOP_DARKEN`/`FILLED_FILL_BOTTOM_DARKEN` is forbidden by those constants' own
+     * KDoc (the maintainer's 19-08 acceptance of the recess/depth reading) and by this plan's
+     * explicit instruction not to touch any fill constant — the remedy of darkening the opaque fills
+     * (as Classic's dark `primary` already does) would remove this deviation entirely but was
+     * deliberately not taken now, because it would change button appearance signed off in Phase 17
+     * (tracked as a pending todo for a future plan to pick up, not silently deferred).
      *
      * **Regression bound, not a floor requirement:** each measured ratio must stay `>=` the value
-     * pinned here (within [FLOAT_COMPARISON_TOLERANCE]) — this exception can only stay flat or
-     * improve, never silently get worse. [MIN_LABEL_CONTRAST] itself is never touched (D-13).
+     * pinned here (within [FLOAT_COMPARISON_TOLERANCE]) — accepting this cost is not the same as
+     * accepting further drift below it. [MIN_LABEL_CONTRAST] itself is never touched (D-13).
      * **20-07's three-theme sign-off still judges this visually** — this test only guarantees the
      * finding cannot get worse unnoticed.
      */
     @Test
-    fun recessedSegmentDarkTokenIsTheOneAuthorizedSegmentException() {
+    fun aeroBlueAeroDarkAcceptedSubFloorLabelDeviation() {
         val aeroBlue = AeroColorScheme.AeroBlue
         val aeroDark = AeroColorScheme.AeroDark
+        val blueLabel = aeroBlue.labelOnFilledSurface
+        val darkLabel = aeroDark.labelOnFilledSurface
 
-        assertAuthorizedException(
-            "AeroBlue segment-recessed fillTop (rest/press)",
-            topRatio(aeroBlue.labelOnFilledSurface, aeroBlue, resolveSegmentStyle(aeroBlue, 1f, hovered = false, pressed = false, enabled = true)),
-            AEROBLUE_RECESSED_TOP_REST_AUTHORIZED_RATIO,
+        // Filled button — rest/hover/press, both stops.
+        assertBothStopsAuthorized(
+            "AeroBlue filled-rest", blueLabel, aeroBlue,
+            resolveButtonStyle(aeroBlue, outlined = false, hovered = false, pressed = false, focused = false, enabled = true),
+            AEROBLUE_FILLED_REST_TOP_AUTHORIZED_RATIO, AEROBLUE_FILLED_REST_BOTTOM_AUTHORIZED_RATIO,
         )
-        assertAuthorizedException(
-            "AeroBlue segment-recessed fillTop (hover)",
-            topRatio(aeroBlue.labelOnFilledSurface, aeroBlue, resolveSegmentStyle(aeroBlue, 1f, hovered = true, pressed = false, enabled = true)),
-            AEROBLUE_RECESSED_TOP_HOVER_AUTHORIZED_RATIO,
+        assertBothStopsAuthorized(
+            "AeroBlue filled-hover", blueLabel, aeroBlue,
+            resolveButtonStyle(aeroBlue, outlined = false, hovered = true, pressed = false, focused = false, enabled = true),
+            AEROBLUE_FILLED_HOVER_TOP_AUTHORIZED_RATIO, AEROBLUE_FILLED_HOVER_BOTTOM_AUTHORIZED_RATIO,
         )
-        assertAuthorizedException(
-            "AeroDark segment-recessed fillTop (rest/press)",
-            topRatio(aeroDark.labelOnFilledSurface, aeroDark, resolveSegmentStyle(aeroDark, 1f, hovered = false, pressed = false, enabled = true)),
-            AERODARK_RECESSED_TOP_REST_AUTHORIZED_RATIO,
+        assertBothStopsAuthorized(
+            "AeroBlue filled-press", blueLabel, aeroBlue,
+            resolveButtonStyle(aeroBlue, outlined = false, hovered = false, pressed = true, focused = false, enabled = true),
+            AEROBLUE_FILLED_PRESS_TOP_AUTHORIZED_RATIO, AEROBLUE_FILLED_PRESS_BOTTOM_AUTHORIZED_RATIO,
         )
-        assertAuthorizedException(
-            "AeroDark segment-recessed fillTop (hover)",
-            topRatio(aeroDark.labelOnFilledSurface, aeroDark, resolveSegmentStyle(aeroDark, 1f, hovered = true, pressed = false, enabled = true)),
-            AERODARK_RECESSED_TOP_HOVER_AUTHORIZED_RATIO,
+        assertBothStopsAuthorized(
+            "AeroDark filled-rest", darkLabel, aeroDark,
+            resolveButtonStyle(aeroDark, outlined = false, hovered = false, pressed = false, focused = false, enabled = true),
+            AERODARK_FILLED_REST_TOP_AUTHORIZED_RATIO, AERODARK_FILLED_REST_BOTTOM_AUTHORIZED_RATIO,
+        )
+        assertBothStopsAuthorized(
+            "AeroDark filled-hover", darkLabel, aeroDark,
+            resolveButtonStyle(aeroDark, outlined = false, hovered = true, pressed = false, focused = false, enabled = true),
+            AERODARK_FILLED_HOVER_TOP_AUTHORIZED_RATIO, AERODARK_FILLED_HOVER_BOTTOM_AUTHORIZED_RATIO,
+        )
+        assertBothStopsAuthorized(
+            "AeroDark filled-press", darkLabel, aeroDark,
+            resolveButtonStyle(aeroDark, outlined = false, hovered = false, pressed = true, focused = false, enabled = true),
+            AERODARK_FILLED_PRESS_TOP_AUTHORIZED_RATIO, AERODARK_FILLED_PRESS_BOTTOM_AUTHORIZED_RATIO,
+        )
+
+        // Raised (unselected) segment — shares the filled button's exact fill formula (gap G5),
+        // asserted against the real resolveSegmentStyle output rather than assumed identical.
+        assertBothStopsAuthorized(
+            "AeroBlue segment-raised-rest", blueLabel, aeroBlue,
+            resolveSegmentStyle(aeroBlue, selectedProgress = 0f, hovered = false, pressed = false, enabled = true),
+            AEROBLUE_FILLED_REST_TOP_AUTHORIZED_RATIO, AEROBLUE_FILLED_REST_BOTTOM_AUTHORIZED_RATIO,
+        )
+        assertBothStopsAuthorized(
+            "AeroBlue segment-raised-hover", blueLabel, aeroBlue,
+            resolveSegmentStyle(aeroBlue, selectedProgress = 0f, hovered = true, pressed = false, enabled = true),
+            AEROBLUE_FILLED_HOVER_TOP_AUTHORIZED_RATIO, AEROBLUE_FILLED_HOVER_BOTTOM_AUTHORIZED_RATIO,
+        )
+        assertBothStopsAuthorized(
+            "AeroDark segment-raised-rest", darkLabel, aeroDark,
+            resolveSegmentStyle(aeroDark, selectedProgress = 0f, hovered = false, pressed = false, enabled = true),
+            AERODARK_FILLED_REST_TOP_AUTHORIZED_RATIO, AERODARK_FILLED_REST_BOTTOM_AUTHORIZED_RATIO,
+        )
+        assertBothStopsAuthorized(
+            "AeroDark segment-raised-hover", darkLabel, aeroDark,
+            resolveSegmentStyle(aeroDark, selectedProgress = 0f, hovered = true, pressed = false, enabled = true),
+            AERODARK_FILLED_HOVER_TOP_AUTHORIZED_RATIO, AERODARK_FILLED_HOVER_BOTTOM_AUTHORIZED_RATIO,
+        )
+
+        // Recessed (selected) segment on hover — a second, darker fill than raised. AeroDark's
+        // recessed-rest also fails (unlike AeroBlue's, see recessedSegmentAlsoClearsTheFloorInAeroBlueAtRest).
+        assertBothStopsAuthorized(
+            "AeroBlue segment-recessed-hover", blueLabel, aeroBlue,
+            resolveSegmentStyle(aeroBlue, selectedProgress = 1f, hovered = true, pressed = false, enabled = true),
+            AEROBLUE_RECESSED_HOVER_TOP_AUTHORIZED_RATIO, AEROBLUE_RECESSED_HOVER_BOTTOM_AUTHORIZED_RATIO,
+        )
+        assertBothStopsAuthorized(
+            "AeroDark segment-recessed-rest", darkLabel, aeroDark,
+            resolveSegmentStyle(aeroDark, selectedProgress = 1f, hovered = false, pressed = false, enabled = true),
+            AERODARK_RECESSED_TOP_AUTHORIZED_RATIO, AERODARK_RECESSED_BOTTOM_AUTHORIZED_RATIO,
+        )
+        assertBothStopsAuthorized(
+            "AeroDark segment-recessed-hover", darkLabel, aeroDark,
+            resolveSegmentStyle(aeroDark, selectedProgress = 1f, hovered = true, pressed = false, enabled = true),
+            AERODARK_RECESSED_HOVER_TOP_AUTHORIZED_RATIO, AERODARK_RECESSED_HOVER_BOTTOM_AUTHORIZED_RATIO,
         )
     }
 
@@ -239,12 +343,12 @@ class AeroButtonContrastRegressionTest {
      * **Authorized exception 3 of 3 — disabled surfaces, all schemes, WCAG 1.4.3 exemption.**
      * Disabled/inactive user-interface components are explicitly exempt from the 1.4.3 (Contrast
      * Minimum) success criterion by the standard itself — this is not a defect this file certifies
-     * away by measurement, it is a case the standard never asks these fills to meet. AeroBlue and
-     * AeroDark's disabled fill (`flattenDisabled`) is dark enough that their `Black`
-     * `labelOnFilledSurface` measures `2.87`/`2.37` against it; Classic's `White` token still
-     * clears comfortably (`9.49`) even though it too is exempt. Regression bounds (not a floor
-     * requirement) still guard AeroBlue/AeroDark's measured ratios so this exemption cannot silently
-     * mask a future fill change making disabled text meaningfully worse than today.
+     * away by measurement, it is a case the standard never asks these fills to meet. As of the
+     * 2026-07-29 white-label revision, all three schemes' disabled fill now clears the floor anyway
+     * (AeroBlue `7.30`, AeroDark `8.84`, Classic `9.49`) — the exemption is kept regardless, since
+     * disabled controls are never REQUIRED to meet it even when they happen to. Regression bounds
+     * (not a floor requirement) still guard every scheme's measured ratio so a future fill change
+     * cannot silently make disabled text meaningfully worse than today without this test noticing.
      */
     @Test
     fun disabledSurfacesAreExemptFromTheContrastFloorPerWcag143() {
@@ -269,13 +373,15 @@ class AeroButtonContrastRegressionTest {
             aeroBlueDisabledRatio >= AEROBLUE_DISABLED_AUTHORIZED_RATIO - FLOAT_COMPARISON_TOLERANCE,
             "AeroBlue filled-button-disabled: measured ratio $aeroBlueDisabledRatio must stay at " +
                 "least the documented $AEROBLUE_DISABLED_AUTHORIZED_RATIO — exempt from " +
-                "MIN_LABEL_CONTRAST per WCAG 1.4.3 (disabled controls), but not from a regression bound"
+                "MIN_LABEL_CONTRAST per WCAG 1.4.3 (disabled controls) regardless, but not from a " +
+                "regression bound"
         )
         assertTrue(
             aeroDarkDisabledRatio >= AERODARK_DISABLED_AUTHORIZED_RATIO - FLOAT_COMPARISON_TOLERANCE,
             "AeroDark filled-button-disabled: measured ratio $aeroDarkDisabledRatio must stay at " +
                 "least the documented $AERODARK_DISABLED_AUTHORIZED_RATIO — exempt from " +
-                "MIN_LABEL_CONTRAST per WCAG 1.4.3 (disabled controls), but not from a regression bound"
+                "MIN_LABEL_CONTRAST per WCAG 1.4.3 (disabled controls) regardless, but not from a " +
+                "regression bound"
         )
         assertTrue(
             classicDisabledRatio >= MIN_LABEL_CONTRAST,
@@ -305,6 +411,23 @@ class AeroButtonContrastRegressionTest {
     private fun topRatio(label: Color, colors: AeroColorScheme, style: AeroSurfaceStyle): Float =
         contrastRatio(label, style.fillTop.compositeOver(colors.background))
 
+    private fun bottomRatio(label: Color, colors: AeroColorScheme, style: AeroSurfaceStyle): Float =
+        contrastRatio(label, style.fillBottom.compositeOver(colors.background))
+
+    /** Asserts both fill stops of [style] against their own pinned regression-bound ratio — see
+     * [aeroBlueAeroDarkAcceptedSubFloorLabelDeviation]. */
+    private fun assertBothStopsAuthorized(
+        description: String,
+        label: Color,
+        colors: AeroColorScheme,
+        style: AeroSurfaceStyle,
+        authorizedTop: Float,
+        authorizedBottom: Float,
+    ) {
+        assertAuthorizedException("$description fillTop", topRatio(label, colors, style), authorizedTop)
+        assertAuthorizedException("$description fillBottom", bottomRatio(label, colors, style), authorizedBottom)
+    }
+
     private fun assertAuthorizedException(description: String, measured: Float, authorized: Float) {
         assertTrue(
             measured >= authorized - FLOAT_COMPARISON_TOLERANCE,
@@ -323,18 +446,45 @@ class AeroButtonContrastRegressionTest {
  */
 private const val MIN_LABEL_CONTRAST: Float = 4.5f
 
-/** See [AeroButtonContrastRegressionTest.recessedSegmentDarkTokenIsTheOneAuthorizedSegmentException]. */
-private const val AEROBLUE_RECESSED_TOP_REST_AUTHORIZED_RATIO: Float = 3.2184236f
-private const val AEROBLUE_RECESSED_TOP_HOVER_AUTHORIZED_RATIO: Float = 3.853091f
-private const val AERODARK_RECESSED_TOP_REST_AUTHORIZED_RATIO: Float = 3.5377297f
-private const val AERODARK_RECESSED_TOP_HOVER_AUTHORIZED_RATIO: Float = 4.228463f
+/**
+ * See [AeroButtonContrastRegressionTest.aeroBlueAeroDarkAcceptedSubFloorLabelDeviation] — the one
+ * accepted scheme-level deviation. Measured 2026-07-29 via
+ * `VER10OneLabelColorPerThemeTest.printsFullPerSchemePerFillContrastTable`'s STANDARD_OUT (white
+ * label, both fill stops, real `resolveButtonStyle`/`resolveSegmentStyle` output) — NOT
+ * hand-guessed, and NOT inherited from the retired black-token version of this exception (the void
+ * `3.2184236f`/`3.853091f`/`3.5377297f`/`4.228463f` recessed-segment-only numbers this replaces).
+ */
+private const val AEROBLUE_FILLED_REST_TOP_AUTHORIZED_RATIO: Float = 3.096348f
+private const val AEROBLUE_FILLED_REST_BOTTOM_AUTHORIZED_RATIO: Float = 4.5972657f
+private const val AEROBLUE_FILLED_HOVER_TOP_AUTHORIZED_RATIO: Float = 2.8013132f
+private const val AEROBLUE_FILLED_HOVER_BOTTOM_AUTHORIZED_RATIO: Float = 3.9962833f
+private const val AEROBLUE_FILLED_PRESS_TOP_AUTHORIZED_RATIO: Float = 4.5972657f
+private const val AEROBLUE_FILLED_PRESS_BOTTOM_AUTHORIZED_RATIO: Float = 3.096348f
+private const val AEROBLUE_RECESSED_HOVER_TOP_AUTHORIZED_RATIO: Float = 5.4501696f
+private const val AEROBLUE_RECESSED_HOVER_BOTTOM_AUTHORIZED_RATIO: Float = 4.00162f
+
+private const val AERODARK_FILLED_REST_TOP_AUTHORIZED_RATIO: Float = 2.7195716f
+private const val AERODARK_FILLED_REST_BOTTOM_AUTHORIZED_RATIO: Float = 4.1210356f
+private const val AERODARK_FILLED_HOVER_TOP_AUTHORIZED_RATIO: Float = 2.4926789f
+private const val AERODARK_FILLED_HOVER_BOTTOM_AUTHORIZED_RATIO: Float = 3.5886981f
+private const val AERODARK_FILLED_PRESS_TOP_AUTHORIZED_RATIO: Float = 4.1210356f
+private const val AERODARK_FILLED_PRESS_BOTTOM_AUTHORIZED_RATIO: Float = 2.7195716f
+private const val AERODARK_RECESSED_TOP_AUTHORIZED_RATIO: Float = 5.93601f
+private const val AERODARK_RECESSED_BOTTOM_AUTHORIZED_RATIO: Float = 4.078655f
+private const val AERODARK_RECESSED_HOVER_TOP_AUTHORIZED_RATIO: Float = 4.966343f
+private const val AERODARK_RECESSED_HOVER_BOTTOM_AUTHORIZED_RATIO: Float = 3.553366f
 
 /** See [AeroButtonContrastRegressionTest.classicFilledHoverIsTheOneAuthorizedLightTokenException]. */
 private const val CLASSIC_HOVER_TOP_AUTHORIZED_RATIO: Float = 4.455385f
 
-/** See [AeroButtonContrastRegressionTest.disabledSurfacesAreExemptFromTheContrastFloorPerWcag143]. */
-private const val AEROBLUE_DISABLED_AUTHORIZED_RATIO: Float = 2.8749816f
-private const val AERODARK_DISABLED_AUTHORIZED_RATIO: Float = 2.3742561f
+/**
+ * See [AeroButtonContrastRegressionTest.disabledSurfacesAreExemptFromTheContrastFloorPerWcag143].
+ * Re-measured 2026-07-29 against the white label (replacing the void black-token values
+ * `2.8749816f`/`2.3742561f` this exemption previously guarded) — both now comfortably clear
+ * [MIN_LABEL_CONTRAST] anyway, though the WCAG 1.4.3 exemption is kept regardless.
+ */
+private const val AEROBLUE_DISABLED_AUTHORIZED_RATIO: Float = 7.304394f
+private const val AERODARK_DISABLED_AUTHORIZED_RATIO: Float = 8.844874f
 
 /**
  * Float-comparison slack for every authorized-exception regression bound above — generous enough
