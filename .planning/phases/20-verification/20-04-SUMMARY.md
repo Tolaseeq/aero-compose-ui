@@ -78,6 +78,23 @@ status: complete
 
 # Phase 20 Plan 04: AeroButton/AeroSegmentedControl Label Contrast Mechanism Summary
 
+> **⚠ SUPERSEDED BY PLAN 20-09 — read this document as history, not as a description of the code.**
+>
+> The `resolveLabelColor(fillTop, fillBottom, backdrop)` mechanism described below was **retired**
+> in `15cf312`. It resolved the label from the caller's *current* fill, and `resolveSegmentStyle`
+> folds hover, press and the selection animation into that fill — so the label flipped colour as the
+> pointer moved over it. The maintainer reported this at the 20-08 checkpoint and directed that
+> label colour become a property of the scheme.
+>
+> Consequently **the AeroDark recessed-segment exception recorded below (4.079, white label) is VOID**
+> — both the number and the affected stop belonged to the retired algorithm. Its replacement (dark
+> token, `fillTop`, AeroBlue 3.218 / AeroDark 3.538) is in `20-09-SUMMARY.md`. Do not quote 4.079
+> as a live figure.
+>
+> What stands from this plan: the diagnosis of the original at-rest defect (the label set no `color`
+> and inherited `LocalContentColor`, measuring 1.70:1 on AeroDark), and the `AeroButtonContrastRegressionTest`
+> guard, which survives with its table re-derived.
+
 **One shared `resolveLabelColor` function (D-12) closes the WCAG 4.5:1 label-contrast gap for the filled AeroButton and unselected segments in all three themes; the recessed segment's AeroDark case remains an open, algorithmically-uncorrectable finding routed to the 20-07 sign-off.**
 
 ## Performance

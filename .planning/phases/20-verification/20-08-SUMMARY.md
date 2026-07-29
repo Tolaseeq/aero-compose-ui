@@ -108,6 +108,16 @@ status: complete
 
 # Phase 20 Plan 08: Compose Test-API Gates for the Mechanical Half of SHW-16 Summary
 
+> **⚠ One figure in this document is stale.** Where it quotes the AeroDark recessed-segment
+> exception as **4.079** (white label), that exception was **voided** by plan 20-09, which retired
+> the per-fill `resolveLabelColor` algorithm the number depended on. The live figures are in
+> `20-09-SUMMARY.md`: dark token, `fillTop`, AeroBlue 3.218 / AeroDark 3.538.
+>
+> Also note `VER08SegmentLabelFlipTest`, described below as asserting "the label changes at most
+> once across the selection animation", was **strengthened in `34ff18f`** to assert the label colour
+> **never** changes — across the animation and across hover, press, focus and disabled. The gates
+> themselves stand; only that one assertion got stronger.
+
 **Four new permanent Compose UI-test gates (per-state matrix, segment label-flip, AeroIconButton focus wiring, fractional-density contour rounding) convert the mechanically-checkable slice of the SHW-16 checklist into re-executing tests — 435 -> 452 tests, 0 failures, zero production change — while leaving the genuinely human-only remainder of SHW-16 untouched and unclosed.**
 
 ## Performance
