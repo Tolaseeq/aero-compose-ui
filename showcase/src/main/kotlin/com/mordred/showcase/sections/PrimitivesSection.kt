@@ -13,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.mordred.aero.theme.AeroOrnamentTokens
 import com.mordred.aero.theme.AeroSurfaceStyle
 import com.mordred.aero.theme.AeroTheme
 import com.mordred.aero.theme.aeroGlowRing
@@ -33,7 +32,9 @@ import com.mordred.aero.theme.glassPanel
 fun PrimitivesSection() {
     val colors = AeroTheme.colors
     val typography = AeroTheme.typography
-    val ornaments = AeroOrnamentTokens.derive(colors)
+    // 20-05 IN-02: read via the AeroTheme.ornaments accessor (honors ornamentOverride, PRIM-03)
+    // instead of calling AeroOrnamentTokens.derive(colors) directly.
+    val ornaments = AeroTheme.ornaments
 
     Box(
         modifier = Modifier

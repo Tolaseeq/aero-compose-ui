@@ -24,7 +24,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mordred.aero.components.common.ANIMATION_DURATION_MS
-import com.mordred.aero.components.common.rememberFocusState
+import com.mordred.aero.components.common.rememberFocusVisible
 import com.mordred.aero.components.common.rememberHoverState
 import com.mordred.aero.components.common.rememberPressedState
 import com.mordred.aero.theme.AeroTheme
@@ -34,7 +34,9 @@ import com.mordred.aero.theme.AeroTheme
  *
  * Hover: [AeroTheme.colors.buttonHover] background drawn via a Box overlay (no M3 ripple).
  * Pressed: scale 0.97f via animateFloatAsState, 150ms LinearEasing.
- * Focus: 2.dp [AeroTheme.colors.borderSelected] border.
+ * Focus: 2.dp [AeroTheme.colors.borderSelected] border, gated on [rememberFocusVisible] (20-05
+ * WR-02) — matching every other Aero component's pointer-acquired-suppression rule (WR-01/CR-02/
+ * G2): a mouse click does NOT show the ring, only genuine keyboard-Tab focus does.
  * Disabled: 0.4 alpha on the outer Box and content color.
  *
  * `indication = null` is intentional — hover/pressed states are drawn manually;
@@ -60,7 +62,7 @@ public fun AeroIconButton(
 
     val hovered by rememberHoverState(interactionSource)
     val pressed by rememberPressedState(interactionSource)
-    val focused by rememberFocusState(interactionSource)
+    val focusVisible = rememberFocusVisible(interactionSource)
 
     val scale by animateFloatAsState(
         targetValue = if (pressed && enabled) 0.97f else 1f,
@@ -70,7 +72,7 @@ public fun AeroIconButton(
 
     val shape = RoundedCornerShape(4.dp)
 
-    val focusBorderModifier = if (focused && enabled) {
+    val focusBorderModifier = if (focusVisible && enabled) {
         Modifier.border(2.dp, colors.borderSelected, shape)
     } else {
         Modifier
