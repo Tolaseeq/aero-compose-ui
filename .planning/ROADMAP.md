@@ -286,7 +286,7 @@ Plans:
   4. A snapshot test confirms component default sizes and corner radii match the pre-migration baseline (no silent layout creep)
   5. A UI test confirms keyboard activation works for both converted buttons, and a minimal scratch-consumer outside the showcase's own conventions builds against the new artifact
 
-**Plans**: 4/7 plans executed
+**Plans**: 6/7 plans executed
 
 Plans:
 **Wave 1**
@@ -305,7 +305,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 20-06-PLAN.md — VER-05 scratch consumer: throwaway JitPack tag, a standalone project outside this repo, launching and rendering all eight (VER-05)
+- [x] 20-06-PLAN.md — VER-05 scratch consumer: throwaway JitPack tag, a standalone project outside this repo, launching and rendering all eight (VER-05)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -335,7 +335,7 @@ Plans:
 | 17. Buttons | v3.0 | 5/5 | Complete    | 2026-07-23 |
 | 18. Range | v3.0 | 4/4 | Complete    | 2026-07-24 |
 | 19. Selectors + Lists | v3.0 | 12/12 | Complete    | 2026-07-28 |
-| 20. Verification | v3.0 | 5/7 | In Progress|  |
+| 20. Verification | v3.0 | 6/7 | In Progress|  |
 
 ## Next Milestone
 
