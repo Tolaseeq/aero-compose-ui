@@ -87,9 +87,14 @@ status: complete
 > label colour become a property of the scheme.
 >
 > Consequently **the AeroDark recessed-segment exception recorded below (4.079, white label) is VOID**
-> — both the number and the affected stop belonged to the retired algorithm. Its replacement (dark
-> token, `fillTop`, AeroBlue 3.218 / AeroDark 3.538) is in `20-09-SUMMARY.md`. Do not quote 4.079
-> as a live figure.
+> — both the number and the affected stop belonged to the retired algorithm. Its first replacement
+> (the surface-polarity rule's dark token, `fillTop`, AeroBlue 3.218 / AeroDark 3.538) was itself
+> voided within hours, when the maintainer reviewed that rule running and directed white on both
+> polarities instead.
+>
+> **Quote no contrast figure from this document.** The live numbers are pinned in code —
+> `AeroButtonContrastRegressionTest.aeroBlueAeroDarkAcceptedSubFloorLabelDeviation` — precisely
+> because prose copies of them went stale three times in one phase.
 >
 > What stands from this plan: the diagnosis of the original at-rest defect (the label set no `color`
 > and inherited `LocalContentColor`, measuring 1.70:1 on AeroDark), and the `AeroButtonContrastRegressionTest`

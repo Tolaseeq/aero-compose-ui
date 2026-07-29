@@ -108,10 +108,17 @@ status: complete
 
 # Phase 20 Plan 08: Compose Test-API Gates for the Mechanical Half of SHW-16 Summary
 
-> **⚠ One figure in this document is stale.** Where it quotes the AeroDark recessed-segment
-> exception as **4.079** (white label), that exception was **voided** by plan 20-09, which retired
-> the per-fill `resolveLabelColor` algorithm the number depended on. The live figures are in
-> `20-09-SUMMARY.md`: dark token, `fillTop`, AeroBlue 3.218 / AeroDark 3.538.
+> **⚠ Every contrast figure in this document is stale — do not quote any of them.** The
+> AeroDark recessed-segment exception it cites as **4.079** was voided when plan 20-09 retired the
+> per-fill `resolveLabelColor` algorithm the number depended on. Its first replacement (the
+> surface-polarity rule's 3.218 / 3.538) was itself voided hours later when the maintainer reviewed
+> that rule running, rejected it on appearance, and directed white on both polarities in AeroBlue
+> and AeroDark.
+>
+> This figure has now gone stale three times. **The live numbers live in code, not in prose:**
+> `AeroButtonContrastRegressionTest.aeroBlueAeroDarkAcceptedSubFloorLabelDeviation`, which pins and
+> regression-bounds every accepted case. Read them from there. Narrative context is in
+> `20-09-SUMMARY.md`; the sign-off position is row C2b of `20-SIGNOFF.md`.
 >
 > Also note `VER08SegmentLabelFlipTest`, described below as asserting "the label changes at most
 > once across the selection animation", was **strengthened in `34ff18f`** to assert the label colour
