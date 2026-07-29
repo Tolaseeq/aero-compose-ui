@@ -9,6 +9,34 @@ files:
   - library/src/main/kotlin/com/mordred/aero/components/buttons/AeroButtonSurface.kt:195-206
 ---
 
+## Closed — superseded by 20-09 (2026-07-29)
+
+This finding's premise (label fixed to `Color.White` via the retired per-call-site
+`resolveLabelColor(fillTop, fillBottom, backdrop)` algorithm, `4.0787` measured against AeroDark's
+recessed `fillBottom`) no longer describes the code. Plan 20-09 retired `resolveLabelColor` entirely
+in favor of `AeroColorScheme.labelOnFilledSurface`/`labelOnOutlinedSurface`, each resolved once per
+scheme rather than recomputed per call site from an animating fill (the maintainer's 20-08 checkpoint
+rule: "per theme, ONE text colour, not per element, not per state").
+
+Under the new mechanism AeroBlue/AeroDark's `labelOnFilledSurface` is `Color.Black`, not white, and
+the recessed segment's contrast was re-measured fresh rather than inherited: AeroBlue rest/press
+`fillTop` = `3.218`, hover = `3.853`; AeroDark rest/press `fillTop` = `3.538`, hover = `4.228`
+(`fillBottom` clears comfortably in every case). **The `4.0787`/white exception this todo tracked is
+VOID** — it is not a variant or ancestor of the current number, it depended on a per-fill rescue
+mechanism that has been deleted.
+
+The underlying finding — this fill cannot clear 4.5:1 without either retuning `RECESSED_FILL_DARKEN`
+(forbidden by that constant's own KDoc) or reintroducing per-state label colour (forbidden by the
+20-08 checkpoint rule) — still holds, now under new numbers and a new named, regression-bounded
+exception: `AeroButtonContrastRegressionTest.recessedSegmentDarkTokenIsTheOneAuthorizedSegmentException`.
+
+**Replacement todo (still open, awaiting 20-07's human legibility judgment):**
+`.planning/todos/pending/2026-07-29-aerodark-aeroblue-recessed-segment-exception-needs-human-legibility-judgment.md`
+
+Original finding preserved below for history — do not treat its numbers or mechanism as current.
+
+---
+
 ## Problem
 
 Filed while closing 20-04's own open finding (`20-04-SUMMARY.md`, "Open Finding: AeroDark recessed

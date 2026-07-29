@@ -5,15 +5,15 @@ milestone_name: Glass Refinement
 current_phase: 20
 current_phase_name: verification
 status: executing
-stopped_at: Completed 20-08-PLAN.md (four new permanent Compose UI-test gates for the mechanical half of SHW-16 — VER07 state matrix, VER08 label-flip, AeroIconButton focus wiring, VER09 fractional-density rounding; 435 -> 452 tests, 0 failures, zero production change; SHW-16 itself remains open for 20-07's human sign-off)
-last_updated: "2026-07-29T10:31:26.905Z"
+stopped_at: Completed 20-09-PLAN.md (label colour becomes a scheme-level property resolved by surface polarity — labelOnFilledSurface/labelOnOutlinedSurface; VER08 strengthened to true invariance; 452 -> 467 tests, 0 failures; VOIDS 20-04's 4.079/white recessed-segment exception, replaced by a fresh black 3.218-4.228 exception; SHW-16 itself remains open for 20-07)
+last_updated: "2026-07-29T12:19:18.223Z"
 last_activity: 2026-07-29
 progress:
   total_phases: 6
   completed_phases: 4
-  total_plans: 40
-  completed_plans: 34
-  percent: 68
+  total_plans: 41
+  completed_plans: 35
+  percent: 67
 ---
 
 # Project State
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refin
 
 Milestone: v3.0 Glass Refinement
 Phase: 20 (verification) — EXECUTING
-Plan: 8 of 8
+Plan: 9 of 9
 Status: 20-07 (human sign-off) remains the only open plan
 Last activity: 2026-07-29
 
@@ -139,6 +139,7 @@ Research flags carried into planning: Phases 15, 16, 18 likely need `/gsd:resear
 | Phase 20 P05 | 25min | 3 tasks | 4 files |
 | Phase 20 P06 | n/a (checkpoint fail/fix/retag cycle) | 3 tasks | 7 files |
 | Phase 20 P08 | n/a (retroactive closeout) | 4 tasks | 4 files |
+| Phase 20 P09 | n/a (retroactive closeout) | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -236,6 +237,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase ?]: [Phase 20, Plan 05]: Code review closed the eleven never-reviewed foundation/buttons/showcase files plus Phase 20's own diff (D-03) - WR-02 (AeroIconButton stale focus mechanism) and IN-02 (PrimitivesSection ornamentOverride bypass) fixed; WR-01 (scratch files ship in showcase/src/main) and IN-01 (GlassModifiers.kt clip gap, ~40-component blast radius) deferred with cited reasons
 - [Phase ?]: 20-06: External scratch consumer at v3.0.0-verify01 caught AeroTheme painting no background (showcase's own Surface hid the gap); fixed in the library (establishBackground=true default, plain Box not Surface to avoid propagateMinConstraints regression), re-reviewed (WR-03/IN-03/IN-04), re-tagged v3.0.0-verify02, re-verified PASS (VER-05)
 - [Phase ?]: 20-08: Four new permanent Compose UI-test gates (VER07 per-state matrix, VER08 manual-clock label-flip, AeroIconButton focusVisible wiring closing WR-02, VER09 fractional-density 1dp-contour rounding) convert the mechanically-checkable slice of SHW-16 into re-executing tests — 435 -> 452 tests, 0 failures, zero production change. SHW-16 itself stays open: cross-component coherence, the AeroDark 4.079-contrast legibility judgment, and real OS DPI all remain exclusively 20-07's to verify by eye.
+- [Phase ?]: [Phase 20, Plan 09]: Label colour is chosen by surface polarity, not scheme alone — AeroBlue/AeroDark's labelOnFilledSurface=Black, labelOnOutlinedSurface=White (Classic both White); 20-04's 4.079/white recessed-segment exception is VOID, replaced by a freshly-derived black 3.218-4.228 exception, still awaiting 20-07's human legibility judgment
 
 ### Pending Todos
 
@@ -250,7 +252,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-07-29T10:31:16.163Z
-Stopped at: Completed 20-08-PLAN.md (Compose test-API gates for the mechanical half of SHW-16 — VER07/VER08/VER09 + AeroIconButton focus wiring, 435 -> 452 tests, 0 failures; SHW-16 itself remains open)
+Last session: 2026-07-29T12:19:18.207Z
+Stopped at: Completed 20-09-PLAN.md (label colour becomes a scheme-level property resolved by surface polarity — labelOnFilledSurface/labelOnOutlinedSurface; VER08 strengthened to true invariance; 452 -> 467 tests, 0 failures; VOIDS 20-04's 4.079/white recessed-segment exception, replaced by a fresh black 3.218-4.228 exception; SHW-16 itself remains open for 20-07)
 Resume file: None
 Next action: `/gsd:execute-phase 20` (run 20-07 — the human three-theme + non-100% DPI sign-off, the phase's final remaining plan)

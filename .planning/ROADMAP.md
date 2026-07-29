@@ -286,9 +286,10 @@ Plans:
   4. A snapshot test confirms component default sizes and corner radii match the pre-migration baseline (no silent layout creep)
   5. A UI test confirms keyboard activation works for both converted buttons, and a minimal scratch-consumer outside the showcase's own conventions builds against the new artifact
 
-**Plans**: 7/8 plans executed
+**Plans**: 8/9 plans executed
 
 Plans:
+
 **Wave 1**
 
 - [x] 20-01-PLAN.md — Tracer: VER-01 gradient end-stop gate end-to-end with its in-file fail-then-pass fixtures, then the chain-aware VER-02 clip-order gate (VER-01, VER-02, VER-06)
@@ -311,6 +312,10 @@ Plans:
 
 - [ ] 20-07-PLAN.md — Human three-theme sign-off plus two exact non-100% DPI passes on AeroBlue, capture-backed and per-theme (SHW-15, SHW-16)
 - [x] 20-08-PLAN.md — Compose test-API gates for the mechanical half of SHW-16: per-state matrix, segment label-flip, AeroIconButton focus wiring (WR-02), fractional-density contour rounding — 435 -> 452 tests, zero production change; SHW-16 itself remains open for 20-07 (VER-06)
+
+**Wave 6** *(depends on 20-04, 20-08 — not gated on 20-07)*
+
+- [x] 20-09-PLAN.md — Label colour becomes a scheme-level property resolved by surface polarity (labelOnFilledSurface/labelOnOutlinedSurface), not a per-call-site computation from an animating fill; VER08 strengthened to true invariance; 452 -> 467 tests. VOIDS 20-04's 4.079/white recessed-segment exception, replaced by a fresh black 3.218-4.228 exception — SHW-16 itself remains open for 20-07 (SHW-16, VER-06)
 
 ## Progress
 
@@ -336,7 +341,7 @@ Plans:
 | 17. Buttons | v3.0 | 5/5 | Complete    | 2026-07-23 |
 | 18. Range | v3.0 | 4/4 | Complete    | 2026-07-24 |
 | 19. Selectors + Lists | v3.0 | 12/12 | Complete    | 2026-07-28 |
-| 20. Verification | v3.0 | 7/8 | In Progress|  |
+| 20. Verification | v3.0 | 8/9 | In Progress|  |
 
 ## Next Milestone
 
