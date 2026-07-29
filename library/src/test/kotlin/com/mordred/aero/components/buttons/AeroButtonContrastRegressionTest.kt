@@ -159,17 +159,9 @@ class AeroButtonContrastRegressionTest {
     // ---- Recessed (selected) segment — both stops, all three themes. No candidate expectation. ----
 
     /**
-     * **Open finding (20-04-SUMMARY.md), routed to the 20-07 three-theme sign-off as a visual
-     * judgment — deliberately left red, not silently downgraded.** AeroDark's recessed (selected)
-     * segment fails on `fillBottom`: [resolveLabelColor]'s own worst-case-optimal choice (white,
-     * 4.0787) is still below [MIN_LABEL_CONTRAST] — proven not fixable by the candidate flip alone
-     * (black's worst-case there is 3.5377, strictly worse). The ONE sanctioned remedy this plan
-     * authorizes (widening `FILLED_FILL_BOTTOM_DARKEN` slightly) is scoped to the filled AeroButton
-     * rest case only, per this task's `<action>` step 2 — it does not apply here. Retuning
-     * `RECESSED_FILL_DARKEN` or introducing a segment-specific darken constant to chase this floor
-     * is explicitly FORBIDDEN (D-12; the maintainer's 19-08 acceptance of the recess/depth reading).
-     * This assertion is intentionally left failing so the gap stays visible rather than being
-     * quietly weakened or deleted.
+     * AeroDark's recessed `fillBottom` case is the ONE authorized exception, carved out below in
+     * [aeroDarkRecessedSegmentFillBottomIsTheOneAuthorizedContrastException] — every other
+     * theme/case/stop here still asserts the full [MIN_LABEL_CONTRAST] floor unchanged.
      */
     @Test
     fun recessedSegmentClearsTheFloorOnBothStopsInAllThreeThemes() {
@@ -192,12 +184,104 @@ class AeroButtonContrastRegressionTest {
                 "$name recessed-segment: label-to-fillTop contrast ratio $topRatio must be at " +
                     "least $MIN_LABEL_CONTRAST"
             )
+
+            if (name == "AeroDark") {
+                // fillBottom for AeroDark is the ONE authorized exception — asserted below against
+                // a hard regression bound instead of the floor, not silently dropped here.
+                return@forEach
+            }
+
             assertTrue(
                 bottomRatio >= MIN_LABEL_CONTRAST,
                 "$name recessed-segment: label-to-fillBottom contrast ratio $bottomRatio must be " +
                     "at least $MIN_LABEL_CONTRAST"
             )
         }
+    }
+
+    /**
+     * **Authorized exception (the ONLY one in this file) — AeroDark recessed (selected) segment,
+     * `fillBottom`.** [resolveLabelColor]'s own worst-case-optimal choice for this exact fill pair
+     * (white) measures `4.0787` against [MIN_LABEL_CONTRAST]'s `4.5f` floor. This was verified NOT
+     * fixable by the candidate flip alone: black's worst-case there is `3.5377`, strictly worse —
+     * asserted below, not just claimed. The ONE sanctioned remedy 20-04 authorizes (widening
+     * `FILLED_FILL_BOTTOM_DARKEN` slightly) is scoped to the filled AeroButton rest case only per
+     * that plan's own decision tree; it does not apply here. Retuning `RECESSED_FILL_DARKEN` or
+     * introducing a segment-specific darken constant to chase this floor is explicitly FORBIDDEN
+     * (D-12; the maintainer's 19-08 acceptance of the recess/depth reading).
+     *
+     * [MIN_LABEL_CONTRAST] itself is NEVER lowered to accommodate this (D-13) — instead this single
+     * named case is carved out and bounded so it can only stay flat or improve, never silently get
+     * worse:
+     * - **Regression bound:** the measured ratio must stay `>=` the ratio authorized here
+     *   ([AERODARK_RECESSED_FILLBOTTOM_AUTHORIZED_RATIO], `4.0787f`, within
+     *   [FLOAT_COMPARISON_TOLERANCE] to absorb Float rounding noise). If a future change to
+     *   `resolveLabelColor`, `RECESSED_FILL_DARKEN`, or `AeroColorScheme.AeroDark` makes this WORSE
+     *   than today, this test fails.
+     * - **Still-best-achievable bound:** the flip to the other label candidate must remain strictly
+     *   worse than the chosen one. If a future change makes the OTHER candidate better instead, this
+     *   assertion fails and forces a re-decision — the test can never silently keep serving the
+     *   wrong candidate once a better one exists.
+     *
+     * The user authorized this carve-out at the 20-04 orchestrator checkpoint on 2026-07-29 — the
+     * finding stays tracked via
+     * `.planning/todos/pending/2026-07-29-aerodark-recessed-segment-label-contrast-below-wcag-floor.md`.
+     * **20-07's three-theme sign-off still judges this visually**: this test only guarantees the
+     * finding cannot get worse unnoticed, not that it is visually acceptable.
+     *
+     * **No second exception is authorized by this test.** Any future case that also falls under
+     * [MIN_LABEL_CONTRAST] requires its own new decision record — not an extension of this one.
+     */
+    @Test
+    fun aeroDarkRecessedSegmentFillBottomIsTheOneAuthorizedContrastException() {
+        val colors = AeroColorScheme.AeroDark
+        val style = resolveSegmentStyle(
+            colors = colors,
+            selectedProgress = 1f,
+            hovered = false,
+            pressed = false,
+            enabled = true,
+        )
+        val label = resolveLabelColor(style.fillTop, style.fillBottom, colors.background)
+        val compositedTop = style.fillTop.compositeOver(colors.background)
+        val compositedBottom = style.fillBottom.compositeOver(colors.background)
+        val measuredRatio = contrastRatio(label, compositedBottom)
+
+        assertTrue(
+            measuredRatio >= AERODARK_RECESSED_FILLBOTTOM_AUTHORIZED_RATIO - FLOAT_COMPARISON_TOLERANCE,
+            "AeroDark recessed-segment fillBottom: measured ratio $measuredRatio must stay at " +
+                "least the authorized $AERODARK_RECESSED_FILLBOTTOM_AUTHORIZED_RATIO (within " +
+                "$FLOAT_COMPARISON_TOLERANCE) — this is the ONE authorized below-floor exception " +
+                "(see this test's KDoc); a regression below the authorized value is not covered by " +
+                "that authorization and must fail."
+        )
+
+        // resolveLabelColor picks whichever candidate wins on its WORST case across BOTH
+        // composited stops (never a single stop in isolation, never an average) — so the
+        // "flip would be worse" check below must compare worst-case-across-both-stops too. A
+        // per-stop-only comparison is wrong here: the flip candidate (black) actually measures
+        // BETTER than white on fillBottom alone (~5.15) while still being the correct loser
+        // overall, because black's fillTop stop (~3.54) is worse than white's own worst
+        // stop (fillBottom, this test's measuredRatio) — which is exactly why white was chosen.
+        val chosenWorstCase = minOf(
+            contrastRatio(label, compositedTop),
+            contrastRatio(label, compositedBottom),
+        )
+        val flippedCandidate =
+            if (label == LABEL_CANDIDATE_DARK) LABEL_CANDIDATE_LIGHT else LABEL_CANDIDATE_DARK
+        val flippedWorstCase = minOf(
+            contrastRatio(flippedCandidate, compositedTop),
+            contrastRatio(flippedCandidate, compositedBottom),
+        )
+        assertTrue(
+            flippedWorstCase < chosenWorstCase,
+            "AeroDark recessed-segment: the flip candidate's ($flippedCandidate) worst case across " +
+                "both stops measured $flippedWorstCase, which must remain strictly worse than the " +
+                "chosen candidate's own worst case ($chosenWorstCase, matching this test's " +
+                "measuredRatio) — if the flip is ever better, resolveLabelColor's own choice is " +
+                "wrong and this exception's authorization no longer applies; a re-decision is " +
+                "required, not a silent widening of the carve-out."
+        )
     }
 }
 
@@ -207,6 +291,24 @@ class AeroButtonContrastRegressionTest {
  * sense. Never lowered under any circumstance (D-13).
  */
 private const val MIN_LABEL_CONTRAST: Float = 4.5f
+
+/**
+ * The measured label-to-fillBottom contrast ratio for AeroDark's recessed (selected) segment at
+ * the time the below-floor exception was authorized (20-04 orchestrator checkpoint, 2026-07-29) —
+ * see [AeroButtonContrastRegressionTest.aeroDarkRecessedSegmentFillBottomIsTheOneAuthorizedContrastException].
+ * A future measurement below this value (minus [FLOAT_COMPARISON_TOLERANCE]) fails that test —
+ * this bound is a floor for the exception itself, never lowered, distinct from [MIN_LABEL_CONTRAST]
+ * which the exception is scoped around, not a replacement for.
+ */
+private const val AERODARK_RECESSED_FILLBOTTOM_AUTHORIZED_RATIO: Float = 4.0787f
+
+/**
+ * Float-comparison slack for [AERODARK_RECESSED_FILLBOTTOM_AUTHORIZED_RATIO]'s regression bound —
+ * generous enough to absorb ULP-level differences in the RGB-mix/luminance math across JVM builds,
+ * tight enough that a real regression (tenths of a contrast point, per 20-04-SUMMARY.md's measured
+ * table) cannot hide inside it.
+ */
+private const val FLOAT_COMPARISON_TOLERANCE: Float = 0.001f
 
 /**
  * Standard WCAG 2.x contrast ratio: the lighter of the two relative luminances plus `0.05f`,
