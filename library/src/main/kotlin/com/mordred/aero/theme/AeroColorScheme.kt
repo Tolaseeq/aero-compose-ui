@@ -58,6 +58,13 @@ public data class AeroColorScheme(
      * "white everywhere" behaviour is exactly what this two-token split reproduces rather than
      * changes (see [labelOnOutlinedSurface] for the other polarity).
      *
+     * **This dark-on-opaque rationale is the design case for the split, not what is currently
+     * shipped.** As of 2026-07-29 AeroBlue and AeroDark set BOTH tokens to `Color.White` (see their
+     * companion-object definitions below) — the maintainer rejected the dark-label-on-opaque-fills
+     * result on appearance after seeing it running, in favor of visual coherence with Classic. The
+     * two-token STRUCTURE this KDoc describes stands; only the two dark schemes' chosen VALUE
+     * changed. See each preset's own KDoc comment for the accepted contrast cost of that choice.
+     *
      * Trailing and defaulted exactly like [ornamentOverride], for the same reason: every
      * pre-existing positional/named constructor call keeps compiling unchanged. The default is
      * derived from [primary] (a rough proxy for "how light this scheme's opaque fills read") rather
@@ -104,11 +111,35 @@ public data class AeroColorScheme(
             buttonHover = Color(0x40FFFFFF),
             closeButtonHover = Color(0xFFE81123),
             panelBackground = Color(0xCC152A42),
-            // SHW-16/VER-06 (20-09) polarity table, measured by VER10OneLabelColorPerThemeTest /
-            // AeroButtonContrastRegressionTest: opaque fills (light primary, darkened) want a dark
-            // label; the outlined ~15%-alpha fill composites down onto the dark backdrop and wants
-            // a light label instead.
-            labelOnFilledSurface = Color.Black,
+            // Maintainer decision (2026-07-29): white on BOTH polarities, matching Classic. This
+            // supersedes the surface-polarity rule this plan (20-09) originally shipped here — dark
+            // label on opaque fills, light on outlined — which was measurement-driven and cleared
+            // the 4.5:1 floor on the opaque (filled/segment) polarity. The maintainer reviewed that
+            // rule running live, across all three themes, and rejected it on appearance: with a
+            // dark label on filled surfaces, AeroBlue/AeroDark read as a different visual language
+            // from Classic and from the rest of the library, which is light-on-dark throughout. They
+            // were shown this exact cost (below) in writing twice, including a live run of the white
+            // variant across all three themes, before approving it ("одобряю").
+            //
+            // Cost accepted: on white, AeroBlue's opaque fills (filled button rest/hover/press,
+            // segment-raised, segment-recessed-hover) measure below the WCAG 4.5:1 normal-text floor
+            // in most rest/hover/press cases — worst case 2.801:1 (filled-hover fillTop). See
+            // AeroButtonContrastRegressionTest.aeroBlueAeroDarkAcceptedSubFloorLabelDeviation, which
+            // pins and regression-bounds every one of these cases so none can silently get worse.
+            // MIN_LABEL_CONTRAST itself is never lowered to accommodate this (D-13) — it is a
+            // scoped, named, regression-bounded exception, not a change to the floor. What the white
+            // choice also BUYS: it fully clears AeroBlue's recessed (selected) segment at rest/press
+            // (6.525/4.602), which the black polarity rule could not without reintroducing
+            // state-dependent label colour.
+            //
+            // The surface-polarity measurement that surfaced this trade-off in the first place is
+            // retained, unmodified, as history — see VER10OneLabelColorPerThemeTest. That test
+            // measures which single pure candidate (black or white) is best across every fill; it
+            // has always picked white for every scheme, including AeroBlue/AeroDark. The interim
+            // black/light-per-polarity split tried instead was a deliberate rejection of that
+            // combined-winner measurement in favor of a per-surface rescue — this decision reverts
+            // to what VER10 measured as the single best candidate all along.
+            labelOnFilledSurface = Color.White,
             labelOnOutlinedSurface = Color.White,
         )
 
@@ -136,8 +167,13 @@ public data class AeroColorScheme(
             buttonHover = Color(0x30FFFFFF),
             closeButtonHover = Color(0xFFE81123),
             panelBackground = Color(0xCC12122A),
-            // Same polarity rationale as AeroBlue above (SHW-16/VER-06, 20-09).
-            labelOnFilledSurface = Color.Black,
+            // Maintainer decision (2026-07-29): white on both polarities — same decision, same
+            // date, same rationale as AeroBlue above. Cost accepted here: worst case 2.493:1
+            // (filled-hover fillTop); AeroDark's recessed segment does not fully clear even at rest
+            // (4.079 on fillBottom) unlike AeroBlue's, so it is also covered by
+            // AeroButtonContrastRegressionTest.aeroBlueAeroDarkAcceptedSubFloorLabelDeviation. See
+            // AeroBlue's KDoc above for the full rationale and the retained VER10 history.
+            labelOnFilledSurface = Color.White,
             labelOnOutlinedSurface = Color.White,
         )
 
