@@ -301,7 +301,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 20-05-PLAN.md — Code review of the eleven never-reviewed Phase 16/17 files and Phase 20's own diff, findings closed BEFORE the sign-off (SHW-16)
+- [x] 20-05-PLAN.md — Code review of the eleven never-reviewed Phase 16/17 files and Phase 20's own diff, findings closed BEFORE the sign-off (SHW-16)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -335,7 +335,7 @@ Plans:
 | 17. Buttons | v3.0 | 5/5 | Complete    | 2026-07-23 |
 | 18. Range | v3.0 | 4/4 | Complete    | 2026-07-24 |
 | 19. Selectors + Lists | v3.0 | 12/12 | Complete    | 2026-07-28 |
-| 20. Verification | v3.0 | 4/7 | In Progress|  |
+| 20. Verification | v3.0 | 5/7 | In Progress|  |
 
 ## Next Milestone
 
