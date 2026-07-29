@@ -5,15 +5,15 @@ milestone_name: Glass Refinement
 current_phase: 20
 current_phase_name: verification
 status: executing
-stopped_at: Completed 20-09-PLAN.md (label colour becomes a scheme-level property resolved by surface polarity — labelOnFilledSurface/labelOnOutlinedSurface; VER08 strengthened to true invariance; 452 -> 467 tests, 0 failures; VOIDS 20-04's 4.079/white recessed-segment exception, replaced by a fresh black 3.218-4.228 exception; SHW-16 itself remains open for 20-07)
-last_updated: "2026-07-29T12:19:18.223Z"
+stopped_at: "Completed 20-07-PLAN.md (SHW-16 sign-off recorded: maintainer PASSED verdict, Block D DPI passes explicitly waived, AeroRadioButton hover-shadow todo filed)"
+last_updated: "2026-07-29T13:17:15.914Z"
 last_activity: 2026-07-29
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 41
-  completed_plans: 35
-  percent: 67
+  completed_plans: 36
+  percent: 83
 ---
 
 # Project State
@@ -28,12 +28,12 @@ See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refin
 ## Current Position
 
 Milestone: v3.0 Glass Refinement
-Phase: 20 (verification) — EXECUTING
+Phase: 20 (verification) — COMPLETE (9/9 plans)
 Plan: 9 of 9
-Status: 20-07 (human sign-off) remains the only open plan
+Status: SHW-16 sign-off recorded — maintainer PASSED verdict (Block D DPI passes explicitly waived, see 20-SIGNOFF.md). Phase 20 requirements (SHW-15..16, VER-01..06) all closed.
 Last activity: 2026-07-29
 
-Progress: [█████████░] 85%
+Progress: [█████████░] 88%
 
 ## v3.0 Roadmap (2026-07-21)
 
@@ -140,6 +140,7 @@ Research flags carried into planning: Phases 15, 16, 18 likely need `/gsd:resear
 | Phase 20 P06 | n/a (checkpoint fail/fix/retag cycle) | 3 tasks | 7 files |
 | Phase 20 P08 | n/a (retroactive closeout) | 4 tasks | 4 files |
 | Phase 20 P09 | n/a (retroactive closeout) | 3 tasks | 9 files |
+| Phase 20 P07 | n/a (verdict-transcription closeout) | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -238,6 +239,8 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase ?]: 20-06: External scratch consumer at v3.0.0-verify01 caught AeroTheme painting no background (showcase's own Surface hid the gap); fixed in the library (establishBackground=true default, plain Box not Surface to avoid propagateMinConstraints regression), re-reviewed (WR-03/IN-03/IN-04), re-tagged v3.0.0-verify02, re-verified PASS (VER-05)
 - [Phase ?]: 20-08: Four new permanent Compose UI-test gates (VER07 per-state matrix, VER08 manual-clock label-flip, AeroIconButton focusVisible wiring closing WR-02, VER09 fractional-density 1dp-contour rounding) convert the mechanically-checkable slice of SHW-16 into re-executing tests — 435 -> 452 tests, 0 failures, zero production change. SHW-16 itself stays open: cross-component coherence, the AeroDark 4.079-contrast legibility judgment, and real OS DPI all remain exclusively 20-07's to verify by eye.
 - [Phase ?]: [Phase 20, Plan 09]: Label colour is chosen by surface polarity, not scheme alone — AeroBlue/AeroDark's labelOnFilledSurface=Black, labelOnOutlinedSurface=White (Classic both White); 20-04's 4.079/white recessed-segment exception is VOID, replaced by a freshly-derived black 3.218-4.228 exception, still awaiting 20-07's human legibility judgment
+- [Phase ?]: 20-07: SHW-16 maintainer verdict PASSED (three-theme coherence at 100% DPI, capture-backed); Block D (125%/200% real-OS DPI) explicitly waived by the maintainer ('Принять без DPI-прогонов'), recorded as a gap next to gate_status, not softened into a pass
+- [Phase ?]: 20-07: AeroRadioButton's square (should be round) hover shadow filed as a non-blocking, component-specific pending todo, per the maintainer's own classification — not fixed
 
 ### Pending Todos
 
@@ -252,7 +255,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-07-29T12:19:18.207Z
-Stopped at: Completed 20-09-PLAN.md (label colour becomes a scheme-level property resolved by surface polarity — labelOnFilledSurface/labelOnOutlinedSurface; VER08 strengthened to true invariance; 452 -> 467 tests, 0 failures; VOIDS 20-04's 4.079/white recessed-segment exception, replaced by a fresh black 3.218-4.228 exception; SHW-16 itself remains open for 20-07)
+Last session: 2026-07-29T13:15:35.383Z
+Stopped at: Completed 20-07-PLAN.md (SHW-16 sign-off recorded: maintainer PASSED verdict, Block D DPI passes explicitly waived, AeroRadioButton hover-shadow todo filed)
 Resume file: None
-Next action: `/gsd:execute-phase 20` (run 20-07 — the human three-theme + non-100% DPI sign-off, the phase's final remaining plan)
+Next action: Phase 20 (Verification) complete, all 9 plans done. Proceed to milestone-level ship steps for v3.0 Glass Refinement.

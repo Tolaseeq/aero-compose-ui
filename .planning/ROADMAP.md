@@ -286,7 +286,7 @@ Plans:
   4. A snapshot test confirms component default sizes and corner radii match the pre-migration baseline (no silent layout creep)
   5. A UI test confirms keyboard activation works for both converted buttons, and a minimal scratch-consumer outside the showcase's own conventions builds against the new artifact
 
-**Plans**: 8/9 plans executed
+**Plans**: 9/9 plans executed
 
 Plans:
 
@@ -310,7 +310,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 20-07-PLAN.md — Human three-theme sign-off plus two exact non-100% DPI passes on AeroBlue, capture-backed and per-theme (SHW-15, SHW-16)
+- [x] 20-07-PLAN.md — Human three-theme sign-off plus two exact non-100% DPI passes on AeroBlue, capture-backed and per-theme (SHW-15, SHW-16)
 - [x] 20-08-PLAN.md — Compose test-API gates for the mechanical half of SHW-16: per-state matrix, segment label-flip, AeroIconButton focus wiring (WR-02), fractional-density contour rounding — 435 -> 452 tests, zero production change; SHW-16 itself remains open for 20-07 (VER-06)
 
 **Wave 6** *(depends on 20-04, 20-08 — not gated on 20-07)*
@@ -341,7 +341,7 @@ Plans:
 | 17. Buttons | v3.0 | 5/5 | Complete    | 2026-07-23 |
 | 18. Range | v3.0 | 4/4 | Complete    | 2026-07-24 |
 | 19. Selectors + Lists | v3.0 | 12/12 | Complete    | 2026-07-28 |
-| 20. Verification | v3.0 | 8/9 | In Progress|  |
+| 20. Verification | v3.0 | 9/9 | In Progress|  |
 
 ## Next Milestone
 

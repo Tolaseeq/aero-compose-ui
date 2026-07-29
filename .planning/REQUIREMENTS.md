@@ -82,7 +82,7 @@ Enabling-фаза по образцу Phase 7 из v2.0. Каждый визуа
 ### Showcase + Verification (SHW / VER)
 
 - [x] **SHW-15**: Showcase демонстрирует обновлённый вид всех восьми компонентов во всех состояниях, включая hover/press/focus
-- [ ] **SHW-16**: Человеческая приёмка на трёх темах (AeroBlue / AeroDark / Classic), минимум один прогон при масштабе DPI, отличном от 100%
+- [x] **SHW-16**: Человеческая приёмка на трёх темах (AeroBlue / AeroDark / Classic), минимум один прогон при масштабе DPI, отличном от 100%. Приёмка на 100% DPI выполнена и пройдена (`20-SIGNOFF.md`); прогоны на 125%/200% сознательно приняты без выполнения решением мейнтейнера ("Принять без DPI-прогонов") — пробел зафиксирован, не скрыт
 - [x] **VER-01**: Grep-гейт: в стопах градиентов нет пиксельных литералов
 - [x] **VER-02**: Grep-гейт: никто не обходит централизованный порядок клиппинга `aeroSurface()`
 - [x] **VER-03**: Snapshot-тест дефолтов против до-миграционного базиса — размеры и радиусы скругления не поползли незаметно
@@ -142,7 +142,7 @@ Roadmap: `.planning/ROADMAP.md` (created 2026-07-21, Phases 15–20).
 | VBTN-01..06 | Phase 17 (Buttons) | Complete |
 | VRNG-01..09 | Phase 18 (Range) | Pending |
 | VSEL-01..04, VLST-01..04 | Phase 19 (Selectors + Lists) | Complete |
-| SHW-15..16, VER-01..06 | Phase 20 (Verification) | Pending |
+| SHW-15..16, VER-01..06 | Phase 20 (Verification) | Complete |
 
 **Coverage:**
 
