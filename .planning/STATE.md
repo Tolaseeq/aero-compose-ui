@@ -2,16 +2,18 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Glass Refinement
+current_phase: 20
+current_phase_name: verification
 status: executing
-stopped_at: Completed 20-02-PLAN.md (Verification section + existing-section audit)
-last_updated: "2026-07-28T16:44:52.882Z"
-last_activity: 2026-07-28
+stopped_at: Completed 20-03-PLAN.md (VER-03/VER-04 gates; SUMMARY written retroactively after an interrupted executor, per user approval)
+last_updated: "2026-07-29T09:05:40.682Z"
+last_activity: 2026-07-29
 progress:
   total_phases: 6
-  completed_phases: 5
+  completed_phases: 4
   total_plans: 39
-  completed_plans: 34
-  percent: 83
+  completed_plans: 30
+  percent: 67
 ---
 
 # Project State
@@ -27,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refin
 
 Milestone: v3.0 Glass Refinement
 Phase: 20 (verification) — EXECUTING
-Plan: 3 of 7
+Plan: 4 of 7
 Status: Ready to execute
-Last activity: 2026-07-28
+Last activity: 2026-07-29
 
-Progress: [█████████░] 87%
+Progress: [████████░░] 77%
 
 ## v3.0 Roadmap (2026-07-21)
 
@@ -132,6 +134,7 @@ Research flags carried into planning: Phases 15, 16, 18 likely need `/gsd:resear
 | Phase 19 P12 | 10min | 2 tasks | 2 files |
 | Phase 20 P01 | 11min | 2 tasks | 2 files |
 | Phase 20 P02 | 10min | 2 tasks | 2 files |
+| Phase 20 P03 | n/a (retroactive closeout) | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -222,6 +225,9 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase ?]: VER-02 modifierChains() excludes fun-declaration lines from chain-start detection - without this, AeroSurfacePrimitives.kt's own fun Modifier.aeroSurface(...) declaration would self-flag its internal .clip(shape) as a false VER-02 violation
 - [Phase ?]: [Phase 20, Plan 02]: State tiles beyond disabled are byte-identical enabled instances (17-04 precedent) - no forced/static styling to fake hover/press/focus
 - [Phase ?]: [Phase 20, Plan 02]: Audit of ButtonsSection/SelectionSection/RangeSection/ListSection found all four already state-complete - zero top-up demo instances needed, valid 'no change' outcome per plan
+- [Phase ?]: [Phase 20, Plan 03]: VER-03's BASELINE holds 14 identity-keyed entries read directly from git tag v2.0.4 (D-10); three deliberate same-value coincidences are each proven independently caught by a dedicated fixture, not by an aggregate comparison
+- [Phase ?]: [Phase 20, Plan 03]: Exactly two authorized VER-03 exceptions — AeroListItem's fixed-to-min row-height change (G1, 19-06) and AeroSlider's absent v2.0.4 baseline (it wrapped M3 Slider with no numeric default of its own) — no further exception is authorized
+- [Phase ?]: [Phase 20, Plan 03]: VER-04 closed by strengthening the existing AeroButtonSemanticsTest, not a new class (D-16) — 3 of 4 explicit criteria were already met; only the invocation-count gap required a code change
 
 ### Pending Todos
 
@@ -236,7 +242,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-07-28T16:44:52.875Z
-Stopped at: Completed 20-02-PLAN.md (Verification section + existing-section audit)
+Last session: 2026-07-29T09:05:40.671Z
+Stopped at: Completed 20-03-PLAN.md (VER-03/VER-04 gates; SUMMARY written retroactively after an interrupted executor, per user approval)
 Resume file: None
 Next action: `/gsd:plan-phase 15` (Toolchain Upgrade — consider `/gsd:research-phase 15` first per research flag)

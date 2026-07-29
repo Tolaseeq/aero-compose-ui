@@ -286,7 +286,7 @@ Plans:
   4. A snapshot test confirms component default sizes and corner radii match the pre-migration baseline (no silent layout creep)
   5. A UI test confirms keyboard activation works for both converted buttons, and a minimal scratch-consumer outside the showcase's own conventions builds against the new artifact
 
-**Plans**: 7 plans in 5 waves
+**Plans**: 3/7 plans executed
 
 Plans:
 **Wave 1**
@@ -296,7 +296,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 20-03-PLAN.md — VER-03 default size/corner-radius snapshot against the real v2.0.4 baseline, plus the VER-04 audit closing it on the existing AeroButtonSemanticsTest (VER-03, VER-04, VER-06)
+- [x] 20-03-PLAN.md — VER-03 default size/corner-radius snapshot against the real v2.0.4 baseline, plus the VER-04 audit closing it on the existing AeroButtonSemanticsTest (VER-03, VER-04, VER-06)
 - [ ] 20-04-PLAN.md — Folded label-contrast fix: one shared resolveLabelColor mechanism for AeroButton/AeroSegmentedControl plus its value-level WCAG regression guard (SHW-16)
 
 **Wave 3** *(blocked on Wave 2 completion)*
@@ -335,7 +335,7 @@ Plans:
 | 17. Buttons | v3.0 | 5/5 | Complete    | 2026-07-23 |
 | 18. Range | v3.0 | 4/4 | Complete    | 2026-07-24 |
 | 19. Selectors + Lists | v3.0 | 12/12 | Complete    | 2026-07-28 |
-| 20. Verification | v3.0 | 2/7 | In Progress|  |
+| 20. Verification | v3.0 | 3/7 | In Progress|  |
 
 ## Next Milestone
 
