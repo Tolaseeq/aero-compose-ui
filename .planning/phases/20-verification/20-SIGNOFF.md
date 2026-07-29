@@ -38,7 +38,39 @@ recorded before that ordering holds is void (SHW-16/ordering, D-03; T-20-07-02).
 - **`.planning/phases/20-verification/20-REVIEW.md`** addendum (commits `1d139a7`/`ff577fc`,
   reviewed 2026-07-29) — 0 critical, 1 warning (WR-03, ABI/binary-compatibility policy gap, filed
   as a backlog todo, not a sign-off blocker), 2 info (IN-03, IN-04). No blocker.
-- Both are dated 2026-07-29, before this document's own date. The ordering holds.
+- Both are dated 2026-07-29, before this document's own date.
+
+### ⚠ Ordering breach — recorded, not papered over
+
+**The D-03 ordering did NOT fully hold, and this section originally claimed it did.** Found by the
+phase verifier, not self-reported by the orchestrator that caused it.
+
+| Event | Commit | Time |
+|---|---|---|
+| Verdict recorded here as `gate_status: PASSED` | `12ea966` | 16:17:43 |
+| **Code review Addendum 2** — review of the 20-08/20-09 commits, i.e. the very code rows A3 and C2b judge | `ca3e49b` | **16:32:26** |
+| WR-04 (a real defect that review found) fixed | `59b3067` | 16:43:45 |
+
+So the verdict was recorded **before** the review of the code it assesses had closed. That is the
+v2.0.3 pattern this entire phase was built to prevent, reproduced by the orchestrator's own
+sequencing. Recording it here rather than quietly reordering the section is the point: an ordering
+proof that omits its own breach is worth nothing.
+
+**Why the verdict nevertheless stands, on evidence rather than convenience.** Addendum 2 found no
+critical findings. Its one substantive warning, **WR-04**, is a defect in
+`defaultLabelColorForOpaqueFill` — the *fallback* consulted only by a custom scheme built via
+`copy()` that specifies neither label token. **AeroBlue, AeroDark and Classic each set both
+`labelOnFilledSurface` and `labelOnOutlinedSurface` explicitly in their companion-object
+constructors, so the fallback expression is never evaluated for any of them.** That is structural,
+not incidental. The maintainer therefore judged un-defective rendering, and their verdict is not
+built on code that was later found broken. This was checked before the fix landed and confirmed
+independently by the verifier afterwards.
+
+WR-05 (a coverage claim wider than the test's actual measurement) and IN-05 (a dangling KDoc block)
+are non-blocking and tracked. Neither touches rendering.
+
+**What would have been required had WR-04 affected a shipped theme:** a fresh sign-off, not an
+annotation. That threshold was not reached.
 
 ## Automated Gates
 
