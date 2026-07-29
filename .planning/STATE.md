@@ -5,14 +5,14 @@ milestone_name: Glass Refinement
 current_phase: 20
 current_phase_name: verification
 status: executing
-stopped_at: Completed 20-03-PLAN.md (VER-03/VER-04 gates; SUMMARY written retroactively after an interrupted executor, per user approval)
-last_updated: "2026-07-29T09:05:40.682Z"
+stopped_at: Completed 20-04-PLAN.md (label-contrast mechanism; AeroDark recessed-segment open finding routed to 20-07)
+last_updated: "2026-07-29T09:15:21.236Z"
 last_activity: 2026-07-29
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 39
-  completed_plans: 30
+  completed_plans: 31
   percent: 67
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-07-21 — after scoping v3.0 Glass Refin
 
 Milestone: v3.0 Glass Refinement
 Phase: 20 (verification) — EXECUTING
-Plan: 4 of 7
+Plan: 5 of 7
 Status: Ready to execute
 Last activity: 2026-07-29
 
-Progress: [████████░░] 77%
+Progress: [████████░░] 79%
 
 ## v3.0 Roadmap (2026-07-21)
 
@@ -135,6 +135,7 @@ Research flags carried into planning: Phases 15, 16, 18 likely need `/gsd:resear
 | Phase 20 P01 | 11min | 2 tasks | 2 files |
 | Phase 20 P02 | 10min | 2 tasks | 2 files |
 | Phase 20 P03 | n/a (retroactive closeout) | 2 tasks | 2 files |
+| Phase 20 P04 | 25min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -228,6 +229,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 - [Phase ?]: [Phase 20, Plan 03]: VER-03's BASELINE holds 14 identity-keyed entries read directly from git tag v2.0.4 (D-10); three deliberate same-value coincidences are each proven independently caught by a dedicated fixture, not by an aggregate comparison
 - [Phase ?]: [Phase 20, Plan 03]: Exactly two authorized VER-03 exceptions — AeroListItem's fixed-to-min row-height change (G1, 19-06) and AeroSlider's absent v2.0.4 baseline (it wrapped M3 Slider with no numeric default of its own) — no further exception is authorized
 - [Phase ?]: [Phase 20, Plan 03]: VER-04 closed by strengthening the existing AeroButtonSemanticsTest, not a new class (D-16) — 3 of 4 explicit criteria were already met; only the invocation-count gap required a code change
+- [Phase ?]: 20-04: resolveLabelColor picks the worst-case (not average) candidate across both composited fill stops; AeroDark's recessed segment fillBottom (4.079) fails 4.5:1 with no sanctioned remedy available, left as an open finding routed to 20-07 sign-off
 
 ### Pending Todos
 
@@ -242,7 +244,7 @@ Full decision log in PROJECT.md "Key Decisions" table. Active decisions affectin
 
 ## Session Continuity
 
-Last session: 2026-07-29T09:05:40.671Z
-Stopped at: Completed 20-03-PLAN.md (VER-03/VER-04 gates; SUMMARY written retroactively after an interrupted executor, per user approval)
+Last session: 2026-07-29T09:15:21.225Z
+Stopped at: Completed 20-04-PLAN.md (label-contrast mechanism; AeroDark recessed-segment open finding routed to 20-07)
 Resume file: None
 Next action: `/gsd:plan-phase 15` (Toolchain Upgrade — consider `/gsd:research-phase 15` first per research flag)
