@@ -2,7 +2,7 @@
 phase: 20-verification
 reviewed: 2026-07-29T00:00:00Z
 depth: standard
-files_reviewed: 24
+files_reviewed: 38
 files_reviewed_list:
   - library/src/main/kotlin/com/mordred/aero/theme/GlassModifiers.kt
   - library/src/main/kotlin/com/mordred/aero/theme/ColorMath.kt
@@ -28,11 +28,25 @@ files_reviewed_list:
   - library/src/test/kotlin/com/mordred/aero/components/buttons/AeroButtonSurfaceSourceTest.kt (20-04 diff only)
   - library/src/test/kotlin/com/mordred/aero/components/selection/AeroSegmentedControlSourceTest.kt (20-04 diff only)
   - library/src/test/kotlin/com/mordred/aero/theme/AeroThemeBackgroundEstablishmentTest.kt (addendum — 20-06 diff only)
+  - library/src/main/kotlin/com/mordred/aero/components/buttons/AeroButtonSurface.kt (addendum 2 — 20-09 diff only)
+  - library/src/main/kotlin/com/mordred/aero/components/selection/AeroSegmentedControl.kt (addendum 2 — 20-09 diff only)
+  - library/src/main/kotlin/com/mordred/aero/theme/AeroColorScheme.kt (addendum 2 — 20-09 diff: labelOnFilledSurface/labelOnOutlinedSurface)
+  - library/src/test/kotlin/com/mordred/aero/components/buttons/AeroButtonContrastRegressionTest.kt (addendum 2 — 20-09 revision, re-reviewed in full)
+  - library/src/test/kotlin/com/mordred/aero/components/buttons/AeroButtonSurfaceSourceTest.kt (addendum 2 — 20-09 diff only)
+  - library/src/test/kotlin/com/mordred/aero/components/selection/AeroSegmentedControlSourceTest.kt (addendum 2 — 20-09 diff only)
+  - library/src/test/kotlin/com/mordred/aero/components/buttons/AeroIconButtonFocusVisibleWiringTest.kt (addendum 2 — new file)
+  - library/src/test/kotlin/com/mordred/aero/theme/AeroColorSchemeTest.kt (addendum 2 — new label-token tests)
+  - library/src/test/kotlin/com/mordred/aero/verification/VER07ButtonStateMatrixTest.kt (addendum 2 — new file)
+  - library/src/test/kotlin/com/mordred/aero/verification/VER08SegmentLabelFlipTest.kt (addendum 2 — new file)
+  - library/src/test/kotlin/com/mordred/aero/verification/VER09FractionalDensityRoundingTest.kt (addendum 2 — new file)
+  - library/src/test/kotlin/com/mordred/aero/verification/VER10OneLabelColorPerThemeTest.kt (addendum 2 — new file)
+  - showcase/build.gradle.kts (addendum 2 — new -Paero.scheme forwarding)
+  - showcase/src/main/kotlin/com/mordred/showcase/Main.kt (addendum 2 — new initialScheme())
 findings:
   critical: 0
-  warning: 3
-  info: 4
-  total: 7
+  warning: 5
+  info: 5
+  total: 10
 status: issues_found
 ---
 
@@ -489,6 +503,266 @@ affected. **Severity: info.**
 
 ---
 
+## Addendum 2: `f07cc48..HEAD` — Label-Colour Scheme Tokens (20-09) and the 20-08 Verification Gates
+
+**Reviewed:** 2026-07-29 (addendum 2 pass, after this document's original close and the first
+addendum)
+**Depth:** standard
+**Commits in scope** (`f07cc48..HEAD`, source only — `.planning/` commits in the same range are
+records, not code, and are excluded):
+- `2dc046e` `test(20-08): gate AeroButton/AeroOutlinedButton state matrix across three schemes` (new `VER07ButtonStateMatrixTest.kt`)
+- `a9c1c50` `test(20-08): gate segment label flip across the selection animation` (new `VER08SegmentLabelFlipTest.kt`)
+- `7532b59` `test(20-08): gate AeroIconButton focusVisible wiring (WR-02)` (new `AeroIconButtonFocusVisibleWiringTest.kt`)
+- `a4b9505` `test(20-08): gate 1dp contour rounding at fractional density` (new `VER09FractionalDensityRoundingTest.kt`)
+- `3b55237` `test(20-09): measure single-label-colour cost per scheme` (new `VER10OneLabelColorPerThemeTest.kt`)
+- `15cf312` `feat(20-09): resolve label colour from scheme polarity, not the fill` (`AeroColorScheme.kt`, `AeroButtonSurface.kt`, `AeroSegmentedControl.kt`, both `*SourceTest.kt` guards)
+- `34ff18f` `test(20-09): gate label-colour invariance across state` (extends `VER08SegmentLabelFlipTest.kt`)
+- `24e6705` `feat(20-09): white label on both polarities in AeroBlue and AeroDark` (`AeroColorScheme.kt`)
+- `c943d43` `test(20-09): encode the accepted sub-floor label contrast in AeroBlue/AeroDark` (rewrites `AeroButtonContrastRegressionTest.kt`)
+- `3e4dfc7` `feat(showcase): launch on a chosen theme via -Paero.scheme` (`showcase/build.gradle.kts`, `showcase/src/main/kotlin/com/mordred/showcase/Main.kt`)
+
+**Status:** issues_found — 0 critical, 2 warning (WR-04, WR-05), 1 info (IN-05). No blocker: the
+retirement of the per-call-site `resolveLabelColor` mechanism is complete and verified with no
+dangling references in production code; the "label never changes across state" gate is real and
+tightened correctly; the accepted sub-floor deviation test does fail on regression of any of its
+twelve pinned cases; the showcase `-Paero.scheme` flag is safe, lazy, and leaves the default launch
+unchanged. The findings below concern the edges the maintainer-decision arc did not exercise: a
+custom-scheme fallback path nobody has run, and two disabled-state fills nobody currently measures.
+
+### Verified clean (with evidence, not asserted)
+
+**1. Retirement completeness (risk item 1) — no dangling code.** `grep -rn
+"resolveLabelColor\|labelContrastRatio\|LABEL_CANDIDATE_DARK\|LABEL_CANDIDATE_LIGHT" --include="*.kt" .`
+across the whole repository returns matches **only** inside comments/KDoc explicitly narrating the
+retirement (`AeroButtonSurface.kt:145`, `AeroSegmentedControl.kt:88/91`, `AeroColorScheme.kt:221`)
+and inside test files as either historical KDoc prose or `assertFalse(source.contains("resolveLabelColor("))`
+source guards (`AeroButtonSurfaceSourceTest.kt:137`, `AeroSegmentedControlSourceTest.kt:175`,
+`VER08SegmentLabelFlipTest.kt:29`, `VER10OneLabelColorPerThemeTest.kt:15,57,272`). No production
+`.kt` file outside comments references the retired symbols, and no test still asserts the old
+mechanism is present — both `*SourceTest.kt` guards were correctly flipped from `assertTrue(...
+contains("color = resolveLabelColor("))` to `assertFalse(... contains("resolveLabelColor("))`
+(confirmed via `git diff f07cc48..HEAD` on both files). No defect found.
+
+**2. `aeroBlueAeroDarkAcceptedSubFloorLabelDeviation` fails on regression of any of its twelve
+pinned cases (risk item 3, first half).** Every case in the test is asserted through
+`assertBothStopsAuthorized` → `assertAuthorizedException`, whose condition is `measured >=
+authorized - FLOAT_COMPARISON_TOLERANCE`. Traced this is a real, one-directional bound: worsening
+any of the twelve pinned ratios (six per scheme: filled rest/hover/press top+bottom collapsed to
+one call each, plus segment-raised rest/hover and segment-recessed(-hover)) pushes `measured` below
+`authorized - 0.001`, which fails. Improving a ratio does not fail (correctly — this is a floor, not
+an exact-match pin). `MIN_LABEL_CONTRAST` is confirmed still `4.5f` in both
+`AeroButtonContrastRegressionTest.kt:447` and `VER10OneLabelColorPerThemeTest.kt:244`, and both
+files' `contrastRatio`/independent WCAG implementations import nothing from production (`grep
+'^import' AeroButtonContrastRegressionTest.kt VER10OneLabelColorPerThemeTest.kt` shows no
+`com.mordred.aero.theme.*ContrastRatio*`/`resolveLabelColor` import in either) — D-13 holds. No
+defect found in the mechanism itself; see WR-05 below for a coverage gap in *what* it measures.
+
+**3. VER07/VER08/VER09 gates are real, not vacuous (risk item 4).**
+- `VER07ButtonStateMatrixTest`'s `pixelMapsDiffer` is an exact per-pixel comparator (`a[x,y] !=
+  b[x,y]` → `true`), not a tolerance-based near-miss — and its own D-08 fixture proof
+  (`pixelMapsDifferDetectsGenuinelyDifferentCaptures` / `...ReturnsFalseOnIndistinguishableCaptures`)
+  exercises the identical code path the five real per-state assertions call, proving the comparator
+  can both catch a genuine difference and correctly report none. A regression that left any of
+  focus/hover/press/disabled unwired for either `AeroButton` or `AeroOutlinedButton`, in any of the
+  three schemes, would fail this gate.
+- `VER08SegmentLabelFlipTest`'s manual-clock sampling (`mainClock.autoAdvance = false` +
+  `advanceTimeByFrame()` × 15) samples the REAL rendered pixel via
+  `extremeLuminancePixelNearCenter(node.captureToImage().toPixelMap())` on every frame — not a
+  constant or a reimplementation of the tween's time-to-value math. The reasoning that the sampled
+  extreme-luminance pixel is always the label's own ink (never a stray fill pixel) is sound: every
+  shipped scheme's `labelOnFilledSurface` is exactly pure Black or White, and no shipped fill color
+  is anywhere near either luminance extreme (confirmed by inspection of all three `AeroColorScheme`
+  presets and every `darken`/`hoverLighten`/`pressedRecess` transform applied to `primary` in this
+  file range — none approach 0 or 1 luminance). The strengthened bar (`changes == 0`, not `<= 1`)
+  is a real, tightenable assertion with its own D-08 fixture proof
+  (`countLabelColorChangesFlagsAnySingleChange` proves even one flip is caught).
+- `VER09FractionalDensityRoundingTest` explicitly asserts *proportionality*, not absolute pixel
+  counts: `maxAllowedPx = ceil(expectedNominalPx).toInt() + 1` is density-scaled per iteration
+  (`expectedNominalPx = with(Density(density)) { 1.dp.toPx() }`), and the height check
+  (`abs(28.dp.value - measuredHeightDp.value) <= 0.05f`) converts the measured device-pixel bounds
+  back to dp before comparing against VER-03's pinned `28.dp` baseline — never a hardcoded device-
+  pixel literal. Its own D-08 fixture proof exercises presence/collapse/doubling of the pure counter.
+- `AeroIconButtonFocusVisibleWiringTest.mouseClickDrawsNoRingButKeyboardTraversalDoes` asserts BOTH
+  halves independently and in the order that actually guards the fix: `assertFalse(focusVisible)`
+  after a real `moveTo`→`press`→`release` mouse sequence (the half that catches WR-02's original
+  defect), then, after moving focus away and back via genuine `requestFocus()`, `assertTrue
+  (focusVisible)` for the keyboard half (the half that catches a component that never rings at all).
+  Confirmed the production `AeroIconButton.kt:65` already reads `rememberFocusVisible
+  (interactionSource)` (fixed at `61cab14`, outside this range) — this commit adds the permanent
+  gate, it does not itself fix the wiring, and the gate correctly exercises the real component via
+  a second `rememberFocusVisible` collector on the same hot `MutableInteractionSource`, not a
+  hand-rolled model.
+
+No defect found in any of the four 20-08 gates.
+
+**4. `VER10OneLabelColorPerThemeTest` is coherent with shipped values (risk item 5).** The file's
+own pinned "winner" per scheme (`AEROBLUE_WINNER`/`AERODARK_WINNER`/`CLASSIC_WINNER`, all
+`Color.White`) matches what `AeroColorScheme.kt` actually ships (`labelOnFilledSurface =
+Color.White` on all three presets, confirmed above). The class KDoc's "post-measurement addendum"
+explicitly narrates that the maintainer briefly shipped a different (per-polarity, per-scheme)
+value and then reverted to this file's own combined-winner measurement — so despite the file's own
+docstring describing itself as "NOT yet a production change" at the time it was written, its pinned
+assertions do not contradict the code as it ships today; they in fact match it exactly. No defect
+found — this is the one case among the ten commits where the file's self-description is stale but
+its actual assertions are not.
+
+**5. Showcase `-Paero.scheme` flag is correct, lazy, and fails safe (risk item 6).**
+`tasks.withType<JavaExec>().configureEach { if (name == "run") ... }` is correctly lazy — the
+in-file comment's own stated reason (`tasks.named("run")` would fail before the Compose Desktop
+plugin registers the task) is accurate: `configureEach` registers a callback that fires when each
+`JavaExec` task is realized, regardless of registration order, so it does not require `run` to
+already exist at script-evaluation time. `project.findProperty("aero.scheme")` is read during task
+configuration (not inside a `doFirst`/`doLast` execution-time action), which is the supported place
+to read Gradle project properties. `Main.kt`'s `initialScheme()` maps only `"AeroDark"`/`"Classic"`
+explicitly and falls through `else -> AeroColorScheme.AeroBlue` for every other value, including
+`null` (the property absent) and any misspelled/unrecognized string — confirmed this reproduces the
+pre-existing default exactly, since `AeroColorScheme.AeroBlue` was already the implicit default
+`currentScheme` value before this commit (`git show 3e4dfc7^:showcase/.../Main.kt` shows
+`mutableStateOf(AeroColorScheme.AeroBlue)` directly, byte-identical to what `initialScheme()`'s
+`else` branch now produces). No defect found.
+
+### WR-04: `labelOnFilledSurface`'s default-value fallback derives its polarity from the wrong reference color, and can produce genuinely poor contrast for a plausible custom scheme
+
+**File:** `library/src/main/kotlin/com/mordred/aero/theme/AeroColorScheme.kt:75` (the default
+expression `defaultLabelColorForSurface(primary)`), `213-226` (the fallback function itself)
+
+**Issue:** `defaultLabelColorForSurface(surface: Color)` picks Black when `surface.luminance() >
+0.5f`, White otherwise — a plain one-shot luminance split. For `labelOnFilledSurface`, `surface` is
+bound to the scheme's raw `primary`, but **no on-fill label in this library is ever painted against
+raw `primary`.** Both real consumers — `resolveButtonStyle`'s rest fill
+(`AeroButtonSurface.kt:299-303`) and `resolveSegmentStyle`'s raised base
+(`AeroSegmentedControl.kt:289-292`) — paint `colors.primary.darken(FILLED_FILL_TOP_DARKEN = 0.20f)`
+/ `colors.primary.darken(FILLED_FILL_BOTTOM_DARKEN = 0.36f)`, which is always meaningfully DARKER
+than `primary` itself. The KDoc's own justification ("a rough proxy for how light this scheme's
+opaque fills read") is explicit that it is an approximation, and its explicit promise is narrower
+than exact reproduction — but it also states the fallback "will not necessarily match a hand-tuned
+built-in value, but it will not be illegible either." That second half does not hold in general.
+
+Modeled directly against this file's own `darken()` formula (`ColorMath.kt:22-27`, RGB channels ×
+`(1 - amount)`) and the same relative-luminance/WCAG-ratio formula this milestone's own test files
+use (`(lighter+0.05)/(darker+0.05)`), several ordinary, plausible custom `primary` values pick the
+WRONG polarity via this heuristic and land well under the 4.5:1 floor once the actual darkened fill
+is composited — not a contrived adversarial input, plain greys and blue-greys a real consumer might
+plausibly set as a brand `primary`:
+
+| Custom `primary` (hex, illustrative) | raw luminance | heuristic picks | actual top-stop contrast | actual bottom-stop contrast |
+|---|---|---|---|---|
+| `#A0A0A0` | 0.352 | White | 3.95 | 5.71 |
+| `#999999` | 0.319 | White | 4.27 | 6.11 |
+| `#BABABA` | 0.491 | White | **3.00** | 4.48 |
+
+(Reproducible: `luminance()` per androidx's own sRGB relative-luminance formula, `darken(0.20f)`/
+`darken(0.36f)` per `ColorMath.kt`, WCAG ratio per the formula both `AeroButtonContrastRegressionTest`
+and `VER10OneLabelColorPerThemeTest` already use in this codebase.) The `#BABABA` case is
+particularly instructive: raw luminance (0.491) sits just *below* the 0.5 split, so the heuristic
+correctly infers "dark-ish surface" and picks White — but the top-stop fill this scheme would
+actually paint is only lightly darkened (20%) and still reads as a *mid-tone*, for which White text
+measures 3.00:1 — well under the 4.5:1 floor, and low enough to read as genuinely poor contrast, not
+a borderline miss like Classic's own accepted 4.455 exception. The scenario is not unusual: any
+`primary` whose luminance sits near the 0.5 midpoint (a wholly ordinary "medium" brand color, e.g. a
+mid-saturation blue or grey) triggers this, because the heuristic evaluates the UN-darkened color at
+exactly the point where a plain black/white split is least informative, while the actually-painted
+color is always pulled further toward the dark end by `.darken()` — a directional bias the single-
+value heuristic does not account for.
+
+None of the three shipped presets are affected (they all set both tokens explicitly, bypassing this
+fallback entirely), and this cannot be a compile-time or runtime failure — it degrades gracefully to
+readable-but-suboptimal or measurably-poor contrast, never a crash or `null`. It is exercised only
+by a future consumer who builds a custom `AeroColorScheme` via `copy()` or a positional/named
+constructor call that omits both `labelOnFilledSurface` and `labelOnOutlinedSurface`.
+
+**Fix:** Either (a) have the default expression reference the same darkened value the real
+resolvers actually paint (e.g. `defaultLabelColorForSurface(primary.darken(FILLED_FILL_BOTTOM_DARKEN))`,
+using the darker of the two stops as the more conservative reference — this does create a
+theme-package dependency from `AeroColorScheme` on a `components.buttons`-scoped constant, which
+would need resolving, e.g. by relocating the darken constants or duplicating the literal with a
+cross-reference comment as `RECESSED_FILL_DARKEN` already does), or (b) soften the KDoc's promise to
+match what the heuristic actually guarantees ("a sensible single-luminance-split default, not a
+contrast-floor guarantee — hand-tune both tokens for a production custom scheme"), which requires no
+code change. Either closes the gap between the documented guarantee and the measured behavior;
+leaving the current KDoc's "will not be illegible" claim standing next to a modeled 3.00:1 case is
+the actual defect. **Severity: warning** (no shipped scheme is affected; this is a public-API
+documentation/fallback-design gap reachable only by a future custom-theme consumer, not the three
+built-in themes this milestone signs off).
+
+### WR-05: The "every fill is covered" contrast-regression claim omits disabled-state fills for both the segmented control and the outlined button
+
+**File:** `library/src/test/kotlin/com/mordred/aero/components/buttons/AeroButtonContrastRegressionTest.kt:28-33`
+(class KDoc's coverage claim), `353-392` (`disabledSurfacesAreExemptFromTheContrastFloorPerWcag143`,
+filled-button only); `library/src/test/kotlin/com/mordred/aero/verification/VER10OneLabelColorPerThemeTest.kt:211-238`
+(`fillCases`, no segment-disabled entry)
+
+**Issue:** `AeroButtonContrastRegressionTest`'s class KDoc states: "Every fill an on-fill label can
+land on is covered: filled button rest/hover/press (both stops, all three themes), outlined
+equivalents, raised segment rest/hover, and recessed segment rest/hover ... Disabled states are
+WCAG-1.4.3-exempt (below) rather than asserted against the floor." In practice, only ONE disabled
+fill is measured anywhere in this file:
+`disabledSurfacesAreExemptFromTheContrastFloorPerWcag143` calls `resolveButtonStyle(..., outlined =
+false, ..., enabled = false)` for all three schemes — **filled button disabled only.** Neither
+**outlined button disabled** nor **any segment disabled state** (raised-disabled or
+recessed-disabled) is measured, regression-bounded, or even exempted-with-a-named-ratio anywhere in
+this file. `AeroSegmentedControl` does support `enabled = false` (its `enabled` parameter flows into
+`resolveSegmentStyle`'s `if (!enabled) return depthResolved.flattenDisabled(colors)` branch,
+`AeroSegmentedControl.kt:304`), so this is a real, reachable, currently-unmeasured fill.
+
+`VER10OneLabelColorPerThemeTest`'s `fillCases()` — the file explicitly built to enumerate "EVERY
+fill an on-fill label actually lands on today" for its own per-scheme worst-case measurement — DOES
+include `outlined`-`disabled` (its `listOf(false, true).forEach { outlined -> ... }` loop calls
+`resolveButtonStyle(..., enabled = false)` for both `outlined` values), but has **no segment-disabled
+case at all**: its five segment cases are `raised`, `raisedHover`, `recessed`, `recessedHover`,
+`pressedSegment` — never `resolveSegmentStyle(..., enabled = false)`. So segment-disabled contrast
+is entirely unmeasured by either mechanism in this codebase, and outlined-button-disabled is folded
+only into VER10's aggregate per-scheme *worst-case-across-all-fills* number — which would only
+change (and therefore only catch a regression) if outlined-disabled happens to become the single
+worst fill in that scheme; a regression that makes outlined-disabled contrast worse while still not
+being the scheme's global worst case would silently pass both files unnoticed.
+
+WCAG 1.4.3 genuinely exempts disabled controls from the contrast floor, so this is not a compliance
+gap — but it IS exactly the pattern risk item 3 warns against: an omission (rather than an explicit,
+named carve-out) in the "regression-bounded" contrast-guard mechanism this milestone built
+specifically so that "any observed change is a real regression, not a legitimate ... crossing." A
+future fill-formula change to the segment's or outlined button's disabled state could silently make
+disabled text meaningfully worse (well past what a reasonable person would call "still exempt but
+fine," e.g. dropping toward the invisible end) without either file's assertions moving.
+
+**Fix:** Either add `outlinedButtonDisabledClearsOrIsExemptInAllThreeThemes`-style assertions
+mirroring `disabledSurfacesAreExemptFromTheContrastFloorPerWcag143`'s existing shape (measure and
+pin the current ratio as a regression bound, same as the filled-disabled case already does), and add
+a `resolveSegmentStyle(..., enabled = false)` case to both files' fixture sets — or narrow the class
+KDoc's "Every fill ... is covered" claim to explicitly name which disabled fills are and are not
+measured, so the coverage claim matches the coverage. **Severity: warning** — no current defect in
+shipped contrast (WCAG exempts disabled entirely), but the stated completeness guarantee this file
+exists to provide does not hold for these two specific, reachable fills.
+
+### IN-05: Orphaned KDoc-style retirement note is not attached to any declaration
+
+**File:** `library/src/main/kotlin/com/mordred/aero/components/buttons/AeroButtonSurface.kt:143-155`
+
+**Issue:** The "RETIRED (SHW-16/VER-06, 20-09)..." block explaining the removal of
+`resolveLabelColor`/`LABEL_CANDIDATE_DARK`/`LABEL_CANDIDATE_LIGHT`/`labelContrastRatio` is written
+using `/** ... */` KDoc syntax, but is separated from the next real declaration
+(`OUTLINED_FILL_ALPHA_MULTIPLIER`, line 158) by a blank line (156) and then that declaration's OWN,
+separate `/** ... */` KDoc block (157). A KDoc block must immediately precede the declaration it
+documents to be recognized as that declaration's documentation by tooling (Dokka and IDE
+tooltips) — this block precedes nothing, so it renders as ordinary source text to any doc generator,
+not as attached documentation of anything. This does not affect runtime behavior or test outcomes in
+any way — it is a pure documentation-tooling nit, and the content itself is accurate historical
+narration matching everything confirmed in "Verified clean" item 1 above.
+
+**Fix:** Either convert the block to a plain `//`-prefixed block comment (removing the `/** */`
+KDoc markers, since it documents nothing), or move it immediately above a stub/marker declaration if
+future doc generation should surface it. Purely cosmetic. **Severity: info.**
+
+### Addendum 2 disposition summary
+
+| ID | Severity | Finding | Disposition |
+|----|----------|---------|-------------|
+| WR-04 | warning | `defaultLabelColorForSurface(primary)` evaluates the un-darkened `primary`, not the actually-painted `primary.darken(...)` fill — modeled custom-scheme values as low as 3.00:1 contrast, contradicting the KDoc's "will not be illegible" promise. No shipped preset affected. | recorded, not fixed here — routed to maintainer/backlog; either re-derive the default from the darkened fill or soften the KDoc's guarantee |
+| WR-05 | warning | "Every fill is covered" contrast-regression claim omits outlined-button-disabled (measured only as part of an aggregate worst-case, not a named bound) and segment-disabled (unmeasured anywhere) — WCAG-exempt, but a gap in the regression-bound mechanism's own completeness claim | recorded, not fixed here — routed to maintainer/backlog; add the two missing fixture cases or narrow the KDoc claim |
+| IN-05 | info | "RETIRED" historical note in `AeroButtonSurface.kt` uses `/** */` KDoc syntax but is not attached to any declaration (blank line + a different declaration's own KDoc intervene) | recorded — documentation-tooling nit only, no behavior impact |
+
+---
+
 _Reviewed: 2026-07-29_
 _Reviewer: Claude (gsd-executor, inline review per this plan's `planner_assumptions`)_
 _Depth: standard_
@@ -496,3 +770,7 @@ _Depth: standard_
 _Addendum reviewed: 2026-07-29_
 _Addendum reviewer: Claude (gsd-code-reviewer, dispatched for commits `1d139a7`/`ff577fc` per D-03)_
 _Addendum depth: standard, scope-limited to the two named commits_
+
+_Addendum 2 reviewed: 2026-07-29_
+_Addendum 2 reviewer: Claude (gsd-code-reviewer, dispatched for commit range `f07cc48..HEAD` per D-03)_
+_Addendum 2 depth: standard, scope-limited to the ten named source commits_
