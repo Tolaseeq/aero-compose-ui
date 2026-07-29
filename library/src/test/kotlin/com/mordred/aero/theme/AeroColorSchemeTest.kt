@@ -1,6 +1,9 @@
 package com.mordred.aero.theme
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.luminance
+import com.mordred.aero.components.buttons.resolveButtonStyle
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -192,5 +195,117 @@ class AeroColorSchemeTest {
             AeroColorScheme.Classic.labelOnOutlinedSurface, custom.labelOnOutlinedSurface,
             "copy() must preserve labelOnOutlinedSurface when not explicitly overridden"
         )
+    }
+
+    // ---- WR-04 (20-REVIEW.md addendum 2): labelOnFilledSurface's fallback must evaluate the
+    // actually-painted (darkened) fill, worst-case across both stops -- not raw, un-darkened
+    // primary. D-08 fail-then-pass proof: RED half documents the retired heuristic's failure on a
+    // plausible custom scheme, GREEN half proves the fixed fallback clears the floor on that exact
+    // case via the real resolveButtonStyle output. ----
+
+    @Test
+    fun theOldRawPrimaryLuminanceSplitFailedTheFloorForAPlausibleCustomScheme() {
+        // RED half: reproduces WR-04's own #BABABA example. The retired default expression was
+        // `defaultLabelColorForSurface(primary)` -- a plain luminance split against raw, un-darkened
+        // `primary`, a colour no on-fill label is ever actually painted against (both
+        // resolveButtonStyle/resolveSegmentStyle always darken `primary` first). #BABABA's raw
+        // luminance (0.491) sits just under the 0.5 split, so that heuristic picked White -- against
+        // the REAL rest fill (both stops), White measures below the 4.5:1 floor.
+        val customPrimary = Color(0xFFBABABA)
+        val background = AeroColorScheme.AeroBlue.background
+        val retiredHeuristicPick = if (customPrimary.luminance() > 0.5f) Color.Black else Color.White
+        assertEquals(
+            Color.White, retiredHeuristicPick,
+            "sanity: raw-luminance split on #BABABA (0.491) must pick White -- if this changes, " +
+                "the RED half no longer reproduces WR-04's documented case"
+        )
+
+        val restFill = resolveButtonStyle(
+            AeroColorScheme.AeroBlue.copy(primary = customPrimary),
+            outlined = false, hovered = false, pressed = false, focused = false, enabled = true,
+        )
+        val topRatio = contrastRatio(retiredHeuristicPick, restFill.fillTop.compositeOver(background))
+        val bottomRatio = contrastRatio(retiredHeuristicPick, restFill.fillBottom.compositeOver(background))
+        assertTrue(
+            topRatio < 4.5f,
+            "Fixture sanity check failed: the retired heuristic's White pick measured $topRatio on " +
+                "the real top-stop fill for #BABABA, expected BELOW 4.5:1 -- if this fails, the " +
+                "historical defect this RED half documents no longer reproduces"
+        )
+        assertTrue(
+            bottomRatio < 4.5f,
+            "Fixture sanity check failed: the retired heuristic's White pick measured $bottomRatio " +
+                "on the real bottom-stop fill for #BABABA, expected BELOW 4.5:1 -- if this fails, " +
+                "the historical defect this RED half documents no longer reproduces"
+        )
+    }
+
+    @Test
+    fun defaultLabelOnFilledSurfaceClearsTheFloorForThePreviouslyFailingCustomScheme() {
+        // GREEN half: a custom scheme built via the full positional constructor with the SAME
+        // #BABABA primary as the RED test above, omitting BOTH label tokens so the real,
+        // production defaultLabelColorForOpaqueFill fallback resolves labelOnFilledSurface. Proves
+        // the fix end-to-end against the real resolveButtonStyle output, on both stops.
+        val customPrimary = Color(0xFFBABABA)
+        val background = Color(0xFF0D1B2A)
+        val scheme = AeroColorScheme(
+            primary = customPrimary,
+            onPrimary = Color(0xFF000000),
+            secondary = Color(0xFF000000),
+            onSecondary = Color(0xFF000000),
+            surface = Color(0xFF000000),
+            onSurface = Color(0xFF000000),
+            background = background,
+            onBackground = Color(0xFF000000),
+            error = Color(0xFF000000),
+            onError = Color(0xFF000000),
+            cardBackground = Color(0xFF000000),
+            borderDefault = Color(0xFF000000),
+            borderSelected = Color(0xFF000000),
+            labelText = Color(0xFF000000),
+            glassSurface = Color(0xFF000000),
+            glassBorder = Color(0xFF000000),
+            glassHighlight = Color(0xFF000000),
+            titleBarGradientStart = Color(0xFF000000),
+            titleBarGradientEnd = Color(0xFF000000),
+            titleBarText = Color(0xFF000000),
+            buttonHover = Color(0xFF000000),
+            closeButtonHover = Color(0xFF000000),
+            panelBackground = Color(0xFF000000),
+            ornamentOverride = null,
+        )
+
+        assertEquals(
+            Color.Black, scheme.labelOnFilledSurface,
+            "worst-case-across-both-stops selection must pick Black for #BABABA -- the opposite of " +
+                "the retired raw-luminance heuristic's White pick (see the RED half above)"
+        )
+
+        val restFill = resolveButtonStyle(scheme, outlined = false, hovered = false, pressed = false, focused = false, enabled = true)
+        val topRatio = contrastRatio(scheme.labelOnFilledSurface, restFill.fillTop.compositeOver(background))
+        val bottomRatio = contrastRatio(scheme.labelOnFilledSurface, restFill.fillBottom.compositeOver(background))
+        assertTrue(
+            topRatio >= 4.5f,
+            "labelOnFilledSurface fallback top-stop contrast $topRatio must clear the 4.5:1 floor " +
+                "for the #BABABA custom scheme (WR-04)"
+        )
+        assertTrue(
+            bottomRatio >= 4.5f,
+            "labelOnFilledSurface fallback bottom-stop contrast $bottomRatio must clear the 4.5:1 " +
+                "floor for the #BABABA custom scheme (WR-04)"
+        )
+    }
+
+    /**
+     * Independently-written WCAG 2.x contrast ratio (D-13 convention, matching every other test
+     * file in this codebase) -- never imports the production `contrastRatio` this fallback itself
+     * uses, so a wrong production formula cannot certify itself here.
+     */
+    private fun contrastRatio(foreground: Color, background: Color): Float {
+        val l1 = foreground.luminance()
+        val l2 = background.luminance()
+        val lighter = maxOf(l1, l2)
+        val darker = minOf(l1, l2)
+        return (lighter + 0.05f) / (darker + 0.05f)
     }
 }
