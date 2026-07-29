@@ -142,19 +142,20 @@ internal val PRESSED_INNER_SHADOW: Shadow = Shadow(
     offset = DpOffset(0.dp, 1.dp),
 )
 
-/**
- * RETIRED (SHW-16/VER-06, 20-09): this per-call-site worst-case-across-two-stops resolver (D-12,
- * 20-04) — and its `LABEL_CANDIDATE_DARK`/`LABEL_CANDIDATE_LIGHT`/`labelContrastRatio` helpers — is
- * deleted, not narrowed. It recomputed the label from whatever fill happened to be animating
- * (hover-lightened, press-recessed, mid-selection-tween), which is exactly the state-dependent
- * label-colour jump the maintainer's 20-08 checkpoint rule forbids ("per theme, ONE text colour,
- * not per element, not per state"). [AeroButtonSurface]'s `Text` now reads
- * [com.mordred.aero.theme.AeroColorScheme.labelOnFilledSurface] /
- * [com.mordred.aero.theme.AeroColorScheme.labelOnOutlinedSurface] directly — a value resolved once
- * per scheme, never per fill. There is deliberately no surviving "internal use" form of the old
- * algorithm: the new scheme-level tokens are not derived by running it, so keeping it around would
- * be exactly the "two live mechanisms" this retirement is required to avoid.
- */
+// RETIRED (SHW-16/VER-06, 20-09): this per-call-site worst-case-across-two-stops resolver (D-12,
+// 20-04) — and its LABEL_CANDIDATE_DARK/LABEL_CANDIDATE_LIGHT/labelContrastRatio helpers — is
+// deleted, not narrowed. It recomputed the label from whatever fill happened to be animating
+// (hover-lightened, press-recessed, mid-selection-tween), which is exactly the state-dependent
+// label-colour jump the maintainer's 20-08 checkpoint rule forbids ("per theme, ONE text colour,
+// not per element, not per state"). AeroButtonSurface's Text now reads
+// com.mordred.aero.theme.AeroColorScheme.labelOnFilledSurface /
+// com.mordred.aero.theme.AeroColorScheme.labelOnOutlinedSurface directly — a value resolved once
+// per scheme, never per fill. There is deliberately no surviving "internal use" form of the old
+// algorithm: the new scheme-level tokens are not derived by running it, so keeping it around would
+// be exactly the "two live mechanisms" this retirement is required to avoid.
+// (IN-05, 20-REVIEW.md addendum 2: this note was previously written as a `/** */` KDoc block while
+// attached to no declaration — a dangling doc-comment tooling nit, no behavior impact. Converted to
+// a plain block comment; content unchanged.)
 
 /** Filled → outlined fill-alpha multiplier (17-UI-SPEC.md Outlined contract, D-06). */
 private const val OUTLINED_FILL_ALPHA_MULTIPLIER: Float = 0.15f

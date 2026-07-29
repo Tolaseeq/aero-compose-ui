@@ -671,6 +671,19 @@ readable-but-suboptimal or measurably-poor contrast, never a crash or `null`. It
 by a future consumer who builds a custom `AeroColorScheme` via `copy()` or a positional/named
 constructor call that omits both `labelOnFilledSurface` and `labelOnOutlinedSurface`.
 
+**Fixed (2026-07-29 follow-up).** `labelOnFilledSurface`'s default now reads
+`defaultLabelColorForOpaqueFill(primary)` (`AeroColorScheme.kt`), which evaluates both real darkened
+fill stops (`primary.darken(FILLED_FILL_TOP_DARKEN)` / `.darken(FILLED_FILL_BOTTOM_DARKEN)`,
+relocated to `theme/ColorMath.kt` to avoid a `theme` → `components.buttons` import cycle) and picks
+whichever pure candidate has the higher worst-case ratio across both stops — the modeled `#BABABA`
+case now resolves Black at 4.692:1 on its worst stop, clearing the floor. `labelOnOutlinedSurface`'s
+fallback was checked and found not to share this error class (its `background` proxy dominates the
+real ~15%-alpha composite) and is deliberately left unchanged, documented in its own KDoc. Regression
+covered by `AeroColorSchemeTest`'s `theOldRawPrimaryLuminanceSplitFailedTheFloorForAPlausibleCustomScheme`
+(RED) / `defaultLabelOnFilledSurfaceClearsTheFloorForThePreviouslyFailingCustomScheme` (GREEN). No
+built-in scheme affected — all three set both label tokens explicitly, so the fallback is never
+evaluated for them.
+
 **Fix:** Either (a) have the default expression reference the same darkened value the real
 resolvers actually paint (e.g. `defaultLabelColorForSurface(primary.darken(FILLED_FILL_BOTTOM_DARKEN))`,
 using the darker of the two stops as the more conservative reference — this does create a
@@ -753,13 +766,16 @@ narration matching everything confirmed in "Verified clean" item 1 above.
 KDoc markers, since it documents nothing), or move it immediately above a stub/marker declaration if
 future doc generation should surface it. Purely cosmetic. **Severity: info.**
 
+**Fixed (2026-07-29 follow-up).** Converted to a plain `//`-prefixed block comment in
+`AeroButtonSurface.kt` — content unchanged, no behavior/test impact.
+
 ### Addendum 2 disposition summary
 
 | ID | Severity | Finding | Disposition |
 |----|----------|---------|-------------|
-| WR-04 | warning | `defaultLabelColorForSurface(primary)` evaluates the un-darkened `primary`, not the actually-painted `primary.darken(...)` fill — modeled custom-scheme values as low as 3.00:1 contrast, contradicting the KDoc's "will not be illegible" promise. No shipped preset affected. | recorded, not fixed here — routed to maintainer/backlog; either re-derive the default from the darkened fill or soften the KDoc's guarantee |
-| WR-05 | warning | "Every fill is covered" contrast-regression claim omits outlined-button-disabled (measured only as part of an aggregate worst-case, not a named bound) and segment-disabled (unmeasured anywhere) — WCAG-exempt, but a gap in the regression-bound mechanism's own completeness claim | recorded, not fixed here — routed to maintainer/backlog; add the two missing fixture cases or narrow the KDoc claim |
-| IN-05 | info | "RETIRED" historical note in `AeroButtonSurface.kt` uses `/** */` KDoc syntax but is not attached to any declaration (blank line + a different declaration's own KDoc intervene) | recorded — documentation-tooling nit only, no behavior impact |
+| WR-04 | warning | `defaultLabelColorForSurface(primary)` evaluates the un-darkened `primary`, not the actually-painted `primary.darken(...)` fill — modeled custom-scheme values as low as 3.00:1 contrast, contradicting the KDoc's "will not be illegible" promise. No shipped preset affected. | **fixed (2026-07-29 follow-up)** — `defaultLabelColorForOpaqueFill` now picks the worst-case-across-both-stops candidate against the real darkened fill; `labelOnOutlinedSurface` checked and left unchanged (different, narrower error class); regression-tested in `AeroColorSchemeTest` |
+| WR-05 | warning | "Every fill is covered" contrast-regression claim omits outlined-button-disabled (measured only as part of an aggregate worst-case, not a named bound) and segment-disabled (unmeasured anywhere) — WCAG-exempt, but a gap in the regression-bound mechanism's own completeness claim | recorded, not fixed here — filed as a pending todo (`.planning/todos/pending/2026-07-29-contrast-regression-test-omits-outlined-and-segment-disabled-fills.md`); either add the two missing fixture cases or narrow the KDoc claim |
+| IN-05 | info | "RETIRED" historical note in `AeroButtonSurface.kt` uses `/** */` KDoc syntax but is not attached to any declaration (blank line + a different declaration's own KDoc intervene) | **fixed (2026-07-29 follow-up)** — converted to a plain `//` block comment, content unchanged |
 
 ---
 
