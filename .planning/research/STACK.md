@@ -1,180 +1,182 @@
-# Stack Research — v2.1 Glass Refinement
+# Stack Research: v3.1 Dependency Refresh + Hot Reload MCP
 
-**Domain:** Compose Desktop (Kotlin) UI library — Aero-glass visual ornamentation primitives
-**Researched:** 2026-07-21
-**Confidence:** HIGH for what is available in 1.7.3 today; MEDIUM for the 1.9.0+ delta (verified via official changelogs, not hands-on tested against this codebase); LOW flagged explicitly where noted
+**Domain:** Forced toolchain/dependency refresh + Compose Hot Reload MCP server setup for an existing Compose Desktop (JVM-only, `org.jetbrains.kotlin.jvm` + `org.jetbrains.compose`, NOT the `org.jetbrains.kotlin.multiplatform` plugin) library + showcase app.
+**Researched:** 2026-09-21
+**Confidence:** MEDIUM-HIGH overall (every version number CONFIRMED against Maven Central `maven-metadata.xml` / `services.gradle.org`; the Hot Reload + plain-JVM interaction is CONFIRMED via the primary GitHub README but contradicts secondary doc-summary tools, flagged below; a small number of items remain genuinely UNVERIFIED and are called out explicitly, per "never fill a gap by guessing")
 
-## TL;DR / Recommendation
-
-**Do not upgrade Compose Multiplatform for this milestone.** Everything the eight components need — two-tone fill, proportional top gloss, inner bevel / rim light, outer glow, track groove, colored gradients — is achievable **today, on 1.7.3, with zero new Gradle dependencies**, using plain `Brush` gradients plus manual layered `drawRoundRect` calls inside the existing single-`drawBehind` blocks in `GlassModifiers.kt`. The one genuinely new capability an upgrade would unlock — `Modifier.dropShadow`/`innerShadow` — landed in **Compose Multiplatform 1.9.0** (2025‑09‑16), four minor versions from where this project sits, and is not required: a hand-drawn double-stroke bevel achieves the same "inset rim light" read at lower risk and zero extra composition cost. See "Upgrade Question" below for the full reasoning.
-
-## Recommended Stack — No Additions
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| Kotlin | 2.1.21 (unchanged) | language | Already satisfies every downstream requirement below |
-| Compose Multiplatform (Desktop) | 1.7.3 (unchanged) | UI/rendering | Sufficient for all v2.1 visual asks — see per-question findings |
-| `androidx.compose.ui.graphics.Brush` | ships with `compose.ui` (already `api`) | gradients | `verticalGradient`/`radialGradient`/`sweepGradient` with explicit `colorStops` — stable since Compose 1.0, zero cost beyond interpolation |
-| `androidx.compose.ui.graphics.drawscope.drawIntoCanvas` + `Canvas.nativeCanvas` | ships with `compose.ui` | sanctioned Skia escape hatch | Public, non-experimental API; needed only if a true Gaussian blur glow is pursued (optional, see Q1/Q4) |
-| `org.jetbrains.skia.*` (transitive via `compose.desktop.common`) | whatever Skiko/Skia build ships inside CMP 1.7.3 (Skia Milestone 126) | `MaskFilter`, `Paint` for optional blur glow | Already on the classpath — **no new Gradle coordinate needed** even for this |
-
-No new `dependencies { }` entries are proposed. Everything below is either already transitively present or is a coding pattern against APIs already in `library/build.gradle.kts`.
+This file answers only the six questions in the research brief. It does not re-litigate the already-decided target versions (see `.planning/PROJECT.md` "Current Milestone" section) — it verifies them, states integration points, and flags what could not be confirmed.
 
 ---
 
-## Q1 — Shadows / Glow
+## 1. Is the full target version set mutually compatible?
 
-**What works today in Compose Multiplatform 1.7.3 (Skia Milestone 126):**
+**Kotlin 2.4.20 × CMP 1.12.0 × Compose compiler plugin × Gradle 9.7.1 × JDK 21 × Hot Reload 1.2.0**
 
-| Approach | Available in 1.7.3? | Desktop-backed? | Notes |
-|---|---|---|---|
-| `Modifier.shadow(elevation, shape, clip, ambientColor, spotColor)` | Yes (since Compose 1.0) | Yes — Skia-native (`SkShadowUtils`-style ambient+spot two-light shadow, not the Android-RenderNode path) | Confidence MEDIUM: the `ambientColor`/`spotColor` "Android 9+ only" caveat in the official docs is an **Android-platform** limitation (pre-P had no color control); Compose Desktop's shadow renderer is a separate Skia implementation and is generally reported to honor both colors. Verify empirically once implemented — do not assume parity with a specific Android API level restriction, it doesn't apply here. |
-| `Modifier.dropShadow(shape, DropShadow(radius, color, ...))` / `Modifier.innerShadow(shape, InnerShadow(...))` | **No — lands in Compose Multiplatform 1.9.0** (2025‑09‑16), package `androidx.compose.ui.graphics.shadow` | Yes, ships in `compose.ui` cross-platform (not Android-only) | This is the API that gives arbitrary-shape, colored, spread-controllable shadows and true recessed "inner shadow" — exactly the "inner bevel / inset rim light" ask. **Not available at 1.7.3.** Ordering rule when it does land: `dropShadow()` must precede `.background()`; `innerShadow()` must follow it. |
-| Manual layered `drawRoundRect` (no blur filter) | Yes, always | Yes, pure-Compose, zero Skia types | Draw 2–4 progressively larger/lower-alpha rounded rects behind the real shape (or progressively smaller/higher-alpha rects on top for an inset bevel edge). This is a fake "spread" — genuinely how most hand-rolled Compose glow effects are done pre-1.9. **Recommended default for this milestone.** |
-| Manual `drawIntoCanvas { nativeCanvas }` + `Paint().asFrameworkPaint().maskFilter = BlurMaskFilter...` | Compose-Desktop's `Paint.asFrameworkPaint()` returns `org.jetbrains.skia.Paint`, which has `maskFilter: MaskFilter?` — Skia's equivalent is `org.jetbrains.skia.MaskFilter.makeBlur(FilterBlurMode, sigma)` (not literally a class named `BlurMaskFilter` on desktop — that's the Android name; the Skia/desktop API is `MaskFilter.makeBlur`) | Yes — true Gaussian blur shadow, single extra `drawRoundRect` call using the Skia-typed `Paint`, can be issued **inside the existing `drawIntoCanvas` block** alongside other draws | Gives a real soft outer glow closer to what `dropShadow` will eventually give, without upgrading. Costs: couples `GlassModifiers.kt` to `org.jetbrains.skia` types (see Q4). |
-| `RenderEffect` (`androidx.compose.ui.graphics.RenderEffect` / `graphicsLayer.renderEffect`) | Available since Compose 1.5-ish, desktop-backed via Skia `ImageFilter` | Yes | This is for *layer-level* filters (e.g., blurring an entire composable's rendered output), not for drawing a shadow shape. Overkill and a separate composited layer for what is a simple ornamental stroke/glow — not recommended here (see Q2/perf note). |
+| Pair | Verdict | Evidence |
+|------|---------|----------|
+| Kotlin 2.4.20 exists, is the latest stable | CONFIRMED | Maven Central `kotlin-gradle-plugin/maven-metadata.xml`: `<release>2.4.20</release>`, no newer non-RC version. |
+| CMP 1.12.0 exists, is the latest stable | CONFIRMED | Maven Central `org.jetbrains.compose.gradle.plugin/maven-metadata.xml`: `<release>1.12.0</release>`; next is `1.13.0-alpha01`. Released August 2026 per [JetBrains blog](https://blog.jetbrains.com/kotlin/2026/08/compose-multiplatform-1-12-0/). |
+| CMP 1.12.0 requires which Kotlin? | CONFIRMED | kotlinlang.org [Compatibility and versions](https://kotlinlang.org/docs/multiplatform/compose-compatibility-and-versioning.html): "use at least Kotlin 2.1.0 for your projects" (2.2.20+ only needed for iOS/web/rapidly-evolving targets — N/A, this project is JVM-only desktop). Kotlin 2.4.20 clears this with wide margin. Also: "The latest Compose Multiplatform is always compatible with the latest version of Kotlin." |
+| Compose compiler plugin version | CONFIRMED | `org.jetbrains.kotlin.plugin.compose` ships inside the Kotlin distribution and is always version-pinned to the Kotlin version (`version.ref = "kotlin"` in the existing `libs.versions.toml` — this pattern is unchanged and correct for 2.4.20; no separate version to track). |
+| Which Gradle versions does Kotlin Gradle Plugin 2.4.20 officially support — is 9.7.1 inside the range, or only a warning zone? | **CONFIRMED, with a caveat: 9.7.1 is technically outside the "fully compatible" ceiling.** | kotlinlang.org [What's new in 2.4.20](https://kotlinlang.org/docs/whatsnew2420.html): "Kotlin 2.4.20 is fully compatible with Gradle 7.6.3 through **9.7.0**." It adds: "You can also use Gradle versions up to the latest Gradle release... [but] doing so may result in deprecation warnings, and some new Gradle features might not work." Target Gradle is **9.7.1** — one patch release above the documented "fully compatible" ceiling (9.7.0), i.e. it falls in the "extended/warned" zone per Kotlin's own docs, not a hard incompatibility. Kotlin 2.4.20 release notes separately state it adds "support for Gradle 9.7.0" as a KGP feature target, which is consistent (9.7.1 is a patch of 9.7.0, extremely low risk of an actual break, but this is the one place the target set is not 100% inside JetBrains' officially-tested matrix). |
+| Does the Compose Gradle plugin 1.12.0 work on Gradle 9.x? | UNCONFIRMED as an explicit documented minimum, but MEDIUM-HIGH confidence it works | No page states an explicit Gradle floor for the CMP Gradle plugin; it is "built on top of the Kotlin Multiplatform Gradle plugin" per kotlinlang.org, so it inherits KGP's Gradle range. Since KGP 2.4.20 is tested through 9.7.0 and CMP 1.12.0 requires Kotlin ≥2.1.0 (i.e. it doesn't pin an older, stricter Gradle ceiling than KGP itself), there is no documented reason 1.12.0 would reject Gradle 9.7.1. This is an inference, not a quoted compatibility statement — treat as needing a real `./gradlew build` smoke test in Phase 1 of this milestone, not as pre-verified fact. |
+| Gradle 9.7.1 exists, is current stable | CONFIRMED | `services.gradle.org/versions/current` → `{"version":"9.7.1", "current":true, "released":true}`. 9.8.0 exists only as RC (`9.8.0-rc-2`), not yet stable. |
+| Gradle 9.7.1 on JDK 21 (both to run the Gradle daemon and as a toolchain target) | CONFIRMED | [Gradle compatibility matrix](https://docs.gradle.org/current/userguide/compatibility.html): JDK 17–26 required to *run* Gradle 9.x (21 is inside range); JDK 21 has had toolchain-target support since Gradle 8.4. |
+| Hot Reload 1.2.0 is the latest stable (1.3.0-alpha02 is not) | CONFIRMED | Maven Central `hot-reload-core` / `org.jetbrains.compose.hot-reload.gradle.plugin` metadata: versions after `1.2.0` are `1.3.0-alpha01`, `1.3.0-alpha02` — both pre-release. `1.2.0` released 2026-07-23 per `gh release view v1.2.0 --repo JetBrains/compose-hot-reload`. |
+| Hot Reload 1.2.0 × CMP 1.12.0 | CONFIRMED, and CMP 1.12.0 bundles it | `compose-jb` CHANGELOG.md, "1.12.0" section: "Updated bundled Compose Hot Reload to version 1.2.0." Hot Reload's own prerequisite ("Compose Multiplatform 1.8.2 or higher; CHR 1.2.0-alpha02+ requires 1.10.0+") is satisfied by 1.12.0. |
 
-**Bottom line for Q1:** `Modifier.shadow` works on desktop today but is coarse (no spread, single elevation-driven blur/offset curve) and — critically — **allocates its own graphics layer**, which is an extra composited pass per component instance. Given the locked "single `drawBehind`, minimize overdraw" performance baseline (iGPU regression precedent), **do not wire `Modifier.shadow` into hot, frequently-recomposing controls** (button hover/press, slider thumb drag). Prefer the manual layered-`drawRoundRect` glow (no blur filter, cheapest, zero Skia types) as the default; reserve the `nativeCanvas` + `MaskFilter.makeBlur` variant only if a design checkpoint judges the flat-layer glow visually insufficient.
-
----
-
-## Q2 — Blur
-
-| Question | Answer |
-|---|---|
-| Is `Modifier.blur(radius, edgeTreatment)` supported on Compose Desktop? | Yes (HIGH confidence). `androidx.compose.ui.draw.blur` is a cross-platform `compose.ui` API. On Android it's gated to API 31+ / falls back to a software blur below that; **on Desktop there is no such gate** — Skia supports blur natively regardless of OS version, so it works uniformly on Windows/Linux/macOS. |
-| Backing mechanism | `RenderEffect`/`ImageFilter` via Skia, same mechanism third-party libraries (Haze, Cloudy) use for desktop blur — corroborated by multiple independent sources: "iOS, Desktop, and all Web targets in Compose Multiplatform use Skia... All Skia-backed platforms use runtime shader / `ImageFilter.makeBlur` for blur." |
-| Achievable "frosted glass" WITHOUT true backdrop sampling | `Modifier.blur` blurs **the composable's own rendered content**, not what's behind it — it cannot sample the window/desktop behind your app (that would require real DWM/compositor backdrop capture, explicitly out of scope per project constraints). So a "frosted" look here means: blur a **synthetic noise/gradient texture you draw yourself** (e.g., blur a subtle two-tone gradient layer), not a live backdrop. This is consistent with the project's existing approach (`glassEffect`/`glassPanel` already simulate glass via alpha + gradient, not real blur) and requires no new capability — just optionally adding a blurred synthetic layer for extra softness. Given the perf baseline, this is **not recommended** as a default (an extra `graphicsLayer`+blur per glass surface is real GPU cost); the existing alpha/gradient simulation is cheaper and already validated across three themes. |
-
-**Recommendation:** Skip `Modifier.blur` entirely for v2.1. It solves a problem ("frosted background") this milestone doesn't have — the eight components need surface *ornamentation* (gloss, bevel, glow), not translucency-over-content. Flag it as available if a future milestone wants softer panel edges.
+**Overall verdict for Q1:** The version set is mutually compatible. The one asterisk: Gradle 9.7.1 sits one patch above Kotlin 2.4.20's documented "fully compatible" ceiling (9.7.0) — not a blocker, but not inside the exact tested matrix either. No other pairwise conflict was found in official sources.
 
 ---
 
-## Q3 — Brushes
+## 2. Material3 — is there a newer stable than 1.9.0? What does `compose.material3` resolve to on CMP 1.12.0?
 
-| API | Available in 1.7.3? | Cost | Aero use |
-|---|---|---|---|
-| `Brush.verticalGradient(colors, startY, endY)` / `Brush.verticalGradient(colorStops = arrayOf(0f to c1, 0.4f to c2, ...))` | Yes, stable since Compose 1.0 | Cheap — CPU-side interpolation setup, GPU shader is a trivial built-in Skia gradient shader | Already used in `glassPanel`/`glassSurface`/`glassEffect`. The **proportional endY bug** (`glassSurface` hardcodes `endY = 100f` px instead of `size.height * fraction`) is a direct, in-scope fix using this exact API — no new capability needed, just correct usage (mirrors the `glassPanel` pattern which already does `endY = size.height * 0.55f` correctly). |
-| `Brush.radialGradient(colors, center, radius)` | Yes, stable | Cheap | Good for a specular "hotspot" highlight (curved gloss look) on rounded thumbs/buttons — cheaper and simpler than a shader-based specular effect. |
-| `Brush.sweepGradient(colors, center)` | Yes, stable | Cheap | Less relevant to Aero chrome; useful if ColorPicker's existing hue ring needs touching (out of scope — that component isn't in the eight). |
-| `ShaderBrush(shader: Shader)` | Yes, stable, cross-platform | Cheap once the `Shader` is built | On desktop, `androidx.compose.ui.graphics.Shader` is a `typealias` for `org.jetbrains.skia.Shader` — this is *not* Android-only. |
-| AGSL runtime shaders | **Android-only.** AGSL (`RuntimeShader`) is an Android 13+ (API 33+) proprietary shading API and has zero presence on Desktop. Confirmed explicitly: "Android has its own implementation because it uses Android's proprietary RuntimeShader API (AGSL) which is unavailable on other platforms." | — | **Flag: do not reference AGSL syntax/APIs anywhere in this codebase — they will not compile/run for a JVM/Desktop target.** |
-| Desktop equivalent of AGSL: SkSL via `org.jetbrains.skia.RuntimeEffect` | Yes, works **today** in 1.7.3 (confirmed via a working 2021-era Compose-Desktop example that predates even Compose 1.0-stable, i.e., this pattern has been stable for the entire life of Compose Desktop) | `RuntimeEffect.makeForShader(sksl)` compiles once (cache with `remember{}`); `.makeShader(uniforms, children, localMatrix, isOpaque)` is cheap per-frame; GPU executes the fragment shader per pixel | This is the real "desktop AGSL." A worked pattern: `ShaderBrush(runtimeEffect.makeShader(...))` used directly with `drawRect(brush = ..., ...)` inside `drawBehind` — no extra composited layer, fits the single-pass constraint. **Not recommended for v2.1** — none of the eight components' asks (two-tone fill, gloss, bevel, glow, groove) require procedural shading; gradients + layered rects cover it. Note for later: JetBrains added an official `.asComposeShader()` wrapper for Skia shaders in **Compose Multiplatform 1.11.0+** — before that (i.e., at 1.7.3), the direct `ShaderBrush(skiaShader)` constructor path shown above is what's used, and it is a real, working, if less "officially paved," pattern. |
-
-**Bottom line for Q3:** Everything Aero ornamentation needs is a `Brush.verticalGradient`/`radialGradient` combination. SkSL/RuntimeEffect is available but is architecturally unnecessary complexity for this milestone — explicitly **out of scope**, revisit only if a future milestone wants an animated sheen/noise texture that gradients genuinely can't express.
+| Question | Verdict | Evidence |
+|----------|---------|----------|
+| Newer stable `org.jetbrains.compose.material3:material3` than 1.9.0? | **CONFIRMED: No.** | Maven Central `material3/maven-metadata.xml` full version list: after `1.9.0` every subsequent entry is alpha — `1.10.0-alpha01..05`, `1.11.0-alpha01..07`, `1.12.0-alpha01..03`, `1.13.0-alpha01`. `<latest>1.13.0-alpha01</latest>` is itself an alpha. The existing pin to `1.9.0` remains correct and must stay unchanged — this validates the maintainer's decision rather than overriding it. |
+| What does `compose.material3` (the CMP alias, not the explicit coordinate) resolve to on CMP 1.12.0? | CONFIRMED | `compose-jb` CHANGELOG.md, "1.12.0 — Component Versions": **"Material3: 1.12.0-alpha03 (based on Jetpack 1.5.0-alpha22)"**. This reconfirms the exact failure mode already known from CMP 1.11.x: the `compose.material3` alias silently resolves to an alpha. The explicit `api("org.jetbrains.compose.material3:material3:1.9.0")` override in `library/build.gradle.kts` and the plain-string dependency in `showcase/build.gradle.kts` must both be kept exactly as-is — do not switch either module to the `compose.material3` alias. |
+| Other CMP-adjacent Material3 coordinates the pin affects (adaptive, etc.) | N/A — not used | Grep of `library/build.gradle.kts` / `showcase/build.gradle.kts` shows no `material3-adaptive`, `material3-window-size-class`, or similar dependency. Nothing else to pin or check. |
 
 ---
 
-## Q4 — skiko Interop
+## 3. Compose Hot Reload 1.2.0 — coordinates, bundling, plain-JVM support, task names, MCP requirements
 
-| Question | Answer |
-|---|---|
-| Is `drawIntoCanvas { it.nativeCanvas }` the sanctioned escape hatch? | Yes — it's a public, non-experimental `compose.ui` API (`androidx.compose.ui.graphics.drawscope.DrawScope.drawIntoCanvas`), used in JetBrains' own Compose-Desktop example articles. HIGH confidence. |
-| What does `org.jetbrains.skia.*` cost, stability-wise? | It is **not** part of Compose's stable public contract — it's the underlying rendering engine, and its Kotlin binding shape moves with each Skia Milestone bump that Compose Multiplatform pulls in transitively (this project's 1.7.3 pulled Skia M116→M126 within the 1.7.x line alone). There is a **documented precedent for this breaking real projects**: a Compose Multiplatform 1.11.0-alpha bump caused a `NoSuchMethodError` in a third-party blur library (Haze) specifically because a Skia API changed shape underneath it. Any code in this library that touches `org.jetbrains.skia.*` types directly inherits that same fragility on the *next* Compose upgrade, whenever it happens. |
-| Portability cost (Windows primary / Linux+macOS secondary)? | Low. Skia is the renderer on **all three** desktop OS targets in Compose Multiplatform — `compose.desktop.common` already pulls the Skiko native binaries for every desktop platform transitively. Unlike a hypothetical native DWM/WinAPI blur call, `nativeCanvas`/`MaskFilter` code is not Windows-specific and will run identically on Linux/macOS. |
-| No new Gradle dependency needed? | Correct — `org.jetbrains.skiko`/`org.jetbrains.skia` classes are already on the compile classpath transitively via `compose.desktop.common`/`compose.ui`. Using them requires zero new `libs.versions.toml` entries. |
+**Plugin ID / coordinates — CONFIRMED**
+- Gradle plugin ID: `org.jetbrains.compose.hot-reload`
+- Version catalog entry (per the project's `[plugins]` convention in `libs.versions.toml`):
+  ```toml
+  composeHotReload = { id = "org.jetbrains.compose.hot-reload", version = "1.2.0" }
+  ```
+- Backing artifact group: `org.jetbrains.compose.hot-reload` (e.g. `hot-reload-core`), confirmed present on Maven Central at `1.2.0`.
 
-**Recommendation:** If the blur-glow variant from Q1 is pursued, **isolate all `org.jetbrains.skia` type references to one narrow internal helper** in `GlassModifiers.kt` (e.g. `private fun DrawScope.drawBlurredGlow(...)`) rather than letting Skia types leak into the modifier's public surface or spread across multiple call sites. This bounds the blast radius of the next Compose upgrade to a single function, consistent with how this project has always isolated its own risky internals (e.g., `PanelDistribution.kt` kept pure/Compose-free specifically to bound risk). Given the layered-`drawRoundRect` (no-blur) approach from Q1 already achieves a workable glow with **zero** Skia types, treat the `nativeCanvas` path as an opt-in escalation, not a default.
+**Bundled by CMP 1.12.0, but "apply explicitly" is the safe path for this project — nuanced, partially UNCONFIRMED**
+- kotlinlang.org: *"Starting with Compose Multiplatform 1.10.0, the Compose Hot Reload plugin is bundled and enabled by default for all projects that include a desktop target."* This wording ("desktop target", "Kotlin Multiplatform quickstart... select the desktop target") is written for `kotlin("multiplatform") { jvm() }`-style projects.
+- **UNCONFIRMED for this project's actual shape:** `:showcase` uses the plain `org.jetbrains.kotlin.jvm` plugin (not `kotlin("multiplatform")`), so it has no KMP "target" in the sense the bundling language describes. No source found states explicitly whether the "bundled and enabled by default" auto-activation extends to plain-JVM modules, or whether it only auto-activates for true multiplatform modules and a plain-JVM module needs the plugin applied by hand.
+- **Recommendation (mitigates the unknown either way):** apply `alias(libs.plugins.composeHotReload)` explicitly in `showcase/build.gradle.kts`'s `plugins {}` block, pinned to `1.2.0`. This is documented, safe, and identical whether or not the implicit bundling would also have worked — costs one line, removes the ambiguity.
 
----
+**Works with the plain `org.jetbrains.kotlin.jvm` plugin (not KMP) — CONFIRMED, directly from the primary source**
+- The GitHub README (`https://github.com/JetBrains/compose-hot-reload`, read verbatim via `raw.githubusercontent.com`, not summarized) states explicitly, in the "Run tasks" section:
+  > `:hotRunJvm`: For multiplatform projects. The async alternative is `:hotRunJvmAsync`.
+  > `:hotRun`: **For Kotlin/JVM projects.** The async alternative is `:hotRunAsync`.
+- And in the MCP server section: *"In a **plain Kotlin/JVM module** the task is simply named `hotMcpServer`."*
+- This directly answers and resolves the milestone's open question. **Flag:** two independent WebFetch-summarized passes over the kotlinlang.org docs page and the official "Quickstart" page returned the opposite claim ("plain `org.jetbrains.kotlin.jvm` is NOT supported / requires conversion to multiplatform"), and the two official *sample projects* in the repo (`samples/counter`, `samples/bytecode-analyzer`) both use `kotlin("multiplatform") { jvm() }`, not plain `kotlin("jvm")` — i.e. JetBrains' own demos don't showcase the plain-JVM path even though the README documents it as a first-class, named case. Treat the README's explicit `:hotRun` / `hotMcpServer` naming as the authoritative, CONFIRMED fact (it is precise, internally consistent with the MCP section, and version-controlled alongside the plugin's actual source); treat the "must be multiplatform" framing elsewhere as either stale, or referring to the top-level "Compose Hot Reload needs a JVM target in your multiplatform project" caveat that is really about *target platform* (JVM vs Native/Wasm), not about the *Gradle plugin structure* (KMP vs. plain-JVM). Recommend a fast empirical check at the start of Phase work: run `./gradlew :showcase:tasks --all | grep -i hot` after applying the plugin, before assuming task names.
 
-## Q5 — Upgrade Question
+**Exact Gradle task names for a Kotlin/JVM module (this project's `:showcase`) — CONFIRMED**
+| Task | Purpose |
+|------|---------|
+| `:showcase:hotRun` (or unqualified `hotRun`) | Launch the app with hot reload |
+| `:showcase:hotRunAsync` | Async/non-blocking variant |
+| `:showcase:reload` | Trigger a reload of the already-running app |
+| `:showcase:hotMcpServer` (or unqualified `hotMcpServer`) | Start the MCP server |
 
-**Concrete version deltas (verified via GitHub Releases API, dates in this project's actual timeline):**
+(Multiplatform-only names `hotRunJvm` / `hotRunJvmAsync` / `hotMcpServerJvm` do **not** apply here since `:showcase` is plain Kotlin/JVM — confirmed from the same README table.)
 
-| Version | Published | Relevant to this milestone |
-|---|---|---|
-| **1.7.3** (current) | — | Skia Milestone 126. Baseline. |
-| 1.8.x | ~early/mid 2025 | Requires Kotlin ≥ 2.1.0 (project's 2.1.21 already satisfies this — no Kotlin bump needed to reach 1.8/1.9). Full K2 compiler transition. |
-| **1.9.0** | **2025‑09‑16** | **`Modifier.dropShadow()` / `Modifier.innerShadow()` land** (package `androidx.compose.ui.graphics.shadow`), cross-platform including Desktop. This is the only capability gap identified in Q1–Q4 that a version bump would actually close. |
-| 1.9.3 | 2025‑11‑06 | Latest 1.9.x patch. |
-| 1.10.x | Dec 2025 – Mar 2026 | No graphics capability identified in this research as relevant to v2.1's asks. |
-| 1.11.0 / 1.11.1 | 2026‑05‑13 / 2026‑06‑02 | **Latest stable** as of this research date (2026‑07‑21). Introduces `.asComposeShader()` official Skia-shader wrapper (irrelevant here, see Q3) and `ComposePanel.renderSettings` (irrelevant, this project doesn't embed `ComposePanel`). |
-| 1.12.0-beta02 | 2026‑07‑14 | Bleeding edge, not stable. |
+**Main class wiring** — no extra config needed. The README shows the Hot Reload task picks up the main class from either `tasks.withType<ComposeHotRun>().configureEach { mainClass.set(...) }` **or**, if using the Compose Gradle plugin's `application {}` DSL (which `showcase/build.gradle.kts` already uses: `compose.desktop.application { mainClass = "com.mordred.showcase.MainKt" }`), that existing configuration is reused automatically.
 
-**Verdict: NO, do not upgrade for this milestone.**
-
-Reasoning:
-1. **No hard blocker exists at 1.7.3.** Every visual device the eight components need (two-tone fill, proportional gloss, rim-light bevel, outer glow, track groove) is buildable today with `Brush` + manual `drawRoundRect` layering inside the existing single-`drawBehind` pattern. `dropShadow`/`innerShadow` would be a *convenience* (less hand-rolled geometry for the inner-bevel effect specifically) — not a capability the milestone cannot ship without. A manual two-stroke bevel (lighter 1px stroke offset toward the light source, darker 1px stroke offset away from it) is a well-established, cheap way to fake an inset rim light without `innerShadow` at all.
-2. **The jump is non-trivial even to just reach 1.9.0** (1.7.3 → 1.8.0 → 1.9.0, two minor releases, ~a year of upstream churn as of this research date), and the project's own tests exercise `compose.uiTest`/`runComposeUiTest` under `@OptIn(ExperimentalTestApi::class)` — experimental APIs are exactly the surface most likely to shift shape across minor Compose releases. The existing `AeroPanelGroupRecomposeUiTest` (a deterministic programmatic-drag regression guard, the *only* thing standing between this codebase and a repeat of the v2.0.3 false-positive-signoff failure) would need to be re-verified end-to-end after any Compose bump — real regression-testing surface, unrelated to this milestone's actual goal.
-3. **This milestone is explicitly visual-only** ("Функционал и публичный API не меняются" — behaviour and public API are locked). Bundling a cross-cutting dependency bump into a pure-visual milestone contradicts the project's own demonstrated discipline of isolating one class of change per milestone (evidenced by the entire v2.0.x patch-release history, and by the `orientation` param being introduced as a strictly additive change in 13.1 rather than folded into 13).
-4. **Regression risk on the locked Win11 workaround is real but orthogonal, and upgrading does not retire it.** The `undecorated=true` + `transparent=true` crash (issue #3757) was reported by its original filer as resolved by upgrading from an unspecified older version to **Compose 1.6.11** back in mid-2024 — i.e., already fixed in a version *older* than this project's current 1.7.3. But this crash class is a recurring, GPU-driver-dependent native fault (`Failed to create DirectX12 device`, `EXCEPTION_ACCESS_VIOLATION` in `skiko-windows-x64.dll`), and near-identical reports continue to surface on newer Compose/Skiko builds against specific AMD/driver combinations (e.g., a still-open Skiko issue, SKIKO-1072, describing the same fault on AMD/Direct3D). **No Compose version number "fixes" this category of bug outright** — it is fundamentally about GPU driver/DirectX interaction with `transparent=true`, not something the version bump changes. Since this milestone never touches window transparency (`undecorated`/`transparent` params are untouched; glass stays simulated in-window via `drawBehind`), the risk is moot for v2.1 specifically — but it means an eventual future upgrade decision should not be justified on the assumption that #3757-class crashes are "fixed upstream now."
-
-**If/when a future milestone wants `dropShadow`/`innerShadow` specifically:** budget it as its own small spike — bump to 1.9.3 (latest 1.9.x patch) rather than jumping straight to 1.11.x, re-run the full test suite (232 tests + the recompose-drag guard) as the primary acceptance gate, and only then adopt the new shadow modifiers. Do not combine that spike with further visual work in the same phase.
-
----
-
-## Q6 — Testing
-
-| Tool | Desktop support? | Verdict |
-|---|---|---|
-| **Roborazzi** | **No.** Built on Robolectric, which simulates the **Android** framework on the JVM — there is no "Desktop" target concept for it to render. | Not usable. |
-| **Paparazzi** | **No.** Renders via Android's `layoutlib` (the same engine Android Studio's preview uses) — again, Android-only, no Desktop rendering path exists. | Not usable. |
-| `SemanticsNodeInteraction.captureToImage()` under `compose.uiTest` / `runComposeUiTest` | **Yes — already in this project's dependency graph** (`testImplementation(compose.uiTest)` + `compose.desktop.currentOs`, added in Phase 14 for the recompose-drag guard). `captureToImage()` is a common (cross-platform) test API and works under `runComposeUiTest` on Desktop, returning an `ImageBitmap` you can convert to a Skia bitmap and `encodeToData(EncodedImageFormat.PNG)` to get PNG bytes. | This is the only viable path for pixel-level verification on Compose Desktop today — no dedicated framework wraps it. |
-
-**What this means concretely for v2.1:**
-
-- There is **no drop-in golden-image / screenshot-regression framework for Compose Desktop** as of this research (2026‑07‑21) — every public option (Roborazzi, Paparazzi, Android Studio's Compose Preview Screenshot Testing) is Android-only, and no clear community-standard equivalent for Desktop was found (flagged **LOW confidence / gap** — this is a "didn't find" result, not a "confirmed absence," so it's worth a 10-minute check before committing to a testing plan, but budget for the answer being "hand-roll it").
-- The pragmatic options are: (a) hand-roll a thin `captureToImage()` + PNG-diff test-only helper (a few dozen lines, test-scope only so it doesn't touch the "zero new runtime deps" constraint at all), or (b) skip pixel-diffing and keep using `captureToImage()` purely as a **smoke check** (assert the node renders without throwing, assert dimensions/non-blank pixels) rather than full golden-image comparison.
-- **Recommendation for this milestone: don't introduce automated pixel-diff screenshot tests.** Skia-rendered anti-aliasing and font hinting can differ subtly across machines/GPU drivers (the same class of variance implicated in the `#3757` driver-dependent crash reports above), which makes byte-exact or even tolerance-based pixel diffing a real flakiness risk for a CI-less, single-maintainer project. This project's own proven acceptance gate for visual work is the **three-theme human sign-off checklist**, used successfully (with real defects caught) across every prior milestone including the two most recent (v2.0.2, v2.0.4) — reuse that pattern for the eight components rather than introducing a new, unproven, and Skia-fragile automated-visual-testing dependency this milestone doesn't need. Keep `runComposeUiTest`/`captureToImage()` in reserve for **structural** assertions only (e.g., "does the hover state modifier chain apply," "does clip actually bound the highlight to the rounded shape" — testable via semantics/bounds, not pixels), matching the existing `AeroPanelGroupRecomposeUiTest` precedent of asserting counts/structure rather than images.
+**MCP server requirements — CONFIRMED**
+- Introduced in Hot Reload `1.2.0-alpha01`, stable/GA in `1.2.0` (per GitHub release notes, `gh release view v1.2.0`).
+- Requires CMP ≥ 1.12.0 for the "MCP server for AI agents" feature to be documented/available (kotlinlang.org "What's new in Compose Multiplatform 1.12.0" names this as the headline Desktop feature of 1.12.0). Target CMP 1.12.0 satisfies this exactly.
+- `.mcp.json` wiring (matches the milestone's own plan, and is the officially documented pattern):
+  ```json
+  {
+    "mcpServers": {
+      "compose-hot-reload": {
+        "command": "./gradlew",
+        "args": ["--no-daemon", "--quiet", "--console=plain", "hotMcpServer"]
+      }
+    }
+  }
+  ```
+  On Windows, `./gradlew` frequently fails to spawn directly from an MCP client process launcher (shell-association issue) — the milestone plan's own note to use `cmd /c gradlew.bat --no-daemon --quiet --console=plain hotMcpServer` is the standard workaround; this is a Windows-process-spawning fact, not something JetBrains' docs cover, but it's consistent with common Windows MCP-server wiring practice — LOW confidence as a citation, HIGH confidence as a practical necessity (should be validated empirically in Phase work, which the milestone plan already schedules).
+- MCP tool surface (confirmed from `gh release view v1.2.0`): `status`, `reload`, `await_reload`, `restart`, `reset_ui`, `take_screenshot`, `list_windows`, `resize_window`, `get_semantic_tree`, `get_ui_error`, `get_logs`, `click`, `type_text`, `scroll`.
 
 ---
 
-## Integration Points into `GlassModifiers.kt`
+## 4. JetBrains Runtime (JBR)
 
-Concrete, version-verified fixes/additions available right now at 1.7.3, mapped to the baseline defects STATE.md already identified:
-
-| Defect / Gap (from STATE.md baseline) | Fix using APIs verified above |
-|---|---|
-| `glassEffect(elevation)` param is dead (`shadow` imported, never applied) | Either wire `Modifier.shadow(elevation, shape, ...)` in **only** low-frequency-recompose contexts (e.g., popups/dialogs, not per-frame hover state), OR replace with a manual layered-`drawRoundRect` glow drawn inside the same `drawBehind` pass — preferred, since it keeps the single-pass perf baseline for the hot-path components (buttons, switch, sliders) that are in scope. |
-| `glassSurface`'s gloss gradient hardcodes `endY = 100f` px | Change to `endY = size.height * <fraction>` — same `Brush.verticalGradient` API, already proven correct in `glassPanel` (`0.55f`). Zero new capability needed, this is a straight bug fix using an API already in use two functions above it in the same file. |
-| `glassSurface`'s `drawBehind` runs before `.clip(shape)`, border's outer half gets clipped | Reorder: `.clip(shape)` before the `drawBehind` stroke, or draw the stroke `inset` by half its width so the clip doesn't bisect it — pure Compose Modifier ordering fix, no new API. |
-| Missing: outer glow / drop shadow | Layered `drawRoundRect` (Q1 default) or `nativeCanvas` + `MaskFilter.makeBlur` (Q1 escalation) — both available today, zero new deps. |
-| Missing: bottom reflection (two-tone split) | `Brush.verticalGradient(colorStops = ...)` with an explicit stop at the split point — already-available API, just a new token/usage in `AeroColorScheme`. |
-| Missing: inner bevel / inset rim light | Two offset 1px strokes (light toward virtual light source, dark away from it) via `drawRoundRect(style = Stroke(...))` — same primitive already used for the existing 1.dp rim in `glassEffect`/`glassSurface`, just applied twice with an offset. `Modifier.innerShadow` would do this more declaratively but isn't available until 1.9.0 (see Q5) — not needed to ship this. |
-| Missing: specular curved gloss | `Brush.radialGradient` positioned off-center — already-available API. |
-| Missing: noise texture | Out of scope for v2.1 per this research — would genuinely benefit from a shader (Q3) or a pre-baked texture asset, both disproportionate to "Aero spirit, modern execution" fidelity target; explicitly **do not add**. |
-| Missing: horizontal gradient variant | `Brush.horizontalGradient` — same family of API as the vertical ones already in use, zero new capability. |
+| Question | Verdict | Evidence |
+|----------|---------|----------|
+| Which JBR version is required? | **CONFLICTING between two official sources — flagged, not fully resolved** | kotlinlang.org compose-hot-reload docs: *"The latest JetBrains Runtime supports only Java 21: if you add Compose Hot Reload to a project that is only compatible with Java 22 or newer, running the project results in a linkage error."* But the **Hot Reload 1.2.0 GitHub release notes** (`gh release view v1.2.0`, primary source, dated 2026-07-23) state: *"☕ JBR 25 by default. Use the `compose.reload.jbr.min.version` property to configure the minimum supported JBR version."* |
+| How to reconcile | UNVERIFIED interpretation, flagged as such | Most likely reading: "JBR 25" is JBR's own major version number (an OpenJDK-25-based JBR build); the "supports only Java 21" warning is about the **project's own compile/bytecode target**, not the JBR build number — i.e. a JBR-25-based runtime can still execute and hot-swap a project whose Kotlin `jvmToolchain` / bytecode target is 21 (this project's plan), but breaks if the project's own target is ≥22. Since this milestone sets `jvmToolchain(21)` project-wide, this reading predicts no linkage error. **This interpretation is not confirmed by an explicit JetBrains statement reconciling the two texts — do not treat it as fact until validated empirically** (first `hotRun`/`hotMcpServer` invocation in Phase work will prove or disprove it directly). |
+| How does Hot Reload locate/provision JBR? | CONFIRMED, three documented mechanisms | (1) Reuse IntelliJ's bundled JBR via the Kotlin Multiplatform IDE plugin (not applicable — this workflow is Gradle/CLI-driven, no IDE run config involved). (2) `org.gradle.toolchains.foojay-resolver-convention` Gradle settings-plugin for automatic download — **this is the relevant mechanism for a headless/CLI/MCP workflow**. (3) `compose.reload.jbr.autoProvisioningEnabled` Gradle property (README calls this out as an alternative/experimental path). |
+| `foojay-resolver-convention` — current version, Gradle-9-compatible? | **CONFIRMED, and this is a real, must-not-skip pitfall.** | Maven Central: latest/only-recent release is `1.0.0` (unchanged since May 2025 per `lastUpdated`). Web search of `gradle/foojay-toolchains` issue tracker confirms: foojay-resolver-convention **0.5.0 is broken on Gradle 9.0.0** (`FoojayToolchainsPlugin` class removed; `JvmVendorSpec.IBM_SEMERU` constant removed) — two real-world reports (`facebook/react-native` issues #56287, #55781). **Versions ≥0.8.0 fix this; 1.0.0 is confirmed compatible** and is also the exact snippet shown in the Hot Reload README itself: `id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"`. **Action: if `settings.gradle.kts` does not already declare this plugin, it must be added at exactly `1.0.0` — any pre-1.0.0 pin (e.g. a stale `0.5.0`/`0.8.0` copied from an older tutorial) will break on Gradle 9.7.1.** The current `settings.gradle.kts` does not declare this plugin at all yet — confirmed by reading the file directly. |
+| `compose.reload.jbr.*` properties | CONFIRMED to exist, not fully documented in one place | `compose.reload.jbr.autoProvisioningEnabled` (README) and `compose.reload.jbr.min.version` (v1.2.0 release notes) are both real Gradle properties. No single page enumerates the full property list — treat any property beyond these two as UNVERIFIED until found in an actual source. |
+| What must be installed on Windows | CONFIRMED (nothing manual, if the resolver plugin is present) | With `foojay-resolver-convention` 1.0.0 declared, Gradle auto-downloads a matching JBR the same way it auto-downloads any other toolchain — no manual JBR installer is documented as required on Windows specifically. This is consistent with how the project's existing `jvmToolchain(17)` already presumably resolves via Gradle's toolchain machinery today (not JBR-specific, but the same resolution pattern). |
 
 ---
 
-## What NOT to Add (explicit)
+## 5. JitPack on JDK 21 / Gradle 9.x
 
-| Avoid | Why | Use instead |
-|---|---|---|
-| `Modifier.dropShadow` / `Modifier.innerShadow` | Not available at 1.7.3 (lands 1.9.0); pulling them in means upgrading Compose Multiplatform, which this research recommends against for this milestone (Q5) | Manual layered `drawRoundRect` / double-stroke bevel |
-| AGSL / `RuntimeShader` (Android API) | **Does not exist on Desktop at all** — will not compile against a JVM/Desktop target | SkSL via `org.jetbrains.skia.RuntimeEffect` if ever needed (not needed for v2.1) |
-| `Modifier.blur` for a "frosted" look | Blurs the composable's own content, not what's behind it; cannot simulate real backdrop blur (out of scope per project constraints); adds a composited layer + real GPU cost for a look already achieved cheaper by the existing alpha/gradient simulation | Existing `glassSurface`/`glassPanel`/`glassEffect` alpha+gradient pattern |
-| Scattering `org.jetbrains.skia.*` types across multiple call sites/public modifier signatures | Documented breakage precedent when Skia's shape shifts under a Compose version bump (Haze's `NoSuchMethodError` on CMP 1.11.0-alpha04); increases future-upgrade blast radius | If used at all (Q1 blur-glow escalation), isolate to one narrow `private`/`internal` helper function |
-| A new screenshot-regression testing dependency (Roborazzi/Paparazzi or a hand-picked third-party image-diff library) | Both flagship options are Android-only and unusable; no verified Desktop-native community-standard equivalent was found; pixel-diffing Skia output is a documented source of cross-machine flakiness | `captureToImage()` for structural smoke tests + the proven three-theme human sign-off checklist for actual visual acceptance |
-| SkSL/`RuntimeEffect` procedural shaders for any of the eight components | Available (Q3) but unnecessary complexity/coupling for gradient-achievable effects; none of the eight components' Aero gaps require procedural shading | `Brush.verticalGradient`/`radialGradient` layering |
-| A full Compose Multiplatform version bump to "latest" (1.11.x) bundled into this milestone | Large, unrelated dependency-upgrade surface mixed into a locked visual-only milestone; real regression-testing cost on the experimental `compose.uiTest` surface and the recompose-drag guard; does not retire the Win11 transparency crash risk class anyway | Stay on 1.7.3 for v2.1; treat a targeted 1.9.x bump as its own future spike if `dropShadow`/`innerShadow` become worth the cost later |
+| Question | Verdict | Evidence |
+|----------|---------|----------|
+| `jitpack.yml`: `jdk: openjdk21` valid? | CONFIRMED | JitPack's own docs (`docs.jitpack.io`, "Building" page): *"For modern JVM and Android projects (such as Gradle 7+, Gradle 8+, Spring Boot 3+, or AGP 8+), you should specify a newer LTS version (e.g. Java 17 or Java 21)."* A real, in-production example (`polarofficial/polar-ble-sdk/blob/master/jitpack.yml`) uses `jdk: - openjdk21` verbatim. |
+| SDKMAN identifier for current Temurin 21 | CONFIRMED, exact value | Queried `api.sdkman.io/2/candidates/java/linuxx64/versions/list` live (2026-09-21): the only currently-listed Temurin 21 build is **`21.0.12+1.1-tem`**. This is a moving target (SDKMAN updates as Temurin ships patches) — re-verify at implementation time the same way the existing `jitpack.yml` pins an exact patch (`17.0.10-tem`) rather than a floating `21-tem`. Recommended `jitpack.yml`: `jdk: - openjdk21` plus `before_install: sdk install java 21.0.12+1.1-tem` / `sdk use java 21.0.12+1.1-tem`, mirroring the existing file's exact-pin style. JitPack's own docs separately show a generic `sdk install java 21-open` (OpenJDK, not Temurin) example — either vendor works for the JVM itself; Temurin keeps parity with the project's existing choice. |
+| Does JitPack's build image handle Gradle 9.x? | UNCONFIRMED via docs, MEDIUM-confidence inference | JitPack docs: *"if your project isn't using a Gradle wrapper, JitPack will build it with a default version of Gradle... strongly recommended to use the Gradle wrapper."* The project already uses `./gradlew` (confirmed — `gradlew`/wrapper present), so JitPack should simply invoke the project's own wrapper, which will download Gradle 9.7.1 itself at build time (assuming JitPack's build sandbox allows outbound network access to `services.gradle.org`, which it must, since it already builds this project successfully on the wrapper today). No JitPack doc explicitly confirms Gradle 9.x support or denies it — **this needs the project's own existing practice of proving JitPack builds with throwaway tags (as done in Phase 15 of v3.0, per `.planning/PROJECT.md`) rather than trusting docs.** |
 
 ---
 
-## Version Compatibility
+## 6. JUnit 6.1.3
 
-| Package A | Compatible With | Notes |
-|---|---|---|
-| Kotlin 2.1.21 | Compose Multiplatform 1.7.3 (current) and up through at least 1.8.0+ (which requires Kotlin ≥ 2.1.0) | No Kotlin bump would be forced even by a future 1.9.x adoption |
-| `org.jetbrains.skia`/`skiko` types used directly | Skia Milestone 126 (bundled with CMP 1.7.3) | Any direct Skia-typed code (Q1/Q4) is implicitly pinned to this Skia milestone's binding shape; a future Compose bump can silently change/rename these APIs (precedent: Haze `NoSuchMethodError` on a CMP 1.11.0-alpha Skia bump) |
-| `compose.uiTest` (`@OptIn(ExperimentalTestApi::class)`) | Already used since Phase 14; stable enough for this project's existing 232-test suite on 1.7.3 | Experimental annotation is a real signal — don't assume forward source-compatibility across a Compose version bump without re-running the suite |
+| Question | Verdict | Evidence |
+|----------|---------|----------|
+| Coordinates unchanged? | CONFIRMED | `org.junit.jupiter:junit-jupiter`, `org.junit.platform:junit-platform-launcher`, and `org.junit:junit-bom` all still exist under the same groupId/artifactId as JUnit 5 — JUnit 6 did **not** rename the Maven coordinates. Confirmed directly via `maven-metadata.xml` for all three: `junit-jupiter`, `junit-platform-launcher`, and `junit-bom` all list `6.1.3` as their latest version, with fully parallel version histories (JUnit unified Jupiter/Platform/Vintage versioning as of 6.0 — this is why `junit-platform-launcher` and `junit-jupiter` now share the exact same version number, unlike the JUnit 5 era where Platform trailed Jupiter's numbering). |
+| `junit-platform-launcher` alignment | CONFIRMED — use `6.1.3` explicitly, or rely on the JUnit BOM | Since Platform and Jupiter versions are now unified at `6.1.3`, the existing pattern (`testRuntimeOnly("org.junit.platform:junit-platform-launcher")` with no explicit version, letting Gradle's built-in JUnit-Platform-launcher auto-resolution apply) continues to work, but **only if `junit.jupiter` is bumped to a version whose corresponding launcher exists** — trivially true at `6.1.3`/`6.1.3`. No BOM is currently used in `library/build.gradle.kts`; none is required to add — the version-catalog single `version.ref = "junit"` pattern already in place (`junit = "5.10.0"` → `junit = "6.1.3"`) is sufficient. |
+| Minimum Java | CONFIRMED | Multiple corroborating sources (JUnit user guide release notes, InfoQ, multiple dev blogs covering the 2025-09-30 JUnit 6.0.0 release): **JUnit 6 requires Java 17 minimum** (raised from Java 8). JDK 21 (target) clears this. |
+| `kotlin-test` / `kotlin-test-junit5` compatibility with JUnit 6 | MEDIUM confidence, consistent across sources, not from a single canonical page | Search-aggregated finding: *"For Kotlin users, JUnit 6 now requires Kotlin 2.2 or later"* and *"JUnit 6 requires Java 17 and Kotlin 2.2 as the minimum language levels."* Target Kotlin is 2.4.20, well above this floor. The project's existing `kotlin-test` dependency (generic, framework-agnostic assertion library, not `kotlin-test-junit5` specifically) has no JUnit-major-version coupling — it does not wrap JUnit's runner API, so no change is needed there. If a dedicated JUnit5-integration artifact is ever wanted, it is `org.jetbrains.kotlin:kotlin-test-junit5` (not currently used by this project) — out of scope, not needed. |
+| Does Compose `uiTest` (which historically pulls JUnit4) coexist with JUnit 6? | **CONFIRMED via the project's own existing codebase, not just docs** | kotlinlang.org's Compose testing docs distinguish two separate artifacts: `compose.uiTest` (the multiplatform-common API, exposing `runComposeUiTest` — a plain Kotlin function, **not** a JUnit4 `TestRule`, and not coupled to any specific JUnit major version) vs. the separate, opt-in `compose.desktop.uiTestJUnit4` artifact (only pulled in if you explicitly want the JUnit4-`TestRule`-style API, which this project does not use). The project's `library/build.gradle.kts` already uses `testImplementation(compose.uiTest)` (not `uiTestJUnit4`) together with `junit-jupiter` and 467 green tests today on JUnit 5.10.0, including `runComposeUiTest`-based tests (the RCMP drag regression guard, per `.planning/PROJECT.md`). Since `compose.uiTest` itself carries no JUnit-runner dependency, this pattern has no structural reason to break under JUnit 6 — it should be a drop-in version bump. Recommend re-running the full suite as direct proof rather than trusting this reasoning alone (the milestone plan already schedules this). |
+
+---
+
+## Integration Points — Exact Files to Change
+
+| File | Change |
+|------|--------|
+| `gradle/libs.versions.toml` | Bump `kotlin = "2.4.20"`, `composeMultiplatform = "1.12.0"`, `kotlinxCoroutines = "1.11.0"`, `junit = "6.1.3"`, `kotlinxDatetime = "0.8.0"`. Add `composeHotReload = "1.2.0"` version + a `[plugins]` entry `compose-hot-reload = { id = "org.jetbrains.compose.hot-reload", version.ref = "composeHotReload" }`. |
+| `library/build.gradle.kts` | `kotlin { jvmToolchain(21) }`. Material3 coordinate string stays `"org.jetbrains.compose.material3:material3:1.9.0"` unchanged. No Hot Reload plugin here (library is not run, and must not carry the dev-only Hot Reload plugin into the published JAR). |
+| `showcase/build.gradle.kts` | `kotlin { jvmToolchain(21) }`. Add `alias(libs.plugins.compose.hot.reload)` to the `plugins {}` block (see Q3 recommendation — apply explicitly rather than rely on undocumented plain-JVM auto-bundling). Material3 coordinate string stays `1.9.0`. |
+| `settings.gradle.kts` | Add, in `pluginManagement { }` or top-level `plugins { }` as appropriate: `id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"` — **required** for automatic JBR provisioning on Gradle 9.7.1 (see Q4; a pre-1.0.0 pin is a confirmed Gradle-9 breakage). |
+| `gradle/wrapper/gradle-wrapper.properties` | Bump distribution URL to `gradle-9.7.1-bin.zip` (or `-all.zip` if the wrapper currently uses `-all`; check the existing file — not read in this research pass, verify before editing). |
+| `jitpack.yml` | `jdk: - openjdk21`; `before_install: sdk install java 21.0.12+1.1-tem` / `sdk use java 21.0.12+1.1-tem` (re-verify exact SDKMAN identifier at implementation time — it changes as Temurin ships patches). |
+| `.mcp.json` (new, repo root) | `{"mcpServers": {"compose-hot-reload": {"command": "cmd", "args": ["/c", "gradlew.bat", "--no-daemon", "--quiet", "--console=plain", "hotMcpServer"]}}}` — the `cmd /c gradlew.bat` wrapping is the Windows-specific spawning fix noted in the milestone plan; validate empirically. |
+| `library/src/main/kotlin/.../pickers/*.kt` | **Real source-code migration required, not just a version bump.** kotlinx-datetime 0.7.0 (carried into 0.8.0) renamed `LocalDate.dayOfMonth` → `day` and `monthNumber` → `month`, and removed `kotlinx.datetime.Instant`/`kotlinx.datetime.Clock` in favor of `kotlin.time.Instant`/`Clock`. Grep of the current codebase confirms **4 files** use `dayOfMonth`/`monthNumber` (`AeroDateTimePicker.kt`, `AeroDatePicker.kt`, `AeroCalendarGrid.kt`, and its test) and **4 files** reference `kotlinx.datetime.Instant`/`Clock` (`AeroDateTimeRangePicker.kt`, `AeroDateTimePicker.kt`, `AeroDateRangePicker.kt`, `AeroDatePicker.kt`). These will not compile against plain `kotlinx-datetime:0.8.0` without source changes. (kotlinx-datetime CHANGELOG: 0.7.1 added transitional type aliases for `Instant`/`Clock` to ease migration, but the target here is 0.8.0 *plain*, not `-0.6.x-compat` — whether those aliases persisted into 0.8.0 plain is UNVERIFIED from the changelog text alone; treat the 4 `Instant`/`Clock` files as needing an actual compile check, not just the 4 `dayOfMonth`/`monthNumber` files which are certainly broken.) |
+
+---
+
+## What NOT to Add
+
+| Avoid | Why |
+|-------|-----|
+| `compose.material3` alias (in place of the explicit `org.jetbrains.compose.material3:material3:1.9.0` coordinate) | Resolves to `1.12.0-alpha03` on CMP 1.12.0 (CONFIRMED, see Q2) — same trap the project already worked around for 1.11.x. |
+| `kotlinx-datetime:0.8.0-0.6.x-compat` (or any `-0.6.x-compat` suffixed variant) | Milestone target is explicitly the plain `0.8.0` artifact; the compat variant exists specifically to *avoid* the `Instant`/`Clock`/`dayOfMonth`/`monthNumber` breaking changes, which defeats the purpose of "жёсткое обновление" (forced refresh) the milestone calls for. |
+| `foojay-resolver-convention` below `1.0.0` (e.g. a tutorial-copied `0.5.0`) | CONFIRMED broken on Gradle 9.0.0 (`IBM_SEMERU` constant removed, `FoojayToolchainsPlugin` class removed) — real regressions reported against `facebook/react-native`. |
+| Hot Reload `1.3.0-alpha02` (or any 1.3.0-alpha) | Not stable; milestone explicitly targets `1.2.0`, the latest stable. |
+| `compose.desktop.uiTestJUnit4` | Not needed — the project already uses the JUnit-agnostic `compose.uiTest` (`runComposeUiTest`) and should keep doing so; adding the JUnit4-`TestRule` artifact would reintroduce the exact transitive-JUnit4 coexistence risk the research brief asked about avoiding. |
+| A JUnit BOM (`org.junit:junit-bom`) | Not necessary — the project's existing single-`version.ref` catalog pattern already keeps `junit-jupiter` and `junit-platform-launcher` in lockstep now that JUnit unified their versioning at 6.x; adding a BOM is a valid alternative but not a requirement, and is out of the stated scope ("what's needed for the NEW work" only). |
+| `kotlin-test-junit5` | Not currently used and not required — the project's `kotlin-test` dependency is JUnit-version-agnostic; do not add a JUnit5-specific integration artifact that isn't already part of the dependency graph. |
+| Anything from CMP 1.12.0's other headline features (web `ComposeViewportConfiguration`, `LayerOutsets`/`GraphicsLayer` additions, `PopupProperties.blockPointerInputOutside`) | Out of scope — this milestone is a version bump + Hot Reload MCP setup only, not an adoption of new CMP 1.12.0 APIs. |
+
+---
 
 ## Sources
 
-- Context7 `/jetbrains/compose-multiplatform` — queried for shadow/blur/RenderEffect desktop support, skiko/RuntimeEffect shader interop, `runComposeUiTest`/`captureToImage` desktop usage. HIGH confidence for `GraphicsLayer` (1.7.0), Skia Milestone 126 bump (1.7.3), `CanvasLayersComposeScene` API shape.
-- https://kotlinlang.org/docs/multiplatform/whats-new-compose-170.html — official 1.7.x changelog (GraphicsLayer, Skia M126)
-- https://kotlinlang.org/docs/multiplatform/whats-new-compose-190.html and https://github.com/JetBrains/compose-multiplatform/releases/tag/v1.9.0 — official confirmation `dropShadow()`/`innerShadow()` land in 1.9.0, cross-platform (not Android-only), with modifier-ordering rules
-- https://kotlinlang.org/docs/multiplatform/compose-compatibility-and-versioning.html — Kotlin/CMP version compatibility matrix (CMP 1.8.0+ requires Kotlin ≥ 2.1.0)
-- GitHub Releases API (`api.github.com/repos/JetBrains/compose-multiplatform/releases`) — ground-truth version/date table used in Q5 (1.9.0 = 2025‑09‑16, 1.11.1 = 2026‑06‑02 latest stable, 1.12.0-beta02 = 2026‑07‑14 bleeding edge as of this research date)
-- https://github.com/JetBrains/compose-multiplatform/issues/3757 + GitHub REST API (`state: closed`, `state_reason: completed`, closed 2024‑07‑17) — original reporter confirmed resolution by upgrading to Compose 1.6.11/Kotlin 1.9.23; MEDIUM confidence this is fully "fixed" as a class of bug, given corroborating still-open/recent reports below
-- https://github.com/JetBrains/skiko/issues/327 ("Failed to create DirectX12 device when transparent = true"), YouTrack SKIKO-1072 (AMD/Direct3D `EXCEPTION_ACCESS_VIOLATION`, recent) — corroborates the crash class is GPU-driver-dependent and recurs across Compose versions, not fully retired by any single version bump
-- https://www.pushing-pixels.org/2021/09/22/skia-shaders-in-compose-desktop.html and https://www.pushing-pixels.org/2022/04/09/shader-based-render-effects-in-compose-desktop-with-skia.html — worked `ShaderBrush(skiaShader)`/`drawIntoCanvas{nativeCanvas}` patterns, confirmed pre-dating and still applicable to 1.7.3; MEDIUM confidence (community/blog source, not official docs, but pattern is simple and directly demonstrated against public APIs)
-- WebSearch: Haze (chrisbanes/haze) and Cloudy (skydoves/Cloudy) library docs/READMEs — corroborate Skia-backed blur on Desktop, AGSL-is-Android-only, `.asComposeShader()` landing in CMP 1.11.0+; MEDIUM confidence (third-party library docs, but consistent across two independent sources)
-- WebSearch: Roborazzi/Paparazzi comparison articles — corroborate both are Robolectric/layoutlib (Android-only), no Desktop rendering path found in any source; confidence MEDIUM-HIGH (consistent across multiple independent sources, but no single official "Paparazzi does not support Desktop" statement was directly quoted)
-- https://developer.android.com/reference/kotlin/androidx/compose/ui/graphics/shadow/package-summary.html — attempted fetch for exact `DropShadow`/`InnerShadow` constructor signatures; page did not yield full parameter list in this session. **Flagged LOW confidence / gap**: exact `DropShadow`/`InnerShadow` constructor parameters (beyond `radius`/`shape`/`color` seen in example code) should be re-verified directly if/when a future milestone actually adopts 1.9.0+.
-- https://composables.com/docs/androidx.compose.ui/ui/modifiers/shadow — `Modifier.shadow` parameter list (`elevation`, `shape`, `clip`, `ambientColor`, `spotColor`); confirms the "Android 9+" color caveat is documented as Android-specific, not desktop-specific (used to support the Q1 MEDIUM-confidence claim that desktop shadow coloring works)
+- Maven Central `maven-metadata.xml` (queried directly via `repo1.maven.org`, authoritative, dated 2026-09-21 snapshot): `kotlin-gradle-plugin`, `org.jetbrains.compose.gradle.plugin`, `org.jetbrains.compose.material3:material3`, `org.jetbrains.kotlinx:kotlinx-coroutines-core`, `org.jetbrains.kotlinx:kotlinx-datetime`, `org.junit:junit-bom`, `org.junit.jupiter:junit-jupiter`, `org.junit.platform:junit-platform-launcher`, `org.jetbrains.compose.hot-reload:hot-reload-core` and its gradle-plugin marker, `org.gradle.toolchains.foojay-resolver-convention` gradle-plugin marker (via `plugins.gradle.org/m2`).
+- `services.gradle.org/versions/current` and `/versions/all` — Gradle 9.7.1 confirmed current stable; 9.8.0 confirmed RC-only.
+- `gh release view v1.2.0 --repo JetBrains/compose-hot-reload` — primary-source release notes (JBR 25 default, MCP server tool list, `compose.reload.jbr.min.version`).
+- `https://raw.githubusercontent.com/JetBrains/compose-hot-reload/master/README.md` — read directly (not LLM-summarized), primary source for plain-Kotlin/JVM task naming (`:hotRun`, `:hotMcpServer`) and the `foojay-resolver-convention version "1.0.0"` setup snippet.
+- `https://raw.githubusercontent.com/JetBrains/compose-jb/master/CHANGELOG.md` — CMP 1.12.0 section: bundled Hot Reload version, Material3 alias resolution (`1.12.0-alpha03`).
+- `https://kotlinlang.org/docs/whatsnew2420.html` — Kotlin 2.4.20 Gradle compatibility range.
+- `https://kotlinlang.org/docs/multiplatform/compose-compatibility-and-versioning.html` — CMP↔Kotlin minimum version statement.
+- `https://kotlinlang.org/docs/multiplatform/compose-hot-reload.html` — MCP server section, JBR linkage-error warning (the source of the Q4 conflict with the GitHub release notes).
+- `https://docs.gradle.org/current/userguide/compatibility.html` — JDK↔Gradle 9.x matrix.
+- `https://docs.jitpack.io` / `https://jitpack.io/docs/BUILDING/` — `jdk:` config values, Gradle-wrapper handling statement.
+- `https://github.com/polarofficial/polar-ble-sdk/blob/master/jitpack.yml` — real-world `jdk: - openjdk21` usage example.
+- `api.sdkman.io/2/candidates/java/linuxx64/versions/list` — live query, exact current Temurin 21 identifier (`21.0.12+1.1-tem`).
+- `https://github.com/gradle/foojay-toolchains/issues/151`, `facebook/react-native#56287`, `#55781` — foojay-resolver-convention pre-1.0.0 breakage on Gradle 9.0.0.
+- `https://raw.githubusercontent.com/Kotlin/kotlinx-datetime/master/CHANGELOG.md` — 0.7.0/0.7.1/0.8.0 breaking changes (`Instant`/`Clock` removal, `dayOfMonth`→`day`, `monthNumber`→`month`).
+- JUnit 6 minimum-Java findings cross-referenced across `docs.junit.org/6.0.3/release-notes.html`, InfoQ, and multiple independent 2025-10 coverage articles reporting the same Java-17 floor — treated as MEDIUM-HIGH confidence via multi-source agreement rather than a single quoted line.
+- Local codebase (`Grep` against `library/src`) — confirmed the 4+4 files requiring real kotlinx-datetime 0.8.0 source migration (`dayOfMonth`/`monthNumber`, `kotlinx.datetime.Instant`/`Clock`), not found in any external doc but essential for the requirements/roadmap to plan real work, not just a `libs.versions.toml` edit.
 
 ---
-*Stack research for: aero-compose-ui v2.1 Glass Refinement*
-*Researched: 2026-07-21*
+
+*Stack research for: v3.1 Dependency Refresh + Hot Reload MCP*
+*Researched: 2026-09-21*

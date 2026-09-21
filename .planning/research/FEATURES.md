@@ -1,419 +1,271 @@
-# Feature Research — Aero Visual Vocabulary (v2.1 Glass Refinement)
+# Feature Research — Compose Hot Reload MCP Server as an Agent-Driven Visual QA Mechanism
 
-**Domain:** Desktop UI component library — Windows 7 Aero / Vista Aero visual language, applied to Compose Desktop
-**Researched:** 2026-07-21
-**Confidence:** MEDIUM-HIGH (device catalog) / MEDIUM (per-component proposals, original synthesis for "Aero spirit, modern execution")
+**Domain:** Agent-driven GUI debugging/QA loop for a Compose Desktop (JVM) component library showcase
+**Researched:** 2026-09-21
+**Confidence:** HIGH for mechanism/lifecycle/tool-list (read directly from JetBrains source at the exact `v1.2.0` tag, commit `3315f8dd8f5cc4db1359ff13b2be178ba19486e3`, repo `JetBrains/compose-hot-reload`); MEDIUM for forward-looking notes (later releases); LOW/marked where inferred or unverifiable.
 
-> This file answers the milestone question directly: Part A is the device catalog, Part B is per-component treatment, Part C is the interaction-state matrix. The generic "Table Stakes / Differentiators / Anti-Features" template sections are populated with **visual devices**, not product features, per the milestone's actual scope.
-
----
-
-## Cross-Theme Finding (read from `AeroColorScheme.kt` before proposing anything)
-
-`AeroBlue` and `AeroDark` use **alpha-transparent** tokens for `glassSurface`/`glassBorder`/`glassHighlight` (e.g. `Color(0x30FFFFFF)`), but **`Classic` uses fully opaque solid grays** for the same tokens (e.g. `glassSurface = Color(0xFF333333)`). This is very likely intentional — `Classic` is the non-glass "Windows Classic" alternative, not a third Aero skin.
-
-**Implication for every device below:** raised/sunken **bevel** devices (light-top-edge / dark-bottom-edge rim) read correctly in all three themes — they're the literal pre-Aero Windows 3D-bevel language, so `Classic` gets an authentic flat-3D look "for free." **Gloss/translucency/hover-glow** devices depend on real alpha blending to look glassy; over `Classic`'s opaque tokens they will still render (alpha-white-over-opaque still lightens) but will read as a plain highlight, not glass — which is correct/expected for that theme, not a bug. Any new lighten/darken helper introduced in the Foundation phase must work by RGB channel mixing (mix toward `Color.White`/`Color.Black`), not only by alpha compositing, so it produces a usable result on both alpha and opaque token sets. This is a shared-primitive dependency for **every** component below, not just one.
+All source citations below are file paths relative to the repo root, at tag `v1.2.0` (commit `3315f8dd8f5c`), unless stated otherwise. Compose Hot Reload 1.2.0 pairs with Compose Multiplatform 1.12.0 (confirmed: [JetBrains blog, Compose Multiplatform 1.12.0](https://blog.jetbrains.com/kotlin/2026/08/compose-multiplatform-1-12-0/)).
 
 ---
 
-## PART A — The Aero Device Catalog
-
-Each device is specified precisely enough to implement: geometry, gradient stops, alpha, layering. All numeric alphas/proportions below are **original design proposals** for this codebase (LOW confidence as literal Windows 7 pixel values, since Microsoft never published pixel-level msstyles specs; MEDIUM confidence as faithful-in-spirit recreations, cross-checked against the community recreation projects `7.css` and `PresentationTheme.Aero` — see Sources). The official MS Learn "Aero Style Classes, Parts, and States" page (HIGH confidence) confirms which parts/states exist but not their pixel rendering, since real Aero used PNG-based `.msstyles` art rather than a documented gradient algorithm.
-
-### A1. Two-tone / split gradient fill — TABLE STAKES
-
-**What:** a 4-stop vertical `Brush.verticalGradient` in two bands with a soft internal seam, not two flat halves.
-- Stop 0.0f: base color lightened +18% toward white (RGB mix, not alpha) — the "raised top."
-- Stop 0.48f: base color, unmodified.
-- Stop 0.52f: base color, unmodified (the tiny 0.04f gap is the "seam" — see A2).
-- Stop 1.0f: base color darkened −12% toward black — the "shaded bottom."
-- The split sits at ~50% height, not top-weighted like Material's subtle tonal elevation gradients — Aero's split is visually close to center, which is what reads as "glass rod" rather than "flat tint."
-
-**Complexity:** LOW (single `Brush.verticalGradient` with 4 `colorStops`).
-**Dependency:** needs `Color.lighten(amount)`/`Color.darken(amount)` RGB-mix helpers (see Cross-Theme Finding) added to the Foundation phase — `.copy(alpha=)` alone cannot brighten a color, only fade it.
-
-### A2. The seam — DIFFERENTIATOR
-
-**What:** a single 1px horizontal line at the 50% split, color = base color lightened +6%, alpha 0.5, drawn as a 1.dp-tall `drawRect` (or a 5th gradient stop pair placed at `0.499f`/`0.501f` with a brief spike). This is the "two pieces of glass glued together" cue that separates Aero from a generic soft gradient. Cheap: one extra draw call, no blur.
-**Complexity:** LOW.
-**Dependency:** A1.
-
-### A3. Top specular gloss highlight — DIFFERENTIATOR (already partially built, needs fixing)
-
-**What:** an elliptical/curved highlight sitting in the top 40–55% of the control height, brightest at top-center, tapering to transparent — not the current linear-only `glassPanel` gradient (which is already the right idea but the sibling `glassSurface` has a hardcoded `endY = 100f` **pixel** value, a confirmed baseline bug — must become `size.height * 0.5f` or a parameter).
-- Height: 45% of control height for buttons/switch/thumbs; up to 55% for large flat panels (already correct in `glassPanel`).
-- Shape: for small controls (buttons, thumbs, switch), approximate the curve with a `drawOval` inset 8–10% from left/right edges and clipped to the control's own rounded-rect shape, rather than a full-width rectangle — this is what makes it read as "glass" instead of "a lighter stripe."
-- Alpha: 0.35 at the highlight's own top, fading to 0 by the 45–55% mark. Use `glassHighlight` token as the color, not a hardcoded white.
-**Complexity:** LOW (oval fill) to MEDIUM (if clipped precisely to a rounded-rect shape via `Path.op`).
-**Dependency:** fix to `glassSurface`'s `endY` bug is a prerequisite (Foundation phase item, already identified in STATE.md baseline).
-
-### A4. Inner rim light / bevel — TABLE STAKES
-
-**What:** two 1.dp strokes, both **inside** the outer contour (A5), one per half of the control's perimeter:
-- Top/left half: color = highlight (base +25% toward white), alpha 0.5, inset 1.dp from the outer edge.
-- Bottom/right half: color = shadow (base −20% toward black), alpha 0.3, inset 1.dp from the outer edge.
-- Implementation: two half-perimeter `Path` strokes (one for the top-left arc, one for bottom-right arc of the rounded rect), OR the cheaper approximation already partly present as the concept behind A1's gradient — but a literal 1px rim reads noticeably crisper than a fill gradient alone and is what separates "gradient rectangle" from "beveled chrome."
-**Complexity:** MEDIUM (path-based half-stroke) — flag a LOW-complexity fallback: a single inset stroke drawn with a `Brush.verticalGradient` (light→dark) instead of two separate paths achieves ~90% of the visual for much less code, and is the recommended default.
-**Dependency:** shares the `Color.lighten/darken` helper from A1.
-
-### A5. Outer contour / border — TABLE STAKES
-
-**What:** crisp 1.dp stroke at the exact control bounds (not bounds-centered and then clipped away, which is the current confirmed `glassSurface` bug — the stroke must be drawn either before `.clip()` with `.border()`, or inset by 0.5px so its outer half survives clipping). Color = `glassBorder` token, alpha as defined per theme (already correctly opaque-enough in all three themes). Corner radius matches the control's own shape.
-**Complexity:** LOW (this is a bug fix to existing code, not a new device).
-**Dependency:** none — Foundation-phase fix, blocks every component that currently uses `glassSurface`.
-
-### A6. Hover glow — DIFFERENTIATOR
-
-**What:** NOT a flat white rect over the whole bounding box (the confirmed `AeroButton` bug — corners get squared off because the hover overlay ignores the shape's own clip). Two-part device:
-1. Fill brighten: mix the base fill +8% toward white (uses A1's helper), applied only within the already-clipped shape.
-2. Outer glow ring: a second 1.5–2.dp stroke drawn just outside A5's contour, color = `primary` mixed toward white, alpha 0.25, optionally doubled with a second wider/fainter stroke (3.dp, alpha 0.12) to fake a soft blur without a real `RenderEffect` blur (keeps cost to 2 extra stroke draws, no GPU blur pass — matches the "single `drawBehind` block, avoid overdraw/iGPU collapse" performance constraint already locked in PROJECT.md).
-**Complexity:** LOW-MEDIUM.
-**Dependency:** A1 helper; must be clipped to shape (fixes the AeroButton corner-square bug as a side effect).
-
-### A7. Pressed / inset state — TABLE STAKES
-
-**What:** gradient inversion, not just a uniform darken. Swap A1's stop order (dark at top, light at bottom) so the control reads as pushed into the surface. Combine with: gloss (A3) alpha reduced to ~0.15 (glass catches less light when depressed), seam (A2) alpha reduced to ~0.25. Optionally combine with the existing 0.97 scale-down animation already used by `AeroButton` — the two devices are complementary (scale = physical give, inversion = light response) and neither alone reads as strongly as both together.
-**Complexity:** LOW (same gradient helper, reordered stops via a `pressed: Boolean` branch).
-**Dependency:** A1.
-
-### A8. Focus indication — DIFFERENTIATOR
-
-**What:** Aero idiom is a soft glow ring, not a hard uniform-width square-cornered border (the current `AeroButton` focus implementation uses a hardcoded `RoundedCornerShape(4.dp)` border regardless of the button's actual shape — a second confirmed mismatch bug once corner radii diverge across components). Proposed: two concentric strokes outside A5 — inner 1.5.dp crisp stroke, color `borderSelected`, alpha 0.9; outer 3.dp stroke, same color, alpha 0.25 (same soft-glow-via-double-stroke trick as A6, reusable helper). Corner radius must always be read from the control's own shape parameter, never hardcoded.
-**Complexity:** LOW.
-**Dependency:** shares the double-stroke glow helper with A6 — recommend building ONE shared `Modifier.aeroGlowRing(color, shape, intensity)` primitive in the Foundation phase and calling it for both hover and focus with different color/intensity, rather than writing the glow twice.
-
-### A9. Drop shadow usage — controls vs. panels — TABLE STAKES (controls) / ANTI-FEATURE (panels)
-
-**What:** small interactive controls (buttons, switch thumb, slider thumb) get a tight, small shadow: 2–3.dp blur, 1.dp Y-offset, alpha 0.20–0.25, `color = Color.Black` — this is what makes them read as sitting above the surface. Large panels/surfaces (`glassPanel`, cards) should **not** get an equivalent shadow per control instance — that was already a locked v1.0-era decision (glass panels get depth from the gradient/border alone) and remains correct; the `elevation` parameter on `glassEffect` is currently dead code (imports `shadow` but never applies it) and should either be wired up ONLY for small-control use or removed/renamed to avoid implying panel-level shadow support that isn't wanted.
-**Complexity:** LOW (real `Modifier.shadow()` is fine at this small scale/count — 8 components, not hundreds of list rows all shadowed at once. `AeroListItem`, which CAN appear hundreds of times in a `LazyColumn`, should NOT get a per-row `shadow()` — use the rim-stroke-only look instead, no blur shadow, to protect virtualized-list performance.)
-**Dependency:** none, but must be scoped correctly (see per-component notes) to avoid the exact overdraw/iGPU risk already flagged as a project-level performance constraint.
-
-### A10. Track "groove" / inset well — TABLE STAKES (for Slider, RangeSlider, ProgressBar, Switch track)
-
-**What:** the visual inverse of A1 — a recessed channel. 3-stop vertical gradient: darker at the very top edge (base −15% toward black), lighter by mid-height (base, unmodified), very slightly lighter at the bottom edge (base +4%) — the bottom gets a hint of bounce-light the way a real carved channel would. Add a 1.dp inner-top stroke, color = shadow tone, alpha 0.35 (the "the wall of the groove casts a shadow into the channel" cue) and NO gloss oval (A3) — grooves don't get a specular highlight, only surfaces that face the viewer/light do. Pill shape (`RoundedCornerShape(50)`) for Slider/RangeSlider/ProgressBar tracks; the Switch's off-track is the same device.
-**Complexity:** LOW.
-**Dependency:** A1's lighten/darken helper, reused inverted.
-
-### A11. Win7 progress bar specifics — DIFFERENTIATOR (fill gradient + static gloss) / RISK-FLAGGED (animated sheen)
-
-- **Fill body:** A1's two-tone gradient using `primary` as base, NOT flat. A static top gloss line (A3, but simplified to a flat 2px highlight line rather than a full oval, since the fill region is thin) sits along the top edge of the filled portion only.
-- **Animated sheen sweep (differentiator, use sparingly):** a soft-edged bright band (linear gradient: transparent → white@0.35 → transparent, ~35–45% of the bar's width) that sweeps left-to-right periodically — NOT continuously. Real Windows 7/Vista behavior sweeps once every few seconds with idle time between passes, not a tight seamless loop. Recommend: `keyframes` spec with a hold segment — animate the sweep position 0→1 over ~1200ms, then hold at "off-screen" for ~2500ms before repeating, `RepeatMode.Restart`, total cycle ~3700ms. This is cheap (one float animation, gated to visible determinate bars only) and avoids the anti-feature risk below.
-- **Anti-feature risk:** an always-on, tight-loop shimmer (like the *current* indeterminate implementation's 1500ms `RepeatMode.Restart` with no pause) reads as a loading skeleton, not Aero polish, if applied to every determinate bar in a dense UI (e.g. a DataTable full of progress cells). Recommend making the sheen an explicit opt-in parameter (default on for a single/hero progress bar use case, but flag this as a requirements-stage decision, not a foregone default) rather than unconditional.
-- **Marquee/indeterminate:** authentic Win7 marquee is a single glossy block bouncing back and forth (ping-pong), not a one-directional restart loop. The **current** implementation (30%-wide bar, 1500ms linear `RepeatMode.Restart`) is closer to a generic Material marquee than Aero. Two options for requirements stage: (a) restyle only (keep the loop timing, apply A1+A3 gradient/gloss to the moving block) — LOW complexity, "modern execution" reading; (b) switch to ping-pong bounce with `RepeatMode.Reverse` and `FastOutSlowInEasing` — slightly more Aero-authentic but edges toward literal pixel-recreation, which the user's fidelity target explicitly deprioritizes. **Recommendation: option (a).**
-**Complexity:** MEDIUM (gradient+gloss layering is simple; the two concurrent animations — width/position for determinate value changes plus the periodic sheen — need careful `LaunchedEffect`/`InfiniteTransition` composition so they don't fight).
-**Dependency:** A1, A10, the shared thumb/fill primitive proposed for Slider (component reuse opportunity — see Part B).
-
-### A12. Slider thumb ("pointer") shape and dimensionality — DIFFERENTIATOR
-
-**What:** literal Win7 `TKP_THUMB` was a flag/arrow-shaped pointer (asymmetric, pointed toward the track) in the base Windows Classic style; Aero's rendition softened this into a rounded glossy nub, closer to a small button than an arrow. Given the "Aero spirit, modern execution" target, recommend NOT recreating the arrow/flag silhouette (would tip into dated skeuomorphism) — instead: a circular/oval glossy thumb, 16–18.dp diameter, using the SAME raised-surface language as the button (A1 gradient, A3 gloss oval, A4 bevel rim, A5 contour, A9 small drop shadow). This deliberately unifies "anything you can grab and drag" (Slider/RangeSlider thumb, Switch thumb) under one shared visual primitive rather than inventing a bespoke shape per component.
-**Complexity:** MEDIUM (Canvas-drawn circle with all A1–A5+A9 layers — moderate code, but should be ONE shared private helper, not duplicated per component).
-**Dependency:** A1, A3, A4, A5, A9 — this is the "raised thumb" shared primitive referenced repeatedly in Part B.
-
-### A13. Other ornamentation
-
-- **Corner radius norms — TABLE STAKES:** Aero buttons/panels used *small-to-moderate* rounding (roughly 2–6px at 96dpi, i.e. small in Compose `dp` terms too), NOT full pill shapes. Pill/fully-rounded shapes are correct ONLY for track-style controls (slider/progress/switch track) which is where Aero itself used them (Zune/WMP-era sliders, volume controls). **Anti-feature: turning `AeroButton` into a pill.** That reads as iOS/Material, not Aero, and is the single fastest way to lose "recognizably Aero" — corner radius should stay in the 4–6.dp range for buttons/segmented control/list-item selection pill, not 50%.
-- **Separator/divider treatment — DIFFERENTIATOR, LOW complexity:** the same light-top/dark-bottom double-1px-line idea from A4 doubles as a divider device (e.g. between `AeroSegmentedControl` segments) — draw a 1px highlight line immediately followed by a 1px shadow line rather than a single flat divider color. Cheap, reuses no new primitive.
-- **Reflections (mirrored bottom-edge glass reflection) — ANTI-FEATURE for these 8 components.** Real Aero taskbar buttons/window chrome sometimes got a faint upward mirror reflection; applying it to small form controls (buttons, switches, list rows) is the classic "2007 Web 2.0 badge" over-reach the milestone explicitly wants to avoid. Skip entirely except optionally as a single very-subtle 1px lighter line at the very bottom of the `AeroListItem` selection pill (not a full mirror) — flagged as optional/low-priority, not required.
-- **Noise/grain texture — ANTI-FEATURE.** Not actually part of the *control* rendering language in real Aero (grain/noise was more associated with some third-party Vista Basic themes, not stock Aero glass); adding it here would be pure invented skeuomorphism, plus a real per-pixel noise draw is expensive at Compose Desktop's `drawBehind` scale for hundreds of `AeroListItem` rows. Do not implement.
-- **Real backdrop blur — ANTI-FEATURE, already out of scope per PROJECT.md** ("Настоящий DWM Aero blur через JNI/WinAPI — симуляция через градиенты визуально достаточна"). All of the above devices simulate glass through gradient/alpha, never through an actual blur pass. Reinforcing this here because a per-component temptation to add `RenderEffect.createBlurEffect` for hover glow specifically should be resisted — A6/A8's double-stroke trick achieves a "soft glow" look without a real blur.
-
----
-
-## PART B — Per-Component Treatment
-
-Layering order is listed bottom (drawn first) → top (drawn last). Complexity and dependencies are called out per item so the requirements stage can scope REQ-IDs and the roadmapper can order the enabling phase correctly.
-
-### B1. `AeroButton`
-
-**Layering (bottom→top):** A9 shadow → A1 two-tone fill (clipped to shape) → A10 n/a → A2 seam → A4 inner bevel rim → A3 top gloss oval (clipped) → A5 outer contour → [state layer: A6 hover glow OR A7 pressed inversion, mutually exclusive] → A8 focus glow ring (drawn outside A5, not clipped) → content (text).
-
-| Device | Category | Notes |
-|---|---|---|
-| A1 two-tone fill | Table stakes | Replaces flat `primary@0.8f` M3 fill |
-| A2 seam | Differentiator | Cheap, high signal |
-| A3 top gloss | Table stakes | Fixes the current complete absence of gloss |
-| A4 inner bevel | Table stakes | This + A1 are what most separates it from M3 `Button` |
-| A5 outer contour | Table stakes | Currently absent at rest (M3 filled button has no border) |
-| A6 hover glow | Differentiator | Also a **bug fix**: current hover draws an unclipped rect over square bounds even though the button is rounded |
-| A7 pressed inversion | Differentiator | Complements existing 0.97 scale, doesn't replace it |
-| A8 focus glow | Table stakes | Also a **bug fix**: current focus border is a hardcoded 4.dp corner radius, independent of the button's actual shape |
-| A9 shadow | Differentiator | Small/tight only — do not oversize |
-
-**Complexity:** MEDIUM. Full custom `drawBehind`/Canvas replacing M3's `containerColor` styling; state logic (hover/pressed/focused/disabled) already exists via `rememberHoverState`/`rememberPressedState`/`rememberFocusState` — only the drawing changes, not the interaction plumbing.
-**Dependencies:** Foundation-phase `Color.lighten/darken` helper (A1), shared `aeroGlowRing` primitive (A6/A8), `glassSurface`/`glassEffect` bug fixes (A3 `endY`, A5 clip-order, A9 dead `elevation` param) MUST land first since this component will be the first consumer that exercises all of them.
-
-### B2. `AeroOutlinedButton`
-
-**Layering:** A9 (very light shadow, optional) → A1 fill but at low alpha (glass tint, e.g. `glassSurface` gradient rather than opaque `primary`) → A4 (subtle, lower contrast than filled button) → A3 (thin gloss line, alpha ~0.2, secondary-action restraint) → A5 outer contour (this IS the current 1.dp border, upgrade only) → A6/A7 state → A8 focus.
-
-| Device | Category | Notes |
-|---|---|---|
-| A1 low-alpha fill | Table stakes | Currently fully transparent — reads as "M3 outlined," needs *some* glass tint at rest |
-| A5 contour | Table stakes | Already present (1.dp `glassBorder`) — keep, just make sure it survives clip (A5 bug) |
-| A3/A4 | Differentiator | Keep intensity lower than `AeroButton` — this is deliberately the "quieter" sibling |
-| A6/A7/A8 | Table stakes | Currently **zero** — same bug class as `AeroButton`'s hover |
-
-**Complexity:** LOW-MEDIUM. Can reuse the exact same shared drawing primitive as `AeroButton` with a `filled: Boolean` / `fillAlpha` parameter rather than a separate implementation — recommend building ONE internal `AeroButtonSurface` composable/modifier consumed by both public components.
-**Dependencies:** same as B1; should literally share code with B1, not duplicate it (risk otherwise: the two buttons visually drift apart over time, same class of risk called out in `project_panelgroup_composable_dsl_pitfall`-style lessons about shared logic).
-
-### B3. `AeroSwitch`
-
-Largest gap: zero border/shadow/gloss AND zero hover/press/focus states.
-
-**Layering — track (off):** A10 groove (recessed, pill) → A5 thin contour.
-**Layering — track (on):** A1 raised two-tone fill using `primary` (pill) → A2 seam (optional, pill tracks are thin — may omit if visually cluttered at 18.dp height) → A3 thin gloss line → A5 contour.
-**Layering — thumb (always):** A12 shared raised-thumb primitive (A1+A3+A4+A5+A9 circle) sized to fit the 18.dp track (thumb ~14.dp, matching current size).
-**State layer:** A6 hover glow ring around the thumb only (not the whole track) → A7 pressed = thumb gradient invert + scale 0.92 → A8 focus glow around the whole track (not just the thumb, since focus targets the whole control) → disabled = flatten everything to single-tone @0.4 alpha, remove A3/A6/A7/A8 entirely.
-
-| Device | Category | Notes |
-|---|---|---|
-| A10 groove (off-track) | Table stakes | Currently a flat `borderDefault`-colored box |
-| A1 raised fill (on-track) | Table stakes | Currently a flat `primary`-colored box |
-| A12 thumb | Table stakes | Currently a flat circle, no shadow/bevel/gloss at all |
-| A6 hover | Table stakes (gap) | **Currently 100% absent** — biggest single gap of the eight components |
-| A7 pressed | Table stakes (gap) | **Currently 100% absent** |
-| A8 focus | Table stakes (gap) | **Currently 100% absent** — switch isn't even focusable-styled today |
-
-**Complexity:** MEDIUM. No Win7 switch precedent exists (correctly noted in the milestone brief) — this is the one component built by extrapolation rather than direct reference, but every device used (groove, raised thumb, hover glow, pressed invert, focus glow) is drawn from the existing catalog, so it should still feel visually "of a piece" with the other seven.
-**Dependencies:** A10 groove primitive (shared with ProgressBar/Slider track), A12 thumb primitive (shared with Slider/RangeSlider thumb) — **this component cannot be implemented before the shared groove and thumb primitives exist**, making it a natural "second wave" component after Button/OutlinedButton prove the Foundation layer.
-
-### B4. `AeroSegmentedControl`
-
-Ancestor: Office 2007 ribbon toggle-button groups / Win7 toolbar tab strips, not a literal Win7 control.
-
-**Layering — outer container:** A5 contour around the whole strip (upgrade from the current plain 1.dp) → optional very subtle A1 fill for the whole strip background (raised toolbar look) at low alpha.
-**Layering — per unselected segment:** transparent at rest; A6 hover glow **clipped to that segment's own sub-rect** (currently: no hover at all, and even if added naively would need clipping per-segment, not the whole row).
-**Layering — selected segment:** here the metaphor diverges from the button: real ribbon/toolbar "pressed/active" toggle buttons render as a **recessed** glassy highlight, not a raised bevel — reuse A7 (pressed-style inversion) as the AT-REST look for the selected segment, plus a persistent (non-hover-gated) low-intensity glow ring (A8-style, but using `primary` not `borderSelected`, to denote "active" rather than "focused") so the selected segment stays visually distinct even without focus.
-**Layering — separators between segments:** A13 double-line groove divider (1px light + 1px dark), not a flat single-color line.
-**State layer:** A6 hover on unselected segments; A8 real keyboard-focus glow around the currently-focused segment (independent from the "active" glow the selected segment always shows).
-
-| Device | Category | Notes |
-|---|---|---|
-| A5 contour (whole strip) | Table stakes | Already present, needs bug-fix parity with A5 |
-| A6 hover (per segment) | Table stakes (gap) | **Currently 100% absent** |
-| A7-as-selected-state | Differentiator | Deliberate reuse of the "pressed" device as a persistent "active" look — worth flagging to requirements stage as a design call, not a Windows-verified fact |
-| A13 divider | Differentiator | Cheap, meaningfully upgrades the currently flat `1.dp` separators |
-| A8 focus (per segment) | Table stakes (gap) | **Currently 100% absent** |
-
-**Complexity:** MEDIUM. Per-segment clipping for hover/active states is the main new work; the shared "recessed" gradient can be the exact same code path as `AeroButton`'s A7 pressed state, parameterized rather than reimplemented.
-**Dependencies:** A6/A8 glow primitive, A7 inversion helper (shared with Button) — should not require any NEW primitive beyond what B1/B2 already need, making this a good "third wave" component (visual-only, reuses everything).
-
-### B5. `AeroSlider`
-
-Currently a thin M3 `Slider` wrapper — full custom rewrite, following the same rationale already used for `AeroRangeSlider` (M3 banned per locked `PITFALL-03`: `detectDragGestures`/M3 slider internals don't give the drag control needed; `awaitPointerEventScope` + manual loop is the locked pattern).
-
-**Layering — track (unfilled portion, right of thumb):** A10 groove.
-**Layering — track (filled portion, left of thumb):** A1 raised two-tone fill using `primary`, thin static A3 gloss line along the top edge (same idea as A11's progress-bar fill, in fact this should share code with `AeroProgressBar`'s fill renderer).
-**Layering — thumb:** A12 shared raised-thumb primitive.
-**State layer:** A6 hover glow around thumb only → A7 pressed = thumb scale-down + gradient invert, track-fill brightens slightly → A8 focus glow around thumb → disabled = flatten all, 0.4 alpha, no gloss/glow.
-
-| Device | Category | Notes |
-|---|---|---|
-| A10 groove | Table stakes | Currently M3-drawn flat track |
-| A1 filled-portion gradient | Table stakes | Currently M3-drawn flat filled track |
-| A12 thumb | Table stakes | Currently M3-drawn flat circle |
-| A6/A7/A8 on thumb | Table stakes (gap) | M3 gives *some* default ripple/hover but none of it is Aero-styled; effectively a gap for this milestone's purposes |
-
-**Complexity:** HIGH — this is the only one of the eight requiring both a full M3→custom rewrite AND new drag-handling code (not purely a visual reskin like B3/B4). Mitigated by directly reusing `AeroRangeSlider`'s existing `awaitPointerEventScope` drag pattern (already proven, already passes the project's locked Canvas-drag pitfall guard) rather than inventing a new one.
-**Dependencies:** A10 groove, A12 thumb (shared with Switch/RangeSlider), the existing `aeroDragSplitter`-style drag utility pattern from `RangeSlider`/`SplitPane`/`ColorPicker`/`DataTable` (already a locked v2.0 convention, reusable as-is). **This is the component most likely to need its own research-phase deep-dive at planning time** given the M3-removal scope, even though the visual devices themselves are fully specified here.
-
-### B6. `AeroRangeSlider`
-
-Already Canvas-based (no M3 to remove) — **pure visual upgrade**, drag logic untouched.
-
-**Layering — track (below/above/between thumbs):** A10 groove for the two end segments; A1 raised fill for the segment BETWEEN the two thumbs (the "selected range").
-**Layering — thumbs (×2):** A12 shared raised-thumb primitive, replacing the current flat `drawCircle` + 2.dp ring.
-**State layer:** A6/A7/A8 **per thumb independently** (currently: zero hover/press states on either thumb — a confirmed gap in the baseline findings). The existing drag tooltip (`glassEffect` pill, already implemented) is unaffected by this milestone.
-
-| Device | Category | Notes |
-|---|---|---|
-| A10 groove (outer segments) | Table stakes | Currently flat 4.dp `drawLine` |
-| A1 raised fill (between-thumb segment) | Table stakes | Currently flat 4.dp `drawLine`, same color as the rest of the track — no visual distinction of the selected range beyond color |
-| A12 thumbs | Table stakes | Currently flat `drawCircle` + ring, must literally share the drawing helper with B5's thumb to avoid the two sliders drifting apart visually |
-| A6/A7/A8 per-thumb | Table stakes (gap) | **Currently 100% absent on both thumbs** |
-
-**Complexity:** MEDIUM (lower than B5 — visual-only, no drag rewrite, no M3 removal).
-**Dependencies:** A10, A12 (must be literally shared, not reimplemented, with B5) — recommend this be the SECOND consumer of the shared thumb/groove primitives (right after B5 builds them), so any bugs found get fixed once for both sliders.
-
-### B7. `AeroProgressBar`
-
-Two variants (determinate value-based overload, indeterminate marquee overload) — both currently flat `Box`es.
-
-**Layering — determinate:** A10 groove (track) → A1 raised fill for the progress amount → static A3 gloss line along top of the filled portion → optional A11 periodic sheen sweep (flag as opt-in per A11's anti-feature-risk note, default recommendation deferred to requirements stage).
-**Layering — indeterminate:** A10 groove (full-width, always visible as "empty") → the moving 30%-wide block restyled with A1+A3 (currently a flat `colors.primary` box) — keep the existing 1500ms `RepeatMode.Restart` timing (A11's "option (a): restyle only" recommendation) rather than switching to ping-pong bounce.
-
-| Device | Category | Notes |
-|---|---|---|
-| A10 groove | Table stakes | Currently flat `colors.surface` box, no inset/recessed cue at all |
-| A1 fill gradient | Table stakes | Currently flat `colors.primary` box |
-| A3 static gloss (fill top edge) | Differentiator | Cheap, high visual payoff for a control with almost no other detail |
-| A11 periodic sheen | Differentiator (risk-flagged) | See A11 — recommend opt-in, not default-on everywhere; genuine risk of "loading skeleton" look at high multiplicity |
-| Indeterminate restyle | Table stakes | Timing unchanged, only the moving block's fill gets A1+A3 |
-
-**Complexity:** MEDIUM (gradient/gloss layering is simple; if the opt-in sheen is built, two concurrent animation states need clean composition).
-**Dependencies:** A1, A10 — should share the exact fill-gradient renderer with B5's filled-track segment (same visual language: "a raised bar of primary color inside a recessed groove").
-
-### B8. `AeroListItem`
-
-Reference point given directly by the user: Win7 Explorer selection = rounded translucent blue pill with lighter rim + subtle gradient.
-
-**Layering:** clip the ENTIRE row background draw to an inset rounded rect (e.g. 2.dp horizontal inset from the row's full bounds, 8.dp corner radius) — this alone fixes the confirmed baseline bug ("not clipped → hard-edged full-bleed flat highlight").
-- **Selected (not hovered):** A1-style two-tone glass pill using `primary` at low alpha (top stop ~0.22, bottom stop ~0.14 — NOT opaque, this is a translucent highlight over content, not a filled button) → A5-equivalent 1.dp rim, color `primary` at alpha ~0.5 (lighter/more saturated than the fill, matching the "lighter rim" the user specifically called out) → thin A3 gloss line (alpha ~0.15, 40% height — subtle, this is a list row not a button).
-- **Hovered (not selected):** flatter single-tone tint derived from `buttonHover`, same clip/inset, a lighter 1.dp rim but NO gloss line — hover should read as "lighter/quieter" than selected, not competing with it.
-- **Selected AND hovered (the confirmed baseline gap — "selected beats hover so hovering a selected row shows nothing"):** selected pill stays but its rim brightens slightly (alpha 0.5→0.65) and gloss alpha bumps slightly (0.15→0.22) — a real, visible delta between "resting-selected" and "hovering-a-selected-row," which currently does not exist at all.
-- **Focused:** thin 1.dp inner glow ring (A8-style but restrained — 1.dp inset, no double-stroke blur trick needed at this small a scale), currently completely absent.
-
-| Device | Category | Notes |
-|---|---|---|
-| Clip to inset rounded rect | Table stakes | This single fix (not even a new device) resolves the "square corners on a rounded design system" bug |
-| A1-style low-alpha pill (selected) | Table stakes | Directly matches the user-supplied Explorer reference |
-| Lighter rim on pill | Table stakes | Explicitly called out by the user as part of the reference |
-| A3 gloss (selected only) | Differentiator | Subtle — this is the one place a full gloss line risks looking excessive; keep alpha low |
-| Combined selected+hover delta | Table stakes (gap) | **Currently 100% absent** — closes a named, explicit baseline bug |
-| Focus ring | Table stakes (gap) | **Currently 100% absent** |
-| Full shadow (A9) on the row | Anti-feature (here) | Rows can appear hundreds of times in a virtualized list — a per-row blurred `shadow()` is a real overdraw risk; rim-stroke only, no shadow |
-
-**Complexity:** LOW-MEDIUM. The drawing itself is simple (one clipped background swap); the main nuance is the state-combination logic (rest/hover/selected/selected+hover/focused/disabled all need distinct, correctly-prioritized branches — currently `selected` short-circuits `hovered` entirely with no combined case).
-**Dependencies:** the corrected `glassSurface` (A5 clip-order bug fix) is the natural primitive to reuse here, parameterized with the selected-pill's specific fill/rim colors — this component should be a straightforward "final wave" consumer of the Foundation layer, no new primitive required beyond what buttons/sliders already establish.
-
----
-
-## Feature Dependencies
-
-```
-[Color.lighten/darken RGB-mix helper]  (Foundation)
-    ├──required by──> [A1 two-tone fill]
-    ├──required by──> [A4 inner bevel rim]
-    ├──required by──> [A7 pressed inversion]
-    └──required by──> [A10 track groove]
-
-[glassSurface bug fixes: endY proportional, clip-order, elevation wiring]  (Foundation)
-    ├──blocks──> AeroButton (B1)          — first real consumer, surfaces any remaining bugs
-    ├──blocks──> AeroOutlinedButton (B2)
-    └──blocks──> AeroListItem (B8)        — reuses glassSurface directly, parameterized
-
-[Modifier.aeroGlowRing shared primitive]  (Foundation, built alongside A6/A8)
-    ├──required by──> AeroButton hover + focus (B1)
-    ├──required by──> AeroOutlinedButton hover + focus (B2)
-    ├──required by──> AeroSwitch hover + focus (B3)
-    ├──required by──> AeroSegmentedControl hover + focus (B4)
-    ├──required by──> AeroSlider hover + focus on thumb (B5)
-    ├──required by──> AeroRangeSlider hover + focus per thumb (B6)
-    └──required by──> AeroListItem focus ring (B8)
-
-[Shared "raised thumb" primitive (A12)]
-    ├──required by──> AeroSwitch thumb (B3)
-    ├──required by──> AeroSlider thumb (B5)
-    └──required by──> AeroRangeSlider thumbs ×2 (B6)
-
-[Shared "track groove" primitive (A10)]
-    ├──required by──> AeroSwitch off-track (B3)
-    ├──required by──> AeroSlider unfilled track (B5)
-    ├──required by──> AeroRangeSlider outer segments (B6)
-    └──required by──> AeroProgressBar track (B7)
-
-[Shared "raised fill / active segment" renderer (A1 applied to a fill region)]
-    ├──required by──> AeroSlider filled track (B5)
-    ├──required by──> AeroRangeSlider between-thumb segment (B6)
-    └──required by──> AeroProgressBar determinate fill (B7)
-
-[AeroButton (B1) surface primitive]  ──enhances/is reused by──> AeroOutlinedButton (B2)
-[AeroButton (B1) A7 pressed-inversion code]  ──reused as "active" state by──> AeroSegmentedControl selected segment (B4)
-[AeroRangeSlider (B6) existing awaitPointerEventScope drag loop]  ──pattern reused by──> AeroSlider (B5) full rewrite
-
-[A11 periodic sheen animation utility]  ──optional enhancement of──> AeroProgressBar (B7) only
+## 1. THE DECISIVE FINDING — mechanism, and the maintainer's acceptance question
+
+This is the answer to "does the real OS cursor move, is focus stolen, does it work occluded/minimized?" Read directly from source, not inferred from docs.
+
+**There are two completely different mechanisms in v1.2.0, and they behave oppositely:**
+
+### A. `take_screenshot` — real OS-level screen capture (`java.awt.Robot`)
+
+`hot-reload-runtime-jvm/src/main/kotlin/org/jetbrains/compose/reload/jvm/screenshotHandler.kt:58-71`:
+
+```kotlin
+internal fun captureWindow(window: Window): Try<BufferedImage> {
+    return Try {
+        val robot = Robot()
+        val location = window.locationOnScreen
+        val insets = window.insets
+        val rect = Rectangle(
+            location.x + insets.left, location.y + insets.top,
+            window.width - insets.left - insets.right,
+            window.height - insets.top - insets.bottom,
+        )
+        robot.createScreenCapture(rect)
+    }
+}
 ```
 
-### Dependency Notes
+This is `java.awt.Robot.createScreenCapture` — a literal screen-pixel read at the window's on-screen rectangle. It is **not** off-screen rendering of the `ComposeScene`/`ComposeWindow` contents (no `ImageComposeScene`, no `captureContentToImage()` — those only exist starting `v1.3.0-alpha02`, gated to Compose Multiplatform 1.13+, with automatic Robot fallback below that — see §7 "Known issues"). Our milestone installs 1.2.0/CMP 1.12.0, so **Robot is the only path available.**
 
-- **Foundation-first is confirmed correct** (already locked in `.planning/STATE.md`'s v2.1 scoping decisions, mirroring the successful v2.0 Phase 7 enabling-phase pattern): the `Color.lighten/darken` helper, the fixed `glassSurface`/`glassEffect`, and the shared `aeroGlowRing` primitive are each consumed by 5+ of the 8 components. Building any component before these exist means rework.
-- **Thumb and groove primitives (A10/A12) gate three components each** (`AeroSwitch`, `AeroSlider`, `AeroRangeSlider` for the thumb; `AeroSwitch`, `AeroSlider`, `AeroRangeSlider`, `AeroProgressBar` for the groove) — these should be built once, in the Foundation phase or immediately after it, not per-component. This is the single highest-leverage shared-primitive investment in the whole milestone.
-- **`AeroSlider` (B5) is the outlier** — it is the only component requiring an actual M3-removal + new drag-handling implementation (HIGH complexity vs. MEDIUM/LOW for the rest). It should be sequenced to directly follow `AeroRangeSlider`'s existing pattern rather than being built in isolation, and may warrant its own phase-level research pass given the drag-handling risk class already documented (`PITFALL-03`).
-- **`AeroButton`/`AeroOutlinedButton` should share one internal surface primitive**, not two independent implementations — same rationale as every other "shared code, not shared visual coincidence" lesson already in this project's memory (PanelGroup DSL lesson: divergent copies of the same logic silently drift).
+Consequences, derived directly from this code (HIGH confidence):
+- **Cursor:** `Robot.createScreenCapture` does not move the mouse. No cursor movement for this tool.
+- **Focus:** reading screen pixels does not touch AWT/Swing/OS focus. No focus stolen.
+- **Occluded window:** Robot reads whatever is actually on top of the screen at that rectangle. If another window (even partially) covers the showcase, the screenshot will contain the occluding window's pixels, not the showcase's Compose content. **`take_screenshot` does NOT work correctly when occluded.**
+- **Minimized window:** see the shared finding in §B below — it fails even before Robot gets a chance to run, because the window disappears from the registered-window list entirely.
+
+### B. `click` / `long_click` / `type_text` / `scroll` / `scroll_to_index` — in-process semantics-action invocation, no OS input at all
+
+`hot-reload-runtime-jvm/src/main/kotlin/org/jetbrains/compose/reload/jvm/uiActionHandler.kt:67-99`:
+
+```kotlin
+return when (val action = request.action) {
+    is UIAction.Click -> invokeNoArgAction(request, node, SemanticsActions.OnClick, "onClick", windowId)
+    is UIAction.LongClick -> invokeNoArgAction(request, node, SemanticsActions.OnLongClick, "onLongClick", windowId)
+    is UIAction.SetText -> {
+        val setText = node.config.getOrNull(SemanticsActions.SetText) ?: return missingAction(...)
+        val lambda = setText.action ?: return missingActionLambda(...)
+        val handled = lambda.invoke(AnnotatedString(action.text))
+        ...
+    }
+    is UIAction.ScrollBy -> { /* invokes SemanticsActions.ScrollBy lambda directly */ }
+    is UIAction.ScrollToIndex -> { /* invokes SemanticsActions.ScrollToIndex lambda directly */ }
+}
+```
+
+There is **no `java.awt.Robot`, no synthetic `AWTEvent`/`MouseEvent`/`KeyEvent` dispatch, no `ComposeScene.sendPointerEvent`.** The handler walks the in-memory `SemanticsNode` tree (found via reflection on Compose Desktop's internal `ComposeAccessible.getSemanticsNode()`, see `semanticTreeHandler.kt:87-96`) and calls the accessibility-action lambda (`AccessibilityAction<() -> Boolean>.action.invoke()`) directly — exactly the same code path a screen reader uses, entirely inside the JVM, never touching the OS input queue.
+
+`resize_window` (`windowResizeHandler.kt:16-30`) is the same story: `window.setSize(...)` + `window.validate()` — a direct AWT API call, not an OS-level drag of the window border.
+
+Consequences (HIGH confidence, same reasoning as above): **no cursor movement, no focus stolen**, for any of `click`/`long_click`/`type_text`/`scroll`/`scroll_to_index`/`resize_window`. These act purely on the in-memory semantics tree and are **unaffected by screen occlusion** — they will succeed even if another window fully covers the showcase, because nothing about them touches actual screen pixels or input queues.
+
+### C. Minimized window — fails for every window-targeting tool, not just the screenshot one
+
+`hot-reload-runtime-jvm/src/main/kotlin/org/jetbrains/compose/reload/jvm/window.kt:76-84`:
+
+```kotlin
+val windowListener = object : WindowAdapter() {
+    override fun windowIconified(e: WindowEvent?) {
+        broadcastGone()   // removes this window from WindowsState entirely
+    }
+    override fun windowDeiconified(e: WindowEvent?) {
+        broadcastActiveState()  // re-registers it
+    }
+    ...
+}
+```
+
+`broadcastGone()` removes the window from the shared `WindowsState.windows` map (the same map `list_windows` reads and `resolveWindowId` resolves against, `hot-reload-mcp/.../McpServer.kt:919-927`). **Minimizing the showcase window makes it vanish from `list_windows` and every window-targeting tool** (`take_screenshot`, `get_semantic_tree`, `click`, `long_click`, `type_text`, `scroll`, `scroll_to_index`, `resize_window`) **fails with "no application window is currently available"** (or, if an explicit `window_id` was passed, `"Window '...' not found"`). This is a hard, deliberate design choice in the runtime — not a bug the milestone needs to route around, but a real operational constraint: **the agent cannot inspect a minimized showcase at all**, via any tool. It has to be visible (can be occluded for everything except the screenshot; must be non-minimized for everything).
+
+### Summary table — answers the maintainer's acceptance question directly
+
+| Tool | Real cursor moves? | Focus stolen? | Works occluded? | Works minimized? |
+|---|---|---|---|---|
+| `take_screenshot` | No (Robot reads pixels, doesn't move mouse) | No | **No** — captures whatever is actually on top of the screen at that rect | **No** — window is unregistered on iconify |
+| `get_semantic_tree` | No | No | **Yes** — pure in-memory tree walk | **No** — same unregistration |
+| `click` / `long_click` / `type_text` / `scroll` / `scroll_to_index` | No | No | **Yes** — invokes the semantics-action lambda in-process | **No** — same unregistration |
+| `resize_window` | No | No | **Yes** — direct `window.setSize()` | **No** — same unregistration |
+| `status` / `reload` / `await_reload` / `get_logs` / `get_ui_error` / `list_windows` / `restart` / `reset_ui` | N/A (no window targeting, or window-agnostic) | No | Yes | `list_windows` will simply omit the minimized window; other non-window tools are unaffected |
+
+**Bottom line for the milestone's acceptance test:** the "does not move the cursor / does not steal focus" half of the promise holds unconditionally in v1.2.0 for every tool — there is no OS-level input injection anywhere in this server. The "works occluded / works minimized" half is **conditional**: occlusion only breaks `take_screenshot` (garbled/wrong image); minimization breaks *every* window-targeting tool including the screenshot. This is a precise, testable, source-backed claim — see §8 for a concrete verification protocol.
 
 ---
 
-## MVP Definition (mapped to phase-ordering intent, not literal ship gates)
+## 2. Full tool list (16 tools, v1.2.0)
 
-### Foundation wave (must land first — blocks everything else)
-- [ ] `Color.lighten/darken` RGB-mix helpers
-- [ ] `glassSurface` bug fixes: proportional `endY`, correct clip/border order, wired-up `elevation`
-- [ ] `Modifier.aeroGlowRing(color, shape, intensity)` shared hover/focus primitive
-- [ ] Shared "raised thumb" drawing primitive (A12)
-- [ ] Shared "track groove" drawing primitive (A10)
-- [ ] New `AeroColorScheme` tokens as needed for lightened/darkened/glow variants per theme (verify all three themes, not just AeroBlue, per the Cross-Theme Finding)
+Source: `hot-reload-mcp/src/main/kotlin/org/jetbrains/compose/reload/mcp/McpServer.kt:160-389`. Every tool returns a `CallToolResult` — either `TextContent` (JSON string, described per row) or, for `take_screenshot`, `ImageContent` (base64 PNG) plus optional `TextContent` confirming a saved path.
 
-### Second wave (straightforward consumers of the Foundation layer)
-- [ ] `AeroButton` — full device set (B1)
-- [ ] `AeroOutlinedButton` — shares B1's primitive (B2)
-- [ ] `AeroListItem` — reuses fixed `glassSurface`, clip + state-combination fix (B8)
+| Tool | Required params | Optional params | Target addressing | Returns |
+|---|---|---|---|---|
+| `status` | — | `max_error_detail_lines` | — | `{"connected":bool, "buildContinuous":bool, "reloadState":"ok"/"reloading"/"failed", "lastError", "lastErrorDetails"?, "successfulReloads":n, "failedReloads":n, "uiErrorWindows"?:[id]}` |
+| `reload` | — | `timeout_seconds` | — | `{"success":true,"reloaded":true/false}` or `{"status":"reloading"}` if still running. For non-`--auto` (explicit reload) runs. |
+| `await_reload` | — | `timeout_seconds` | — | Same shape as `reload`, but for `--auto` (continuous build) runs — waits for the autonomous reload instead of triggering one. |
+| `list_windows` | — | — | — | JSON array of `{"id","title","x","y","width","height"}` |
+| `get_ui_error` | — | `window_id`, `max_error_detail_lines` | `window_id` (defaults to first window) | `{"windowId","hasError":bool,"message"?,"stacktrace"?:[line],"stacktraceTruncated"?:n}` |
+| `get_logs` | — | `limit` (default 200, 0=all) | — | Plain text, oldest first, tail of the app's `.chr.log` |
+| `take_screenshot` | — | `window_id`, `save_to` | `window_id` | Inline base64 PNG (`ImageContent`) + optional "saved to" text |
+| `get_semantic_tree` | — | `window_id` | `window_id` | JSON tree (or array of trees — see §4) |
+| `click` | `nodeId` | `window_id` | **`nodeId` (integer semantic node id from `get_semantic_tree`)** | `{"success":true}` or error if node lacks `onClick` |
+| `long_click` | `nodeId` | `window_id` | node id | same shape, requires `onLongClick` |
+| `type_text` | `nodeId`, `text` | `window_id` | node id | Replaces the field's whole content (`SemanticsActions.SetText`), requires `editableText` present on the node |
+| `scroll` | `nodeId` | `deltaX`, `deltaY`, `window_id` | node id (scrollable container) | Logical-pixel delta scroll (`ScrollBy` semantic action) |
+| `scroll_to_index` | `nodeId`, `index` | `window_id` | node id | For `LazyColumn`/`LazyRow`-style containers (`ScrollToIndex` semantic action) |
+| `resize_window` | `width`, `height` | `window_id` | `window_id` | `window.setSize()` + `validate()` |
+| `restart` | — | `timeout_seconds` | — | Relaunches the app process with the same args; `{"success":true,"reconnected":bool}` |
+| `reset_ui` | — | — | — | Discards the current composition (drops all `remember`-ed state), like the DevTools "Reset UI" button |
 
-### Third wave (depends on thumb/groove primitives existing)
-- [ ] `AeroSwitch` — full device set incl. first-ever hover/press/focus (B3)
-- [ ] `AeroRangeSlider` — visual-only upgrade, no drag rewrite (B6)
-- [ ] `AeroSegmentedControl` — visual-only, reuses Button's pressed/glow code (B4)
+**Click/scroll/type target addressing is exclusively by semantic node id** (an integer assigned by Compose's `SemanticsNode.id`, discovered via `get_semantic_tree`) — **not** by test tag, text match, or window coordinates. There is no coordinate-based click tool at all in v1.2.0. This is a hard dependency (§6).
 
-### Fourth wave (highest complexity, sequence last within the milestone)
-- [ ] `AeroSlider` — full M3 removal + custom drag (B5)
-- [ ] `AeroProgressBar` — including the opt-in periodic sheen decision (B7)
-
-### Explicit decision points to carry into REQUIREMENTS.md
-- [ ] `AeroProgressBar` periodic sheen: opt-in parameter vs. always-on (A11) — recommend opt-in
-- [ ] `AeroProgressBar` indeterminate: restyle-only (keep current 1500ms loop) vs. ping-pong bounce (A11) — recommend restyle-only
-- [ ] `AeroSegmentedControl` selected-segment metaphor: recessed/"active" (recommended, B4) vs. raised/"elevated" — pick one, don't mix
-- [ ] `AeroListItem` bottom-edge mirror reflection: optional/low-priority, likely defer
+**No tool exists for:** raw keyboard key-press (Tab, Enter, arrow keys, Escape), pointer hover/move, or drag gestures. See §5.
 
 ---
 
-## PART C — Interaction-State Matrix
+## 3. Lifecycle — does `hotMcpServer` launch the app itself?
 
-States: **Rest** / **Hover** / **Pressed** / **Focused** / **Disabled** / **Selected-or-Active** (where applicable). "GAP" = confirmed zero implementation today per the STATE.md baseline table.
+**No.** `hotMcpServer` and the application process are two entirely independent things that rendezvous through a **pidFile**.
 
-| Component | Rest | Hover | Pressed | Focused | Disabled | Selected/Active |
-|---|---|---|---|---|---|---|
-| **AeroButton** | A1 two-tone fill + A2 seam + A3 gloss + A4 bevel + A5 contour + A9 shadow | + A6 glow ring, fill brightened +8%, **clipped** (fixes corner-square bug) | A7 gradient inversion, gloss alpha→0.15, seam alpha→0.25, existing 0.97 scale kept | A8 double-stroke glow ring, shape-matched radius (fixes hardcoded-radius bug) | Flatten to single tone @0.4 alpha, no gloss/bevel/shadow | n/a (stateless action button) |
-| **AeroOutlinedButton** | A1 low-alpha glass tint fill + thin A3/A4 + A5 contour (upgrade of existing border) | Same A6 pattern as Button, lower intensity | Same A7 pattern, lower intensity | Same A8 pattern as Button | Flatten fill to near-zero alpha, contour @0.4 | n/a |
-| **AeroSwitch** | Off: A10 groove + thumb A12. On: A1 raised pill fill + thumb A12 | **[GAP today]** A6 glow ring around thumb only | **[GAP today]** A7 thumb invert + scale 0.92 | **[GAP today]** A8 glow around whole track | Flatten everything @0.4, strip A3/A6/A7/A8 | Track fill state (on/off) IS the "selected" axis — on = A1 raised, off = A10 groove |
-| **AeroSegmentedControl** | Unselected: transparent + A5 outer contour. Selected: A7-style recessed fill + persistent low-intensity active glow | **[GAP today]** A6 glow, clipped to that segment only | Momentary A7 on click, same as selected-at-rest look intensified briefly | **[GAP today]** A8 glow around the focused segment specifically (independent of which is selected) | Flatten all segments @0.4, no active glow | Selected segment = persistent A7 recessed fill + always-on low-intensity glow ring (distinct from focus glow) |
-| **AeroSlider** | A10 groove (unfilled) + A1 raised fill (filled) + A12 thumb | **[GAP today — M3-drawn]** A6 glow around thumb | **[GAP today]** A7 thumb invert + scale, track-fill brightens slightly | **[GAP today]** A8 glow around thumb | Flatten track + thumb @0.4, no gloss | n/a (continuous value, no discrete selected state) |
-| **AeroRangeSlider** | A10 groove (outer segments) + A1 raised fill (between-thumb segment) + A12 thumbs ×2 | **[GAP today]** A6 per-thumb, independently | **[GAP today]** A7 per active thumb (`lastMovedThumb` already tracked in code — reuse for which thumb gets the pressed look) | **[GAP today]** A8 per focused thumb | Flatten all @0.4 | Between-thumb segment IS the "active/selected" range, always shown via A1 raised fill vs. A10 groove on the outer segments |
-| **AeroProgressBar** | Determinate: A10 groove + A1 fill + static A3 gloss. Indeterminate: A10 groove + restyled moving block | n/a (non-interactive control) | n/a | n/a (not focusable) | Flatten fill @0.4, freeze/hide sheen and moving block | n/a — "value" is the closest analog to state, already the component's whole purpose |
-| **AeroListItem** | Clipped inset rounded rect, transparent bg | Flat single-tone tint (from `buttonHover`), lighter 1.dp rim, no gloss | n/a (click is instantaneous, no distinct pressed visual currently planned — flag as optional) | **[GAP today]** thin 1.dp inner glow ring | Flatten row content @0.4, no rim/gloss | A1-style low-alpha glass pill + lighter rim (alpha 0.5) + subtle A3 gloss; **selected+hover combo [GAP today]** — currently hover renders nothing on a selected row; proposed fix bumps rim/gloss alpha slightly so the combination is visibly distinct from resting-selected |
+`hot-reload-mcp/src/main/kotlin/org/jetbrains/compose/reload/mcp/McpMain.kt:55-90`: the MCP server's `main()` takes a pidFile path (via `-Dcompose.reload.pidFile=` or CLI arg), then loops: watch the pidFile directory with a `WatchService` until a `orchestrationPort=` line appears, connect, and on disconnect (app exit) **go back to watching and reconnect automatically** — this is the "waits for startup, detects shutdowns, reconnects" behavior mentioned in the 1.2.0 release notes, confirmed in code.
 
-### Gap Summary (directly from the milestone brief + STATE.md baseline, confirmed by reading each component file)
+**The app must be started separately**, by a task that writes that pidFile. That task is `hotRun` (for a plain `org.jetbrains.kotlin.jvm` project, matching `:showcase`'s current plugin setup) — confirmed directly by the plugin's own test, `ComposeHotRunTasksTest.kt: "test - default run task name - jvm"` → asserts task names `{"hotRun", "hotDev"}` for this exact plugin combination. **This is a new task registered by the `org.jetbrains.compose.hot-reload` Gradle plugin — it is a different task from the showcase's existing `run` task** (from `compose.desktop.application`). Concretely:
 
-- **`AeroSwitch`:** zero hover, zero pressed, zero focus. Confirmed in `AeroSwitch.kt` — the composable has no `MutableInteractionSource` parameter at all, no `hoverable`/`focusable` modifiers, only `toggleable`.
-- **`AeroSegmentedControl`:** zero hover, zero focus (pressed/selected exist only as a flat color swap).
-- **`AeroSlider` / `AeroRangeSlider` thumbs:** zero hover, zero focus on the draggable thumb itself (the slider components have interaction plumbing for drag, but not for hover/focus glow).
-- **`AeroListItem`:** zero focus visual; selected+hover is not a distinct state (selected short-circuits hover in the current `when` branch — confirmed in `AeroListItem.kt`'s `animatedBg` calculation).
-- **`AeroProgressBar`:** not interactive by nature (no gap here — included in the matrix for completeness/disabled-state parity only).
+- `hotRun` wires `pidFile`/`argFile` via `configureJavaExecTaskForHotReload` (`hotRunTasks.kt:85-194`), inherits `mainClass` from the same `compose.desktop.application.mainClass` convention the existing `run` task uses (confirmed by `ComposeHotRunTasksTest.kt: "test - mainClass"`), so `com.mordred.showcase.MainKt` carries over with no extra config.
+- The showcase's existing `-Paero.scheme=` forwarding hook only matches `if (name == "run")` (`showcase/build.gradle.kts:27-31`) — **it will not apply to `hotRun` as written.** This is a concrete, small dependency for the milestone's implementation phase: either broaden that predicate (e.g. `name == "run" || name == "hotRun"`) or accept that theme preselection needs a separate path for the hot-reload flow.
 
-These five gaps are, per the milestone brief's own framing, "a large part of why they read as flat" — and per this research, all five are closeable using the SAME `aeroGlowRing` primitive (A6/A8) and the SAME state-branch pattern already proven in `AeroButton`'s `rememberHoverState`/`rememberPressedState`/`rememberFocusState` helpers (which exist in the codebase today and are not themselves broken — they're just not called from the five gapped components).
+**Gradle daemon / `--no-daemon` — three independent processes, three independent daemon decisions:**
+
+1. **`hotMcpServer` itself** is a plain `JavaExec` (`UntrackedTask` — "should always run", no up-to-date caching) that just proxies stdio and watches a file; whatever `--no-daemon` flag was passed to invoke it only affects that one Gradle invocation. Matches the milestone's planned `cmd /c gradlew.bat --no-daemon --quiet --console=plain hotMcpServer` — confirmed as the exact pattern JetBrains' own docs recommend (`.mcp.json` example: `{"command":"./gradlew","args":["--no-daemon","--quiet","--console=plain","hotMcpServer"]}`, [kotlinlang.org docs](https://kotlinlang.org/docs/multiplatform/compose-hot-reload.html)); Windows needs `cmd /c gradlew.bat` instead of `./gradlew` because the wrapper script isn't directly spawnable on Windows — this matches the milestone's own noted decision.
+2. **Running the app itself** (`./gradlew hotRun` or `hotRun --auto`) is its own separate, independently-invoked Gradle build.
+3. **Every `reload`** (triggered by the MCP `reload` tool, or by `--auto` continuous mode) spawns a **brand-new Gradle sub-process** via `ProcessBuilder`, from *inside* the running application (not from the `hotMcpServer` process) — `hot-reload-devtools/src/main/kotlin/org/jetbrains/compose/devtools/gradle/GradleRecompiler.kt:73-121`. This sub-process's daemon usage is decided independently (`GradleRecompiler.kt:162-170`):
+   ```kotlin
+   private val useGradleDaemon = run {
+       if (HotReloadEnvironment.buildSystem != Gradle) return@run false
+       if (!HotReloadEnvironment.gradleBuildContinuous) return@run true   // explicit reload: daemon USED by default
+       when (HotReloadEnvironment.launchMode) {
+           LaunchMode.Ide, LaunchMode.Detached -> true
+           LaunchMode.GradleBlocking -> false                             // continuous + plain gradlew: no daemon
+           null -> false
+       }
+   }
+   ```
+   Since `hotRun` unconditionally sets `-Dcompose.reload.launchMode=GradleBlocking` (`hotRunTasks.kt:147`) for any plain `./gradlew hotRun` invocation: **one-shot `reload` calls (no `--auto`) spin up their own background Gradle daemon regardless of how `hotMcpServer` or `hotRun` were themselves launched**; only continuous (`--auto`) mode forces `--no-daemon` for the internal rebuild loop. **Practical consequence for the milestone:** passing `--no-daemon` to the `hotMcpServer` task does *not* prevent Compose Hot Reload from leaving its own Gradle daemon running in the background once the agent calls `reload` a first time (unless the showcase is always run with `--auto`). Worth a line in the milestone's own verification notes — it's a background-process hygiene question, not a cursor/focus one.
+
+**Several instances:** `GradleRecompiler` tracks the previous recompile sub-process's pid in a sibling `*.gradle.pid` file and **waits for it to exit before starting a new one** (`GradleRecompiler.kt:51-68`) — concurrent `reload` calls are serialized, not run in parallel, per app instance. Running two independent showcase processes (e.g. two Gradle projects) would need two separate `.mcp.json` server entries, each with its own `hotMcpServer` task/pidFile — the MCP server is a 1:1 bridge to one pidFile.
+
+**How does the agent stop the app?** There is **no `stop`/`shutdown`/`kill` tool in the 16-tool list.** The only lifecycle-adjacent tool is `restart`, which relaunches the app with the same args (`hot-reload-devtools/.../restart.kt:20-49`: spawns a new `java @argfile` process, then sends itself a `ShutdownRequest`) — it does not leave the app stopped. **Cleanly stopping the app is not exposed via MCP at all** in v1.2.0; it requires killing the process outside the protocol (closing the window, Ctrl+C on the `hotRun` Gradle invocation, or `taskkill`/process-manager on Windows). Flag this for requirements: if "the agent tears down the showcase when done" is part of the milestone's workflow, it needs a process-management step outside the MCP tool surface.
+
+---
+
+## 4. Multi-window / popup behavior
+
+**Confirmed by source comment + JetBrains' own regression test** (`hot-reload-runtime-jvm/.../semanticTreeHandler.kt:40-49` and `tests/.../SemanticTreeIntegrationTest.kt`, test `"test - get semantic tree with overlay"`, regression coverage for `CMP-10282`):
+
+> "A Popup renders in its own owner (a separate semantics root) within the same window, exactly like a Dialog / ModalBottomSheet."
+
+This means `Popup`, `Dialog`, and `ModalBottomSheet` on Compose Desktop are **not** separate OS-level `java.awt.Window`s — they render as additional semantics "owners" painted within the *same* underlying `ComposeWindow`'s Skia surface.
+
+- **`get_semantic_tree`:** picks up every open owner automatically. `findAllRootSemanticsNodes()` walks the AWT accessibility tree of the one target window and collects every distinct root; `joinSemanticForest()` returns a single object when there's one root, or a **JSON array of roots** when several are open (main content + an open Popup/Dialog), each flagged `"isDialog":true` / `"isPopup":true`. This library's heavy `Popup`-based dropdowns/date pickers/tooltips/context menus are correctly captured **without any extra plumbing** — HIGH confidence, directly tested by JetBrains.
+- **`take_screenshot`:** since Popup content is drawn onto the *same* window's Skia surface (not a separate window), and the screenshot mechanism is `Robot.createScreenCapture` over that window's on-screen rectangle (§1A), an open Popup/Dialog **will appear in the screenshot as long as it is positioned within that window's bounds.** If a popup positions itself partially or fully outside the parent window's rectangle (a real, known risk for this library — see `PROJECT.md`'s open `AeroDropdown popup-offset regression`, and the general pattern of dropdowns/date-range calendars extending below the window edge), **that overflow portion is clipped from the screenshot**, because `Robot` only captures the owning window's own rect. INFERRED from the confirmed mechanism (not a case JetBrains' own tests directly exercise with an out-of-bounds popup), but a direct, low-risk consequence of §1A + this section's "same window" finding — flag as a concrete visual-QA gap for popups near window edges.
+- **`click`/`type_text`/etc. on popup content:** `dispatchUIAction` explicitly searches "across all roots so actions also reach nodes inside a Dialog/ModalBottomSheet/Popup" (`uiActionHandler.kt:58`) — confirmed to work by design, node ids from any open root are valid targets.
+
+---
+
+## 5. Limits relevant to visual QA
+
+- **Screenshot resolution/DPI:** the PNG dimensions equal `window.width/height` in on-screen (AWT-reported) pixels, adjusted for `window.insets` — i.e. whatever physical pixels Windows' display scaling actually produces for that window, with **no explicit DPI-normalization logic** in `screenshotHandler.kt`. This directly inherits the same 125%/200% DPI sensitivity the project already flagged as deferred in v3.0 (SHW-16). One integration test (`SemanticTreeIntegrationTest.kt`) pins `sun.java2d.uiScale=1` specifically *because* node bounds otherwise vary with the host's display scale — corroborates that DPI scaling is a real, JetBrains-acknowledged source of non-determinism for both the semantic tree and (by the same reasoning) screenshots.
+- **Hover states:** **there is no hover/pointer-move tool.** The 16-tool list has nothing that simulates `PointerEventType.Enter`/`Move`. Since `click` bypasses real pointer input entirely (§1B), it also does not trigger whatever `Modifier.hoverable`/`InteractionSource` hover state the library's custom Aero primitives track (`rememberAeroInteractionState()`, per `PROJECT.md`'s Phase 17/18 hover/press/focus calibration work). **Hover cannot be exercised or visually verified by the agent at all in v1.2.0.**
+- **Keyboard key presses (Tab, Enter, arrows, Escape) vs. `type_text`:** `type_text` only replaces a text field's *entire content* via the `SetText` semantics action (`uiActionHandler.kt:74-81`) — it is not character-by-character key dispatch and cannot press Tab to move focus, Enter to submit, or arrow keys to navigate a list/calendar. **There is no generic "press key" tool.** This directly blocks agent self-verification of the library's own focus-visible mechanism (v3.0's "клавиатура показывает фокус, указатель — нет" — keyboard shows the focus ring, pointer doesn't), which is exactly the kind of thing Tab-navigation would need to exercise.
+- **Drag gestures (sliders, split panes, resizable columns):** the only motion primitives exposed are `scroll` (`ScrollBy` semantics action, logical-pixel delta) and `scroll_to_index` — both require the target node to expose those specific semantic actions (typically `LazyColumn`/scrollable containers). **There is no drag/pointer-down-move-up tool.** This library deliberately implements slider/split-pane/panel-group dragging with manual `awaitPointerEventScope` loops (its own documented `PITFALL-03`, precisely *because* `detectDragGestures`'s `touchSlop` breaks Canvas drag on Desktop) — none of that is a semantics `ScrollBy`/`ScrollToIndex` action, so **`AeroSlider`, `AeroRangeSlider`, `AeroSplitPane`, `AeroPanelGroup`'s resize-drag, and `AeroDataTable`'s column-resize cannot be driven by any MCP tool in v1.2.0.**
+
+---
+
+## 6. Table stakes vs. differentiators vs. anti-features for this agent-side visual QA loop
+
+| Capability | Category | What the agent can verify | Complexity | Notes |
+|---|---|---|---|---|
+| Reload-and-screenshot round trip (`reload`/`await_reload` → `take_screenshot`) | **Table stakes** | Fully — static layout, colors, gradients, text, icons across 3 themes | LOW | Direct replacement for the manual windows-mcp screenshot recipe; no cursor/focus cost (§1) |
+| Structural presence/absence checks (`get_semantic_tree`) | **Table stakes** | Fully — role, text, enabled/disabled, selected, focused, testTag, bounds, actions list | LOW | Cheap, in-process, works even when occluded; good for "did this component render at all" gates |
+| Click-driven state changes (open a dropdown, toggle a switch, expand a panel) | **Table stakes** | Fully, for anything wired through `onClick`/`onLongClick` | LOW–MEDIUM | Needs testTag/discoverable semantics on the target (see Dependencies below) |
+| Popup/Dialog content verification (dropdown lists, date pickers, tooltips, context menus) | **Table stakes** | Fully for semantic tree; **partially** for screenshot (clipped if popup overflows window bounds, §4) | MEDIUM | Library uses `Popup` pervasively — this is the single most load-bearing finding for this project |
+| Text field content entry (`type_text`) | **Table stakes** | Fully, but as one-shot "set the whole value", not incremental typing | LOW | Fine for verifying rendered state after entry; cannot test incremental validation-while-typing behavior |
+| List/table scroll verification (`AeroDataTable`, `AeroTreeView` virtualization) | **Differentiator** | Fully via `scroll`/`scroll_to_index`, if the container exposes those semantic actions | MEDIUM | Needs a scoped check per component — Compose's default `LazyColumn` semantics usually expose `ScrollToIndex`; custom `AeroScrollArea` wrapping needs verifying it doesn't suppress the action |
+| Hover-state visual QA (`AeroButton`/`AeroSwitch`/`AeroSegmentedControl`/`AeroListItem` hover) | **Cannot self-verify — needs the human** | Not at all — no hover tool exists (§5) | N/A | The single biggest gap vs. this library's v3.0 investment in hover states |
+| Drag-driven components (`AeroSlider`, `AeroRangeSlider`, `AeroSplitPane`, `AeroPanelGroup` resize, `AeroDataTable` column resize) | **Cannot self-verify — needs the human** | Not at all — no drag tool exists (§5) | N/A | Second biggest gap; covers a meaningful fraction of the ~50-component showcase |
+| Keyboard focus-visible / Tab-order QA | **Cannot self-verify — needs the human** | Not at all — no key-press tool, `type_text` isn't keystroke-level (§5) | N/A | Directly relevant: v3.0 built a dedicated focus-visible mechanism this milestone can't exercise |
+| Full-frame reliance on `take_screenshot` alone, ignoring occlusion risk | **Anti-feature** | — | — | A verification loop that only screenshots (no `status` check, no occlusion guard) will silently pass garbage frames if another window briefly covers the showcase during an automated pass — see the protocol in §8 |
+| Treating `reload` and `await_reload` as interchangeable | **Anti-feature** | — | — | `reload` is for explicit (non-`--auto`) mode and triggers a build itself; `await_reload` is for `--auto` continuous mode and only *waits*. Using the wrong one either double-triggers a build or hangs waiting for one that will never start on its own |
+| Building a custom coordinate-click fallback "just in case" | **Anti-feature** | — | — | There is no coordinate-click tool by design (§2) — components without proper semantics (missing `testTag`/`onClick`/role) are a real gap to close in the *library*, not to work around with pixel-coordinate hacks that reintroduce the exact cursor-stealing risk this milestone exists to remove |
+
+---
+
+## 7. Known issues
+
+GitHub Issues for this repo are **closed to new reports and effectively archived** — the pinned notice (issue #488) states: *"we've disabled new issue form on GitHub and imported all most existing issues to JetBrains' YouTrack."* Current bug tracking lives at YouTrack project `CMP`, group "Hot Reload" (`https://youtrack.jetbrains.com/issues?q=project:%20{Compose%20Multiplatform}%20Library%20group:%20{Hot%20Reload}`). YouTrack's issue list is a client-rendered app that couldn't be scraped via WebFetch in this session — **could not enumerate current open bugs; treat this as a gap, not a "no known issues" finding.**
+
+From what could be verified:
+- **Screenshot mechanism is evolving away from `Robot`:** confirmed via the `v1.3.0-alpha02` release notes — *"Screenshots are captured natively using `ComposeDesktopEntryPoint.captureContentToImage()` for Compose 1.13+ with an automatic fallback to the AWT `Robot` path for previous Compose versions."* MEDIUM confidence (release notes, not source-read at that tag). **Directly relevant to this milestone:** v1.2.0/CMP 1.12.0 (what this milestone installs) is squarely in the "Robot fallback" bucket — the occlusion/minimization limitations in §1 are not a permanent architectural ceiling, they're specific to the version this milestone pins. A future dependency bump to Hot Reload ≥1.3.0 + CMP ≥1.13.0 could remove the occlusion limitation for screenshots specifically (worth a note in `Next Milestone Goals`).
+- **DPI/display-scale sensitivity is JetBrains-acknowledged**, not just this project's own concern: the `PinUiScaleExtension`/`sun.java2d.uiScale=1` workaround exists in JetBrains' own integration test suite specifically to make semantic-tree bounds deterministic across machines (`SemanticTreeIntegrationTest.kt:213-220`). Corroborates that non-100%-DPI runs are a known soft spot, consistent with this project's own deferred SHW-16 125%/200% DPI gap.
+- **Old, likely-stale, low-relevance:** issue #70 ("Dev tooling window crashes on trying to open it in Windows 11") — a `NoSuchMethodError` in the separate DevTools overlay window (not the MCP server), reported against a much older Compose snapshot (`1.8.0+dev2030`), left open and labeled "up for grabs" as of the web search. LOW confidence this is still reproducible against 1.2.0/CMP 1.12.0; flagging only because it's Windows + this repo's dev-tooling window, and it incidentally notes a Command Prompt window appearing when running via Gradle on Windows (worth a passing check during setup, not a blocker).
+- **MCP server is explicitly "experimental"** per both the repo README and kotlinlang.org docs — API/behavior stability across patch releases is not guaranteed; re-verify tool schemas after any Hot Reload version bump.
+
+---
+
+## 8. Dependencies on existing showcase code, and a concrete testable "does not interfere" protocol
+
+### Dependencies this milestone creates for library/showcase code
+
+1. **Every clickable target the agent needs to drive must already expose the right semantics** — `Role`/`onClick`/`onLongClick`/`editableText`/`ScrollBy`/`ScrollToIndex`, discoverable via `get_semantic_tree`. Compose's built-in `clickable`/`Button`/`TextField`/`LazyColumn` modifiers already wire these by default, so this is likely **already satisfied for most of the ~50 components** without extra work — but it is a real, checkable dependency, not an assumption: any component built on a bare `Modifier.pointerInput`/custom gesture detector (rather than `clickable`/`toggleable`/`selectable`) will **not** expose `onClick` in the semantics tree and will be invisible to the `click` tool. Given this library's documented pattern of manual `awaitPointerEventScope` for drag components (§5), those exact components are both (a) undriveable via `click`/`scroll` and (b) the ones most likely to lack semantics entirely — worth an explicit per-component audit pass before relying on agent-driven clicks for anything beyond simple buttons/switches/segments.
+2. **`testTag` is not required for `click`/`type_text` targeting** (targeting is by semantic node `id`, discovered fresh each `get_semantic_tree` call) — but `testTag` **does** show up in the returned JSON (`semanticTreeHandler.kt:162`) when present, making it far easier for the agent to reliably re-identify "the same" node across reloads (node ids are not guaranteed stable across a reload/recomposition). **Recommendation for requirements: adding `Modifier.semantics { testTag = "..." }` to interactive elements in the showcase (not necessarily the library itself) is a low-cost, high-value addition** for a stable agent-driven QA loop, even though it's not a hard MCP protocol requirement.
+3. **Popup-overflow risk is now concretely testable, not theoretical** (§4): any showcase section whose `Popup`/dropdown/calendar can extend past the parent window's edge is a screenshot blind spot. Given the window is fixed-size `undecorated` chrome (not resizable-to-fit), this is a realistic scenario for the DataRangePicker/ColorPicker/wide dropdowns already in the showcase.
+4. **The showcase's `-Paero.scheme=` forwarding hook needs a one-line change** (`showcase/build.gradle.kts:27-31`, `if (name == "run")`) to also match whatever the `hotRun` task is actually named once the plugin is applied, or theme preselection silently stops working for the hot-reload flow.
+
+### Concrete, testable protocol for "MCP debugging does not interfere with the human using the computer"
+
+Given §1's precise, source-backed claims, the acceptance test can be built directly around them rather than around vague "seems fine" observation:
+
+1. **Cursor-position proof:** record `Cursor.getSystemCursor` / actual mouse coordinates (any OS-level poll, e.g. via `java.awt.MouseInfo.getPointerInfo()` in a tiny probe, or simply the human's own mouse) immediately before and after a full agent pass (`reload` → `take_screenshot` → `get_semantic_tree` → several `click`/`type_text`/`scroll` calls). **Expected: byte-identical position** — the mechanism findings in §1 predict zero cursor movement for any of these calls. A failing result would falsify the mechanism read here and must stop the milestone per its own locked decision ("если MCP двигает реальный курсор... остановка и вопрос мейнтейнеру").
+2. **Focus-proof:** have the human keep an unrelated window (e.g. a text editor) focused and actively typing in a loop (or just note focus via `GetForegroundWindow` on Windows) while the agent runs the same pass. **Expected: the foreground window never changes to the showcase.** This directly exercises §1's "no focus stolen" claim for `click`/`type_text` in particular, since those are the tools most likely (if the mechanism read were wrong) to require the target window to have input focus.
+3. **Occlusion test, split by tool (this is the one place the milestone's target feature list should be split, given §1):**
+   - Cover the showcase window with another window, then call `get_semantic_tree` + `click` + `scroll`: **expect success** (in-process, unaffected by occlusion per §1B).
+   - Same occlusion, call `take_screenshot`: **expect the returned image to show the occluding window's content, not the showcase** — this is the *known, source-confirmed limitation*, not a bug to chase. The milestone's proof should capture this as a documented fact ("screenshot requires the window to be actually on top of the screen; other tools don't"), not silently treat a garbled screenshot as a mystery failure.
+4. **Minimized test:** minimize the showcase, then call `list_windows`: **expect the window to be absent**; then call any window-targeting tool: **expect a clean "no application window is currently available" error**, not a hang or a stale/wrong result. This validates §1C precisely and sets the correct expectation for the milestone's own workflow (the agent must ensure the window is at least restored, even if it doesn't need to be on top, before running any check beyond `status`/`reload`/`get_logs`).
+5. **Record the result as fact, per the milestone's own decision** ("Результат фиксируется как факт, а не как допущение") — the four checks above produce a pass/fail matrix that matches exactly the summary table in §1, so any deviation from that table is itself the actionable finding.
 
 ---
 
 ## Sources
 
-**Official / HIGH confidence:**
-- [Aero Style Classes, Parts, and States — Microsoft Learn](https://learn.microsoft.com/en-us/windows/win32/controls/aero-style-classes-parts-and-states) — confirms existence and naming of `BP_PUSHBUTTON`, `TKP_THUMB`/`TKP_TRACK` (Trackbar), `PP_FILL`/`PP_TRANSPARENTBAR` (Progress, with `PBFS_ERROR`/`PBFS_PARTIAL`/`PBFS_PAUSED` states), confirming these are real, distinct msstyles parts — not confirming pixel-level rendering, which Microsoft never published (art was PNG-based, not algorithmic).
-- [Visual Styles Overview — Microsoft Learn](https://learn.microsoft.com/en-us/windows/win32/controls/visual-styles-overview) — `.msstyles` structure, PNG-based art in Vista+.
-- [Selection Appearance — MSDN archive design guidelines](https://learn.microsoft.com/en-us/previous-versions/ms997622(v=msdn.10)) — confirms selection highlighting is meant to use system highlight color + a distinguishing border/rim, generic Windows guidance (pre-dates Aero specifically but establishes the "rim distinguishes selection" principle referenced in B8).
+**Primary (source code, read directly, HIGH confidence):**
+- [JetBrains/compose-hot-reload](https://github.com/JetBrains/compose-hot-reload), tag `v1.2.0`, commit `3315f8dd8f5cc4db1359ff13b2be178ba19486e3`:
+  - `hot-reload-mcp/src/main/kotlin/org/jetbrains/compose/reload/mcp/McpServer.kt` — full tool list, schemas, handlers
+  - `hot-reload-mcp/src/main/kotlin/org/jetbrains/compose/reload/mcp/McpMain.kt` — pidFile-watch/reconnect loop
+  - `hot-reload-runtime-jvm/src/main/kotlin/org/jetbrains/compose/reload/jvm/screenshotHandler.kt` — `Robot.createScreenCapture`
+  - `hot-reload-runtime-jvm/src/main/kotlin/org/jetbrains/compose/reload/jvm/semanticTreeHandler.kt` — in-process accessibility-tree walk, popup/dialog forest
+  - `hot-reload-runtime-jvm/src/main/kotlin/org/jetbrains/compose/reload/jvm/uiActionHandler.kt` — semantics-action invocation (click/longClick/setText/scrollBy/scrollToIndex)
+  - `hot-reload-runtime-jvm/src/main/kotlin/org/jetbrains/compose/reload/jvm/window.kt` — window registration, iconify → unregister
+  - `hot-reload-runtime-jvm/src/main/kotlin/org/jetbrains/compose/reload/jvm/windowResizeHandler.kt`
+  - `hot-reload-runtime-jvm/src/main/kotlin/org/jetbrains/compose/reload/jvm/DevelopmentEntryPoint.kt` — per-window/dialog wiring, instrumentation hook
+  - `hot-reload-gradle-plugin/src/main/kotlin/org/jetbrains/compose/reload/gradle/mcpTasks.kt`, `mcpConfiguration.kt`, `hotRunTasks.kt` — task registration, daemon/launch-mode wiring
+  - `hot-reload-gradle-plugin/src/test/kotlin/org/jetbrains/compose/reload/gradle/tests/ComposeHotMcpServerTasksTest.kt`, `ComposeHotRunTasksTest.kt` — confirmed task names (`hotMcpServer`, `hotRun`, `hotDev` for plain `kotlin.jvm` projects)
+  - `hot-reload-devtools/src/main/kotlin/org/jetbrains/compose/devtools/gradle/GradleRecompiler.kt` — per-reload Gradle sub-process, daemon decision logic
+  - `hot-reload-devtools/src/main/kotlin/org/jetbrains/compose/devtools/restart.kt`, `shutdown.kt` — no stop/kill tool, only restart
+  - `tests/src/reloadFunctionalTest/kotlin/org/jetbrains/compose/reload/tests/SemanticTreeIntegrationTest.kt`, `TakeScreenshotIntegrationTest.kt`, `MultiWindowScreenshotIntegrationTest.kt` — JetBrains' own regression coverage, confirms popup-forest behavior and Robot-based capture assumptions (`isInteractiveDesktopAvailable()`/`@Headless(false)` gating)
 
-**Community recreation / MEDIUM confidence (cross-checked, not official, but widely used and visually validated against real Windows 7):**
-- [7.css — CSS framework for recreating Windows 7 UI](https://khang-nd.github.io/7.css/) — confirms button vertical two-shade gradient shifting to blues when pressed, progress bar `animate`/`marquee`/`paused`/`error` states, checkbox/radio "sunken panel" treatment, list "sunken" borders — corroborates the raised/pressed inversion (A7) and groove (A10) devices independently.
-- [PresentationTheme.Aero — WPF Aero theme recreation](https://github.com/gix/PresentationTheme.Aero) and [WpfThemeGenerator ButtonChrome.xaml](https://github.com/Athari/WpfThemeGenerator/blob/master/Alba.WpfThemeGenerator/Themes/AeroAlt/Controls/ButtonChrome.xaml) — corroborates that Aero button chrome is a multi-layer gradient+bevel construction (not a flat fill), matching the A1/A4 layering proposed here.
-- [Windows Aero — Wikipedia](https://en.wikipedia.org/wiki/Windows_Aero) — general Aero design-language context.
+**Secondary (release notes / official docs, MEDIUM confidence):**
+- [kotlinlang.org — Compose Hot Reload docs](https://kotlinlang.org/docs/multiplatform/compose-hot-reload.html) — `.mcp.json` config example, task-name resolution notes
+- [JetBrains blog — Compose Multiplatform 1.12.0](https://blog.jetbrains.com/kotlin/2026/08/compose-multiplatform-1-12-0/) — version pairing (Hot Reload 1.2.0 ↔ CMP 1.12.0)
+- [JetBrains/compose-hot-reload v1.3.0-alpha02 release notes](https://github.com/JetBrains/compose-hot-reload/releases/tag/v1.3.0-alpha02) — future `captureContentToImage()` off-screen path, CMP 1.13+ gate, Robot fallback confirmation for earlier versions
+- [JetBrains/compose-hot-reload README, MCP section](https://github.com/JetBrains/compose-hot-reload#mcp-server-for-ai-agents) — tool summary cross-check, confirmed consistent with source read
 
-**Original synthesis (this document) / LOW-MEDIUM confidence — explicitly flagged as design proposals, not sourced Windows facts:**
-- All specific numeric values (alpha percentages, dp sizes, gradient stop positions, animation durations) in Parts A/B/C are original proposals for `aero-compose-ui`, calibrated to the user's stated "Aero spirit, modern execution" fidelity target rather than literal pixel-measurement of Windows 7. No official Microsoft source publishes exact gradient-stop/alpha values for Aero controls (the visual style shipped as rendered PNG art, not a documented formula), so any claim of exact reproduction would be false confidence — these numbers should be treated as an implementable starting point to be refined during the three-theme visual sign-off, consistent with this project's existing practice (`.planning/STATE.md` shows multiple prior milestones where sign-off caught and fixed visual specifics not fully nailed down in planning).
-
-**Project-internal sources (read per the mandatory files_to_read list):**
-- `.planning/PROJECT.md` — milestone scope, fidelity target, out-of-scope boundary (no real DWM blur).
-- `.planning/STATE.md` — baseline findings table (per-component current-state gaps), confirmed `GlassModifiers` bugs.
-- `library/src/main/kotlin/com/mordred/aero/theme/GlassModifiers.kt` — confirmed `endY = 100f` hardcoded pixel bug, dead `elevation` param, clip-order border-loss bug.
-- `library/src/main/kotlin/com/mordred/aero/theme/AeroColorScheme.kt` — confirmed opaque-vs-alpha token divergence between `Classic` and `AeroBlue`/`AeroDark` (Cross-Theme Finding).
-- `library/src/main/kotlin/com/mordred/aero/components/buttons/AeroButton.kt`, `.../selection/AeroSwitch.kt`, `.../range/AeroProgressBar.kt`, `.../list/AeroListItem.kt` — confirmed each specific baseline bug cited above (unclipped hover rect, zero-state switch, flat progress fill, unclipped list selection, selected-beats-hover branch).
-
----
-*Feature research for: Windows 7 Aero visual vocabulary applied to `aero-compose-ui` v2.1 Glass Refinement*
-*Researched: 2026-07-21*
+**Tertiary (WebSearch-only or unverifiable, LOW confidence, flagged inline where used):**
+- [InfoWorld — Compose Multiplatform 1.12.0 welcomes coding agents](https://www.infoworld.com/article/4216661/compose-multiplatform-1-12-0-welcomes-coding-agents-with-mcp-server.html)
+- [GitHub issue #70](https://github.com/JetBrains/compose-hot-reload/issues/70) — old, likely-stale Windows DevTools crash, low relevance, noted only for the incidental Command Prompt window observation
+- [GitHub issue #488](https://github.com/JetBrains/compose-hot-reload/issues/488) — pinned notice: GitHub issue tracking migrated to YouTrack (`project:CMP`, group "Hot Reload")
+- YouTrack current open-issue list **could not be enumerated** in this session (client-rendered page, not scrapable via WebFetch) — explicit gap, not a "no issues" finding
