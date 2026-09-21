@@ -59,9 +59,29 @@ Patch milestone (Phase 14). Eliminated header-strip duplication in horizontal CO
 
 </details>
 
+## Current Milestone: v3.1 Dependency Refresh + Hot Reload MCP
+
+**Goal:** Принудительно перевести весь проект на последние стабильные версии зависимостей и тулчейна, доказать, что ничего не сломалось, и выпустить `3.1.0` на JitPack — и одновременно поставить Compose Hot Reload с MCP-сервером, через который агент сам смотрит и кликает работающую витрину, доказав, что этот способ отладки не мешает мейнтейнеру пользоваться компьютером.
+
+**Target features:**
+- **Жёсткое обновление всех версий до последних стабильных** (сверено с Maven Central / gradle.org 2026-09-21): Kotlin 2.4.10 → 2.4.20, Compose Multiplatform 1.11.1 → 1.12.0, kotlinx-coroutines 1.10.2 → 1.11.0, kotlinx-datetime 0.6.2 → чистая 0.8.0 (без `-0.6.x-compat`), JUnit 5.10.0 → 6.1.3, Gradle 8.14.3 → 9.7.1, JDK 17 → 21 везде (библиотека, витрина, `jitpack.yml`). Material3 остаётся на `1.9.0` — стабильной новее не существует, пин сохраняется.
+- **Compose Hot Reload + MCP-сервер** — Hot Reload 1.2.0 только в `:showcase` (в публикуемый артефакт не попадает), JetBrains Runtime 21 как JVM запуска, `.mcp.json` в корне с запуском через `cmd /c gradlew.bat --no-daemon --quiet --console=plain <hotMcpServer-task>` (на Windows `./gradlew` не спавнится). Установка — одним коммитом.
+- **Доказательство, что MCP-отладка не мешает работать** — снимок экрана, семантическое дерево и клик через MCP при живом пользователе за компьютером: двигается ли настоящий курсор, забирается ли фокус, работает ли при перекрытом и при свёрнутом окне. Результат фиксируется как факт, а не как допущение.
+- **Доказательство «всё норм» после обновления** — все существующие тесты зелёные (467 на входе), витрина стартует, агент сам через MCP обходит все разделы витрины в трёх темах и сравнивает со снимками, снятыми ДО обновления; мейнтейнеру предъявляется только итог и найденные расхождения.
+- **Релиз** — версия `3.1.0` в `build.gradle.kts`, тег `v3.1.0`, зелёная сборка JitPack, в README новые минимальные требования для потребителей (Java 21, Compose 1.12, Kotlin 2.4.20, kotlinx-datetime 0.8).
+
+**Явно НЕ в scope:** новые компоненты, изменения публичного API, визуальные правки (кроме починки дрейфа, если его вызовет само обновление); закрытие долгов v3.0; внешний scratch-потребитель как гейт релиза (мейнтейнер выбрал «тесты + обход витрины агентом»).
+
+**Ключевые решения, принятые при постановке:**
+- Минорный номер `3.1.0` при фактически ломающем для потребителей релизе (Java 21, Compose 1.12, исчезновение старых `kotlinx.datetime.Instant`/`Clock`) — осознанный выбор мейнтейнера; требования прописываются в README, а не выражаются номером версии.
+- Java 21 поднимается везде, а не только для запуска витрины — «жёстко обновляем всё».
+- Снимки «до» снимаются раньше обновления прежним ручным способом: MCP-сервер появляется только с Compose Multiplatform 1.12.0.
+- Начиная с этой вехи GUI уходит мейнтейнеру на осмотр только после того, как агент сам всё просмотрел через MCP и доволен результатом в рамках задач фазы.
+- Если апгрейд или установка JBR требуют большего, чем смена версии, либо MCP двигает реальный курсор / крадёт фокус — остановка и вопрос мейнтейнеру, без обходных путей.
+
 ## Next Milestone Goals
 
-Веха не поставлена — `/gsd-new-milestone` (questioning → research → requirements → roadmap). Нумерация фаз продолжается с **21**.
+Кандидаты на веху после v3.1. Нумерация фаз v3.1 продолжается с **21**.
 
 **Открытые кандидаты:**
 - **Долг v3.0:** G4 (яркость ornament-токенов на AeroBlue/AeroDark), клавиатурный фокус `AeroRangeSlider`, IN-01 (клип-пробел `GlassModifiers.kt`, ~40 компонентов), вынос scratch/proof-файлов из `showcase/src/main`, контраст ярлыков до WCAG 4.5:1, квадратная тень ховера `AeroRadioButton`, ABI-совместимость `AeroTheme.establishBackground`, расширение теста контраста на outlined и disabled-сегменты.
@@ -184,9 +204,13 @@ Patch milestone (Phase 14). Eliminated header-strip duplication in horizontal CO
 
 ### Active
 
-<!-- Веха не поставлена. `/gsd-new-milestone` создаст свежий .planning/REQUIREMENTS.md. -->
+<!-- v3.1 Dependency Refresh + Hot Reload MCP. REQ-ID и трассировка — в .planning/REQUIREMENTS.md. -->
 
-Пусто — v3.0 отгружена, следующая веха не определена. Кандидаты перечислены выше в «Next Milestone Goals».
+- [ ] Все зависимости и тулчейн проекта на последних стабильных версиях (Kotlin 2.4.20, Compose Multiplatform 1.12.0, coroutines 1.11.0, kotlinx-datetime 0.8.0, JUnit 6.1.3, Gradle 9.7.1, JDK 21)
+- [ ] Compose Hot Reload + MCP-сервер установлены в `:showcase`, `.mcp.json` подключает сервер на Windows
+- [ ] Доказано, что MCP-отладка не двигает реальный курсор, не крадёт фокус и работает при перекрытом/свёрнутом окне
+- [ ] После обновления тесты зелёные, витрина стартует, обход витрины агентом в трёх темах не выявил необъяснённого визуального дрейфа
+- [ ] `3.1.0` опубликована на JitPack, README называет новые минимальные требования для потребителей
 
 ### Out of Scope
 
@@ -282,5 +306,22 @@ Patch milestone (Phase 14). Eliminated header-strip duplication in horizontal CO
 | **v3.0:** Каждый гейт (grep, snapshot, contrast, UI-тест) доказывается падающим на намеренно сломанном коде до того, как ему верят | Прямое следствие урока v2.0.3: страж, который не был проверен на red, — не страж | ✓ Good — VER-06 закрыт для всех новых гейтов; тесты 232 → 467 |
 | **v3.0:** Приёмка через внешний scratch-потребитель, собранный против опубликованного тега, а не через собственный showcase | Ни `aska`, ни `satellite-control` эту веху не отслеживают — исторически сильнейший ловец регрессий недоступен | ✓ Good — поймал реальный дефект (`AeroTheme` не рисовал фон), который собственный `Surface` showcase'а маскировал; починено в библиотеке, а не обойдено |
 
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/bm:transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/bm:complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
+
 ---
-*Last updated: 2026-07-29 after v3.0 Glass Refinement milestone — 6 phases (15–20), 41 plans, 57/57 requirements. Toolchain raised to Kotlin 2.4.10 + Compose Multiplatform 1.11.1 and proven inert; a single shared Aero-primitives layer now backs eight restyled components with unchanged public API and behavior; `GlassModifiers.kt`'s three long-standing defects fixed; tests 232 → 467. Closed as `override_closeout`: SHW-16's 125%/200% DPI passes were explicitly waived by the maintainer, and 9 acknowledged items are deferred (STATE.md § Deferred Items). Project version bumped to `3.0.0`.*
+*Last updated: 2026-09-21 — milestone v3.1 Dependency Refresh + Hot Reload MCP started (goals scoped; requirements and roadmap follow). Previous: 2026-07-29 after v3.0 Glass Refinement milestone — 6 phases (15–20), 41 plans, 57/57 requirements. Toolchain raised to Kotlin 2.4.10 + Compose Multiplatform 1.11.1 and proven inert; a single shared Aero-primitives layer now backs eight restyled components with unchanged public API and behavior; `GlassModifiers.kt`'s three long-standing defects fixed; tests 232 → 467. Closed as `override_closeout`: SHW-16's 125%/200% DPI passes were explicitly waived by the maintainer, and 9 acknowledged items are deferred (STATE.md § Deferred Items). Project version bumped to `3.0.0`.*

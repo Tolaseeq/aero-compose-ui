@@ -1,20 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v3.0
-milestone_name: Glass Refinement
-status: Awaiting next milestone
-stopped_at: "Milestone v3.0 Glass Refinement archived (override_closeout — 9 acknowledged deferred items)"
-last_updated: "2026-07-29T14:19:06.121Z"
-last_activity: 2026-07-29
-last_activity_desc: Milestone v3.0 completed and archived
+milestone: v3.1
+milestone_name: Dependency Refresh + Hot Reload MCP
+status: planning
+last_updated: "2026-09-21T12:27:17.488Z"
+last_activity: 2026-09-21
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 41
-  completed_plans: 41
-  percent: 100
-current_phase: 20
-current_phase_name: verification
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -28,13 +24,10 @@ See: .planning/PROJECT.md (updated 2026-07-29 — after v3.0 Glass Refinement mi
 
 ## Current Position
 
-Milestone: v3.0 Glass Refinement — SHIPPED 2026-07-29
-Phase: none active
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-07-29 — Milestone v3.0 completed and archived
-
-Progress: [██████████] 100% (6/6 phases, 41/41 plans)
+Status: Defining requirements
+Last activity: 2026-09-21 — Milestone v3.1 started
 
 ## Deferred Items
 
