@@ -41,4 +41,22 @@ old toolchain (Kotlin 2.4.10 / Compose Multiplatform 1.11.1) — no state needed
 
 ## Task 3 — Drag components (`Base05DragCaptureTest.kt`)
 
-<!-- Appended by Task 3. -->
+| Component | Theme | States captured | Assertions kept |
+|---|---|---|---|
+| AeroSplitPane | AeroBlue | default, dragging, dropped | `onSplitChange` reports a fraction != initial 0.5f; dropped differs from default |
+| AeroSplitPane | AeroDark | default, dragging, dropped | same as above |
+| AeroSplitPane | Classic | default, dragging, dropped | same as above |
+| AeroPanelGroup | AeroBlue | default, dragging, dropped | `onLayoutChange` fires at drag-end with sizes no longer all equal; dropped differs from default; each of LeftPane/CenterPane/RightPane header still occurs exactly once (RCMP invariant) |
+| AeroPanelGroup | AeroDark | default, dragging, dropped | same as above |
+| AeroPanelGroup | Classic | default, dragging, dropped | same as above |
+| AeroDataTable | AeroBlue | default, dragging, dropped | Col2's left edge moves right after widening Col1 by drag; dropped differs from default |
+| AeroDataTable | AeroDark | default, dragging, dropped | same as above |
+| AeroDataTable | Classic | default, dragging, dropped | same as above |
+
+All 9 combinations produced a non-vacuous visual difference and the structural assertions above
+held on the old toolchain (Kotlin 2.4.10 / Compose Multiplatform 1.11.1) — no state needed to be
+dropped as "no visual change on old toolchain."
+
+Full suite (`./gradlew :library:test --rerun`) is green with these 3 new test classes included:
+502 tests across 91 classes (up from 467 before this plan). The exact count is not locked here —
+TOOL-16's count guard is a later plan (Plan 05).
