@@ -2,7 +2,7 @@
   "mcpServers": {
     "compose-hot-reload": {
       "command": "cmd",
-      "args": ["/c", ".\\gradlew.bat", "--no-daemon", "--quiet", "--console=plain", "hotMcpServer"]
+      "args": ["/c", ".\\gradlew.bat", "--no-daemon", "--quiet", "--console=plain", ":showcase:hotMcpServer"]
     }
   }
 }
