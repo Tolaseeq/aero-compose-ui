@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.1
 milestone_name: Dependency Refresh + Hot Reload MCP
 status: executing
-stopped_at: Completed 21-06-PLAN.md
-last_updated: "2026-09-23T16:10:40.363Z"
+stopped_at: "Completed 21-07-PLAN.md; awaiting maintainer restart of Claude Code so the compose-hot-reload MCP server connects. Resume with /bm:execute-phase 21 (continues at 21-08)."
+last_updated: "2026-09-23T16:42:46.717Z"
 last_activity: 2026-09-23 -- Phase 21 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 14
-  completed_plans: 6
+  completed_plans: 7
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-23 — v3.1 roadmap created)
 ## Current Position
 
 Phase: 21 (migration-release-3-1-0) — EXECUTING
-Plan: 7 of 14
+Plan: 8 of 14
 Status: Executing Phase 21
 Last activity: 2026-09-23 -- Phase 21 execution started
 
@@ -112,11 +112,12 @@ Full decision log lives in PROJECT.md "Key Decisions". Rules that constrain any 
 
 ## Session Continuity
 
-Last session: 2026-09-23T16:10:40.355Z
-Stopped at: Completed 21-06-PLAN.md
-Resume file: .planning/phases/21-migration-release-3-1-0/21-07-PLAN.md
-Next action: `/bm:plan-phase 21`
+Last session: 2026-09-23T16:42:46.707Z
+Stopped at: Completed 21-07-PLAN.md; awaiting maintainer restart of Claude Code so the compose-hot-reload MCP server connects. Resume with /bm:execute-phase 21 (continues at 21-08).
+Resume file: .planning/phases/21-migration-release-3-1-0/21-08-PLAN.md
+Next action: `/bm:execute-phase 21` (continues at 21-08)
 
 ## Operator Next Steps
 
-- Plan Phase 21 with `/bm:plan-phase 21` (context: `21-CONTEXT.md`, decisions D-01..D-11)
+- Restart Claude Code fully in `C:\1A_WORK\ui_lib` so the `compose-hot-reload` MCP server (from `.mcp.json`, committed in `bb8c716`) attaches — approve it if Claude Code asks.
+- Then continue the phase with `/bm:execute-phase 21` (resumes at Plan 21-08, whose Task 1 verifies the `mcp__compose-hot-reload__*` tools are present).

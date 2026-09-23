@@ -41,7 +41,7 @@
 
 Инструмент, а не цель вехи: через него агент сам смотрит и кликает витрину после обновления. Ставится по `.planning/research/MCP-HOWTO.md`.
 
-- [ ] **HRM-01**: Сразу после перехода на Compose 1.12.0 одним коммитом поставлены Compose Hot Reload 1.2.0 (версия явно в каталоге) и `.mcp.json` (`cmd /c .\gradlew.bat --no-daemon --quiet --console=plain hotMcpServer`) — только в `:showcase`. `:library` и её опубликованные POM / module metadata не меняются, Material3 по-прежнему 1.9.0 (`dependencyInsight`)
+- [x] **HRM-01**: Сразу после перехода на Compose 1.12.0 одним коммитом поставлены Compose Hot Reload 1.2.0 (версия явно в каталоге) и `.mcp.json` (`cmd /c .\gradlew.bat --no-daemon --quiet --console=plain hotMcpServer`) — только в `:showcase`. `:library` и её опубликованные POM / module metadata не меняются, Material3 по-прежнему 1.9.0 (`dependencyInsight`)
 - [ ] **HRM-02**: После перезапуска Claude Code сервер подключён и видит витрину, запущенную через `hotRun` на выбранной теме и разделе (`status`, `list_windows`, `get_semantic_tree`). Где подписи в дереве неоднозначны, в витрине добавлен `testTag`. Записано, подхватывает ли `reload` правку кода `:library` без перезапуска витрины
 - [ ] **HRM-03**: Агент сам замерил, что работа через MCP не мешает пользоваться компьютером: положение курсора (`GetCursorPos`) и активное окно (`GetForegroundWindow`) до и после захвата, чтения дерева и клика не меняются — в том числе при перекрытом и свёрнутом окне витрины. Итог — короткий факт в отчёте; серверный `take_screenshot` не используется
 
@@ -108,7 +108,7 @@
 | TOOL-15 | Phase 21 | Pending |
 | TOOL-16 | Phase 21 | Complete |
 | TOOL-17 | Phase 21 | Complete |
-| HRM-01 | Phase 21 | Pending |
+| HRM-01 | Phase 21 | Complete |
 | HRM-02 | Phase 21 | Pending |
 | HRM-03 | Phase 21 | Pending |
 | VER-07 | Phase 21 | Pending |
