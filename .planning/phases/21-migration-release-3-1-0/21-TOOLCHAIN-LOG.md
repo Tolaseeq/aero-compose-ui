@@ -189,3 +189,60 @@ deprecation/warning lines — the Step 3a `jvmToolchain(17)` auto-provisioning w
 both modules resolve `jvmToolchain(21)` against an already-installed JDK (not auto-provisioned).
 
 **Commit:** `build(21-06): JDK 21 toolchain for library, showcase and JitPack (TOOL-10)`.
+
+## Step 3c — Kotlin 2.4.20 + Compose Multiplatform 1.12.0 (TOOL-11, TOOL-12, TOOL-17)
+
+**Catalog change (`gradle/libs.versions.toml`):** `kotlin = "2.4.10"` → `"2.4.20"`,
+`composeMultiplatform = "1.11.1"` → `"1.12.0"` (compose-compiler plugin follows `kotlin` via
+`version.ref`). `kotlinxCoroutines`, `kotlinxDatetime`, `junit` untouched — out of scope for this
+commit (Plans 07+ per the roadmap's 7-step order).
+
+**Gate:** `./gradlew build --console=plain` → `BUILD SUCCESSFUL in 1m 22s` on the first attempt, no
+mechanical fixes needed for any CMP 1.12.0/Kotlin 2.4.20 API change. `./gradlew :library:test --rerun`
+printed `AERO_TEST_COUNT total=541 skipped=0 expected=541 expectedSkipped=0 filtered=false` and
+`BUILD SUCCESSFUL in 19s` — no test failures, no timeouts, no hangs; Pitfall 3
+(`uiTest`'s `StandardTestDispatcher` default change) did not materialize against this suite.
+
+**Warnings (verbatim, full clean rebuild with `--warning-mode all`):** no Gradle-level deprecation
+banner and no Gradle-9.7.1-vs-Kotlin's-9.7.0-ceiling warning appeared on this build. The compiler
+(`w:`) warnings are the same pre-existing set already recorded in Step 3a (v1 `runComposeUiTest`
+deprecation across the existing test files, a handful of unnecessary `!!` assertions, the
+`ExperimentalComposeLibrary`/`uiTest` version-catalog note, one `@ConsistentCopyVisibility` note) —
+none of them newly introduced by this bump, all pre-existing and out of this commit's scope. One
+warning is new and CMP-1.12-specific, in showcase code untouched by this plan:
+```
+w: file:///C:/1A_WORK/ui_lib/showcase/src/main/kotlin/com/mordred/showcase/sections/IconsSection.kt:325:21 'val LocalClipboardManager: ProvidableCompositionLocal<ClipboardManager>' is deprecated. Use LocalClipboard instead which supports suspend functions.
+```
+Recorded, not fixed — out of this task's file scope (`IconsSection.kt` is not in this task's files
+list) and non-blocking (deprecation warning, not a compile error).
+
+**Material3 gate:** `tools/verify/check-material3.sh` created (Git Bash, `set -euo pipefail`) — runs
+`dependencyInsight --dependency material3` on `:library`/`:showcase` × `compileClasspath`/
+`runtimeClasspath` (4 runs) plus `:showcase:dependencies`, appends everything to the given log file,
+fails on any case-insensitive `alpha` match or a missing
+`org.jetbrains.compose.material3:material3:1.9.0` line. Run:
+```
+bash tools/verify/check-material3.sh build/aero-m3-plan06.log
+MATERIAL3 OK
+```
+All four `dependencyInsight` runs resolved exactly `org.jetbrains.compose.material3:material3:1.9.0`
+(and its `-desktop` artifact of the same version); `:showcase:dependencies`' full graph contained no
+`alpha` string anywhere. No `resolutionStrategy.force` needed.
+
+**TOOL-17 smoke:**
+```
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/capture/Invoke-ShowcaseSweep.ps1 -Themes AeroBlue -Sections Buttons -Captures 1 -OutDir C:\1A_WORK\ui_lib\.captures\smoke\plan06-cmp1.12
+AERO_SWEEP_DONE frames=1 out=C:\1A_WORK\ui_lib\.captures\smoke\plan06-cmp1.12
+```
+`manifest.json` records `"composeMultiplatform": "1.12.0"`, `"gradle": "9.7.1"`,
+`"jvm": "21.0.9/Microsoft"`, commit `11d1135`. The launch log's ready line:
+```
+AERO_READY scheme=AeroBlue section=Buttons page=0 pages=1 viewportPx=768 contentPx=768 scrollPx=0 background=FF0D1B2A jvm=21.0.9/Microsoft
+```
+`AeroBlue/Buttons-p0-c1.png` was read directly and visually confirms the Buttons section rendered
+correctly (AeroButton/AeroOutlinedButton/AeroIconButton/AeroToolbar, glass surfaces, AeroBlue theme
+intact) — no launch failure, no blank/black frame. This folder did not exist before this run (created
+fresh under `.captures/smoke/`, nothing pre-existing overwritten, nothing under `.captures/`'s
+pre-upgrade baseline touched).
+
+**Commit:** `build(21-06): Kotlin 2.4.20 + Compose Multiplatform 1.12.0 (TOOL-11, TOOL-12)`.
