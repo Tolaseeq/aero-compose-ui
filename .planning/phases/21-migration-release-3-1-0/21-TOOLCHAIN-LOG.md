@@ -428,3 +428,56 @@ Full gate: `./gradlew :library:test --rerun` → `AERO_TEST_COUNT total=541 skip
 **Compat check:** `grep -c compat gradle/libs.versions.toml` → `0`.
 
 **Commit:** `build(21-09): kotlinx-datetime 0.8.0 with compiler-forced renames (TOOL-14)`.
+
+## Step 5c — JUnit 6.1.3 (TOOL-15) + final checks
+
+**Catalog change (`gradle/libs.versions.toml`):** `junit = "5.10.0"` → `"6.1.3"`.
+
+**Alignment check:** `./gradlew -q :library:dependencyInsight --configuration testRuntimeClasspath --dependency org.junit`
+shows every `org.junit.jupiter:*` and `org.junit.platform:*` node resolved to `6.1.3` — including
+`junit-platform-launcher` and the jupiter API/engine pulled transitively by `kotlin-test-junit5`
+(`org.jetbrains.kotlin:kotlin-test-junit5:2.4.20` requests `junit-jupiter-engine:5.10.1` and
+`junit-platform-launcher:1.10.1`, both shown resolved by conflict resolution to `6.1.3`). Alignment
+already holds without adding the `junit-bom` catalog entry or `testImplementation(platform(...))` —
+`org.junit.jupiter:junit-jupiter`'s own POM publishes `org.junit:junit-bom:6.1.3` as a platform
+constraint that Gradle picks up transitively, so no `library/build.gradle.kts` change was needed for
+this task (TOOL-15's alignment requirement is met by the version bump alone; the plan's BOM fallback
+was not triggered). `grep -c "6.1.3" <dependencyInsight --dependency junit-platform-launcher output>`
+→ `28`.
+
+**Gate:** `./gradlew :library:test --rerun --console=plain` → `AERO_TEST_COUNT total=541 skipped=0 expected=541 expectedSkipped=0 filtered=false`, `BUILD SUCCESSFUL`. No silent test-discovery regression
+(Pitfall 11) — the locked count held exactly through the JUnit major bump.
+
+**Material3 gate:** `bash tools/verify/check-material3.sh build/aero-m3-plan09.log` → `MATERIAL3 OK`.
+
+**TOOL-17 smoke:**
+```
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/capture/Invoke-ShowcaseSweep.ps1 -Themes AeroBlue -Sections Pickers,Data -Captures 1 -OutDir C:\1A_WORK\ui_lib\.captures\smoke\plan09-final
+AERO_SWEEP_DONE frames=3 out=C:\1A_WORK\ui_lib\.captures\smoke\plan09-final
+```
+`manifest.json` records the full final toolchain: `"kotlin": "2.4.20"`, `"composeMultiplatform": "1.12.0"`,
+`"kotlinxCoroutines": "1.11.0"`, `"kotlinxDatetime": "0.8.0"`, `"junit": "6.1.3"`, `"gradle": "9.7.1"`,
+`"jvm": "21.0.9/Microsoft"`, commit `1b9e847`. `AeroBlue/Pickers-p0-c1.png` and `AeroBlue/Data-p0-c1.png`
+were read directly and visually confirm both sections render correctly on the final toolchain — all
+picker rows (`AeroDatePicker`, `AeroTimePicker`, both `AeroDateTimePicker` variants, `AeroDateRangePicker`,
+`AeroDateTimeRangePicker`, min/max variants, `AeroColorPicker`, `AeroRangeSlider`) and the `Data` section
+(`AeroDataTable` with formatted `AOS Date` column values like `02.01.2026`, `AeroTreeView`) render intact
+— no launch failure, no blank/black frame, dates format correctly on kotlinx-datetime 0.8.0. This folder
+did not exist before this run (created fresh under `.captures/smoke/`, nothing under `.captures/`'s
+pre-upgrade baseline touched — `find .captures/old-kt2.4.10-cmp1.11.1 -type f | wc -l` still reports 1152).
+
+**Final toolchain table:**
+
+| Component | Version |
+|-----------|---------|
+| Gradle (wrapper) | 9.7.1 |
+| JDK toolchain | 21 |
+| Kotlin | 2.4.20 |
+| Compose Multiplatform | 1.12.0 |
+| kotlinx-coroutines | 1.11.0 |
+| kotlinx-datetime | 0.8.0 |
+| JUnit | 6.1.3 |
+| Material3 | 1.9.0 (pinned) |
+| Compose Hot Reload | 1.2.0 |
+
+**Commit:** `build(21-09): JUnit 6.1.3 aligned (TOOL-15)`.
