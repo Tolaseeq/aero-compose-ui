@@ -73,3 +73,70 @@ printed `AERO_TEST_COUNT total=2 skipped=0 expected=541 expectedSkipped=0 filter
 Every version bump from here on must be followed by this exact command before the next bump; any
 non-zero exit code (including a Test count guard failure) stops the bump and is investigated before
 proceeding.
+
+## Step 3a — Gradle 9.7.1 (TOOL-09)
+
+**Removed lines (`settings.gradle.kts`):** both occurrences of
+`maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")` — one inside
+`pluginManagement.repositories`, one inside `dependencyResolutionManagement.repositories`.
+
+**Precondition proof (on the still-untouched Gradle 8.14.3 wrapper, before bumping the wrapper):**
+`./gradlew build --refresh-dependencies` printed `BUILD SUCCESSFUL in 36s` with the stale repo
+already removed from `settings.gradle.kts` — confirming nothing was actually being resolved from
+`maven.pkg.jetbrains.space`.
+
+**Checksum:** fetched directly from `https://services.gradle.org/distributions/gradle-9.7.1-bin.zip.sha256`:
+```
+acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a
+```
+
+**Wrapper bump:** `./gradlew wrapper --gradle-version 9.7.1 --distribution-type bin --gradle-distribution-sha256-sum acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a`
+run twice (first pass on 8.14.3 rewrote `gradle-wrapper.properties`; second pass executed on 9.7.1
+itself and rewrote `gradlew`/`gradlew.bat`/`gradle-wrapper.jar`). The second pass's first attempt hit
+a transient `SocketTimeoutException` (10000ms `networkTimeout`) downloading the distribution zip; a
+plain retry of the identical command succeeded.
+
+**`./gradlew --version` output:**
+```
+Gradle 9.7.1
+Build time:    2026-08-19 14:16:09 UTC
+Revision:      92f0512e7f06d84621afba191f75e265363890cf
+Kotlin:        2.4.0
+Groovy:        4.0.32
+Ant:           Apache Ant(TM) version 1.10.17 compiled on April 6 2026
+Launcher JVM:  21.0.9 (Eclipse Adoptium 21.0.9+10-LTS)
+Daemon JVM:    C:\Users\1\.jdks\ms-21.0.9 (from org.gradle.java.home)
+OS:            Windows 11 10.0 amd64
+```
+
+**`grep -c "maven.pkg.jetbrains.space" settings.gradle.kts`:** `0`
+
+**Gate:** `./gradlew build --refresh-dependencies` → `BUILD SUCCESSFUL in 1m 5s`; then
+`./gradlew :library:test --rerun` printed
+`AERO_TEST_COUNT total=541 skipped=0 expected=541 expectedSkipped=0 filtered=false` and
+`BUILD SUCCESSFUL`.
+
+**Warnings printed by the build (verbatim, `--warning-mode all`):** one Gradle-level deprecation, unrelated
+to the repo removal — the project still targets `jvmToolchain(17)` at this step (JDK 21 lands in Step
+3b), and Gradle 9.7.1 warns about auto-provisioned toolchains without a configured toolchain
+repository:
+```
+Using toolchain 'Eclipse Temurin JDK 17 (17.0.17+10)' installed via auto-provisioning without toolchain repositories. This behavior has been deprecated. This will fail with an error in Gradle 10. Builds may fail when this toolchain is not available in other environments. Add toolchain repositories to this build. For more information, please refer to https://docs.gradle.org/9.7.1/userguide/toolchains.html#sub:download_repositories in the Gradle documentation.
+```
+No action taken on this warning at this step: it names JDK 17, which Step 3b removes entirely by
+moving both modules to `jvmToolchain(21)` (JBR 21 is already installed, not auto-provisioned). All
+other warnings printed during compilation (`runComposeUiTest` v1 deprecation across ~40 existing test
+files, a handful of unnecessary `!!` assertions, one `@ConsistentCopyVisibility` note) are pre-existing
+in the codebase, unrelated to this bump, and were not touched (scope boundary — see deviation rules).
+The build also printed a generic `Deprecated Gradle features were used in this build, making it
+incompatible with Gradle 10` banner; re-run with `--warning-mode all` resolved it to the single
+toolchain-provisioning line above (no other Gradle-level deprecations found).
+
+**Environment note (not a code deviation):** the first `./gradlew build --refresh-dependencies` attempt
+on this wrapper failed with `Unable to delete file '...\library\build\libs\library-3.0.0.jar'`
+(`ERROR_SHARING_VIOLATION`) — an external VS Code Kotlin Language Server process (`fwcd.kotlin`,
+`org.javacs.kt.MainKt`) had the jar open as part of its classpath indexing. Per the global stop rule,
+the executor did not attempt to kill or work around that process; the orchestrator/maintainer ended it,
+after which the same command succeeded unmodified. No build or code file needed any change for this.
+
+**Commit:** `build(21-06): Gradle 9.7.1 wrapper, drop stale JetBrains Space repo (TOOL-09)`.
