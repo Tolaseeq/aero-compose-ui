@@ -60,3 +60,31 @@ dropped as "no visual change on old toolchain."
 Full suite (`./gradlew :library:test --rerun`) is green with these 3 new test classes included:
 502 tests across 91 classes (up from 467 before this plan). The exact count is not locked here —
 TOOL-16's count guard is a later plan (Plan 05).
+
+## Popup capture method (D-07 Task 1 probe, empirical)
+
+Decided by `D07MenuPopupCaptureTest`'s AeroDropdown probe (`aeroDropdown<Theme>Opened`, 3 tests) on
+the OLD toolchain (Kotlin 2.4.10 / Compose Multiplatform 1.11.1), against a 480x360dp host:
+
+- **Closed state (no `Popup` composed): M1 — `onRoot().captureToImage()`.** With `AeroDropdown`
+  collapsed there is exactly one semantics root (`onAllNodes(isRoot())` finds `1` node,
+  `1024x768px`, confirmed by an instrumented run of this probe), so `onRoot()` resolves directly.
+- **Opened state (a `Popup` is composed): M1 throws, falls back to M2 —
+  `onAllNodes(isRoot())`, last-added root.** The instant `AeroDropdown`'s `Popup` opens, Compose
+  Multiplatform Desktop's `SkikoComposeUiTest` reports a SECOND semantics root — both `1024x768px`,
+  the same full window bounds — and `onRoot()` throws `AssertionError: Expected exactly '1' node
+  but found '2' nodes that satisfy: (isRoot)` rather than resolving to either one. Falling back to
+  `onAllNodes(isRoot())[count - 1]` (the most-recently-composed root — the `Popup`'s own owner) and
+  calling `captureToImage()` on it succeeds and rasterizes the SAME full-window Skia surface the
+  main content paints onto (desktop `Popup`s are layered onto one shared canvas, not a separate
+  off-screen bitmap for their own root) — so the resulting image contains the popup pixels too.
+- **Evidence:** all 3 `aeroDropdown<Theme>Opened` tests pass; `pixelMapsDiffer(closed, opened)` is
+  `true` in every theme, proving the M2-fallback capture actually differs from (and therefore
+  contains) the popup content, not a byte-identical re-capture of the closed window.
+- **Shared helper:** `captureOpened()` (`D07MenuPopupCaptureTest.kt`) implements exactly this
+  M1-then-M2-fallback sequence and is reused, unmodified, by every other D-07 test in this file and
+  in `D07PickerPopupCaptureTest` — no per-component capture-method variation was needed.
+
+D-09 check: `grep -cE "Clock|todayLocalDate|now\(" AeroCalendarGrid.kt` = `0` — AeroCalendarGrid has
+no today-highlight, confirming a fixed `value` is sufficient for deterministic picker frames
+(D-09 confirmed).
