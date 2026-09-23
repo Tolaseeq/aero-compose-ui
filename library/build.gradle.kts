@@ -43,6 +43,9 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    // BASE-05/D-03: images are written only when this Gradle property is explicitly passed
+    // (-Paero.captureDir=<path>) — an ordinary `./gradlew test` run writes nothing.
+    (project.findProperty("aero.captureDir") as String?)?.let { systemProperty("aero.captureDir", it) }
 }
 
 publishing {
