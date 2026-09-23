@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v3.1
 milestone_name: Dependency Refresh + Hot Reload MCP
 status: executing
-stopped_at: "Completed 21-07-PLAN.md; awaiting maintainer restart of Claude Code so the compose-hot-reload MCP server connects. Resume with /bm:execute-phase 21 (continues at 21-08)."
-last_updated: "2026-09-23T16:42:46.717Z"
+stopped_at: "Plan 21-08 Task 1 interrupted: .mcp.json ran unqualified hotMcpServer (two MCP servers on one stdio, calls hung 30 min); fixed in 883a8d3 (:showcase:hotMcpServer). Awaiting maintainer restart of Claude Code; resume with /bm:execute-phase 21 (restarts 21-08 Task 1)."
+last_updated: "2026-09-23T19:21:33.414Z"
 last_activity: 2026-09-23 -- Phase 21 execution started
 progress:
   total_phases: 1
@@ -112,8 +112,8 @@ Full decision log lives in PROJECT.md "Key Decisions". Rules that constrain any 
 
 ## Session Continuity
 
-Last session: 2026-09-23T16:42:46.707Z
-Stopped at: Completed 21-07-PLAN.md; awaiting maintainer restart of Claude Code so the compose-hot-reload MCP server connects. Resume with /bm:execute-phase 21 (continues at 21-08).
+Last session: 2026-09-23T19:21:33.404Z
+Stopped at: Plan 21-08 Task 1 interrupted: .mcp.json ran unqualified hotMcpServer (two MCP servers on one stdio, calls hung 30 min); fixed in 883a8d3 (:showcase:hotMcpServer). Awaiting maintainer restart of Claude Code; resume with /bm:execute-phase 21 (restarts 21-08 Task 1).
 Resume file: .planning/phases/21-migration-release-3-1-0/21-08-PLAN.md
 Next action: `/bm:execute-phase 21` (continues at 21-08)
 
@@ -126,5 +126,6 @@ Next action: `/bm:execute-phase 21` (continues at 21-08)
 
 ## Operator Next Steps
 
-- Restart Claude Code fully in `C:\1A_WORK\ui_lib` so the `compose-hot-reload` MCP server (from `.mcp.json`, committed in `bb8c716`) attaches — approve it if Claude Code asks.
-- Then continue the phase with `/bm:execute-phase 21` (resumes at Plan 21-08, whose Task 1 verifies the `mcp__compose-hot-reload__*` tools are present).
+- Restart Claude Code fully in `C:\1A_WORK\ui_lib` so the corrected `compose-hot-reload` MCP server (`.mcp.json` now runs `:showcase:hotMcpServer`, fixed in `883a8d3`) attaches — approve it if Claude Code asks.
+- Then continue the phase with `/bm:execute-phase 21` (restarts Plan 21-08 Task 1 from the hotRun launch).
+- 21-08 note for the next session: first check that exactly one `ComposeHotReloadMcp` JVM runs for this repo (pidFile under `showcase\build\run\main\`), and that `status` answers `connected:true` on several calls in a row, before relying on any MCP call. The first few seconds after a hotRun launch can still say `connected:false` while the server attaches. `.captures/hrm-21-08/task1-launch-AeroDark-Overlays.png` is from the interrupted run; keep it.
