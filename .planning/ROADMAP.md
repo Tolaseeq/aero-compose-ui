@@ -115,10 +115,12 @@ Details: `.planning/milestones/v3.0-ROADMAP.md` · Requirements: `.planning/mile
 ## Phase Details
 
 ### Phase 21: Migration + Release 3.1.0
+
 **Goal**: Every dependency and toolchain piece sits on its latest stable version (Gradle 9.7.1, JDK 21, Kotlin 2.4.20, Compose Multiplatform 1.12.0, kotlinx-coroutines 1.11.0, kotlinx-datetime 0.8.0 plain, JUnit 6.1.3; Material3 stays pinned at stable 1.9.0), it is demonstrated against a pre-upgrade baseline that nothing broke, and `3.1.0` is published on JitPack. Compose Hot Reload + MCP is installed in `:showcase` as the tool the agent uses to inspect the GUI itself (`.planning/research/MCP-HOWTO.md`).
 **Depends on**: Nothing (only phase of v3.1)
 **Requirements**: BASE-01, BASE-02, BASE-03, BASE-04, BASE-05, TOOL-09, TOOL-10, TOOL-11, TOOL-12, TOOL-13, TOOL-14, TOOL-15, TOOL-16, TOOL-17, HRM-01, HRM-02, HRM-03, VER-07, VER-08, VER-09, VER-10, REL-03, REL-04, REL-05
 **Execution order inside the phase** (each step is its own commit; every upgrade step is gated by a full test run before the next):
+
   1. Baseline on the current toolchain (Kotlin 2.4.10 / CMP 1.11.1): theme + section launch parameter, `PrintWindow` capture helper, noise characterization, section × theme frames, UI-test state captures. The first UI-test step proves `captureToImage` works in desktop `runComposeUiTest` — if not, stop and ask
   2. Lock the literal test count on the old toolchain and prove the count guard fails red on a deliberately excluded test class
   3. Gradle 9.7.1 + JDK 21 → Kotlin 2.4.20 + CMP 1.12.0 (+ Material3 `dependencyInsight` check)
@@ -126,28 +128,69 @@ Details: `.planning/milestones/v3.0-ROADMAP.md` · Requirements: `.planning/mile
   5. kotlinx-coroutines 1.11.0 → kotlinx-datetime 0.8.0 → JUnit 6.1.3
   6. Post-upgrade captures (MCP + `PrintWindow`) and UI-test frames compared with the baseline; unconfirmed list; hand-off to the maintainer only after the agent's own sweep
   7. Throwaway JitPack verify tag → README consumer floor → `3.1.0` + `v3.1.0` tag
+
 **Success Criteria** (what must be TRUE):
+
   1. Reference frames for every showcase section × 3 themes and UI-test images of hover / press / keyboard focus / drag (interactive v3.0 glass components + `AeroSplitPane`, `AeroPanelGroup`, `AeroDataTable` column resize) exist outside `build/`, were taken on the old toolchain with a helper that never touches the real cursor or input focus, and every noisy region is named
   2. Every target version is in, each bump landed as its own commit with the full suite green at exactly the test count locked before the upgrade (guard proven red first); `dependencyInsight --dependency material3` shows no alpha on either module, including after Hot Reload is added; picker behavior and tests unchanged; the showcase builds and runs; published bytecode is class-file 65 with `org.gradle.jvm.version = 21`
   3. Hot Reload + MCP sits in `:showcase` only (`:library`'s POM / module metadata unchanged), connects after the Claude Code restart and sees the showcase; the agent has measured itself that capture, tree dump and click leave the cursor position and foreground window unchanged, including with the showcase covered or minimized — reported as a short fact, never using the server's `take_screenshot`
   4. Post-upgrade frames and UI-test images are compared with the baseline: every difference outside the named noisy regions is explained with a stated cause or fixed; everything confirmed by neither method is listed separately as "unconfirmed"; the maintainer sees the GUI only after the agent's own sweep, together with the frames and both lists
   5. A throwaway verify tag builds green on JitPack under JDK 21 / Gradle 9.7.1 before the real tag exists; README states the new consumer floor and fixes the stale toolchain line; **outward-facing, needs the maintainer's confirmation at execution time:** `3.1.0` is set in `build.gradle.kts`, `v3.1.0` is pushed, the JitPack build is `ok`, and `com.github.Tolaseeq:aero-compose-ui:3.1.0` resolves
+
 **Plans:** 14 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 21-01-PLAN.md — Step 1: showcase section/page/capture launch parameters (BASE-01) + PrintWindow capture helper, sweep driver, covered/minimized self-test (BASE-02)
 - [ ] 21-02-PLAN.md — Step 1: captureToImage proof-of-work, opt-in UI capture writer, hover/press/focus/drag capture tests for 10 components x 3 themes (BASE-05)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 21-03-PLAN.md — Step 1: opened-popup capture tests for all 13 Popup components x 3 themes, fixed picker values, D-08 classification (D-07, D-09)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 21-04-PLAN.md — Step 1: pre-upgrade baseline — all sections x 3 themes twice, named noise regions, UI-test reference images, comparison tool (BASE-03, BASE-04, BASE-05)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 21-05-PLAN.md — Step 2: lock the live test count and prove the count guard red (TOOL-16)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 21-06-PLAN.md — Step 3: Gradle 9.7.1 + stale repo removal → JDK 21 → Kotlin 2.4.20 + CMP 1.12.0, Material3 gate, showcase launch (TOOL-09..12, TOOL-17)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
 - [ ] 21-07-PLAN.md — Step 4: Compose Hot Reload 1.2.0 + .mcp.json in :showcase only, isolation checks; maintainer restarts Claude Code (HRM-01)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
 - [ ] 21-08-PLAN.md — Step 4: MCP connected to the hotRun showcase, test tags, reload finding, cursor/focus non-interference measured (HRM-02, HRM-03)
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
 - [ ] 21-09-PLAN.md — Step 5: kotlinx-coroutines 1.11.0 → kotlinx-datetime 0.8.0 (compiler-decided renames) → JUnit 6.1.3 (TOOL-13..15)
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
 - [ ] 21-10-PLAN.md — Step 6: post-upgrade showcase and UI-test captures compared with the baseline, agent review (VER-07, VER-08)
+
+**Wave 10** *(blocked on Wave 9 completion)*
+
 - [ ] 21-11-PLAN.md — Step 6: after-only MCP inspection (D-08), drift list + unconfirmed list + offline hand-off page, single D-04 stop if drift (VER-09)
+
+**Wave 11** *(blocked on Wave 10 completion)*
+
 - [ ] 21-12-PLAN.md — Step 6: apply D-04 rulings, hand-off of the GUI to the maintainer after the agent's sweep (VER-10)
+
+**Wave 12** *(blocked on Wave 11 completion)*
+
 - [ ] 21-13-PLAN.md — Step 7: throwaway JitPack verify tag on JDK 21 / Gradle 9.7.1, published bytecode check, README consumer floor (REL-03, REL-04)
+
+**Wave 13** *(blocked on Wave 12 completion)*
+
 - [ ] 21-14-PLAN.md — Step 7: 3.1.0 + v3.1.0 after the maintainer's confirmation, JitPack ok, coordinate resolves (REL-05)
 
 ## Progress

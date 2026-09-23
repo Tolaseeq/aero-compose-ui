@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v3.1
 milestone_name: Dependency Refresh + Hot Reload MCP
-status: planning
-stopped_at: Phase 21 context gathered
-last_updated: "2026-09-23T10:53:46.085Z"
-last_activity: 2026-09-23 — Phase 21 context gathered
+status: ready_to_execute
+stopped_at: Phase 21 planned (14 plans, 13 waves)
+last_updated: "2026-09-23T12:50:13.036Z"
+last_activity: 2026-09-23 — Phase 21 planned (14 plans, plan-checker passed on iteration 3)
 progress:
   total_phases: 1
   completed_phases: 0
-  total_plans: 0
+  total_plans: 14
   completed_plans: 0
   percent: 0
 ---
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-23 — v3.1 roadmap created)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, typed `AeroIcons`, and a showcase — no manual style work or icon-pack hunting required.
-**Current focus:** v3.1 roadmap is written (one phase, 21; 24/24 requirements mapped). Next: `/bm:plan-phase 21`.
+**Current focus:** Phase 21 is planned (14 plans, 13 waves; 24/24 requirements and 11/11 decisions covered). Next: `/bm:execute-phase 21`.
 
 ## Current Position
 
-Phase: 21 — Baseline Capture (not started)
-Plan: —
-Status: Roadmap created, awaiting phase planning
-Last activity: 2026-09-23 — Milestone v3.1 roadmap written (ROADMAP.md, REQUIREMENTS.md traceability)
+Phase: 21 — Migration + Release 3.1.0 (planned, not started)
+Plan: 21-01 / 21-02 next (wave 1 of 13)
+Status: Ready to execute
+Last activity: 2026-09-23 — Phase 21 planned (14 plans, plan-checker passed on iteration 3)
 
 ## Deferred Items
 
@@ -57,7 +57,7 @@ Beyond the audit list, one requirement shipped with a recorded gap rather than a
 **v2.0.2:** 8 plans (Phases 13 + 13.1), ~1-day push (2026-06-22→23), 49 commits, 4 code files, +1,516 lines.
 **v2.0.4:** 3 plans, single-day push incl. corrective release (2026-06-25→26), real RCMP root-cause fix.
 **v3.0:** 41 plans / 85 tasks across 6 phases, 2026-07-22 → 2026-07-29 (8 days), 252 commits, 248 files changed (+43,770 / −2,638) of which 71 code files (+11,104 / −409). Tests 232 → 467. Per-plan durations ranged 3 min – 2h10m; the long tail was human visual sign-off rounds, not code. Per-plan metrics are archived with the phase artifacts in `.planning/milestones/v3.0-phases/`.
-**v3.1:** in progress — 1 phase (21) roadmapped, plan counts TBD.
+**v3.1:** in progress — 1 phase (21), 14 plans planned.
 
 ## Accumulated Context
 
