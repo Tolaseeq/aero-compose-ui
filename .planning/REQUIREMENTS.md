@@ -27,15 +27,15 @@
 
 Каждый шаг изолирован и проверяется полным тестовым прогоном до следующего: регрессию нужно уметь отнести к одной причине (урок v3.0).
 
-- [ ] **TOOL-09**: Gradle wrapper 9.7.1, чистая сборка проходит. Устаревший адрес репозитория JetBrains (`maven.pkg.jetbrains.space/...`, сейчас отвечает перенаправлением) убран из `settings.gradle.kts` — проверено сборкой с `--refresh-dependencies`
-- [ ] **TOOL-10**: JDK 21 везде: `jvmToolchain(21)` в `:library` и `:showcase`; опубликованный байт-код — class-file 65, в Gradle module metadata `org.gradle.jvm.version = 21`
-- [ ] **TOOL-11**: Kotlin 2.4.20 + Compose Multiplatform 1.12.0. Kotlin 2.4.20 официально поддерживает Gradle до 9.7.0: предупреждения на 9.7.1 фиксируются, но поломкой не считаются, пока сборка и тесты зелёные
-- [ ] **TOOL-12**: Material3 остаётся на стабильной `1.9.0`. `dependencyInsight --dependency material3` на compile- и runtime-classpath `:library` и `:showcase` не показывает ни одной alpha — ни от Compose 1.12.0, ни (после HRM-01) от Hot Reload
+- [x] **TOOL-09**: Gradle wrapper 9.7.1, чистая сборка проходит. Устаревший адрес репозитория JetBrains (`maven.pkg.jetbrains.space/...`, сейчас отвечает перенаправлением) убран из `settings.gradle.kts` — проверено сборкой с `--refresh-dependencies`
+- [x] **TOOL-10**: JDK 21 везде: `jvmToolchain(21)` в `:library` и `:showcase`; опубликованный байт-код — class-file 65, в Gradle module metadata `org.gradle.jvm.version = 21`
+- [x] **TOOL-11**: Kotlin 2.4.20 + Compose Multiplatform 1.12.0. Kotlin 2.4.20 официально поддерживает Gradle до 9.7.0: предупреждения на 9.7.1 фиксируются, но поломкой не считаются, пока сборка и тесты зелёные
+- [x] **TOOL-12**: Material3 остаётся на стабильной `1.9.0`. `dependencyInsight --dependency material3` на compile- и runtime-classpath `:library` и `:showcase` не показывает ни одной alpha — ни от Compose 1.12.0, ни (после HRM-01) от Hot Reload
 - [ ] **TOOL-13**: kotlinx-coroutines 1.11.0
 - [ ] **TOOL-14**: kotlinx-datetime — чистая 0.8.0, не `-0.6.x-compat`. Какие правки исходников пикеров нужны (`Clock` / `Instant`, `dayOfMonth` / `monthNumber`), решает компиляция, а не исследование: исследователи разошлись. Фактический итог записывается. Поведение пикеров не меняется, их тесты зелёные
 - [ ] **TOOL-15**: JUnit 6.1.3, jupiter и platform launcher выровнены
 - [x] **TOOL-16**: Тестовый прогон исполняет ровно столько тестов, сколько на старом тулчейне непосредственно перед обновлением (467 на закрытии v3.0 плюс тесты BASE-05; число перемеряется, а не берётся из документов). Сверка числа доказана падающей: исключённый тестовый класс её валит (урок v2.0.3 — страж, не проверенный на красном, не страж)
-- [ ] **TOOL-17**: Витрина собирается и запускается на новом тулчейне
+- [x] **TOOL-17**: Витрина собирается и запускается на новом тулчейне
 
 ### Hot Reload + MCP (HRM)
 
@@ -99,15 +99,15 @@
 | BASE-03 | Phase 21 | Complete |
 | BASE-04 | Phase 21 | Complete |
 | BASE-05 | Phase 21 | Complete |
-| TOOL-09 | Phase 21 | Pending |
-| TOOL-10 | Phase 21 | Pending |
-| TOOL-11 | Phase 21 | Pending |
-| TOOL-12 | Phase 21 | Pending |
+| TOOL-09 | Phase 21 | Complete |
+| TOOL-10 | Phase 21 | Complete |
+| TOOL-11 | Phase 21 | Complete |
+| TOOL-12 | Phase 21 | Complete |
 | TOOL-13 | Phase 21 | Pending |
 | TOOL-14 | Phase 21 | Pending |
 | TOOL-15 | Phase 21 | Pending |
 | TOOL-16 | Phase 21 | Complete |
-| TOOL-17 | Phase 21 | Pending |
+| TOOL-17 | Phase 21 | Complete |
 | HRM-01 | Phase 21 | Pending |
 | HRM-02 | Phase 21 | Pending |
 | HRM-03 | Phase 21 | Pending |
