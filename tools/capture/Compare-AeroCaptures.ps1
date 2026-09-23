@@ -49,6 +49,12 @@ param(
 Set-StrictMode -Version 2
 $ErrorActionPreference = 'Stop'
 
+# Some hosts pass a comma-separated -RunDirs/-Dirs value through as a single string instead of
+# splitting it into array elements before binding; normalize either shape the same way as
+# Invoke-ShowcaseSweep.ps1 does for -Themes/-Sections.
+if ($RunDirs) { $RunDirs = @($RunDirs | ForEach-Object { $_ -split ',' } | Where-Object { $_ -ne '' }) }
+if ($Dirs) { $Dirs = @($Dirs | ForEach-Object { $_ -split ',' } | Where-Object { $_ -ne '' }) }
+
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 . (Join-Path $here 'AeroCapture.ps1')
 

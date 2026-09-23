@@ -1,0 +1,728 @@
+﻿{
+    "showcase":  {
+                     "AeroBlue/Buttons/p0":  {
+                                                 "captures":  6,
+                                                 "stable":  true,
+                                                 "dimensionMismatch":  0,
+                                                 "regions":  [
+
+                                                             ]
+                                             },
+                     "AeroBlue/Containers/p0":  {
+                                                    "captures":  6,
+                                                    "stable":  true,
+                                                    "dimensionMismatch":  0,
+                                                    "regions":  [
+
+                                                                ]
+                                                },
+                     "AeroBlue/Data/p0":  {
+                                              "captures":  6,
+                                              "stable":  true,
+                                              "dimensionMismatch":  0,
+                                              "regions":  [
+
+                                                          ]
+                                          },
+                     "AeroBlue/Data/p1":  {
+                                              "captures":  6,
+                                              "stable":  true,
+                                              "dimensionMismatch":  0,
+                                              "regions":  [
+
+                                                          ]
+                                          },
+                     "AeroBlue/Dropdown/p0":  {
+                                                  "captures":  6,
+                                                  "stable":  true,
+                                                  "dimensionMismatch":  0,
+                                                  "regions":  [
+
+                                                              ]
+                                              },
+                     "AeroBlue/Foundation/p0":  {
+                                                    "captures":  6,
+                                                    "stable":  true,
+                                                    "dimensionMismatch":  0,
+                                                    "regions":  [
+
+                                                                ]
+                                                },
+                     "AeroBlue/Icons/p0":  {
+                                               "captures":  6,
+                                               "stable":  true,
+                                               "dimensionMismatch":  0,
+                                               "regions":  [
+
+                                                           ]
+                                           },
+                     "AeroBlue/Input/p0":  {
+                                               "captures":  6,
+                                               "stable":  true,
+                                               "dimensionMismatch":  0,
+                                               "regions":  [
+
+                                                           ]
+                                           },
+                     "AeroBlue/Layout/p0":  {
+                                                "captures":  6,
+                                                "stable":  true,
+                                                "dimensionMismatch":  0,
+                                                "regions":  [
+
+                                                            ]
+                                            },
+                     "AeroBlue/Layout/p1":  {
+                                                "captures":  6,
+                                                "stable":  true,
+                                                "dimensionMismatch":  0,
+                                                "regions":  [
+
+                                                            ]
+                                            },
+                     "AeroBlue/Layout/p2":  {
+                                                "captures":  6,
+                                                "stable":  true,
+                                                "dimensionMismatch":  0,
+                                                "regions":  [
+
+                                                            ]
+                                            },
+                     "AeroBlue/Layout/p3":  {
+                                                "captures":  6,
+                                                "stable":  false,
+                                                "dimensionMismatch":  0,
+                                                "regions":  [
+                                                                {
+                                                                    "x":  262,
+                                                                    "y":  670,
+                                                                    "w":  28,
+                                                                    "h":  20,
+                                                                    "px":  312
+                                                                }
+                                                            ]
+                                            },
+                     "AeroBlue/Layout/p4":  {
+                                                "captures":  6,
+                                                "stable":  false,
+                                                "dimensionMismatch":  0,
+                                                "regions":  [
+                                                                {
+                                                                    "x":  262,
+                                                                    "y":  422,
+                                                                    "w":  28,
+                                                                    "h":  20,
+                                                                    "px":  315
+                                                                }
+                                                            ]
+                                            },
+                     "AeroBlue/List/p0":  {
+                                              "captures":  6,
+                                              "stable":  true,
+                                              "dimensionMismatch":  0,
+                                              "regions":  [
+
+                                                          ]
+                                          },
+                     "AeroBlue/List/p1":  {
+                                              "captures":  6,
+                                              "stable":  true,
+                                              "dimensionMismatch":  0,
+                                              "regions":  [
+
+                                                          ]
+                                          },
+                     "AeroBlue/Navigation/p0":  {
+                                                    "captures":  6,
+                                                    "stable":  true,
+                                                    "dimensionMismatch":  0,
+                                                    "regions":  [
+
+                                                                ]
+                                                },
+                     "AeroBlue/Overlays/p0":  {
+                                                  "captures":  6,
+                                                  "stable":  true,
+                                                  "dimensionMismatch":  0,
+                                                  "regions":  [
+
+                                                              ]
+                                              },
+                     "AeroBlue/Pickers/p0":  {
+                                                 "captures":  6,
+                                                 "stable":  true,
+                                                 "dimensionMismatch":  0,
+                                                 "regions":  [
+
+                                                             ]
+                                             },
+                     "AeroBlue/Primitives/p0":  {
+                                                    "captures":  6,
+                                                    "stable":  true,
+                                                    "dimensionMismatch":  0,
+                                                    "regions":  [
+
+                                                                ]
+                                                },
+                     "AeroBlue/Range/p0":  {
+                                               "captures":  6,
+                                               "stable":  false,
+                                               "dimensionMismatch":  0,
+                                               "regions":  [
+                                                               {
+                                                                   "x":  230,
+                                                                   "y":  414,
+                                                                   "w":  52,
+                                                                   "h":  20,
+                                                                   "px":  1078
+                                                               },
+                                                               {
+                                                                   "x":  310,
+                                                                   "y":  454,
+                                                                   "w":  84,
+                                                                   "h":  20,
+                                                                   "px":  1436
+                                                               },
+                                                               {
+                                                                   "x":  230,
+                                                                   "y":  454,
+                                                                   "w":  28,
+                                                                   "h":  20,
+                                                                   "px":  216
+                                                               },
+                                                               {
+                                                                   "x":  318,
+                                                                   "y":  414,
+                                                                   "w":  20,
+                                                                   "h":  20,
+                                                                   "px":  116
+                                                               }
+                                                           ]
+                                           },
+                     "AeroBlue/Selection/p0":  {
+                                                   "captures":  6,
+                                                   "stable":  true,
+                                                   "dimensionMismatch":  0,
+                                                   "regions":  [
+
+                                                               ]
+                                               },
+                     "AeroBlue/Selection/p1":  {
+                                                   "captures":  6,
+                                                   "stable":  true,
+                                                   "dimensionMismatch":  0,
+                                                   "regions":  [
+
+                                                               ]
+                                               },
+                     "AeroBlue/ThemeSwitcher/p0":  {
+                                                       "captures":  6,
+                                                       "stable":  true,
+                                                       "dimensionMismatch":  0,
+                                                       "regions":  [
+
+                                                                   ]
+                                                   },
+                     "AeroBlue/Verification/p0":  {
+                                                      "captures":  6,
+                                                      "stable":  true,
+                                                      "dimensionMismatch":  0,
+                                                      "regions":  [
+
+                                                                  ]
+                                                  },
+                     "AeroBlue/Verification/p1":  {
+                                                      "captures":  6,
+                                                      "stable":  true,
+                                                      "dimensionMismatch":  0,
+                                                      "regions":  [
+
+                                                                  ]
+                                                  },
+                     "AeroDark/Buttons/p0":  {
+                                                 "captures":  6,
+                                                 "stable":  true,
+                                                 "dimensionMismatch":  0,
+                                                 "regions":  [
+
+                                                             ]
+                                             },
+                     "AeroDark/Containers/p0":  {
+                                                    "captures":  6,
+                                                    "stable":  true,
+                                                    "dimensionMismatch":  0,
+                                                    "regions":  [
+
+                                                                ]
+                                                },
+                     "AeroDark/Data/p0":  {
+                                              "captures":  6,
+                                              "stable":  true,
+                                              "dimensionMismatch":  0,
+                                              "regions":  [
+
+                                                          ]
+                                          },
+                     "AeroDark/Data/p1":  {
+                                              "captures":  6,
+                                              "stable":  true,
+                                              "dimensionMismatch":  0,
+                                              "regions":  [
+
+                                                          ]
+                                          },
+                     "AeroDark/Dropdown/p0":  {
+                                                  "captures":  6,
+                                                  "stable":  true,
+                                                  "dimensionMismatch":  0,
+                                                  "regions":  [
+
+                                                              ]
+                                              },
+                     "AeroDark/Foundation/p0":  {
+                                                    "captures":  6,
+                                                    "stable":  true,
+                                                    "dimensionMismatch":  0,
+                                                    "regions":  [
+
+                                                                ]
+                                                },
+                     "AeroDark/Icons/p0":  {
+                                               "captures":  6,
+                                               "stable":  true,
+                                               "dimensionMismatch":  0,
+                                               "regions":  [
+
+                                                           ]
+                                           },
+                     "AeroDark/Input/p0":  {
+                                               "captures":  6,
+                                               "stable":  true,
+                                               "dimensionMismatch":  0,
+                                               "regions":  [
+
+                                                           ]
+                                           },
+                     "AeroDark/Layout/p0":  {
+                                                "captures":  6,
+                                                "stable":  true,
+                                                "dimensionMismatch":  0,
+                                                "regions":  [
+
+                                                            ]
+                                            },
+                     "AeroDark/Layout/p1":  {
+                                                "captures":  6,
+                                                "stable":  true,
+                                                "dimensionMismatch":  0,
+                                                "regions":  [
+
+                                                            ]
+                                            },
+                     "AeroDark/Layout/p2":  {
+                                                "captures":  6,
+                                                "stable":  true,
+                                                "dimensionMismatch":  0,
+                                                "regions":  [
+
+                                                            ]
+                                            },
+                     "AeroDark/Layout/p3":  {
+                                                "captures":  6,
+                                                "stable":  false,
+                                                "dimensionMismatch":  0,
+                                                "regions":  [
+                                                                {
+                                                                    "x":  262,
+                                                                    "y":  670,
+                                                                    "w":  28,
+                                                                    "h":  20,
+                                                                    "px":  352
+                                                                }
+                                                            ]
+                                            },
+                     "AeroDark/Layout/p4":  {
+                                                "captures":  6,
+                                                "stable":  false,
+                                                "dimensionMismatch":  0,
+                                                "regions":  [
+                                                                {
+                                                                    "x":  262,
+                                                                    "y":  422,
+                                                                    "w":  28,
+                                                                    "h":  20,
+                                                                    "px":  251
+                                                                }
+                                                            ]
+                                            },
+                     "AeroDark/List/p0":  {
+                                              "captures":  6,
+                                              "stable":  true,
+                                              "dimensionMismatch":  0,
+                                              "regions":  [
+
+                                                          ]
+                                          },
+                     "AeroDark/List/p1":  {
+                                              "captures":  6,
+                                              "stable":  true,
+                                              "dimensionMismatch":  0,
+                                              "regions":  [
+
+                                                          ]
+                                          },
+                     "AeroDark/Navigation/p0":  {
+                                                    "captures":  6,
+                                                    "stable":  true,
+                                                    "dimensionMismatch":  0,
+                                                    "regions":  [
+
+                                                                ]
+                                                },
+                     "AeroDark/Overlays/p0":  {
+                                                  "captures":  6,
+                                                  "stable":  true,
+                                                  "dimensionMismatch":  0,
+                                                  "regions":  [
+
+                                                              ]
+                                              },
+                     "AeroDark/Pickers/p0":  {
+                                                 "captures":  6,
+                                                 "stable":  true,
+                                                 "dimensionMismatch":  0,
+                                                 "regions":  [
+
+                                                             ]
+                                             },
+                     "AeroDark/Primitives/p0":  {
+                                                    "captures":  6,
+                                                    "stable":  true,
+                                                    "dimensionMismatch":  0,
+                                                    "regions":  [
+
+                                                                ]
+                                                },
+                     "AeroDark/Range/p0":  {
+                                               "captures":  6,
+                                               "stable":  false,
+                                               "dimensionMismatch":  0,
+                                               "regions":  [
+                                                               {
+                                                                   "x":  246,
+                                                                   "y":  414,
+                                                                   "w":  36,
+                                                                   "h":  20,
+                                                                   "px":  1008
+                                                               },
+                                                               {
+                                                                   "x":  318,
+                                                                   "y":  454,
+                                                                   "w":  76,
+                                                                   "h":  20,
+                                                                   "px":  1340
+                                                               },
+                                                               {
+                                                                   "x":  230,
+                                                                   "y":  454,
+                                                                   "w":  36,
+                                                                   "h":  20,
+                                                                   "px":  336
+                                                               },
+                                                               {
+                                                                   "x":  326,
+                                                                   "y":  414,
+                                                                   "w":  12,
+                                                                   "h":  20,
+                                                                   "px":  34
+                                                               },
+                                                               {
+                                                                   "x":  230,
+                                                                   "y":  414,
+                                                                   "w":  12,
+                                                                   "h":  20,
+                                                                   "px":  52
+                                                               }
+                                                           ]
+                                           },
+                     "AeroDark/Selection/p0":  {
+                                                   "captures":  6,
+                                                   "stable":  true,
+                                                   "dimensionMismatch":  0,
+                                                   "regions":  [
+
+                                                               ]
+                                               },
+                     "AeroDark/Selection/p1":  {
+                                                   "captures":  6,
+                                                   "stable":  true,
+                                                   "dimensionMismatch":  0,
+                                                   "regions":  [
+
+                                                               ]
+                                               },
+                     "AeroDark/ThemeSwitcher/p0":  {
+                                                       "captures":  6,
+                                                       "stable":  true,
+                                                       "dimensionMismatch":  0,
+                                                       "regions":  [
+
+                                                                   ]
+                                                   },
+                     "AeroDark/Verification/p0":  {
+                                                      "captures":  6,
+                                                      "stable":  true,
+                                                      "dimensionMismatch":  0,
+                                                      "regions":  [
+
+                                                                  ]
+                                                  },
+                     "AeroDark/Verification/p1":  {
+                                                      "captures":  6,
+                                                      "stable":  true,
+                                                      "dimensionMismatch":  0,
+                                                      "regions":  [
+
+                                                                  ]
+                                                  },
+                     "Classic/Buttons/p0":  {
+                                                "captures":  6,
+                                                "stable":  true,
+                                                "dimensionMismatch":  0,
+                                                "regions":  [
+
+                                                            ]
+                                            },
+                     "Classic/Containers/p0":  {
+                                                   "captures":  6,
+                                                   "stable":  true,
+                                                   "dimensionMismatch":  0,
+                                                   "regions":  [
+
+                                                               ]
+                                               },
+                     "Classic/Data/p0":  {
+                                             "captures":  6,
+                                             "stable":  true,
+                                             "dimensionMismatch":  0,
+                                             "regions":  [
+
+                                                         ]
+                                         },
+                     "Classic/Data/p1":  {
+                                             "captures":  6,
+                                             "stable":  true,
+                                             "dimensionMismatch":  0,
+                                             "regions":  [
+
+                                                         ]
+                                         },
+                     "Classic/Dropdown/p0":  {
+                                                 "captures":  6,
+                                                 "stable":  true,
+                                                 "dimensionMismatch":  0,
+                                                 "regions":  [
+
+                                                             ]
+                                             },
+                     "Classic/Foundation/p0":  {
+                                                   "captures":  6,
+                                                   "stable":  true,
+                                                   "dimensionMismatch":  0,
+                                                   "regions":  [
+
+                                                               ]
+                                               },
+                     "Classic/Icons/p0":  {
+                                              "captures":  6,
+                                              "stable":  true,
+                                              "dimensionMismatch":  0,
+                                              "regions":  [
+
+                                                          ]
+                                          },
+                     "Classic/Input/p0":  {
+                                              "captures":  6,
+                                              "stable":  true,
+                                              "dimensionMismatch":  0,
+                                              "regions":  [
+
+                                                          ]
+                                          },
+                     "Classic/Layout/p0":  {
+                                               "captures":  6,
+                                               "stable":  true,
+                                               "dimensionMismatch":  0,
+                                               "regions":  [
+
+                                                           ]
+                                           },
+                     "Classic/Layout/p1":  {
+                                               "captures":  6,
+                                               "stable":  true,
+                                               "dimensionMismatch":  0,
+                                               "regions":  [
+
+                                                           ]
+                                           },
+                     "Classic/Layout/p2":  {
+                                               "captures":  6,
+                                               "stable":  true,
+                                               "dimensionMismatch":  0,
+                                               "regions":  [
+
+                                                           ]
+                                           },
+                     "Classic/Layout/p3":  {
+                                               "captures":  6,
+                                               "stable":  false,
+                                               "dimensionMismatch":  0,
+                                               "regions":  [
+                                                               {
+                                                                   "x":  262,
+                                                                   "y":  670,
+                                                                   "w":  28,
+                                                                   "h":  20,
+                                                                   "px":  305
+                                                               }
+                                                           ]
+                                           },
+                     "Classic/Layout/p4":  {
+                                               "captures":  6,
+                                               "stable":  false,
+                                               "dimensionMismatch":  0,
+                                               "regions":  [
+                                                               {
+                                                                   "x":  262,
+                                                                   "y":  422,
+                                                                   "w":  28,
+                                                                   "h":  20,
+                                                                   "px":  344
+                                                               }
+                                                           ]
+                                           },
+                     "Classic/List/p0":  {
+                                             "captures":  6,
+                                             "stable":  true,
+                                             "dimensionMismatch":  0,
+                                             "regions":  [
+
+                                                         ]
+                                         },
+                     "Classic/List/p1":  {
+                                             "captures":  6,
+                                             "stable":  true,
+                                             "dimensionMismatch":  0,
+                                             "regions":  [
+
+                                                         ]
+                                         },
+                     "Classic/Navigation/p0":  {
+                                                   "captures":  6,
+                                                   "stable":  true,
+                                                   "dimensionMismatch":  0,
+                                                   "regions":  [
+
+                                                               ]
+                                               },
+                     "Classic/Overlays/p0":  {
+                                                 "captures":  6,
+                                                 "stable":  true,
+                                                 "dimensionMismatch":  0,
+                                                 "regions":  [
+
+                                                             ]
+                                             },
+                     "Classic/Pickers/p0":  {
+                                                "captures":  6,
+                                                "stable":  true,
+                                                "dimensionMismatch":  0,
+                                                "regions":  [
+
+                                                            ]
+                                            },
+                     "Classic/Primitives/p0":  {
+                                                   "captures":  6,
+                                                   "stable":  true,
+                                                   "dimensionMismatch":  0,
+                                                   "regions":  [
+
+                                                               ]
+                                               },
+                     "Classic/Range/p0":  {
+                                              "captures":  6,
+                                              "stable":  false,
+                                              "dimensionMismatch":  0,
+                                              "regions":  [
+                                                              {
+                                                                  "x":  230,
+                                                                  "y":  414,
+                                                                  "w":  60,
+                                                                  "h":  20,
+                                                                  "px":  1166
+                                                              },
+                                                              {
+                                                                  "x":  302,
+                                                                  "y":  454,
+                                                                  "w":  100,
+                                                                  "h":  20,
+                                                                  "px":  2080
+                                                              },
+                                                              {
+                                                                  "x":  230,
+                                                                  "y":  454,
+                                                                  "w":  44,
+                                                                  "h":  20,
+                                                                  "px":  274
+                                                              },
+                                                              {
+                                                                  "x":  318,
+                                                                  "y":  414,
+                                                                  "w":  20,
+                                                                  "h":  20,
+                                                                  "px":  125
+                                                              }
+                                                          ]
+                                          },
+                     "Classic/Selection/p0":  {
+                                                  "captures":  6,
+                                                  "stable":  true,
+                                                  "dimensionMismatch":  0,
+                                                  "regions":  [
+
+                                                              ]
+                                              },
+                     "Classic/Selection/p1":  {
+                                                  "captures":  6,
+                                                  "stable":  true,
+                                                  "dimensionMismatch":  0,
+                                                  "regions":  [
+
+                                                              ]
+                                              },
+                     "Classic/ThemeSwitcher/p0":  {
+                                                      "captures":  6,
+                                                      "stable":  true,
+                                                      "dimensionMismatch":  0,
+                                                      "regions":  [
+
+                                                                  ]
+                                                  },
+                     "Classic/Verification/p0":  {
+                                                     "captures":  6,
+                                                     "stable":  true,
+                                                     "dimensionMismatch":  0,
+                                                     "regions":  [
+
+                                                                 ]
+                                                 },
+                     "Classic/Verification/p1":  {
+                                                     "captures":  6,
+                                                     "stable":  true,
+                                                     "dimensionMismatch":  0,
+                                                     "regions":  [
+
+                                                                 ]
+                                                 }
+                 }
+}
