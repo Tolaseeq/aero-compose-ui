@@ -4,13 +4,13 @@ milestone: v3.1
 milestone_name: Dependency Refresh + Hot Reload MCP
 status: executing
 stopped_at: Completed 21-03-PLAN.md
-last_updated: "2026-09-23T13:57:14.195Z"
+last_updated: "2026-09-23T14:29:30.232Z"
 last_activity: 2026-09-23 -- Phase 21 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 14
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-23 — v3.1 roadmap created)
 ## Current Position
 
 Phase: 21 (migration-release-3-1-0) — EXECUTING
-Plan: 4 of 14
+Plan: 5 of 14
 Status: Executing Phase 21
 Last activity: 2026-09-23 -- Phase 21 execution started
 
@@ -82,6 +82,7 @@ Full decision log lives in PROJECT.md "Key Decisions". Rules that constrain any 
 - **[v3.1]** `PrintWindow(hwnd, hdc, 2)` is the only sanctioned window-capture method for before/after comparison — the MCP server's own `take_screenshot` tool is a real `java.awt.Robot` screen scrape (confirmed by source read at Hot Reload tag `v1.2.0`) and is banned project-wide: it captured the maintainer's personal browser once already
 - **[v3.1]** `.mcp.json` must invoke `cmd /c .\gradlew.bat ...` with the explicit path — bare `gradlew.bat`/`./gradlew` fail on this machine (`NoDefaultCurrentDirectoryInExePath=1`, no POSIX shebang spawn on Windows)
 - **[v3.1]** `.planning/research/MCP-HOWTO.md` (maintainer-verified, first-hand) wins over the desk-research files (SUMMARY.md / STACK / FEATURES / ARCHITECTURE / PITFALLS) wherever they disagree
+- **[v3.1]** BASE-03/BASE-04/BASE-05 pre-upgrade baseline (Phase 21 Plan 04) is captured and named: two independent showcase sweeps (75 frames each, 96 DPI) found only `AeroProgressBar` indeterminate shimmer and `LayoutSection`'s 30fps recompose-drive counter as showcase noise (9/75 keys, all <0.5% frame area); UI-test captures (200 keys) carry zero run-to-run noise. `21-noise-regions.json`/`21-BASELINE.md`/`21-NOISE.md` are the D-05 threshold source for every post-upgrade VER-07/VER-08 comparison
 
 ### Open technical debt
 
@@ -111,7 +112,7 @@ Full decision log lives in PROJECT.md "Key Decisions". Rules that constrain any 
 
 ## Session Continuity
 
-Last session: 2026-09-23T13:57:14.187Z
+Last session: 2026-09-23T14:28:49.560Z
 Stopped at: Completed 21-03-PLAN.md
 Resume file: .planning/phases/21-migration-release-3-1-0/21-04-PLAN.md
 Next action: `/bm:plan-phase 21`
