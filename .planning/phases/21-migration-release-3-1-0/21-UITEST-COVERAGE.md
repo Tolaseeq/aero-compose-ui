@@ -88,3 +88,24 @@ the OLD toolchain (Kotlin 2.4.10 / Compose Multiplatform 1.11.1), against a 480x
 D-09 check: `grep -cE "Clock|todayLocalDate|now\(" AeroCalendarGrid.kt` = `0` — AeroCalendarGrid has
 no today-highlight, confirming a fixed `value` is sufficient for deterministic picker frames
 (D-09 confirmed).
+
+## Task 2 — Menu/overlay popup components (`D07MenuPopupCaptureTest.kt`)
+
+All open via real UI-test input only (`performClick`/`performMouseInput`/`performKeyInput` —
+never `java.awt.Robot` or OS input). Capture method for every row below is `captureOpened()`
+(M1 `onRoot()` for the closed capture, automatic M2 `onAllNodes(isRoot())` fallback for the
+opened capture — see "Popup capture method" above). All 24 tests (3 AeroDropdown from Task 1 +
+21 here) pass on the OLD toolchain (Kotlin 2.4.10 / Compose Multiplatform 1.11.1); every row
+produced a genuine `pixelMapsDiffer(closed, opened) == true` result — no component needed the
+D-08 fallback.
+
+| Component | Theme | Open input | Capture method | Image assertion kept | D-08 status |
+|---|---|---|---|---|---|
+| AeroDropdown | AeroBlue / AeroDark / Classic | `performClick()` on trigger | captureOpened() (M1→M2) | yes | not needed — M2 fallback captures the popup |
+| AeroComboBox | AeroBlue / AeroDark / Classic | `performClick()` focuses the field (empty text already matches every option per `shouldAutoOpen`) | captureOpened() (M1→M2) | yes | not needed |
+| AeroContextMenu | AeroBlue / AeroDark / Classic | `performMouseInput { rightClick(center) }` | captureOpened() (M1→M2) | yes | not needed |
+| AeroMenuBar | AeroBlue / AeroDark / Classic | `performClick()` on the "File" top-level label | captureOpened() (M1→M2) | yes | not needed |
+| AeroTooltip | AeroBlue / AeroDark / Classic | `performMouseInput { moveTo(center) }` + `mainClock.advanceTimeBy(700)` (past the 600ms show delay) | captureOpened() (M1→M2) | yes | not needed |
+| AeroPopover | AeroBlue / AeroDark / Classic | `performClick()` on an anchor-side "Open" button | captureOpened() (M1→M2) | yes | not needed |
+| AeroDrawer | AeroBlue / AeroDark / Classic | `performClick()` on "Open drawer" + `mainClock.advanceTimeBy(400)` (past the 220ms slide) | captureOpened() (M1→M2) | yes | not needed |
+| AeroColorPickerButton | AeroBlue / AeroDark / Classic | `performClick()` on the 32dp swatch trigger; popup-only "Original" label asserted | captureOpened() (M1→M2) | yes | not needed |
