@@ -112,3 +112,7 @@ All three ROADMAP step-5 dependency bumps are complete; the full final toolchain
 ---
 *Phase: 21-migration-release-3-1-0*
 *Completed: 2026-09-23*
+
+## Self-Check: PASSED
+
+All created/modified files confirmed present on disk; all 4 commits (`19dbce3`, `1b9e847`, `65e9617`, `97e4761`) confirmed present in `git log`.
