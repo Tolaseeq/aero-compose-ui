@@ -98,4 +98,4 @@ Requirement-level map from RESEARCH.md § Validation Architecture. The planner a
 - [x] Feedback latency ≤ one full-suite run (local test sampling; JitPack polling in 21-13 / 21-14 is a remote-build wait, not test feedback)
 - [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** approved 2026-09-23 (plan-checker iteration 1)
+**Approval:** approved 2026-09-23 (plan-checker iteration 2)
