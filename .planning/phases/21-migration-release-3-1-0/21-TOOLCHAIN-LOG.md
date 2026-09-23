@@ -361,3 +361,70 @@ in Step 3c, not newly introduced by this bump and out of this task's file scope.
 deprecation or warning appeared.
 
 **Commit:** `build(21-09): kotlinx-coroutines 1.11.0 (TOOL-13)`.
+
+## Step 5b — kotlinx-datetime 0.8.0 (TOOL-14)
+
+**First step (SUMMARY Conflict 1 — empirical tiebreaker):** catalog changed to
+`kotlinxDatetime = "0.8.0"` (plain — never `-0.6.x-compat`), nothing else touched, then
+`./gradlew :library:compileKotlin :library:compileTestKotlin :showcase:compileKotlin --continue --console=plain`
+run against that alone. Verbatim `e:` lines (the only errors produced — `:library:compileTestKotlin`
+and `:showcase:compileKotlin` never ran because Gradle's module dependency graph aborts them once
+`:library:compileKotlin` fails, even under `--continue`):
+
+```
+e: file:///C:/1A_WORK/ui_lib/library/src/main/kotlin/com/mordred/aero/components/pickers/AeroDatePicker.kt:168:11 Unresolved reference 'System'.
+e: file:///C:/1A_WORK/ui_lib/library/src/main/kotlin/com/mordred/aero/components/pickers/AeroDateRangePicker.kt:264:11 Unresolved reference 'System'.
+e: file:///C:/1A_WORK/ui_lib/library/src/main/kotlin/com/mordred/aero/components/pickers/AeroDateTimePicker.kt:197:11 Unresolved reference 'System'.
+e: file:///C:/1A_WORK/ui_lib/library/src/main/kotlin/com/mordred/aero/components/pickers/AeroDateTimeRangePicker.kt:334:11 Unresolved reference 'System'.
+```
+
+**Outcome: compile break at 4 sites** — all four are the `Clock.System.now()` call inside each
+picker's `todayLocalDate()` helper; `kotlinx.datetime.Clock` no longer resolves in plain 0.8.0
+(0.7.0+ moved it to `kotlin.time.Clock`, per the 21-RESEARCH.md changelog citation).
+
+**Fix applied (documented 1:1 replacement, call syntax unchanged):** `import kotlinx.datetime.Clock`
+→ `import kotlin.time.Clock` in the 4 files above. No other import or call-site change was needed —
+`kotlinx.datetime.Instant` was never imported by any of these files, so that companion rename did not
+apply.
+
+**Re-compile after the fix:** same three-task command → `BUILD SUCCESSFUL in 47s`, zero `e:` lines.
+Datetime-related `w:` (deprecation warning) lines, verbatim, all in the sites the 21-RESEARCH.md list
+predicted for `.dayOfMonth`/`.monthNumber` (10 sites across library main, library test, and showcase):
+
+```
+w: .../AeroDatePicker.kt:150:34 'val dayOfMonth: Int' is deprecated. Use the 'day' property instead.
+w: .../AeroDatePicker.kt:150:51 'val monthNumber: Int' is deprecated. Use the 'month' property instead.
+w: .../AeroDateTimePicker.kt:220:35 'val monthNumber: Int' is deprecated. Use the 'month' property instead.
+w: .../AeroDateTimePicker.kt:220:53 'val dayOfMonth: Int' is deprecated. Use the 'day' property instead.
+w: .../internal/calendar/AeroCalendarGrid.kt:71:66 'val monthNumber: Int' is deprecated. Use the 'month' property instead.
+w: .../internal/calendar/AeroCalendarGrid.kt:150:82 'val monthNumber: Int' is deprecated. Use the 'month' property instead.
+w: .../src/test/.../AeroCalendarGridTest.kt:38:36 'val dayOfMonth: Int' is deprecated. Use the 'day' property instead.
+w: showcase/.../DataSection.kt:82:70 'val dayOfMonth: Int' is deprecated. Use the 'day' property instead.
+w: showcase/.../DataSection.kt:82:92 'val monthNumber: Int' is deprecated. Use the 'month' property instead.
+w: showcase/.../PickersSection.kt:64:68/64:83, 112:61/112:86/112:158/112:181, 146:70/146:85, 164:57/164:78/164:142/164:161 — dayOfMonth/monthNumber pairs, same deprecation message
+```
+
+**Decision per this task's own rule ("fix ONLY the sites the compiler reported as errors... Warnings
+are recorded, not changed"):** `.dayOfMonth`/`.monthNumber` are `w:` lines, not `e:` lines, in this
+kotlinx-datetime version — the properties still resolve and still work, only flagged deprecated-for-
+future-removal. 21-RESEARCH.md's Pitfall 1 anticipated these 10 sites as compile breaks; the empirical
+compile run in this step supersedes that expectation (Conflict 1) — they are warnings, left untouched,
+per the plan's explicit warnings-are-recorded-not-changed rule. `AeroTimePicker.kt:25` and
+`showcase/.../IconsSection.kt:65,213` (icon-glyph `Clock`, unrelated false positives) were not touched,
+confirmed by an empty `git diff` on both files.
+
+**Files actually edited vs. the research list:** research listed 4 `Clock`-import sites (library only)
++ 10 `.dayOfMonth`/`.monthNumber` sites (library/test/showcase) = 14 candidate sites. Actual edits: the
+4 `Clock`-import sites only — the compiler treated the other 10 as warnings, not errors, so this task's
+own rule kept them out of scope. `git diff` for this commit touches exactly: the catalog line and the
+4 picker files' single import line each — nothing else.
+
+**Behaviour check:**
+`./gradlew :library:test --rerun --tests "com.mordred.aero.components.pickers.*" --tests "*AeroCalendarGridTest*" --tests "com.mordred.aero.capture.D07PickerPopupCaptureTest"`
+→ `AERO_TEST_COUNT total=80 skipped=0 expected=541 expectedSkipped=0 filtered=true`, `BUILD SUCCESSFUL`
+— all green, no test logic changed. `./gradlew :showcase:compileKotlin -q` → clean exit, no output.
+Full gate: `./gradlew :library:test --rerun` → `AERO_TEST_COUNT total=541 skipped=0 expected=541 expectedSkipped=0 filtered=false`, `BUILD SUCCESSFUL`.
+
+**Compat check:** `grep -c compat gradle/libs.versions.toml` → `0`.
+
+**Commit:** `build(21-09): kotlinx-datetime 0.8.0 with compiler-forced renames (TOOL-14)`.

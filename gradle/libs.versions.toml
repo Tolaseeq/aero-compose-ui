@@ -4,7 +4,7 @@ composeMultiplatform = "1.12.0"
 composeHotReload = "1.2.0"
 kotlinxCoroutines = "1.11.0"
 junit = "5.10.0"
-kotlinxDatetime = "0.6.2"
+kotlinxDatetime = "0.8.0"
 
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }

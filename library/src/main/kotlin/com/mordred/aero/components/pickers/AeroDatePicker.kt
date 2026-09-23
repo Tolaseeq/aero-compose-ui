@@ -24,7 +24,7 @@ import com.mordred.aero.icons.AeroIcons
 import com.mordred.aero.icons.`internal`.Calendar
 import com.mordred.aero.icons.`internal`.X
 import com.mordred.aero.theme.AeroTheme
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
