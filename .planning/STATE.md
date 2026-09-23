@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v3.1
 milestone_name: Dependency Refresh + Hot Reload MCP
-status: ready_to_execute
-stopped_at: Phase 21 planned (14 plans, 13 waves)
-last_updated: "2026-09-23T12:50:13.036Z"
-last_activity: 2026-09-23 — Phase 21 planned (14 plans, plan-checker passed on iteration 3)
+status: executing
+stopped_at: Completed 21-01-PLAN.md
+last_updated: "2026-09-23T13:18:02.121Z"
+last_activity: 2026-09-23 -- Phase 21 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 14
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-23 — v3.1 roadmap created)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, typed `AeroIcons`, and a showcase — no manual style work or icon-pack hunting required.
-**Current focus:** Phase 21 is planned (14 plans, 13 waves; 24/24 requirements and 11/11 decisions covered). Next: `/bm:execute-phase 21`.
+**Current focus:** Phase 21 — migration-release-3-1-0
 
 ## Current Position
 
-Phase: 21 — Migration + Release 3.1.0 (planned, not started)
-Plan: 21-01 / 21-02 next (wave 1 of 13)
-Status: Ready to execute
-Last activity: 2026-09-23 — Phase 21 planned (14 plans, plan-checker passed on iteration 3)
+Phase: 21 (migration-release-3-1-0) — EXECUTING
+Plan: 2 of 14
+Status: Executing Phase 21
+Last activity: 2026-09-23 -- Phase 21 execution started
 
 ## Deferred Items
 
@@ -111,9 +111,9 @@ Full decision log lives in PROJECT.md "Key Decisions". Rules that constrain any 
 
 ## Session Continuity
 
-Last session: 2026-09-23T10:53:46.074Z
-Stopped at: Phase 21 context gathered
-Resume file: .planning/phases/21-migration-release-3-1-0/21-CONTEXT.md
+Last session: 2026-09-23T13:18:02.110Z
+Stopped at: Completed 21-01-PLAN.md
+Resume file: .planning/phases/21-migration-release-3-1-0/21-02-PLAN.md
 Next action: `/bm:plan-phase 21`
 
 ## Operator Next Steps
