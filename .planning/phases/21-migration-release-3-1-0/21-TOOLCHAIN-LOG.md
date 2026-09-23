@@ -140,3 +140,52 @@ the executor did not attempt to kill or work around that process; the orchestrat
 after which the same command succeeded unmodified. No build or code file needed any change for this.
 
 **Commit:** `build(21-06): Gradle 9.7.1 wrapper, drop stale JetBrains Space repo (TOOL-09)`.
+
+## Step 3b — JDK 21 (TOOL-10)
+
+**Changed:** `jvmToolchain(17)` → `jvmToolchain(21)` in `library/build.gradle.kts` and
+`showcase/build.gradle.kts` — no other lines touched in either file (`explicitApi()` in `:library`
+kept as-is).
+
+**`./gradlew -q javaToolchains` (before choosing anything):** lists five distinct JDK 21 installs
+(Eclipse Temurin 21.0.9 at `C:\Program Files\Eclipse Adoptium\jdk-21.0.9.10-hotspot`, JetBrains JDK
+21.0.9 at `C:\Users\1\.jdks\jbr-21.0.9`, Microsoft JDK 21.0.9 at `C:\Users\1\.jdks\ms-21.0.9`) plus
+JDK 8/17/25 — confirming JDK 21 is already Gradle-visible without foojay, per MCP-HOWTO.md.
+
+**`jitpack.yml`:** `jdk: [openjdk21]`; SDKMAN identifier fetched live from
+`https://api.sdkman.io/2/candidates/java/linuxx64/versions/list?installed=`, not guessed — highest
+`21.0.*-tem` entry in the returned Temurin row was `21.0.12+1.1-tem`:
+```
+jdk:
+  - openjdk21
+before_install:
+  - sdk install java 21.0.12+1.1-tem
+  - sdk use java 21.0.12+1.1-tem
+```
+
+**Gate:** `./gradlew build --console=plain` → `BUILD SUCCESSFUL in 31s`; `./gradlew :library:test --rerun`
+printed `AERO_TEST_COUNT total=541 skipped=0 expected=541 expectedSkipped=0 filtered=false` and
+`BUILD SUCCESSFUL in 11s`.
+
+**Bytecode check:** `./gradlew :library:jar :library:generateMetadataFileForMavenPublication` →
+`BUILD SUCCESSFUL`. First class in the jar:
+```
+> jar.exe tf library/build/libs/library-3.0.0.jar | grep "\.class$" | head -1
+com/mordred/aero/components/buttons/AeroButtonKt.class
+```
+```
+> javap.exe -v -cp library/build/libs/library-3.0.0.jar com.mordred.aero.components.buttons.AeroButtonKt
+  minor version: 0
+  major version: 65
+```
+(major version 65 = Java 21, both jar and javap run from `C:/Users/1/.jdks/jbr-21.0.9/bin`.)
+
+**Metadata check:** `grep -c '"org.gradle.jvm.version": 21' library/build/publications/maven/module.json`
+→ `2` (present on both the `apiElements`/`runtimeElements` variants).
+
+**Warnings:** a full clean rebuild (`rm -rf library/build showcase/build build`, then
+`./gradlew build --refresh-dependencies --console=plain --warning-mode all`) printed **zero**
+deprecation/warning lines — the Step 3a `jvmToolchain(17)` auto-provisioning warning is gone now that
+both modules resolve `jvmToolchain(21)` against an already-installed JDK (not auto-provisioned).
+
+**Commit:** `build(21-06): JDK 21 toolchain for library, showcase and JitPack (TOOL-10)`.
