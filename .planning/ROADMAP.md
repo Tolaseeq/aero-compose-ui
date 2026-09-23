@@ -11,7 +11,7 @@ A Compose Desktop UI component library styled after Windows Aero (Windows 7): gl
 - ✅ **v2.0.2 AeroPanelGroup** — Phases 13 + 13.1 (shipped 2026-06-23) — N-section collapsible+resizable layout, vertical + horizontal orientations
 - ✅ **v2.0.4 PanelGroup Recompose Fix** — Phase 14 (shipped 2026-06-26) — horizontal-controlled recompose-during-drag duplication fix (real root cause: non-`@Composable` DSL); v2.0.3 was a superseded wrong-cause release
 - ✅ **v3.0 Glass Refinement** — Phases 15–20 (shipped 2026-07-29) — toolchain migration (Kotlin 2.4.10 / CMP 1.11.1), repaired + extended Aero primitives layer, eight components restyled to genuine Win7 glass
-- 📋 **v3.x / next** — not yet scoped (`/gsd-new-milestone`)
+- 🚧 **v3.1 Dependency Refresh + Hot Reload MCP** — Phase 21 (in progress) — forced upgrade to latest stable toolchain/deps, Compose Hot Reload + MCP server for agent-driven showcase QA, `3.1.0` on JitPack
 
 Full ship-time snapshots (milestone goal, all phase details, decisions, tech debt) are archived per milestone:
 
@@ -102,6 +102,38 @@ Details: `.planning/milestones/v2.0.4-ROADMAP.md` · Summary: `.planning/MILESTO
 Details: `.planning/milestones/v3.0-ROADMAP.md` · Requirements: `.planning/milestones/v3.0-REQUIREMENTS.md` · Phase artifacts: `.planning/milestones/v3.0-phases/` · Summary: `.planning/MILESTONES.md`
 </details>
 
+### 🚧 v3.1 Dependency Refresh + Hot Reload MCP (Phase 21) — IN PROGRESS
+
+**Milestone Goal:** Move the whole project onto the latest stable dependency/toolchain versions, prove nothing broke, and ship `3.1.0` on JitPack. Compose Hot Reload + its MCP server are installed along the way as the agent's own GUI-inspection tool — a means, not a deliverable.
+
+**Global stop rule:** if any upgrade or JBR setup needs more than a version bump plus mechanical renames forced by the new API, or the MCP moves the real cursor / steals input focus — stop and ask the maintainer. No workarounds.
+
+**Size:** one migration = one phase (maintainer's decision). Attributability of upgrade regressions comes from separately committed, separately test-gated steps inside the phase, not from extra phases.
+
+- [ ] **Phase 21: Migration + Release 3.1.0** - Pre-upgrade baseline, every dependency and the toolchain on latest stable (each bump its own test-gated commit), Hot Reload + MCP installed as the inspection tool, no drift against the baseline, `3.1.0` on JitPack
+
+## Phase Details
+
+### Phase 21: Migration + Release 3.1.0
+**Goal**: Every dependency and toolchain piece sits on its latest stable version (Gradle 9.7.1, JDK 21, Kotlin 2.4.20, Compose Multiplatform 1.12.0, kotlinx-coroutines 1.11.0, kotlinx-datetime 0.8.0 plain, JUnit 6.1.3; Material3 stays pinned at stable 1.9.0), it is demonstrated against a pre-upgrade baseline that nothing broke, and `3.1.0` is published on JitPack. Compose Hot Reload + MCP is installed in `:showcase` as the tool the agent uses to inspect the GUI itself (`.planning/research/MCP-HOWTO.md`).
+**Depends on**: Nothing (only phase of v3.1)
+**Requirements**: BASE-01, BASE-02, BASE-03, BASE-04, BASE-05, TOOL-09, TOOL-10, TOOL-11, TOOL-12, TOOL-13, TOOL-14, TOOL-15, TOOL-16, TOOL-17, HRM-01, HRM-02, HRM-03, VER-07, VER-08, VER-09, VER-10, REL-03, REL-04, REL-05
+**Execution order inside the phase** (each step is its own commit; every upgrade step is gated by a full test run before the next):
+  1. Baseline on the current toolchain (Kotlin 2.4.10 / CMP 1.11.1): theme + section launch parameter, `PrintWindow` capture helper, noise characterization, section × theme frames, UI-test state captures. The first UI-test step proves `captureToImage` works in desktop `runComposeUiTest` — if not, stop and ask
+  2. Lock the literal test count on the old toolchain and prove the count guard fails red on a deliberately excluded test class
+  3. Gradle 9.7.1 + JDK 21 → Kotlin 2.4.20 + CMP 1.12.0 (+ Material3 `dependencyInsight` check)
+  4. Hot Reload 1.2.0 + `.mcp.json` in `:showcase` — one commit. **Human action:** the maintainer restarts Claude Code so the MCP server connects
+  5. kotlinx-coroutines 1.11.0 → kotlinx-datetime 0.8.0 → JUnit 6.1.3
+  6. Post-upgrade captures (MCP + `PrintWindow`) and UI-test frames compared with the baseline; unconfirmed list; hand-off to the maintainer only after the agent's own sweep
+  7. Throwaway JitPack verify tag → README consumer floor → `3.1.0` + `v3.1.0` tag
+**Success Criteria** (what must be TRUE):
+  1. Reference frames for every showcase section × 3 themes and UI-test images of hover / press / keyboard focus / drag (interactive v3.0 glass components + `AeroSplitPane`, `AeroPanelGroup`, `AeroDataTable` column resize) exist outside `build/`, were taken on the old toolchain with a helper that never touches the real cursor or input focus, and every noisy region is named
+  2. Every target version is in, each bump landed as its own commit with the full suite green at exactly the test count locked before the upgrade (guard proven red first); `dependencyInsight --dependency material3` shows no alpha on either module, including after Hot Reload is added; picker behavior and tests unchanged; the showcase builds and runs; published bytecode is class-file 65 with `org.gradle.jvm.version = 21`
+  3. Hot Reload + MCP sits in `:showcase` only (`:library`'s POM / module metadata unchanged), connects after the Claude Code restart and sees the showcase; the agent has measured itself that capture, tree dump and click leave the cursor position and foreground window unchanged, including with the showcase covered or minimized — reported as a short fact, never using the server's `take_screenshot`
+  4. Post-upgrade frames and UI-test images are compared with the baseline: every difference outside the named noisy regions is explained with a stated cause or fixed; everything confirmed by neither method is listed separately as "unconfirmed"; the maintainer sees the GUI only after the agent's own sweep, together with the frames and both lists
+  5. A throwaway verify tag builds green on JitPack under JDK 21 / Gradle 9.7.1 before the real tag exists; README states the new consumer floor and fixes the stale toolchain line; **outward-facing, needs the maintainer's confirmation at execution time:** `3.1.0` is set in `build.gradle.kts`, `v3.1.0` is pushed, the JitPack build is `ok`, and `com.github.Tolaseeq:aero-compose-ui:3.1.0` resolves
+**Plans**: TBD
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -127,18 +159,12 @@ Details: `.planning/milestones/v3.0-ROADMAP.md` · Requirements: `.planning/mile
 | 18. Range | v3.0 | 4/4 | Complete | 2026-07-24 |
 | 19. Selectors + Lists | v3.0 | 12/12 | Complete | 2026-07-28 |
 | 20. Verification | v3.0 | 9/9 | Complete | 2026-07-29 |
+| 21. Migration + Release 3.1.0 | v3.1 | 0/TBD | Not started | - |
 
 ## Next Milestone
 
-Not yet scoped. Run `/gsd-new-milestone` — questioning → research → requirements → roadmap. Phase numbering continues from **21**.
-
-Candidate carry-overs for scoping (full list in PROJECT.md and `.planning/todos/pending/`):
-
-- Deferred from v3.0: G4 ornament-token brightness on AeroBlue/AeroDark; `AeroRangeSlider` keyboard focus; IN-01 `GlassModifiers.kt` clip gap (~40-component blast radius); scratch/proof files still under `showcase/src/main`; label-contrast WCAG floor
-- VIS-F01 — visual sweep of the remaining ~40 components; VLST-F01 list-item mirror reflection; VRNG-F01 Win7 ping-pong indeterminate
-- DROP-FIX-01 — `AeroDropdown` popup offset regression (carried since v1.0)
-- `AeroPanelGroup`: PNL-REORDER-01, PNL-NEST-01, PNL-KBD-01
+Not yet scoped. Candidate goals are tracked in `.planning/PROJECT.md` § "Next Milestone Goals" (v3.0 debt, VIS-F01 visual sweep of the remaining ~40 components, `AeroPanelGroup` reorder/nest/keyboard-resize, `AeroDropdown` popup-offset carry-over). Phase numbering will continue from **22** once v3.1 ships.
 
 ---
 
-*Roadmap last updated: 2026-07-29 — v3.0 Glass Refinement shipped and archived (Phases 15–20, 41 plans, 57/57 requirements).*
+*Roadmap last updated: 2026-09-23 — v3.1 Dependency Refresh + Hot Reload MCP roadmapped (one phase, 21 — one migration = one phase per the maintainer; 24/24 requirements mapped, plans TBD). Previous: 2026-07-29 after v3.0 Glass Refinement shipped and archived (Phases 15–20, 41 plans, 57/57 requirements).*

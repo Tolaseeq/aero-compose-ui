@@ -39,22 +39,11 @@
 
 ### Hot Reload + MCP (HRM)
 
-- [ ] **HRM-01**: Gradle-плагин Compose Hot Reload (`org.jetbrains.compose.hot-reload`) — инструмент разработки, не зависимость библиотеки: подмена кода в работающем приложении без перезапуска + MCP-сервер. Версия 1.2.0 — последняя стабильная (1.3.0 пока только alpha), указана явно в каталоге версий, чтобы не менялась молча вместе с плагином Compose. Применён только в `:showcase` — в приложении, которое запускается для отладки; `:library` не запускается и не должна тащить инструмент отладки потребителям. `library/build.gradle.kts` не меняется; сгенерированные POM и module metadata `:library` совпадают с теми, что были до установки
-- [ ] **HRM-02**: `.\gradlew.bat :showcase:tasks --all` показывает `hotRun` и `hotMcpServer`; витрина стартует через `hotRun` на JetBrains Runtime 21, и выбор темы и раздела (BASE-01) доходит до горячего запуска так же, как до обычного `run`
-- [ ] **HRM-03**: `.mcp.json` в корне запускает сервер командой `cmd /c .\gradlew.bat --no-daemon --quiet --console=plain hotMcpServer`. Путь к `gradlew.bat` явный: на этой машине `NoDefaultCurrentDirectoryInExePath=1`. Gradle 9.7.1 и JBR прогреты заранее, чтобы сообщения о загрузке не попали в канал MCP
-- [ ] **HRM-04**: Установка Hot Reload + MCP (каталог версий, плагин, `.mcp.json`, проброс темы и раздела в горячий запуск) — один коммит
-- [ ] **HRM-05**: После перезапуска Claude Code `status` отвечает `connected: true`, `list_windows` возвращает непустой список, `get_semantic_tree` — дерево витрины
-- [ ] **HRM-06**: Навигация и значимые интерактивные элементы витрины помечены `testTag`, и агент находит их в семантическом дереве однозначно, без угадывания по совпадающим подписям. Только `:showcase`
-- [ ] **HRM-07**: Проверено на деле, подхватывает ли Hot Reload правку кода компонента в `:library` (модуль-зависимость витрины) без перезапуска витрины: пробная правка → `.\gradlew.bat reload` → изменение видно в дереве и на кадре. Результат записан как факт; если не подхватывает — зафиксирован рабочий порядок через `restart`, тоже без мыши и фокуса. Документация этот случай не описывает
+Инструмент, а не цель вехи: через него агент сам смотрит и кликает витрину после обновления. Ставится по `.planning/research/MCP-HOWTO.md`.
 
-### Non-Interference Proof (NIF)
-
-Каждый пункт — измеренный факт, а не допущение: положение курсора (`GetCursorPos`) и активное окно (`GetForegroundWindow`) снимаются до и после.
-
-- [ ] **NIF-01**: Пока мейнтейнер печатает в другом окне, агент снимает кадр витрины, получает семантическое дерево и кликает элемент. Курсор не сдвинулся, активное окно не сменилось, набор текста не прервался, а клик подействовал (виден в дереве и на кадре)
-- [ ] **NIF-02**: Витрина целиком закрыта другими окнами: `click` / `type_text` / `scroll` работают, кадр `PrintWindow` показывает витрину, а не закрывающее окно (проверено по пикселям фона)
-- [ ] **NIF-03**: Витрина свёрнута: агент возвращает её без активации (`ShowWindow(h, 4)`), держит внизу z-порядка, инструменты снова работают; курсор и активное окно не изменились
-- [ ] **NIF-04**: Результаты трёх сценариев сведены в отчёт мейнтейнеру: что двигалось, что нет, какие ограничения остались. Серверный `take_screenshot` не используется вовсе: он снимает область экрана и однажды уже захватил личный браузер
+- [ ] **HRM-01**: Сразу после перехода на Compose 1.12.0 одним коммитом поставлены Compose Hot Reload 1.2.0 (версия явно в каталоге) и `.mcp.json` (`cmd /c .\gradlew.bat --no-daemon --quiet --console=plain hotMcpServer`) — только в `:showcase`. `:library` и её опубликованные POM / module metadata не меняются, Material3 по-прежнему 1.9.0 (`dependencyInsight`)
+- [ ] **HRM-02**: После перезапуска Claude Code сервер подключён и видит витрину, запущенную через `hotRun` на выбранной теме и разделе (`status`, `list_windows`, `get_semantic_tree`). Где подписи в дереве неоднозначны, в витрине добавлен `testTag`. Записано, подхватывает ли `reload` правку кода `:library` без перезапуска витрины
+- [ ] **HRM-03**: Агент сам замерил, что работа через MCP не мешает пользоваться компьютером: положение курсора (`GetCursorPos`) и активное окно (`GetForegroundWindow`) до и после захвата, чтения дерева и клика не меняются — в том числе при перекрытом и свёрнутом окне витрины. Итог — короткий факт в отчёте; серверный `take_screenshot` не используется
 
 ### Verification (VER)
 
@@ -103,16 +92,38 @@
 
 ## Traceability
 
-Заполняется при создании roadmap.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
+| BASE-01 | Phase 21 | Pending |
+| BASE-02 | Phase 21 | Pending |
+| BASE-03 | Phase 21 | Pending |
+| BASE-04 | Phase 21 | Pending |
+| BASE-05 | Phase 21 | Pending |
+| TOOL-09 | Phase 21 | Pending |
+| TOOL-10 | Phase 21 | Pending |
+| TOOL-11 | Phase 21 | Pending |
+| TOOL-12 | Phase 21 | Pending |
+| TOOL-13 | Phase 21 | Pending |
+| TOOL-14 | Phase 21 | Pending |
+| TOOL-15 | Phase 21 | Pending |
+| TOOL-16 | Phase 21 | Pending |
+| TOOL-17 | Phase 21 | Pending |
+| HRM-01 | Phase 21 | Pending |
+| HRM-02 | Phase 21 | Pending |
+| HRM-03 | Phase 21 | Pending |
+| VER-07 | Phase 21 | Pending |
+| VER-08 | Phase 21 | Pending |
+| VER-09 | Phase 21 | Pending |
+| VER-10 | Phase 21 | Pending |
+| REL-03 | Phase 21 | Pending |
+| REL-04 | Phase 21 | Pending |
+| REL-05 | Phase 21 | Pending |
 
 **Coverage:**
-- v3.1 requirements: 32 total
-- Mapped to phases: 0
-- Unmapped: 32 ⚠️
+- v3.1 requirements: 24 total
+- Mapped to phases: 24
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-09-23*
-*Last updated: 2026-09-23 after initial definition*
+*Last updated: 2026-09-23 after roadmap creation — one phase (21), 24/24 mapped; HRM compressed to three items and NIF folded into HRM-03 because Hot Reload + MCP is a tool, not a goal*
