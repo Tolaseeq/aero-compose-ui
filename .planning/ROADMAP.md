@@ -132,7 +132,23 @@ Details: `.planning/milestones/v3.0-ROADMAP.md` · Requirements: `.planning/mile
   3. Hot Reload + MCP sits in `:showcase` only (`:library`'s POM / module metadata unchanged), connects after the Claude Code restart and sees the showcase; the agent has measured itself that capture, tree dump and click leave the cursor position and foreground window unchanged, including with the showcase covered or minimized — reported as a short fact, never using the server's `take_screenshot`
   4. Post-upgrade frames and UI-test images are compared with the baseline: every difference outside the named noisy regions is explained with a stated cause or fixed; everything confirmed by neither method is listed separately as "unconfirmed"; the maintainer sees the GUI only after the agent's own sweep, together with the frames and both lists
   5. A throwaway verify tag builds green on JitPack under JDK 21 / Gradle 9.7.1 before the real tag exists; README states the new consumer floor and fixes the stale toolchain line; **outward-facing, needs the maintainer's confirmation at execution time:** `3.1.0` is set in `build.gradle.kts`, `v3.1.0` is pushed, the JitPack build is `ok`, and `com.github.Tolaseeq:aero-compose-ui:3.1.0` resolves
-**Plans**: TBD
+**Plans:** 14 plans
+
+Plans:
+- [ ] 21-01-PLAN.md — Step 1: showcase section/page/capture launch parameters (BASE-01) + PrintWindow capture helper, sweep driver, covered/minimized self-test (BASE-02)
+- [ ] 21-02-PLAN.md — Step 1: captureToImage proof-of-work, opt-in UI capture writer, hover/press/focus/drag capture tests for 10 components x 3 themes (BASE-05)
+- [ ] 21-03-PLAN.md — Step 1: opened-popup capture tests for all 13 Popup components x 3 themes, fixed picker values, D-08 classification (D-07, D-09)
+- [ ] 21-04-PLAN.md — Step 1: pre-upgrade baseline — all sections x 3 themes twice, named noise regions, UI-test reference images, comparison tool (BASE-03, BASE-04, BASE-05)
+- [ ] 21-05-PLAN.md — Step 2: lock the live test count and prove the count guard red (TOOL-16)
+- [ ] 21-06-PLAN.md — Step 3: Gradle 9.7.1 + stale repo removal → JDK 21 → Kotlin 2.4.20 + CMP 1.12.0, Material3 gate, showcase launch (TOOL-09..12, TOOL-17)
+- [ ] 21-07-PLAN.md — Step 4: Compose Hot Reload 1.2.0 + .mcp.json in :showcase only, isolation checks; maintainer restarts Claude Code (HRM-01)
+- [ ] 21-08-PLAN.md — Step 4: MCP connected to the hotRun showcase, test tags, reload finding, cursor/focus non-interference measured (HRM-02, HRM-03)
+- [ ] 21-09-PLAN.md — Step 5: kotlinx-coroutines 1.11.0 → kotlinx-datetime 0.8.0 (compiler-decided renames) → JUnit 6.1.3 (TOOL-13..15)
+- [ ] 21-10-PLAN.md — Step 6: post-upgrade showcase and UI-test captures compared with the baseline, agent review (VER-07, VER-08)
+- [ ] 21-11-PLAN.md — Step 6: after-only MCP inspection (D-08), drift list + unconfirmed list + offline hand-off page, single D-04 stop if drift (VER-09)
+- [ ] 21-12-PLAN.md — Step 6: apply D-04 rulings, hand-off of the GUI to the maintainer after the agent's sweep (VER-10)
+- [ ] 21-13-PLAN.md — Step 7: throwaway JitPack verify tag on JDK 21 / Gradle 9.7.1, published bytecode check, README consumer floor (REL-03, REL-04)
+- [ ] 21-14-PLAN.md — Step 7: 3.1.0 + v3.1.0 after the maintainer's confirmation, JitPack ok, coordinate resolves (REL-05)
 
 ## Progress
 
@@ -159,7 +175,7 @@ Details: `.planning/milestones/v3.0-ROADMAP.md` · Requirements: `.planning/mile
 | 18. Range | v3.0 | 4/4 | Complete | 2026-07-24 |
 | 19. Selectors + Lists | v3.0 | 12/12 | Complete | 2026-07-28 |
 | 20. Verification | v3.0 | 9/9 | Complete | 2026-07-29 |
-| 21. Migration + Release 3.1.0 | v3.1 | 0/TBD | Not started | - |
+| 21. Migration + Release 3.1.0 | v3.1 | 0/14 | Planned | - |
 
 ## Next Milestone
 
