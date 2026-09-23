@@ -246,3 +246,97 @@ fresh under `.captures/smoke/`, nothing pre-existing overwritten, nothing under 
 pre-upgrade baseline touched).
 
 **Commit:** `build(21-06): Kotlin 2.4.20 + Compose Multiplatform 1.12.0 (TOOL-11, TOOL-12)`.
+
+## Step 4 — Hot Reload 1.2.0 (HRM-01) — pre-install
+
+**Per-module task grep (before either build file is touched):** both `./gradlew :library:tasks --all | grep -iE "hot|reload"` and `./gradlew :showcase:tasks --all | grep -iE "hot|reload"` already list the full Compose Hot Reload task set (`hotMcpServer`, `hotRun`/`hotRunAsync`, `hotDev`/`hotDevAsync`, `hotReloadMain`/`hotReloadDev`/`hotReloadTest`, `hotSnapshotMain`/`hotSnapshotDev`/`hotSnapshotTest`, `hotRunArgfile`/`hotDevArgfile`, `reload`, deprecated `runHot`) on **both modules**, identically — confirming CMP 1.12.0's `org.jetbrains.compose` plugin registers these tasks unconditionally (task registration is bundled with the Compose Multiplatform Gradle plugin itself), independent of whether `alias(libs.plugins.compose.hot.reload)` has been applied anywhere. This is a task-registration fact only, not a dependency/classpath fact — see next check.
+
+**`:library` runtimeClasspath hot-reload artifact check:** `./gradlew -q :library:dependencies --configuration runtimeClasspath | grep -ic hot-reload` → `0`. No hot-reload artifact resolves onto `:library`'s runtime classpath at this point — the pre-install acceptance threshold ("must be 0") is met, so Task 2 proceeds without a stop. The task-bundling fact above is recorded for context but is not itself a classpath change.
+
+**`:library` publication snapshot:** `./gradlew :library:generatePomFileForMavenPublication :library:generateMetadataFileForMavenPublication` → `BUILD SUCCESSFUL in 8s`. `library/build/publications/maven/pom-default.xml` and `module.json` copied to `build/aero-hrm01-before/` (both present, `build/` is gitignored).
+
+**Material3 pre-install gate:** `bash tools/verify/check-material3.sh build/aero-m3-plan07-before.log` → `MATERIAL3 OK`.
+
+## Step 4 — Hot Reload 1.2.0 (HRM-01) — Task 2 findings (maintainer-accepted)
+
+Catalog (`composeHotReload = "1.2.0"`, plugin `compose-hot-reload`) and `showcase/build.gradle.kts`
+(`alias(libs.plugins.compose.hot.reload)` + a `tasks.withType<org.jetbrains.compose.reload.gradle.ComposeHotRun>()`
+sibling forwarding block for `aero.scheme`/`aero.section`/`aero.page`/`aero.capture`) were written;
+`.mcp.json` was written at the repo root with the exact MCP-HOWTO shape and task name `hotMcpServer`.
+`library/build.gradle.kts` was NOT touched.
+
+**Task type FQN (RESEARCH A1, now confirmed):** `./gradlew :showcase:help --task hotRun` →
+`org.jetbrains.compose.reload.gradle.ComposeHotRun`, which `javap` confirms extends
+`org.jetbrains.compose.reload.gradle.AbstractComposeHotRun extends org.gradle.api.tasks.JavaExec` —
+`systemProperty(...)` is available, confirming the forwarding-block approach is valid.
+
+**Per-module task names (both `:library` and `:showcase`, unchanged before/after this task's edits):**
+`hotMcpServer`, `hotRun`/`hotRunAsync`, `hotDev`/`hotDevAsync`, `hotReloadMain`/`hotReloadDev`/`hotReloadTest`,
+`hotSnapshotMain`/`hotSnapshotDev`/`hotSnapshotTest`, `hotRunArgfile`/`hotDevArgfile`, `reload`, deprecated `runHot`.
+
+**stdio cleanliness (Pitfall 6):** one JSON-RPC `initialize` frame piped into
+`cmd.exe //c ".\gradlew.bat --no-daemon --quiet --console=plain hotMcpServer"`, time-boxed at 240s
+(`timeout 240 ...`, exit 124 as expected — the server waits for an app). `build/aero-mcp-stdout.txt`
+contains exactly one line: `{"id":1,"result":{"protocolVersion":"2024-11-05",...,"serverInfo":{"name":"compose-hot-reload","version":"1.2.0"}},"jsonrpc":"2.0"}`.
+PowerShell `ConvertFrom-Json` on every non-empty line → `ALL_LINES_JSON_OK`; `id:1` present. stderr
+carries the `JAVA_TOOL_OPTIONS` banner and Gradle daemon/logging noise only, never mixed into stdout.
+
+**hotRun smoke (SUMMARY Conflict 2 — JBR linkage):** `./gradlew :showcase:hotRun --mainClass=com.mordred.showcase.MainKt -Paero.scheme=AeroDark -Paero.section=Buttons -Paero.capture=true`
+in the background printed `AERO_READY scheme=AeroDark section=Buttons page=0 pages=1 viewportPx=768 contentPx=768 scrollPx=0 background=FF0A0A1A jvm=21.0.9/JetBrains_s.r.o.` —
+forwarding reaches `hotRun`, and the app runs on JetBrains Runtime 21.0.9 (`C:\Users\1\.jdks\jbr-21.0.9`),
+confirming JBR linkage without a foojay resolver. `Find-AeroShowcaseWindow -Title 'aero-compose-ui Showcase [capture]'`
+found exactly one window.
+
+**Listener check (T-21-03):** the app JVM (PID 32880, `-Daero.scheme=AeroDark -Daero.section=Buttons ... -Dcompose.reload.devToolsClasspath=...`,
+JBR 21.0.9) held no listening socket; its companion hot-reload orchestration JVM (PID 27460, same
+launch, JBR 21.0.9) held exactly one: `127.0.0.1:52743 LISTENING`. The `:showcase:hotRun` Gradle
+client (PID 6488) and its `sh.exe` wrapper (PID 34052) held none. No `0.0.0.0`/`[::]` listener was
+found under any PID from this launch — loopback only.
+
+**Cleanup:** `Stop-AeroProcessOfWindow` (by hwnd, not window message) terminated the app; `./gradlew --stop`
+stopped the daemon; the two wrapper-launcher PIDs were confirmed gone. Orphan check: zero `java.exe`
+processes with `com.mordred.showcase.MainKt` or any `ui_lib`-path argument in their command line
+afterward (five unrelated `java.exe` processes from a different, already-running project —
+`C:\1A_WORK\oper\build\run\main\main.pid` — were left untouched, per the rule against touching
+processes not started by this executor).
+
+**Isolation (HRM-01) — checkpoint raised, maintainer-accepted:**
+- `:library` POM regenerated and diffed against `build/aero-hrm01-before/pom-default.xml` → **byte-identical**.
+- `:library` `module.json` regenerated and diffed against the pre-install snapshot after filtering
+  `"(size|sha512|sha256|sha1|md5)"` lines → **identical**.
+- `git diff --stat HEAD -- library/` → **empty** (`library/build.gradle.kts` untouched).
+- `./gradlew -q :library:dependencies --configuration runtimeClasspath | grep -ic hot-reload` → **0**
+  (same check as the Task 1 pre-install gate).
+- `./gradlew -q :library:dependencies` (unscoped, all configurations) `| grep -ic hot-reload` → **64**,
+  NOT 0 as the plan's isolation paragraph requires. Traced precisely (each hit attributed to its real
+  owning configuration, not a text-proximity guess): the only configurations touched are
+  `devCompileClasspath`, `devImplementation`, `devRuntimeClasspath`, `composeHotReloadDevRuntimeClasspath`,
+  `composeHotReloadDevDevRuntimeClasspath`, `composeHotReloadDevTestRuntimeClasspath`,
+  `composeHotReloadMcp`, `composeHotReloadRuntime` — all Gradle-internal "dev"/hot-reload tooling
+  configurations that the Compose Multiplatform 1.12.0 plugin (`org.jetbrains.compose`, applied to
+  `:library` since Plan 06, already committed/gated — not this plan's plugin) registers unconditionally
+  on every subproject. `:library`'s actual compile/publish surface — `compileClasspath`, `runtimeClasspath`,
+  `api`, `apiElements`, `runtimeElements`, `implementation`, `compileOnly`, `runtimeOnly`,
+  `testCompileClasspath`, `testRuntimeClasspath` — has **zero** hot-reload hits.
+  **Root-cause isolation proof:** `gradle/libs.versions.toml` and `showcase/build.gradle.kts` were
+  reverted to the exact Plan 06 commit (`git checkout -- ...`, `.mcp.json` moved aside) — i.e. with
+  `org.jetbrains.compose.hot-reload` applied NOWHERE in the build — and `./gradlew -q :library:dependencies | grep -ic hot-reload`
+  still returned **64**, identical. This proves the 64 hits predate and are unrelated to this task's
+  plugin application; they are intrinsic to the CMP 1.12.0 bump alone. Changes were then re-applied
+  (`git apply`, `.mcp.json` restored) and reconfirmed present (`grep -c "compose.hot.reload"
+  showcase/build.gradle.kts` = 2, `grep -c "composeHotReload" gradle/libs.versions.toml` = 2).
+- `bash tools/verify/check-material3.sh build/aero-m3-plan07-after.log` → `MATERIAL3 OK`.
+- `./gradlew :library:test --rerun` → `AERO_TEST_COUNT total=541 skipped=0 expected=541 expectedSkipped=0 filtered=false`, `BUILD SUCCESSFUL`.
+
+**Disposition (maintainer decision, recorded verbatim):** ACCEPT AS-IS. HRM-01's actual requirement
+text — "`:library`'s build file is untouched and its generated POM and module metadata are identical
+before and after the plugin is added" — is met: POM byte-identical, module.json identical after
+checksum-line filtering, `:library`'s compile/runtime/api/test classpaths have zero hot-reload hits.
+The 64 unscoped hits live only in the auxiliary `dev*` / `composeHotReload*` configurations that the
+Compose Multiplatform 1.12.0 plugin registers on every module unconditionally — proven by the revert
+experiment above (still 64 with the Hot Reload plugin applied nowhere in the build). This is recorded
+as a maintainer-accepted, CMP-1.12.0-intrinsic finding, not a Hot Reload-plugin leak: it predates this
+task, is not caused by anything this task did, and disabling it would require disabling Compose
+Multiplatform 1.12.0's own bundled dev-tooling behavior — out of bounds under the phase's global stop
+rule ("bundled-behaviour disabling"). Task 2 is committed as designed; see the plan's SUMMARY for the
+full writeup.

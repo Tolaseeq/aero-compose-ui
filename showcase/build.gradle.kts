@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.compose.hot.reload)
 }
 
 kotlin {
@@ -33,6 +34,17 @@ tasks.withType<JavaExec>().configureEach {
         (project.findProperty("aero.page") as String?)?.let { systemProperty("aero.page", it) }
         (project.findProperty("aero.capture") as String?)?.let { systemProperty("aero.capture", it) }
     }
+}
+
+// Compose Hot Reload's hotRun/hotRunAsync/hotDev/hotDevAsync tasks are org.jetbrains.compose.reload
+// .gradle.ComposeHotRun, a JavaExec subtype registered by the compose-hot-reload plugin rather than
+// the `run` task above, so they need their own sibling forwarding block for the same aero.* launch
+// parameters (see initialScheme()/initialSection()/initialPage()/captureMode() in Main.kt).
+tasks.withType<org.jetbrains.compose.reload.gradle.ComposeHotRun>().configureEach {
+    (project.findProperty("aero.scheme") as String?)?.let { systemProperty("aero.scheme", it) }
+    (project.findProperty("aero.section") as String?)?.let { systemProperty("aero.section", it) }
+    (project.findProperty("aero.page") as String?)?.let { systemProperty("aero.page", it) }
+    (project.findProperty("aero.capture") as String?)?.let { systemProperty("aero.capture", it) }
 }
 
 compose.desktop {
