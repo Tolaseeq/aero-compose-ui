@@ -2,7 +2,7 @@
 phase: 21
 slug: migration-release-3-1-0
 status: draft
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-09-23
 ---
@@ -91,11 +91,11 @@ Requirement-level map from RESEARCH.md § Validation Architecture. The planner a
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < one full-suite run
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references (BASE-05 proof → 21-02 T1; popup probe → 21-03 T1; TOOL-16 guard → 21-05 before the first bump in 21-06; `check-material3.sh` → created in 21-06 T3 before its use in 21-07 / 21-09; HRM-01 POM snapshot → 21-07 T1 before T2)
+- [x] No watch-mode flags
+- [x] Feedback latency ≤ one full-suite run (local test sampling; JitPack polling in 21-13 / 21-14 is a remote-build wait, not test feedback)
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved 2026-09-23 (plan-checker iteration 1)

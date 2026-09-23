@@ -513,20 +513,23 @@ Prove red first (TOOL-16's own requirement) by temporarily excluding one test cl
 | A5 | `AeroCalendarGrid` genuinely has no today-highlight (D-09's claim, carried from CONTEXT.md, not independently re-verified in this session) | Common Pitfalls #6 | If a highlight exists, D-09's "fixed value alone suffices" needs an additional fixed-"today" injection mechanism for calendar-grid frames |
 | A6 | README.md's actual dependency-coordinate snippet location (previously cited as `:73`, toolchain callout at `:80-82`) — not re-confirmed in this pass (only first 40 lines read) | Current State of Every Touched File, README.md | REL-04's "immediately adjacent" placement could land in the wrong spot if the file has since been restructured; cheap to fix — grep for the actual snippet before editing |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Does `onRoot().captureToImage()` see Popup content in desktop `runComposeUiTest`?**
    - What we know: the live MCP runtime's `get_semantic_tree` handles multi-root Popup/Dialog correctly by design (FEATURES.md, source-confirmed). No prior test in this codebase exercises `captureToImage()` with an open Popup.
    - What's unclear: whether the JVM unit-test harness's screenshot mechanism (different code path from the live-app MCP server) has the same multi-root awareness.
    - Recommendation: make this literally the first D-07 task — write one popup test, inspect the captured image, and branch to D-08's fallback per-component if it doesn't work. This is exactly what BASE-05's own "prove `captureToImage` works first; if not, stop and ask" clause anticipates, applied to the Popup case specifically.
+   - RESOLVED: 21-03-PLAN.md Task 1 (popup-capture probe with AeroDropdown) decides empirically — M1 `onRoot().captureToImage()`, M2 per-root capture via `onAllNodes(isRoot())`, or "none (D-08)" — and records the method in `21-UITEST-COVERAGE.md` § "Popup capture method"; components that cannot be captured fall back per D-08 (21-03 Tasks 2–3, inspected in 21-11 Task 1).
 
 2. **Is Foundation/Primitives addressable as BASE-01 sections, or excluded?**
    - What we know: 15/17 showcase items are standalone `*Section()` composables; Foundation/Primitives are inlined.
    - What's unclear: whether the plan should do a small structural extraction (2 new wrapper composables) or exclude these 2 from BASE-01's addressable list.
    - Recommendation: exclude by default (lowest-risk, zero new code) unless per-component baseline/after frames specifically need direct-launch access to Foundation/Primitives independent of the top-of-scroll default view.
+   - RESOLVED: 21-01-PLAN.md `<interfaces>` (canonical section names) makes ALL 17 blocks addressable — Foundation/Primitives included through the same `shows("…")` guard, no extraction refactor — so the default launch path is unchanged (21-01 Task 1 checks `grep -c 'shows("' ShowcaseApp.kt` = 17). This departs from the "exclude" recommendation because the guard adds no new composables.
 
 3. **Exact current README.md structure beyond line 40** — not read in this pass.
    - Recommendation: grep `README.md` for `implementation("com.github` and the existing toolchain-requirement callout before writing REL-04's plan tasks.
+   - RESOLVED: 21-13-PLAN.md `<interfaces>` records the README read in full (139 lines): line 6 stale "Kotlin 2.1.21 · Compose 1.7.3 · JVM 17" line, line 73 dependency snippet `aero-compose-ui:v3.0.0`, lines 80-82 toolchain-requirement callout, lines 129-135 "## Tech stack"; 21-13 Task 2 edits exactly these (also closes Assumption A6).
 
 ## Environment Availability
 
