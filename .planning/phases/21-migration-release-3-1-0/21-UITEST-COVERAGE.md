@@ -81,9 +81,11 @@ the OLD toolchain (Kotlin 2.4.10 / Compose Multiplatform 1.11.1), against a 480x
 - **Evidence:** all 3 `aeroDropdown<Theme>Opened` tests pass; `pixelMapsDiffer(closed, opened)` is
   `true` in every theme, proving the M2-fallback capture actually differs from (and therefore
   contains) the popup content, not a byte-identical re-capture of the closed window.
-- **Shared helper:** `captureOpened()` (`D07MenuPopupCaptureTest.kt`) implements exactly this
-  M1-then-M2-fallback sequence and is reused, unmodified, by every other D-07 test in this file and
-  in `D07PickerPopupCaptureTest` — no per-component capture-method variation was needed.
+- **Shared helper:** `captureOpened()` implements exactly this M1-then-M2-fallback sequence, plus
+  `assertOpenedDiffers()` (write both images + assert they differ). Both were moved into
+  `UiCapture.kt` in Task 3 once `D07PickerPopupCaptureTest` needed them too, and are reused,
+  unmodified, by every D-07 test in both files — no per-component capture-method variation was
+  needed anywhere.
 
 D-09 check: `grep -cE "Clock|todayLocalDate|now\(" AeroCalendarGrid.kt` = `0` — AeroCalendarGrid has
 no today-highlight, confirming a fixed `value` is sufficient for deterministic picker frames
@@ -109,3 +111,43 @@ D-08 fallback.
 | AeroPopover | AeroBlue / AeroDark / Classic | `performClick()` on an anchor-side "Open" button | captureOpened() (M1→M2) | yes | not needed |
 | AeroDrawer | AeroBlue / AeroDark / Classic | `performClick()` on "Open drawer" + `mainClock.advanceTimeBy(400)` (past the 220ms slide) | captureOpened() (M1→M2) | yes | not needed |
 | AeroColorPickerButton | AeroBlue / AeroDark / Classic | `performClick()` on the 32dp swatch trigger; popup-only "Original" label asserted | captureOpened() (M1→M2) | yes | not needed |
+
+## Task 3 — Picker popup components (`D07PickerPopupCaptureTest.kt`)
+
+All 5 pickers open via `performClick()` on their `AeroIconButton` trigger, located via
+`onNodeWithContentDescription(...)` (the merged-semantics content description of the Icon inside
+the clickable `AeroIconButton`). Every test passes a fixed, non-null `value`/`startValue`+`endValue`
+(D-09) using ONLY positional `LocalDate`/`LocalDateTime`/`LocalTime` constructors — never named
+parameters, never `.dayOfMonth`/`.monthNumber`/`Clock` — so this file compiles unchanged through the
+kotlinx-datetime 0.6.2 -> 0.8.0 bump. Capture method is `captureOpened()` (same M1/M2 as Task 1/2).
+All 15 tests pass on the OLD toolchain (Kotlin 2.4.10 / Compose Multiplatform 1.11.1); every row
+produced a genuine `pixelMapsDiffer(closed, opened) == true` result — no picker needed the D-08
+fallback. Full suite (`./gradlew :library:test --rerun`) is green: **541 tests across 93 classes**
+(up from 502 across 91 classes before this plan — the 39 new D-07 tests, 24 in Task 1+2 and 15 here,
+account for the difference).
+
+| Component | Theme | Fixed value (D-09) | Open input | Popup-only marker asserted | Capture method | D-08 status |
+|---|---|---|---|---|---|---|
+| AeroDatePicker | AeroBlue / AeroDark / Classic | `LocalDate(2026, 3, 14)` | `onNodeWithContentDescription("Open calendar")` + `performClick()` | month header text "March 2026" | captureOpened() (M1→M2) | not needed |
+| AeroDateRangePicker | AeroBlue / AeroDark / Classic | `LocalDate(2026, 3, 10)` .. `LocalDate(2026, 3, 20)` | `onNodeWithContentDescription("Open range calendar")` + `performClick()` | right calendar's month header "April 2026" (left month + 1) | captureOpened() (M1→M2) | not needed |
+| AeroDateTimePicker | AeroBlue / AeroDark / Classic | `LocalDateTime(2026, 3, 14, 10, 30)` | `onNodeWithContentDescription("Open date & time picker")` + `performClick()` | "Apply" button | captureOpened() (M1→M2) | not needed |
+| AeroDateTimeRangePicker | AeroBlue / AeroDark / Classic | `LocalDateTime(2026, 3, 10, 9, 0)` .. `LocalDateTime(2026, 3, 20, 17, 30)` | `onNodeWithContentDescription("Open date & time range picker")` + `performClick()` | "Apply" button | captureOpened() (M1→M2) | not needed |
+| AeroTimePicker | AeroBlue / AeroDark / Classic | `LocalTime(10, 30)` | `onNodeWithContentDescription("Open time picker")` + `performClick()` | minute spinner's editable "30" field (the closed trigger shows only the single combined node "10:30") | captureOpened() (M1→M2) | not needed |
+
+**Visual confirmation (opt-in smoke run, `-Paero.captureDir=.captures/smoke/plan03`):** `AeroMenuBar`
+(File menu open, showing Open/Exit), `AeroDatePicker` (March 2026 grid, 14 highlighted), and
+`AeroDrawer` (panel slid in over "Open drawer", showing "Drawer body") were opened with the Read
+tool and visually confirm the popup content is present in the `opened.png` capture wherever this
+table says the state is capturable.
+
+### Not composable in unit tests (D-07/D-08)
+
+| Component | Reason | Disposition |
+|---|---|---|
+| `AeroDialog` | Built on a real `Window` (`AeroDialog.kt:53`) — `captureToImage()` cannot reach a separate OS window, and composing it in `runComposeUiTest` would open a live window on the maintainer's desktop | after-only via MCP click + `PrintWindow` of the dialog window (a later plan), guarded by a foreground-window check (D-08) |
+| `AeroAlertDialog` | Wraps `AeroDialog` — same `Window`-based reason | same as `AeroDialog` (D-08) |
+| `AeroFilePicker` | Opens the native OS `java.awt.FileDialog`, not this library's own rendering | VER-09 unconfirmed list (D-08); never clicked in any test |
+
+All 13 `Popup(`-based components (D-07's full list) now have a capture method and D-08 status
+recorded above (Task 1 AeroDropdown, Task 2's 7 menu/overlay components, Task 3's 5 pickers); none
+needed the D-08 fallback. The 3 `Window`/native-dialog components above are separately classified.

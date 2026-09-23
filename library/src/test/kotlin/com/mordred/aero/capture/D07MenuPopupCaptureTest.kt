@@ -10,16 +10,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.captureToImage
-import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performMouseInput
 import androidx.compose.ui.test.rightClick
@@ -436,35 +431,4 @@ class D07MenuPopupCaptureTest {
 
         assertOpenedDiffers("AeroColorPickerButton", theme, closed, opened)
     }
-}
-
-/**
- * Captures the current full-window state, including any open [androidx.compose.ui.window.Popup]
- * layer. Empirically decided by [D07MenuPopupCaptureTest]'s AeroDropdown probe (Task 1): M1
- * (`onRoot()`) is tried first and works whenever exactly one semantics root exists (no popup open);
- * M2 (`onAllNodes(isRoot())`, picking the most-recently-composed root) is the fallback M1's
- * `AssertionError` triggers once a `Popup` adds a second root. Shared by every D-07 test file
- * (menu/overlay and picker popups).
- */
-@OptIn(ExperimentalTestApi::class)
-internal fun ComposeUiTest.captureOpened(): ImageBitmap = try {
-    onRoot().captureToImage()
-} catch (unused: AssertionError) {
-    val roots = onAllNodes(isRoot())
-    val count = roots.fetchSemanticsNodes().size
-    require(count > 0) { "D-07: captureOpened() found zero roots via onAllNodes(isRoot()) (M2)" }
-    roots[count - 1].captureToImage()
-}
-
-/**
- * Writes both captures via [UiCapture.write] and asserts the opened capture actually differs from
- * the closed one — the shared D-07 assertion every menu/overlay popup test in this file reuses.
- */
-internal fun assertOpenedDiffers(component: String, theme: String, closed: ImageBitmap, opened: ImageBitmap) {
-    UiCapture.write(component, theme, "closed", closed)
-    UiCapture.write(component, theme, "opened", opened)
-    assertTrue(
-        pixelMapsDiffer(closed.toPixelMap(), opened.toPixelMap()),
-        "D-07: $component/$theme's opened popup capture must differ from its closed capture"
-    )
 }
