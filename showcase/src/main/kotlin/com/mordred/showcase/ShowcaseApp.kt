@@ -12,9 +12,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import com.mordred.aero.components.overlay.AeroToastHost
 import com.mordred.aero.components.overlay.AeroToastHostState
@@ -37,6 +41,33 @@ import com.mordred.showcase.sections.RangeSection
 import com.mordred.showcase.sections.SelectionSection
 import com.mordred.showcase.sections.ThemeSwitcher
 import com.mordred.showcase.sections.VerificationSection
+import kotlin.math.ceil
+import kotlin.math.min
+import kotlinx.coroutines.flow.first
+
+/**
+ * Canonical, addressable section names, in the order they appear on the page. Backs the
+ * `-Daero.section=<Name>` launch parameter (see [ShowcaseApp]'s `section` parameter).
+ */
+internal val SHOWCASE_SECTIONS: List<String> = listOf(
+    "ThemeSwitcher",
+    "Verification",
+    "Foundation",
+    "Primitives",
+    "Icons",
+    "Buttons",
+    "Input",
+    "Selection",
+    "Dropdown",
+    "Range",
+    "List",
+    "Containers",
+    "Overlays",
+    "Navigation",
+    "Data",
+    "Pickers",
+    "Layout"
+)
 
 /**
  * ShowcaseApp now accepts the active color scheme from its caller (Main.kt) so that
@@ -46,17 +77,65 @@ import com.mordred.showcase.sections.VerificationSection
  * NOTE: ContainersSection / OverlaysSection / NavigationSection calls are added by
  * Task 4 of Plan 03-08 once the section files exist. After Task 1 of Plan 03-08
  * runs alone, the showcase shows only the existing Phase 1+2 sections.
+ *
+ * [section] and [page] drive a capture pass: when [section] names one of
+ * [SHOWCASE_SECTIONS], only that section renders and the page scrolls to the requested
+ * viewport-sized page, then an `AERO_READY` line is printed once the frame has settled. An
+ * unrecognised [section] falls back to rendering the full page and prints
+ * `AERO_SECTION_UNKNOWN` once. Absent [section] (the default) renders every section exactly
+ * as before, with no reporter line.
  */
 @Composable
 fun ShowcaseApp(
     currentScheme: AeroColorScheme,
-    onSchemeChange: (AeroColorScheme) -> Unit
+    onSchemeChange: (AeroColorScheme) -> Unit,
+    section: String? = null,
+    page: Int = 0
 ) {
     // Note: we do NOT wrap in AeroTheme {} here — that wrapping happens in Main.kt
     // so the title bar participates in the same theme.
     val colors = AeroTheme.colors
     val typography = AeroTheme.typography
     val toastState = remember { AeroToastHostState() }
+    val scrollState = rememberScrollState()
+    val active = section?.takeIf { it in SHOWCASE_SECTIONS }
+
+    if (section != null && active == null) {
+        LaunchedEffect(section) {
+            println("AERO_SECTION_UNKNOWN name=$section known=${SHOWCASE_SECTIONS.joinToString(",")}")
+            System.out.flush()
+        }
+    }
+
+    fun shows(name: String) = active == null || active == name
+
+    if (active != null) {
+        LaunchedEffect(active, page) {
+            snapshotFlow { scrollState.viewportSize }.first { it > 0 }
+            val maxValue = scrollState.maxValue
+            val viewport = scrollState.viewportSize
+            val pages = if (maxValue == 0) 1 else ceil((maxValue + viewport) / viewport.toDouble()).toInt()
+            val clampedPage = min(page, pages - 1)
+            val target = min(clampedPage * viewport, maxValue)
+            scrollState.scrollTo(target)
+            withFrameNanos { }
+            withFrameNanos { }
+            val schemeLabel = when (currentScheme) {
+                AeroColorScheme.AeroDark -> "AeroDark"
+                AeroColorScheme.Classic -> "Classic"
+                else -> "AeroBlue"
+            }
+            val backgroundArgb = "%08X".format(colors.background.toArgb())
+            val jvmVendor = System.getProperty("java.vendor")?.replace(' ', '_')
+            val jvm = "${System.getProperty("java.version")}/$jvmVendor"
+            println(
+                "AERO_READY scheme=$schemeLabel section=$active page=$clampedPage pages=$pages " +
+                    "viewportPx=$viewport contentPx=${maxValue + viewport} scrollPx=$target " +
+                    "background=$backgroundArgb jvm=$jvm"
+            )
+            System.out.flush()
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // NOTE (20-06/SHW-16): AeroTheme itself now paints a fillMaxSize Surface(colors.background)
@@ -72,51 +151,85 @@ fun ShowcaseApp(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(scrollState)
                     .padding(48.dp),
                 verticalArrangement = Arrangement.spacedBy(32.dp)
             ) {
-                ThemeSwitcher(
-                    current = currentScheme,
-                    onSelect = onSchemeChange
-                )
-
-                VerificationSection()
-
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text(
-                        text = "Foundation",
-                        color = colors.onBackground,
-                        style = typography.title
+                if (shows("ThemeSwitcher")) {
+                    ThemeSwitcher(
+                        current = currentScheme,
+                        onSelect = onSchemeChange
                     )
-                    FoundationSection()
                 }
 
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text(
-                        text = "Primitives",
-                        color = colors.onBackground,
-                        style = typography.title
-                    )
-                    PrimitivesSection()
+                if (shows("Verification")) {
+                    VerificationSection()
                 }
 
-                IconsSection(toastState = toastState)
+                if (shows("Foundation")) {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Text(
+                            text = "Foundation",
+                            color = colors.onBackground,
+                            style = typography.title
+                        )
+                        FoundationSection()
+                    }
+                }
 
-                ButtonsSection()
-                InputSection()
-                SelectionSection()
-                DropdownSection()
-                RangeSection()
-                ListSection()
+                if (shows("Primitives")) {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Text(
+                            text = "Primitives",
+                            color = colors.onBackground,
+                            style = typography.title
+                        )
+                        PrimitivesSection()
+                    }
+                }
 
-                ContainersSection()
-                OverlaysSection(toastState = toastState)
-                NavigationSection()
+                if (shows("Icons")) {
+                    IconsSection(toastState = toastState)
+                }
 
-                DataSection()
-                PickersSection()
-                LayoutSection()
+                if (shows("Buttons")) {
+                    ButtonsSection()
+                }
+                if (shows("Input")) {
+                    InputSection()
+                }
+                if (shows("Selection")) {
+                    SelectionSection()
+                }
+                if (shows("Dropdown")) {
+                    DropdownSection()
+                }
+                if (shows("Range")) {
+                    RangeSection()
+                }
+                if (shows("List")) {
+                    ListSection()
+                }
+
+                if (shows("Containers")) {
+                    ContainersSection()
+                }
+                if (shows("Overlays")) {
+                    OverlaysSection(toastState = toastState)
+                }
+                if (shows("Navigation")) {
+                    NavigationSection()
+                }
+
+                if (shows("Data")) {
+                    DataSection()
+                }
+                if (shows("Pickers")) {
+                    PickersSection()
+                }
+                if (shows("Layout")) {
+                    LayoutSection()
+                }
 
                 Spacer(Modifier.height(24.dp))
             }

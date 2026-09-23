@@ -4,13 +4,16 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.mordred.aero.components.navigation.AeroResizeHandles
@@ -32,32 +35,80 @@ private fun initialScheme(): AeroColorScheme = when (System.getProperty("aero.sc
     else -> AeroColorScheme.AeroBlue
 }
 
-fun main() = application {
-    val windowState = rememberWindowState(width = 1200.dp, height = 800.dp)
-    Window(
-        onCloseRequest = ::exitApplication,
-        title = "aero-compose-ui Showcase",
-        state = windowState,
-        // Win11 rule (CMP-3757 / GH#3171): undecorated = true ONLY; transparent MUST stay false
-        // to avoid EXCEPTION_ACCESS_VIOLATION. Glass effect lives in glassEffect modifier.
-        undecorated = true,
-        transparent = false
-    ) {
-        var currentScheme by remember { mutableStateOf(initialScheme()) }
-        AeroTheme(colorScheme = currentScheme) {
-            Box(Modifier.fillMaxSize().border(1.dp, AeroTheme.colors.titleBarGradientStart)) {
-                Column(Modifier.fillMaxSize()) {
-                    AeroTitleBar(
-                        title = "aero-compose-ui Showcase",
-                        windowState = windowState,
-                        onCloseRequest = ::exitApplication
-                    )
-                    ShowcaseApp(
-                        currentScheme = currentScheme,
-                        onSchemeChange = { currentScheme = it }
-                    )
+/**
+ * Section the showcase renders alone, from `-Daero.section=<Name>`.
+ *
+ * Exists so a capture pass reaches a single section without scrolling the window by hand —
+ * scrolling means injecting synthetic input into whatever desktop the reviewer is using at the
+ * time. Absent or blank falls back to `null`, which renders the full page unchanged.
+ */
+private fun initialSection(): String? =
+    System.getProperty("aero.section")?.trim()?.takeIf { it.isNotEmpty() }
+
+/**
+ * Page of the active section to scroll to, from `-Daero.page=<N>`.
+ *
+ * Exists so a capture pass reaches every part of a tall section in whole, reproducible frames
+ * without injecting a scroll gesture. Absent, blank or negative falls back to page 0.
+ */
+private fun initialPage(): Int =
+    System.getProperty("aero.page")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
+
+/**
+ * Whether this launch is a capture pass, from `-Daero.capture=true`.
+ *
+ * Exists so a capture window can be made non-focusable and stay behind the reviewer's other
+ * windows, instead of stealing input focus the moment it opens.
+ */
+private fun captureMode(): Boolean = System.getProperty("aero.capture") == "true"
+
+fun main() {
+    val section = initialSection()
+    val page = initialPage()
+    val capture = captureMode()
+
+    application {
+        val windowState = rememberWindowState(
+            width = 1200.dp,
+            height = 800.dp,
+            // Capture frames always land centred on the primary screen at one DPI; a normal
+            // launch keeps the platform's own placement.
+            position = if (capture) WindowPosition(Alignment.Center) else WindowPosition.PlatformDefault
+        )
+        Window(
+            onCloseRequest = ::exitApplication,
+            title = if (capture) "aero-compose-ui Showcase [capture]" else "aero-compose-ui Showcase",
+            state = windowState,
+            // Win11 rule (CMP-3757 / GH#3171): undecorated = true ONLY; transparent MUST stay false
+            // to avoid EXCEPTION_ACCESS_VIOLATION. Glass effect lives in glassEffect modifier.
+            undecorated = true,
+            transparent = false,
+            // A capture window must never take input focus.
+            focusable = !capture
+        ) {
+            if (capture) {
+                // Start behind the reviewer's other windows instead of popping to the front.
+                LaunchedEffect(Unit) { window.toBack() }
+            }
+
+            var currentScheme by remember { mutableStateOf(initialScheme()) }
+            AeroTheme(colorScheme = currentScheme) {
+                Box(Modifier.fillMaxSize().border(1.dp, AeroTheme.colors.titleBarGradientStart)) {
+                    Column(Modifier.fillMaxSize()) {
+                        AeroTitleBar(
+                            title = "aero-compose-ui Showcase",
+                            windowState = windowState,
+                            onCloseRequest = ::exitApplication
+                        )
+                        ShowcaseApp(
+                            currentScheme = currentScheme,
+                            onSchemeChange = { currentScheme = it },
+                            section = section,
+                            page = page
+                        )
+                    }
+                    AeroResizeHandles(windowState)
                 }
-                AeroResizeHandles(windowState)
             }
         }
     }

@@ -20,13 +20,18 @@ dependencies {
     implementation(libs.kotlinx.datetime)
 }
 
-// Forward -Paero.scheme=<name> to the run task as a system property, so a review pass can open a
-// specific theme directly (see initialScheme() in Main.kt) instead of clicking the theme switcher.
-// withType(...).configureEach is lazy: the Compose Desktop plugin registers `run` after this
-// script is evaluated, so tasks.named("run") would fail with "Task with name 'run' not found".
+// Forward -Paero.scheme=<name> (and aero.section / aero.page / aero.capture) to the run task as
+// system properties, so a review or capture pass can open a specific theme/section/page directly
+// (see initialScheme() / initialSection() / initialPage() / captureMode() in Main.kt) instead of
+// clicking the theme switcher or scrolling by hand. withType(...).configureEach is lazy: the
+// Compose Desktop plugin registers `run` after this script is evaluated, so tasks.named("run")
+// would fail with "Task with name 'run' not found".
 tasks.withType<JavaExec>().configureEach {
     if (name == "run") {
         (project.findProperty("aero.scheme") as String?)?.let { systemProperty("aero.scheme", it) }
+        (project.findProperty("aero.section") as String?)?.let { systemProperty("aero.section", it) }
+        (project.findProperty("aero.page") as String?)?.let { systemProperty("aero.page", it) }
+        (project.findProperty("aero.capture") as String?)?.let { systemProperty("aero.capture", it) }
     }
 }
 
