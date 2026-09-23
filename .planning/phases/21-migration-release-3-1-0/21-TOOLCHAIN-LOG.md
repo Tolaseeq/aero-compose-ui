@@ -340,3 +340,24 @@ task, is not caused by anything this task did, and disabling it would require di
 Multiplatform 1.12.0's own bundled dev-tooling behavior — out of bounds under the phase's global stop
 rule ("bundled-behaviour disabling"). Task 2 is committed as designed; see the plan's SUMMARY for the
 full writeup.
+
+## Step 5a — kotlinx-coroutines 1.11.0 (TOOL-13)
+
+**Catalog change (`gradle/libs.versions.toml`):** `kotlinxCoroutines = "1.10.2"` → `"1.11.0"` — both
+`kotlinx-coroutines-core` and `kotlinx-coroutines-test` follow it via `version.ref`. No other catalog
+entries touched in this commit.
+
+**Gate:** `./gradlew build --console=plain --warning-mode all` → `BUILD SUCCESSFUL in 48s` on the
+first attempt, no mechanical fixes needed for any coroutines 1.11.0 API change. `./gradlew :library:test --rerun`
+printed `AERO_TEST_COUNT total=541 skipped=0 expected=541 expectedSkipped=0 filtered=false` and
+`BUILD SUCCESSFUL` — no test failures, no timeouts, no hangs.
+
+**Warnings (verbatim, full build with `--warning-mode all`):** one Gradle-level plugin-loaded-twice
+advisory (`:library`/`:showcase` both apply the Kotlin Gradle plugin directly — pre-existing project
+structure, unrelated to this bump) and one Kotlin compiler warning,
+`DATA_CLASS_COPY_VISIBILITY_WILL_BE_CHANGED_WARNING` at
+`AeroToastHostState.kt:9` — the same pre-existing `@ConsistentCopyVisibility` note already recorded
+in Step 3c, not newly introduced by this bump and out of this task's file scope. No coroutines-specific
+deprecation or warning appeared.
+
+**Commit:** `build(21-09): kotlinx-coroutines 1.11.0 (TOOL-13)`.
