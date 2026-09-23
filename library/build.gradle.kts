@@ -1,3 +1,12 @@
+import java.util.concurrent.atomic.AtomicLong
+
+// TOOL-16: tests executed on the pre-upgrade toolchain (Kotlin 2.4.10 / CMP 1.11.1), measured by
+// an actual `./gradlew :library:test --rerun` run immediately before the first version bump. The
+// guard in tasks.test below fails the build on any other number; change only with a commit that
+// states why.
+val lockedTestTotal = 541
+val lockedTestSkipped = 0
+
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.compose.multiplatform)
@@ -46,6 +55,42 @@ tasks.test {
     // BASE-05/D-03: images are written only when this Gradle property is explicitly passed
     // (-Paero.captureDir=<path>) — an ordinary `./gradlew test` run writes nothing.
     (project.findProperty("aero.captureDir") as String?)?.let { systemProperty("aero.captureDir", it) }
+
+    // TOOL-16: report the executed root-suite test count so it can be measured live.
+    val aeroTotal = AtomicLong(-1)
+    val aeroSkipped = AtomicLong(-1)
+    addTestListener(object : TestListener {
+        override fun beforeSuite(suite: TestDescriptor) {}
+        override fun afterSuite(suite: TestDescriptor, result: TestResult) {
+            if (suite.parent == null) {
+                aeroTotal.set(result.testCount)
+                aeroSkipped.set(result.skippedTestCount)
+            }
+        }
+        override fun beforeTest(testDescriptor: TestDescriptor) {}
+        override fun afterTest(testDescriptor: TestDescriptor, result: TestResult) {}
+    })
+    doLast {
+        // TestFilter's public interface (this Gradle version) exposes only build-script-configured
+        // includePatterns; --tests populates commandLineIncludePatterns, which is only present on
+        // the internal DefaultTestFilter implementation.
+        val commandLineFiltered = (filter as? org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter)
+            ?.commandLineIncludePatterns
+            ?.isNotEmpty() ?: false
+        val filtered = commandLineFiltered || filter.includePatterns.isNotEmpty()
+        val total = aeroTotal.get()
+        val skipped = aeroSkipped.get()
+        println(
+            "AERO_TEST_COUNT total=$total skipped=$skipped expected=$lockedTestTotal " +
+                "expectedSkipped=$lockedTestSkipped filtered=$filtered"
+        )
+        if (!filtered && (total != lockedTestTotal.toLong() || skipped != lockedTestSkipped.toLong())) {
+            throw GradleException(
+                "Test count guard: executed total=$total skipped=$skipped, locked total=$lockedTestTotal " +
+                    "skipped=$lockedTestSkipped"
+            )
+        }
+    }
 }
 
 publishing {
