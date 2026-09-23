@@ -125,4 +125,61 @@ See `21-NOISE.md` (BASE-03): 9 of 75 frame keys carry a small, named, time-depen
 counter on 2 Layout pages), all under 0.5% of frame area; the remaining 66 keys are pixel-stable
 across all 6 captures (3 per run x 2 runs).
 
-<!-- UITEST_SECTION_APPENDED -->
+## UI-test reference images (BASE-05, D-07)
+
+Two opt-in Compose UI-test runs (`./gradlew :library:test --rerun --tests
+"com.mordred.aero.capture.*" -Paero.captureDir=.captures/old-kt2.4.10-cmp1.11.1/ui-tests/runA|runB`)
+on the same toolchain as the showcase baseline above, both `BUILD SUCCESSFUL` (full suite: **541
+tests across 93 classes**). `UiCapture.write()` only writes into `.captures/` when
+`-Paero.captureDir` is passed (D-03) — every capture lands at
+`.captures/old-kt2.4.10-cmp1.11.1/ui-tests/<run>/<Component>/<Theme>/<state>.png`.
+
+**D-03 recheck (after this plan's UI-test runs):** `.captures` file count was 1152 both before and
+after a plain `./gradlew :library:test --rerun` (no `-Paero.captureDir`) — BUILD SUCCESSFUL, same
+541/93 test count, `git status --porcelain` unaffected by that run.
+
+### Test classes
+
+- `Base05CaptureProofTest.kt` — `captureToImage()` proof-of-work (`Base05Proof/` folder; not a
+  library component, kept for the mechanism proof).
+- `Base05GlassStateCaptureTest.kt` — 10 BASE-05 components x 3 themes, hover/press/keyboard-focus
+  (+drag for the two sliders) states.
+- `Base05DragCaptureTest.kt` — `AeroSplitPane`/`AeroPanelGroup`/`AeroDataTable` column-resize drag
+  states x 3 themes.
+- `D07MenuPopupCaptureTest.kt` / `D07PickerPopupCaptureTest.kt` — all 13 `Popup(`-based components
+  x 3 themes, closed vs. opened state (D-07), fixed picker values (D-09).
+
+### Component x theme x state index
+
+Full per-state table (which states, which assertions, focus method, D-08 status per component) is
+`.planning/phases/21-migration-release-3-1-0/21-UITEST-COVERAGE.md` — not re-transcribed here.
+23 library components have a captured folder plus `Base05Proof/` (proof-of-work, not a component):
+
+| Group | Components | Folder count |
+|---|---|---|
+| BASE-05 glass/drag state components | `AeroButton`, `AeroOutlinedButton`, `AeroSwitch`, `AeroSegmentedControl`, `AeroSlider`, `AeroRangeSlider`, `AeroListItem`, `AeroSplitPane`, `AeroPanelGroup`, `AeroDataTable` | 10 |
+| D-07 popup-opened components | `AeroDropdown`, `AeroComboBox`, `AeroContextMenu`, `AeroMenuBar`, `AeroTooltip`, `AeroPopover`, `AeroDrawer`, `AeroColorPickerButton`, `AeroDatePicker`, `AeroDateRangePicker`, `AeroDateTimePicker`, `AeroDateTimeRangePicker`, `AeroTimePicker` | 13 |
+
+Every folder above exists under both `.captures/old-kt2.4.10-cmp1.11.1/ui-tests/runA/<Component>/`
+and `.../runB/<Component>/`; each run produced 200 PNGs (24 folders including `Base05Proof/`).
+
+### Popup capture method
+
+`captureOpened()` (`UiCapture.kt`): `onRoot().captureToImage()` for the closed state; the instant a
+`Popup` is composed, Compose Multiplatform Desktop reports a second semantics root and `onRoot()`
+throws `AssertionError`, caught and handled by a fallback to `onAllNodes(isRoot())`'s last-added
+root, which rasterizes the same shared window canvas and reaches the popup pixels too (empirically
+proven by `D07MenuPopupCaptureTest`'s `AeroDropdown` probe — see `21-UITEST-COVERAGE.md`).
+
+### D-08 status
+
+**No component needed the D-08 after-only fallback** — all 13 `Popup(`-based components were
+captured with a real before/after pair using `captureOpened()`. Three components are outside UI-test
+capture entirely and are separately classified (not D-08, D-08 is specifically "cannot capture inside
+`runComposeUiTest`" — these three cannot be composed in a unit test at all):
+
+| Component | Reason | Disposition |
+|---|---|---|
+| `AeroDialog` | Built on a real `Window` — `captureToImage()` cannot reach a separate OS window | after-only via MCP click + `PrintWindow` (a later plan), guarded by a foreground-window check |
+| `AeroAlertDialog` | Wraps `AeroDialog` — same `Window`-based reason | same as `AeroDialog` |
+| `AeroFilePicker` | Opens the native OS `java.awt.FileDialog`, not this library's own rendering | VER-09 unconfirmed list; never clicked in any test |

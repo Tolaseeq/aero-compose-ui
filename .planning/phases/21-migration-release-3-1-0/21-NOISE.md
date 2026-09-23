@@ -52,8 +52,23 @@ touched cells, `stable: true` in `21-noise-regions.json`.
 **Range section check (per plan instruction):** the Range section's noise is explicitly the
 `AeroProgressBar (ind)` shimmer in all three themes — confirmed above, not "none varied".
 
-## UI-test reference images noise (BASE-05, added in Task 3)
+## UI-test reference images noise (BASE-05, D-07)
 
-See "UI-test noise" below, appended after the Task 3 opt-in runs.
+Two opt-in `./gradlew :library:test --rerun --tests "com.mordred.aero.capture.*"
+-Paero.captureDir=...` runs (`runA`, `runB`) on the same old toolchain, one capture per
+`(Component, Theme, state)` key per run (no `c1/c2/c3` repetition — each UI-test capture is a
+single deterministic frame per run). Reference = `runA`'s capture; compared against `runB`'s
+capture of the same key with the same 8px-cell / 2px-pad method as the showcase noise above:
 
-<!-- UITEST_NOISE_APPENDED -->
+`Compare-AeroCaptures.ps1 -Mode Noise -RunDirs runA,runB -Kind uitest -OutJson
+21-noise-regions.json -Merge` (merged into the same JSON file as the showcase `Noise` run, adding
+a sibling `uitest` object alongside `showcase`).
+
+**Result: 0 of 200 keys unstable.** Every `(Component, Theme, state)` key produced a byte-identical
+capture between `runA` and `runB` — `stable: true`, `regions: []`, `dimensionMismatch: 0` for all
+200 keys in `21-noise-regions.json`'s `uitest` object. This matches the expectation noted in the
+Phase 21 plan: UI-test captures are clock-controlled (`runComposeUiTest`'s deterministic frame
+clock, fixed picker values per D-09, no live system animation), so they carry no run-to-run noise
+of their own — unlike the showcase's live window, which runs real wall-clock animations.
+
+No unstable UI-test key needed a named region entry.
