@@ -3,8 +3,9 @@ gsd_state_version: 1.0
 milestone: v3.1
 milestone_name: Dependency Refresh + Hot Reload MCP
 status: planning
-last_updated: "2026-09-23T00:00:00.000Z"
-last_activity: 2026-09-23
+stopped_at: Phase 21 context gathered
+last_updated: "2026-09-23T10:53:46.085Z"
+last_activity: 2026-09-23 — Phase 21 context gathered
 progress:
   total_phases: 1
   completed_phases: 0
@@ -110,12 +111,11 @@ Full decision log lives in PROJECT.md "Key Decisions". Rules that constrain any 
 
 ## Session Continuity
 
-Last session: 2026-09-23
-Stopped at: v3.1 roadmap written (ROADMAP.md Phase 21, REQUIREMENTS.md traceability updated to 24/24 mapped) — awaiting maintainer approval
-Resume file: None
-Next action: On approval, `/bm:plan-phase 21`
+Last session: 2026-09-23T10:53:46.074Z
+Stopped at: Phase 21 context gathered
+Resume file: .planning/phases/21-migration-release-3-1-0/21-CONTEXT.md
+Next action: `/bm:plan-phase 21`
 
 ## Operator Next Steps
 
-- Review and approve the v3.1 roadmap (`.planning/ROADMAP.md`)
-- Then start Phase 21 with `/bm:plan-phase 21`
+- Plan Phase 21 with `/bm:plan-phase 21` (context: `21-CONTEXT.md`, decisions D-01..D-11)
