@@ -117,6 +117,13 @@ Stopped at: Completed 21-07-PLAN.md; awaiting maintainer restart of Claude Code 
 Resume file: .planning/phases/21-migration-release-3-1-0/21-08-PLAN.md
 Next action: `/bm:execute-phase 21` (continues at 21-08)
 
+### Orchestrator rules for the rest of Phase 21
+
+- Run every executor SEQUENTIALLY on the main working tree — no `isolation="worktree"`. All image artifacts use the absolute path `C:\1A_WORK\ui_lib\.captures\`, which does not exist in a worktree (D-01), and the D-03 `.captures` file-count proofs race if two plans run at once.
+- NEVER delete, move or overwrite anything under `.captures/`. `.captures/old-kt2.4.10-cmp1.11.1/` (1152 files) is the only pre-upgrade baseline and cannot be recreated on the new toolchain. Put this rule verbatim into every executor prompt — the 21-03 executor once wiped `.captures` "after inspection" (smoke frames only, before the baseline existed).
+- Plans 21-08 and 21-11 need the `mcp__compose-hot-reload__*` tools. The `bm:gsd-executor` agent type has no MCP tools, so run those plans inline in the orchestrator session (or with an agent type that has full tool access).
+- If a Gradle build fails with `Unable to delete file ...\library\build\libs\library-*.jar`, the usual holder is the VS Code Kotlin language server (`fwcd.kotlin`, a `java.exe` whose command line contains `org.javacs.kt.MainKt`). Ask the maintainer before ending it; executors must not touch external processes.
+
 ## Operator Next Steps
 
 - Restart Claude Code fully in `C:\1A_WORK\ui_lib` so the `compose-hot-reload` MCP server (from `.mcp.json`, committed in `bb8c716`) attaches — approve it if Claude Code asks.
