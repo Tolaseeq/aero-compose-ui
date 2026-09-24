@@ -137,7 +137,7 @@ Details: `.planning/milestones/v3.0-ROADMAP.md` · Requirements: `.planning/mile
   4. Post-upgrade frames and UI-test images are compared with the baseline: every difference outside the named noisy regions is explained with a stated cause or fixed; everything confirmed by neither method is listed separately as "unconfirmed"; the maintainer sees the GUI only after the agent's own sweep, together with the frames and both lists
   5. A throwaway verify tag builds green on JitPack under JDK 21 / Gradle 9.7.1 before the real tag exists; README states the new consumer floor and fixes the stale toolchain line; **outward-facing, needs the maintainer's confirmation at execution time:** `3.1.0` is set in `build.gradle.kts`, `v3.1.0` is pushed, the JitPack build is `ok`, and `com.github.Tolaseeq:aero-compose-ui:3.1.0` resolves
 
-**Plans:** 12/14 plans executed
+**Plans:** 13/14 plans executed
 
 Plans:
 **Wave 1**
@@ -187,7 +187,7 @@ Plans:
 
 **Wave 12** *(blocked on Wave 11 completion)*
 
-- [ ] 21-13-PLAN.md — Step 7: throwaway JitPack verify tag on JDK 21 / Gradle 9.7.1, published bytecode check, README consumer floor (REL-03, REL-04)
+- [x] 21-13-PLAN.md — Step 7: throwaway JitPack verify tag on JDK 21 / Gradle 9.7.1, published bytecode check, README consumer floor (REL-03, REL-04)
 
 **Wave 13** *(blocked on Wave 12 completion)*
 
@@ -218,7 +218,7 @@ Plans:
 | 18. Range | v3.0 | 4/4 | Complete | 2026-07-24 |
 | 19. Selectors + Lists | v3.0 | 12/12 | Complete | 2026-07-28 |
 | 20. Verification | v3.0 | 9/9 | Complete | 2026-07-29 |
-| 21. Migration + Release 3.1.0 | v3.1 | 12/14 | In Progress|  |
+| 21. Migration + Release 3.1.0 | v3.1 | 13/14 | In Progress|  |
 
 ## Next Milestone
 
