@@ -395,13 +395,15 @@ function Invoke-AeroWindowCapture {
     <#
     .SYNOPSIS
         Captures a window's own content via PrintWindow, verifies it against the app's reported
-        background, and proves the capture never moved the cursor or changed the foreground window.
+        background, and proves the capture never handed the foreground to the captured app.
     .DESCRIPTION
         Restores a minimized window with SW_SHOWNOACTIVATE (never activating it), keeps it at the
         bottom of the z-order, captures with PrintWindow(hwnd, hdc, 2), and samples two right-margin
         pixels against the caller-supplied expected background (forcing alpha to FF before compare).
-        If the input state (cursor position + foreground window) differs before/after, the whole
-        capture is retried up to twice more before this throws NON-INTERFERENCE VIOLATION.
+        Nothing here sends input, so a moved cursor or a foreground switch to another program is the
+        maintainer working and only sets ExternalActivity. A violation is the foreground moving to a
+        window of the captured app's own process during the capture; that is retried up to twice
+        more before this throws NON-INTERFERENCE VIOLATION.
     #>
     [CmdletBinding()]
     param(
@@ -429,9 +431,13 @@ function Invoke-AeroWindowCapture {
     $dpi = [AeroCaptureNative]::GetDpiForWindow($Hwnd)
     $scale = $dpi / 96.0
 
+    [uint32]$appProcessId = 0
+    [AeroCaptureNative]::GetWindowThreadProcessId($Hwnd, [ref]$appProcessId) | Out-Null
+
     $bitmap = $null
     $externalActivity = $false
     $captured = $false
+    $stolenDetail = ''
 
     for ($interferenceAttempt = 1; $interferenceAttempt -le 3; $interferenceAttempt++) {
         $before = Get-AeroInputState
@@ -474,20 +480,24 @@ function Invoke-AeroWindowCapture {
         }
 
         $after = Get-AeroInputState
-        $unchanged = ($before.CursorX -eq $after.CursorX) -and ($before.CursorY -eq $after.CursorY) -and ($before.ForegroundHwnd -eq $after.ForegroundHwnd)
+        $changed = ($before.CursorX -ne $after.CursorX) -or ($before.CursorY -ne $after.CursorY) -or ($before.ForegroundHwnd -ne $after.ForegroundHwnd)
+        [uint32]$foregroundProcessId = 0
+        [AeroCaptureNative]::GetWindowThreadProcessId([IntPtr]$after.ForegroundHwnd, [ref]$foregroundProcessId) | Out-Null
+        $stolen = ($before.ForegroundHwnd -ne $after.ForegroundHwnd) -and ($appProcessId -ne 0) -and ($foregroundProcessId -eq $appProcessId)
 
-        if ($unchanged) {
+        if (-not $stolen) {
             $captured = $true
-            $externalActivity = ($interferenceAttempt -gt 1)
+            $externalActivity = $externalActivity -or $changed
             break
         }
 
         $externalActivity = $true
+        $stolenDetail = "foreground $($before.ForegroundHwnd) -> $($after.ForegroundHwnd) (app pid $appProcessId)"
     }
 
     if (-not $captured) {
         if ($bitmap) { $bitmap.Dispose() }
-        throw "NON-INTERFERENCE VIOLATION: cursor/foreground state changed on all 3 capture attempts"
+        throw "NON-INTERFERENCE VIOLATION: the captured app took the foreground on all 3 capture attempts: $stolenDetail"
     }
 
     $directory = Split-Path -Path $OutFile -Parent
