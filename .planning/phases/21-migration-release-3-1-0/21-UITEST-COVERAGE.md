@@ -151,3 +151,33 @@ table says the state is capturable.
 All 13 `Popup(`-based components (D-07's full list) now have a capture method and D-08 status
 recorded above (Task 1 AeroDropdown, Task 2's 7 menu/overlay components, Task 3's 5 pickers); none
 needed the D-08 fallback. The 3 `Window`/native-dialog components above are separately classified.
+
+## After-only MCP inspection (D-08, Plan 11 Task 1)
+
+New toolchain only (Kotlin 2.4.20 / Compose Multiplatform 1.12.0), 96 DPI. The showcase ran through
+`:showcase:hotRun` in capture mode (`-Paero.capture=true`: non-focusable main window, sent to the
+back) on the Overlays section. The trigger was clicked through Compose Hot Reload MCP semantics
+(`Open dialog` / `Info`), with a fresh app per capture (MCP `restart` between the two dialogs of
+a theme, a new launch per theme). A watcher polled every 50 ms for the new top-level window of
+the app PID, sent it to `HWND_BOTTOM` without activation, then captured it with PrintWindow
+(`-SkipSanity`, not blank: 49–77 distinct colours in a 4 px sample grid). AeroFilePicker was
+never clicked.
+
+| Component | Theme | Capture | Observation | Foreground |
+|---|---|---|---|---|
+| AeroDialog | AeroBlue | `new-kt2.4.20-cmp1.12.0/mcp-after-only/AeroDialog/AeroBlue/opened.png` | inspected without baseline — 420x220 undecorated window, navy glass fill, custom title bar with minimize/maximize/close, "Dialog title", body text, outlined Cancel + filled OK bottom-right; all legible | not taken |
+| AeroDialog | AeroDark | `new-kt2.4.20-cmp1.12.0/mcp-after-only/AeroDialog/AeroDark/opened.png` | inspected without baseline — same layout on the near-black AeroDark surface, text and buttons legible | not taken |
+| AeroDialog | Classic | `new-kt2.4.20-cmp1.12.0/mcp-after-only/AeroDialog/Classic/opened.png` | inspected without baseline — same layout on the charcoal Classic surface, text and buttons legible | **taken** — see below |
+| AeroAlertDialog | AeroBlue | `new-kt2.4.20-cmp1.12.0/mcp-after-only/AeroAlertDialog/AeroBlue/opened.png` | inspected without baseline — info icon + "Alert: Info" title, "This is an AeroAlertDialog of kind Info.", single filled OK | not taken |
+| AeroAlertDialog | AeroDark | `new-kt2.4.20-cmp1.12.0/mcp-after-only/AeroAlertDialog/AeroDark/opened.png` | inspected without baseline — same content on AeroDark, legible | not taken |
+| AeroAlertDialog | Classic | `new-kt2.4.20-cmp1.12.0/mcp-after-only/AeroAlertDialog/Classic/opened.png` | inspected without baseline — same content on Classic, legible | **taken** — see below |
+
+**Foreground finding (global stop rule, T-21-09).** In 4 of 6 openings the foreground stayed with
+the maintainer's own window. In the two Classic openings the dialog window itself (the app PID)
+became the foreground as soon as it appeared. Windows lets a background process bring a new
+window to the front once the user has been idle for the foreground-lock timeout; while the
+maintainer was actively working it refused. `AeroDialog` is a focusable `Window`, which is right
+for a dialog a user opens, so this is not a library defect. It does mean an MCP-driven dialog
+can take focus from an idle maintainer. After the first occurrence the agent closed the app at
+once and asked; the maintainer chose to capture the last dialog anyway. The watcher then stopped
+the app about 1 s after the capture. Focus returned to the maintainer's editor both times.
