@@ -61,6 +61,8 @@ Patch milestone (Phase 14). Eliminated header-strip duplication in horizontal CO
 
 ## Current Milestone: v3.1 Dependency Refresh + Hot Reload MCP
 
+**Status (2026-09-24):** Phase 21 complete and verified (24/24 requirements). `3.1.0` is tagged and green on JitPack (`com.github.Tolaseeq:aero-compose-ui:v3.1.0`, tag only — origin master not moved). Validated in Phase 21: Migration + Release 3.1.0. Next: `/bm:complete-milestone`.
+
 **Goal:** Принудительно перевести весь проект на последние стабильные версии зависимостей и тулчейна, доказать, что ничего не сломалось, и выпустить `3.1.0` на JitPack — и одновременно поставить Compose Hot Reload с MCP-сервером, через который агент сам смотрит и кликает работающую витрину, доказав, что этот способ отладки не мешает мейнтейнеру пользоваться компьютером.
 
 **Target features:**
@@ -202,15 +204,22 @@ Patch milestone (Phase 14). Eliminated header-strip duplication in horizontal CO
 - ✓ **Selectors + Lists** (VSEL-01..04, VLST-01..04) — `AeroSwitch` и `AeroSegmentedControl` впервые получили hover/press/focus, выбранный сегмент утоплен кодом нажатой кнопки, `AeroListItem` клипует выделение в «пилюлю», ховер компонуется поверх выделения — Phase 19 — v3.0
 - ✓ **Showcase + Verification** (SHW-15..16, VER-01..06) — постоянная секция Verification со всеми восемью компонентами, два grep-гейта, snapshot размеров/радиусов против тега v2.0.4, UI-тесты клавиатуры, внешний scratch-потребитель, каждый гейт доказан падающим на несломанном коде; приёмка на трёх темах пройдена на 100% DPI, прогоны 125%/200% отменены решением мейнтейнера — Phase 20 — v3.0
 
+**v3.1 (24):**
+- ✓ **Toolchain + dependencies** (TOOL-09..17): Gradle 9.7.1, JDK 21, Kotlin 2.4.20, Compose Multiplatform 1.12.0, kotlinx-coroutines 1.11.0, kotlinx-datetime 0.8.0, JUnit 6.1.3; Material3 pinned 1.9.0; locked test count 541 — Phase 21 — v3.1
+- ✓ **Pre-upgrade baseline** (BASE-01..05): launch-parameter navigation, PrintWindow capture, run-to-run noise, UI-test state captures — Phase 21 — v3.1
+- ✓ **Hot Reload + MCP** (HRM-01..03): `:showcase` only, `:showcase:hotMcpServer`, 27/27 non-interference measurements at 96 DPI — Phase 21 — v3.1
+- ✓ **Post-upgrade verification** (VER-07..10): 102 outside-noise differences, all accepted by the maintainer; unconfirmed list; maintainer hand-off approved — Phase 21 — v3.1
+- ✓ **Release** (REL-03..05): verify tag green on JitPack, README consumer floor, `3.1.0` published as `com.github.Tolaseeq:aero-compose-ui:v3.1.0` (tag only) — Phase 21 — v3.1
+
 ### Active
 
 <!-- v3.1 Dependency Refresh + Hot Reload MCP. REQ-ID и трассировка — в .planning/REQUIREMENTS.md. -->
 
-- [ ] Все зависимости и тулчейн проекта на последних стабильных версиях (Kotlin 2.4.20, Compose Multiplatform 1.12.0, coroutines 1.11.0, kotlinx-datetime 0.8.0, JUnit 6.1.3, Gradle 9.7.1, JDK 21)
-- [ ] Compose Hot Reload + MCP-сервер установлены в `:showcase`, `.mcp.json` подключает сервер на Windows
-- [ ] Доказано, что MCP-отладка не двигает реальный курсор, не крадёт фокус и работает при перекрытом/свёрнутом окне
-- [ ] После обновления тесты зелёные, витрина стартует, обход витрины агентом в трёх темах не выявил необъяснённого визуального дрейфа
-- [ ] `3.1.0` опубликована на JitPack, README называет новые минимальные требования для потребителей
+- [x] Все зависимости и тулчейн проекта на последних стабильных версиях (Kotlin 2.4.20, Compose Multiplatform 1.12.0, coroutines 1.11.0, kotlinx-datetime 0.8.0, JUnit 6.1.3, Gradle 9.7.1, JDK 21)
+- [x] Compose Hot Reload + MCP-сервер установлены в `:showcase`, `.mcp.json` подключает сервер на Windows
+- [x] Доказано, что MCP-отладка не двигает реальный курсор, не крадёт фокус и работает при перекрытом/свёрнутом окне
+- [x] После обновления тесты зелёные, витрина стартует, обход витрины агентом в трёх темах не выявил необъяснённого визуального дрейфа
+- [x] `3.1.0` опубликована на JitPack, README называет новые минимальные требования для потребителей
 
 ### Out of Scope
 
@@ -324,4 +333,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-21 — milestone v3.1 Dependency Refresh + Hot Reload MCP started (goals scoped; requirements and roadmap follow). Previous: 2026-07-29 after v3.0 Glass Refinement milestone — 6 phases (15–20), 41 plans, 57/57 requirements. Toolchain raised to Kotlin 2.4.10 + Compose Multiplatform 1.11.1 and proven inert; a single shared Aero-primitives layer now backs eight restyled components with unchanged public API and behavior; `GlassModifiers.kt`'s three long-standing defects fixed; tests 232 → 467. Closed as `override_closeout`: SHW-16's 125%/200% DPI passes were explicitly waived by the maintainer, and 9 acknowledged items are deferred (STATE.md § Deferred Items). Project version bumped to `3.0.0`.*
+*Last updated: 2026-09-24 — Phase 21 (Migration + Release 3.1.0) complete: whole toolchain on latest stable, no unexplained drift against the pre-upgrade baseline, Hot Reload + MCP in `:showcase` proven not to move the cursor or steal focus, `3.1.0` on JitPack. Previous: 2026-09-21 — milestone v3.1 started.*
