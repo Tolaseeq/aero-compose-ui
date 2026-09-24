@@ -110,7 +110,7 @@ Full decision log lives in PROJECT.md "Key Decisions". Rules that constrain any 
 
 ### Blockers/Concerns
 
-- **No real external consumer app tracks this library's current line.** `aska` and `satellite-control` stayed on the 2.0.4 toolchain; v3.0 used a scratch consumer, v3.1 accepted "tests + agent showcase sweep" instead (maintainer's choice). VER-F03 would close this.
+- **No consumer app is on `v3.1.0` yet.** Six apps in `C:\1A_WORK` consume `v3.0.0`: `aska`, `oper`, `satellite-control`, `pinya`, `2_encoder_buildomator`, `2_encoder_ccsdd`. Each got an upgrade item in its own workflow on 2026-09-24 (bm todo / Kiro brief / Superpowers spec draft). `aska`, `oper` and `2_encoder_buildomator` carry a `strictly("0.7.1-0.6.x-compat")` kotlinx-datetime constraint made for v3.0.0's pickers, which must go. v3.1 itself accepted "tests + agent showcase sweep" instead of a consumer gate (maintainer's choice); the first real consumer upgrade is the practical VER-F03.
 - **Visual verification exists at 100% DPI (96) only** — v3.0 and v3.1 both named it rather than implying full-scale coverage. VER-F02 tracks 125% / 200%.
 
 Resolved at v3.1 close: the five research conflicts from `.planning/research/SUMMARY.md` were all settled empirically in Phase 21 (kotlinx-datetime 0.8.0 needed four `Clock` imports; JBR 21 runs `hotRun`; Hot Reload task is `:showcase:hotMcpServer`; Gradle 9.7.1 runs Kotlin 2.4.20 green; capture is `PrintWindow`).
