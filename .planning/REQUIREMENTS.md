@@ -56,7 +56,7 @@
 
 - [x] **REL-03**: Одноразовый проверочный тег собирается на JitPack с `jitpack.yml` под JDK 21 и Gradle 9.7.1 — до настоящего тега: неудачная сборка навсегда прилипает к тегу
 - [x] **REL-04**: README рядом со строкой подключения называет новый нижний порог для потребителей — Java 21, Compose Multiplatform 1.12, Kotlin 2.4.20, kotlinx-datetime 0.8 (старых `kotlinx.datetime.Instant` / `Clock` больше нет) — и куда идти тем, кто остаётся на старом стеке (`3.0.0` / `2.0.4`). Заодно исправлена устаревшая строка тулчейна, которая до сих пор называет Kotlin 2.1.21 / Compose 1.7.3
-- [ ] **REL-05**: Версия `3.1.0` стоит в `build.gradle.kts` до тега; тег `v3.1.0` отправлен, сборка JitPack `ok`, `com.github.Tolaseeq:aero-compose-ui:3.1.0` резолвится
+- [x] **REL-05**: Версия `3.1.0` стоит в `build.gradle.kts` до тега; тег `v3.1.0` отправлен, сборка JitPack `ok`, `com.github.Tolaseeq:aero-compose-ui:3.1.0` резолвится
 
 ## Future Requirements
 
@@ -117,7 +117,7 @@
 | VER-10 | Phase 21 | Complete |
 | REL-03 | Phase 21 | Complete |
 | REL-04 | Phase 21 | Complete |
-| REL-05 | Phase 21 | Pending |
+| REL-05 | Phase 21 | Complete |
 
 **Coverage:**
 - v3.1 requirements: 24 total
