@@ -285,3 +285,177 @@ opened beyond the 3-theme sample; Category C/D: 2 keys each not individually ope
 1-sample-per-category check) via `compare-showcase.json`, since PowerShell-side pixel counts,
 region coordinates and per-theme `maxChannelDelta` are exact, not approximate, and a visual sample
 per theme/category was confirmed to show the same glyph-location pattern.
+
+## UI tests (VER-08)
+
+### Method
+
+**Capture.** `./gradlew :library:test --rerun --tests "com.mordred.aero.capture.*"
+-Paero.captureDir=C:/1A_WORK/ui_lib/.captures/new-kt2.4.20-cmp1.12.0/ui-tests/runA` — `BUILD
+SUCCESSFUL`, `AERO_TEST_COUNT total=71 skipped=0 expected=541 expectedSkipped=0 filtered=true` (the
+opt-in capture suite is a filtered subset of the locked 541-test full suite, as expected — a
+smaller filtered count is not itself a finding). 200 PNGs captured, matching the baseline's 200
+(23 library components + `Base05Proof/`, the capture-mechanism proof, not a component).
+
+**Comparison.** `Compare-AeroCaptures.ps1 -Mode Compare -Kind uitest -BeforeDir
+.captures\old-kt2.4.10-cmp1.11.1\ui-tests\runA -AfterDir
+.captures\new-kt2.4.20-cmp1.12.0\ui-tests\runA -NoiseJson 21-noise-regions.json -DiffDir
+.captures\diff\ui-tests -OutJson .captures\diff\compare-uitest.json` → `keys=200 identical=173
+insideOnly=0 withOutside=27 missing=0`.
+
+**D-05 run-to-run check.** A second opt-in run was captured into
+`.captures\new-kt2.4.20-cmp1.12.0\ui-tests\runB` (`BUILD SUCCESSFUL`, same
+`AERO_TEST_COUNT total=71 skipped=0`). `Compare-AeroCaptures.ps1 -Mode Noise -RunDirs runA,runB
+-Kind uitest -OutJson .captures\diff\noise-new-uitest.json` — all 200 keys report `stable: true`
+(runA and runB are byte-identical at every key), matching `21-NOISE.md`'s expectation that UI-test
+captures carry zero run-to-run noise: `runComposeUiTest`'s frame clock is deterministic and every
+picker value is fixed (D-09), so there is no wall-clock animation for a second run to sample
+differently. All 27 outside-noise keys are therefore classified `stable` — genuine, reproducible
+before/after differences, not run-to-run jitter.
+
+**Contact sheets.** `Compare-AeroCaptures.ps1 -Mode ContactSheet -Dirs
+.captures\old-kt2.4.10-cmp1.11.1\ui-tests\runA,.captures\new-kt2.4.20-cmp1.12.0\ui-tests\runA,
+.captures\diff\ui-tests -Kind uitest -OutDir .captures\sheets\ui-tests` → `groups=70` (23 components
+x 3 themes = 69, plus `Base05Proof/AeroBlue`, the mechanism-proof folder — matches the baseline's
+folder count exactly).
+
+### Totals
+
+200 keys compared, 0 missing, **173 identical** (0 diff), **27 with an outside-noise diff**, all 27
+classified `stable`. Every diff has `maxChannelDelta` of 1–2 except three single-pixel
+`AeroComboBox/*/opened` keys (`maxChannelDelta` 76–138, `diffPx=1`). No component needed the D-08
+after-only fallback (unchanged from the baseline — `AeroDialog`/`AeroAlertDialog`/`AeroFilePicker`
+remain the only three components outside UI-test capture, for the same `Window`/native-dialog
+reasons recorded in `21-BASELINE.md`).
+
+### Per-component x theme table
+
+`Component | Theme | States | outside-noise diffs | run-to-run on new | observation`
+
+| Component | Theme | States | Outside-noise | Run-to-run | Observation |
+|---|---|---|---|---|---|
+| AeroButton | AeroBlue | 4 | 2 (default, focus) | stable | Text-baseline AA delta under the "Label" text, same family as showcase Category A |
+| AeroButton | AeroDark | 4 | 0 | — | Identical |
+| AeroButton | Classic | 4 | 0 | — | Identical |
+| AeroColorPickerButton | AeroBlue | 2 | 0 | — | Identical |
+| AeroColorPickerButton | AeroDark | 2 | 0 | — | Identical |
+| AeroColorPickerButton | Classic | 2 | 0 | — | Identical |
+| AeroComboBox | AeroBlue | 2 | 1 (opened) | stable | Single-pixel caret/text-cursor colour delta (maxΔ=92) at a fixed position in the opened dropdown's search field |
+| AeroComboBox | AeroDark | 2 | 1 (opened) | stable | Same single-pixel caret delta (maxΔ=138) |
+| AeroComboBox | Classic | 2 | 1 (opened) | stable | Same single-pixel caret delta (maxΔ=76) |
+| AeroContextMenu | AeroBlue | 2 | 1 (opened) | stable | Popup border/shadow-edge AA delta around the opened menu |
+| AeroContextMenu | AeroDark | 2 | 1 (opened) | stable | Same popup-edge AA delta |
+| AeroContextMenu | Classic | 2 | 1 (opened) | stable | Same popup-edge AA delta |
+| AeroDataTable | AeroBlue | 3 | 0 | — | Identical |
+| AeroDataTable | AeroDark | 3 | 0 | — | Identical |
+| AeroDataTable | Classic | 3 | 0 | — | Identical |
+| AeroDatePicker | AeroBlue | 2 | 0 | — | Identical |
+| AeroDatePicker | AeroDark | 2 | 0 | — | Identical |
+| AeroDatePicker | Classic | 2 | 0 | — | Identical |
+| AeroDateRangePicker | AeroBlue | 2 | 0 | — | Identical |
+| AeroDateRangePicker | AeroDark | 2 | 0 | — | Identical |
+| AeroDateRangePicker | Classic | 2 | 0 | — | Identical |
+| AeroDateTimePicker | AeroBlue | 2 | 1 (opened) | stable | Apply-button label AA delta, same family |
+| AeroDateTimePicker | AeroDark | 2 | 0 | — | Identical |
+| AeroDateTimePicker | Classic | 2 | 1 (opened) | stable | Same Apply-button label AA delta |
+| AeroDateTimeRangePicker | AeroBlue | 2 | 1 (opened) | stable | Same Apply-button label AA delta |
+| AeroDateTimeRangePicker | AeroDark | 2 | 0 | — | Identical |
+| AeroDateTimeRangePicker | Classic | 2 | 0 | — | Identical |
+| AeroDrawer | AeroBlue | 2 | 1 (closed) | stable | Trigger-button label AA delta on the closed state |
+| AeroDrawer | AeroDark | 2 | 0 | — | Identical |
+| AeroDrawer | Classic | 2 | 0 | — | Identical |
+| AeroDropdown | AeroBlue | 2 | 0 | — | Identical |
+| AeroDropdown | AeroDark | 2 | 0 | — | Identical |
+| AeroDropdown | Classic | 2 | 0 | — | Identical |
+| AeroListItem | AeroBlue | 5 | 0 | — | Identical |
+| AeroListItem | AeroDark | 5 | 0 | — | Identical |
+| AeroListItem | Classic | 5 | 0 | — | Identical |
+| AeroMenuBar | AeroBlue | 2 | 1 (opened) | stable | Popup border/shadow-edge AA delta around the opened menu |
+| AeroMenuBar | AeroDark | 2 | 1 (opened) | stable | Same popup-edge AA delta |
+| AeroMenuBar | Classic | 2 | 1 (opened) | stable | Same popup-edge AA delta |
+| AeroOutlinedButton | AeroBlue | 4 | 3 (default, focus, hover) | stable | Outline-stroke AA delta on the button border, same family as showcase Category A |
+| AeroOutlinedButton | AeroDark | 4 | 0 | — | Identical |
+| AeroOutlinedButton | Classic | 4 | 0 | — | Identical |
+| AeroPanelGroup | AeroBlue | 3 | 0 | — | Identical |
+| AeroPanelGroup | AeroDark | 3 | 0 | — | Identical |
+| AeroPanelGroup | Classic | 3 | 0 | — | Identical |
+| AeroPopover | AeroBlue | 2 | 2 (closed, opened) | stable | Trigger/label AA delta present in both states |
+| AeroPopover | AeroDark | 2 | 0 | — | Identical |
+| AeroPopover | Classic | 2 | 0 | — | Identical |
+| AeroRangeSlider | AeroBlue | 4 | 0 | — | Identical |
+| AeroRangeSlider | AeroDark | 4 | 0 | — | Identical |
+| AeroRangeSlider | Classic | 4 | 0 | — | Identical |
+| AeroSegmentedControl | AeroBlue | 4 | 4 (default, focus, hover, press) | stable | Segment-label text AA delta in all four states |
+| AeroSegmentedControl | AeroDark | 4 | 0 | — | Identical |
+| AeroSegmentedControl | Classic | 4 | 0 | — | Identical |
+| AeroSlider | AeroBlue | 5 | 0 | — | Identical |
+| AeroSlider | AeroDark | 5 | 0 | — | Identical |
+| AeroSlider | Classic | 5 | 0 | — | Identical |
+| AeroSplitPane | AeroBlue | 3 | 0 | — | Identical |
+| AeroSplitPane | AeroDark | 3 | 0 | — | Identical |
+| AeroSplitPane | Classic | 3 | 0 | — | Identical |
+| AeroSwitch | AeroBlue | 5 | 0 | — | Identical |
+| AeroSwitch | AeroDark | 5 | 0 | — | Identical |
+| AeroSwitch | Classic | 5 | 0 | — | Identical |
+| AeroTimePicker | AeroBlue | 2 | 0 | — | Identical |
+| AeroTimePicker | AeroDark | 2 | 0 | — | Identical |
+| AeroTimePicker | Classic | 2 | 0 | — | Identical |
+| AeroTooltip | AeroBlue | 2 | 1 (closed) | stable | Trigger-button label AA delta on the closed state |
+| AeroTooltip | AeroDark | 2 | 0 | — | Identical |
+| AeroTooltip | Classic | 2 | 0 | — | Identical |
+
+`Base05Proof/AeroBlue` (mechanism-proof folder, not a library component) shows the same text-AA
+delta on its `tagged` state and a matching root-level icon delta; consistent with the pattern, not
+tracked as a separate component finding.
+
+### Observations (agent review)
+
+All 27 outside-noise keys fall into the same three sub-patterns already identified in the showcase
+half, now confirmed inside `runComposeUiTest`'s deterministic, off-screen `captureToImage()` render
+path (so these are not window-capture artifacts — the same rendering delta reproduces even without
+a real OS window):
+
+1. **Text-label anti-aliasing delta** (`AeroButton`, `AeroOutlinedButton`, `AeroSegmentedControl`,
+   `AeroDrawer`, `AeroTooltip`, `AeroPopover`, `AeroDateTimePicker`/`AeroDateTimeRangePicker`'s
+   Apply button, `Base05Proof`) — `maxChannelDelta` of 1, a handful to a few hundred touched
+   pixels, always confined to text-glyph edges. Same family as showcase Category A/C/D.
+2. **Popup border/shadow-edge anti-aliasing delta** (`AeroContextMenu`, `AeroMenuBar`) —
+   `maxChannelDelta` of 2, a few hundred touched pixels around the popup's outline/shadow. Same
+   underlying rendering-pipeline shift, applied to `dropShadow`/border strokes instead of text.
+3. **Single-pixel caret-colour delta** (`AeroComboBox/*/opened`) — exactly 1 touched pixel per
+   theme but a comparatively large `maxChannelDelta` (76–138), at a fixed position inside the
+   opened search field. Visually confirmed via the contact sheet: a barely-visible highlight at the
+   text-cursor's screen position, consistent with a small colour/alpha shift in the caret or its
+   immediate surrounding pixel, not a layout or functional change.
+
+**State-by-state correctness (agent review of all 70 contact sheets).** Every one of the 10 BASE-05
+components and 13 D-07 components was checked in all 3 themes (69 sheets) plus `Base05Proof`
+(1 sheet, mechanism-proof, not a component) — 70 total, matching `AERO_CONTACTSHEET_DONE groups=70`
+exactly. For every sheet: hover/press/focus/drag states (where applicable) show the expected visual
+change from `default` in both before and after columns (button glow rings, switch thumb glow,
+segmented-control segment lift, slider thumb glow + drag tooltip, list-item selection pill,
+split-pane/panel-group/data-table drag handles); opened-popup states show the expected content
+(dropdown/combobox option lists, context-menu items, menu-bar File/Edit menus, tooltip/popover
+bodies, drawer panel, colour-picker HSV square + swatches, all five date/time picker calendar
+grids at the fixed `LocalDate(2026, 3, 14)`/range values, per `21-UITEST-COVERAGE.md`) identically
+between before and after, aside from the anti-aliasing deltas already logged above. No state was
+missing, no state showed the wrong visual, and no popup failed to open in the "after" column.
+
+### Contact sheets viewed with the Read tool
+
+All 70 groups in `.captures\sheets\ui-tests\`: `AeroButton`, `AeroOutlinedButton`, `AeroSwitch`,
+`AeroSegmentedControl`, `AeroSlider`, `AeroRangeSlider`, `AeroListItem`, `AeroSplitPane`,
+`AeroPanelGroup`, `AeroDataTable` (the 10 BASE-05 components), `AeroDropdown`, `AeroComboBox`,
+`AeroContextMenu`, `AeroMenuBar`, `AeroTooltip`, `AeroPopover`, `AeroDrawer`,
+`AeroColorPickerButton`, `AeroDatePicker`, `AeroDateRangePicker`, `AeroDateTimePicker`,
+`AeroDateTimeRangePicker`, `AeroTimePicker` (the 13 D-07 popup components) — each x AeroBlue /
+AeroDark / Classic — plus `Base05Proof/AeroBlue`. 70 images read in total.
+
+### D-08 / not-capturable list
+
+Unchanged from `21-BASELINE.md`: `AeroDialog` and `AeroAlertDialog` (built on a real `Window`,
+`captureToImage()` cannot reach a separate OS window) are after-only via MCP click + `PrintWindow`,
+a later plan (Plan 11), guarded by a foreground-window check. `AeroFilePicker` (opens the native OS
+`java.awt.FileDialog`) is on the VER-09 unconfirmed list and was never clicked in any test. No
+component in this plan's 200-key comparison needed the D-08 fallback — all 13 `Popup(`-based
+components captured a real before/after pair.
