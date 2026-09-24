@@ -218,7 +218,7 @@ Plans:
 | 18. Range | v3.0 | 4/4 | Complete | 2026-07-24 |
 | 19. Selectors + Lists | v3.0 | 12/12 | Complete | 2026-07-28 |
 | 20. Verification | v3.0 | 9/9 | Complete | 2026-07-29 |
-| 21. Migration + Release 3.1.0 | v3.1 | 14/14 | Complete   | 2026-09-24 |
+| 21. Migration + Release 3.1.0 | v3.1 | 14/14 | Complete    | 2026-09-24 |
 
 ## Next Milestone
 

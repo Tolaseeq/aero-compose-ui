@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v3.1
 milestone_name: Dependency Refresh + Hot Reload MCP
-status: executing
-stopped_at: Completed 21-14-PLAN.md (3.1.0 released, tag only)
-last_updated: "2026-09-24T14:08:44.952Z"
+status: milestone_complete
+stopped_at: Milestone complete (Phase 21 was final phase)
+last_updated: 2026-09-24T14:25:21.033Z
 last_activity: 2026-09-23 -- Phase 21 execution started
 progress:
   total_phases: 1
   completed_phases: 1
   total_plans: 14
-  completed_plans: 14
+  completed_plans: 76
   percent: 100
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-23 — v3.1 roadmap created)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, typed `AeroIcons`, and a showcase — no manual style work or icon-pack hunting required.
-**Current focus:** Phase 21 — migration-release-3-1-0
+**Current focus:** Milestone complete
 
 ## Current Position
 
-Phase: 21 (migration-release-3-1-0) — EXECUTING
-Plan: 14 of 14
-Status: Executing Phase 21
-Last activity: 2026-09-23 -- Phase 21 execution started
+Phase: 21
+Plan: Not started
+Status: Milestone complete
+Last activity: 2026-09-24
 
 ## Deferred Items
 
@@ -116,15 +116,15 @@ Full decision log lives in PROJECT.md "Key Decisions". Rules that constrain any 
 Last session: 2026-09-24T14:08:44.931Z
 Stopped at: Completed 21-14-PLAN.md (3.1.0 released, tag only)
 Resume file: None
-Next action: phase 21 verification
+Next action: `/bm:complete-milestone` (v3.1)
 
-### Orchestrator rules for the rest of Phase 21
+### Rules that outlive Phase 21
 
-- Run every executor SEQUENTIALLY on the main working tree — no `isolation="worktree"`. All image artifacts use the absolute path `C:\1A_WORK\ui_lib\.captures\`, which does not exist in a worktree (D-01), and the D-03 `.captures` file-count proofs race if two plans run at once.
-- NEVER delete, move or overwrite anything under `.captures/`. `.captures/old-kt2.4.10-cmp1.11.1/` (1152 files) is the only pre-upgrade baseline and cannot be recreated on the new toolchain. Put this rule verbatim into every executor prompt — the 21-03 executor once wiped `.captures` "after inspection" (smoke frames only, before the baseline existed).
-- Plans 21-08 and 21-11 need the `mcp__compose-hot-reload__*` tools. The `bm:gsd-executor` agent type has no MCP tools, so run those plans inline in the orchestrator session (or with an agent type that has full tool access).
-- If a Gradle build fails with `Unable to delete file ...\library\build\libs\library-*.jar`, the usual holder is the VS Code Kotlin language server (`fwcd.kotlin`, a `java.exe` whose command line contains `org.javacs.kt.MainKt`). Ask the maintainer before ending it; executors must not touch external processes.
+- NEVER delete, move or overwrite anything under `.captures/`. `.captures/old-kt2.4.10-cmp1.11.1/` (1152 files) is the only pre-upgrade baseline and cannot be recreated.
+- GUI runs must tolerate the maintainer working: a capture/MCP guard fails only when the app's own process takes the foreground (`9834e8c`). Never ask the maintainer to keep hands off the PC.
+- `mcp__compose-hot-reload__*` tools are not available to `bm:gsd-executor`; MCP-driven work runs in the orchestrator session. Executor background jobs die when the executor returns, so long runs (showcase sweeps) run in the orchestrator's background or in executor foreground calls.
+- A focusable library `Window` (AeroDialog) opened through MCP can take the foreground from an idle maintainer; watch the foreground owner and close the app right after the capture.
 
 ## Operator Next Steps
 
-- None pending. Continue with `/bm:execute-phase 21` (Plan 21-09).
+- Close milestone v3.1 with `/bm:complete-milestone` (3.1.0 is already tagged and on JitPack; origin master deliberately not moved).
