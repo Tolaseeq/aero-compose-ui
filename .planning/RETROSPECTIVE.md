@@ -248,6 +248,51 @@
 
 ---
 
+## Milestone: v3.1 — Dependency Refresh + Hot Reload MCP
+
+**Shipped:** 2026-09-24
+**Phases:** 1 (21) | **Plans:** 14 | **Tasks:** 35 | **Sessions:** 2026-09-21 → 2026-09-24 (execution 09-23 → 09-24), 65 commits. Tag-only release `v3.1.0`; 24/24 requirements, verification passed.
+
+### What Was Built
+- **A pre-upgrade baseline built before any version moved:** showcase launch parameters that open any theme × section × page without the mouse; a committed `PrintWindow` capture / sweep / compare toolkit (`tools/capture/`) with a non-interference self-test; two independent full sweeps that named every noisy region; 69 headless Compose UI-test captures of hover / press / keyboard focus / drag and all 13 opened popups in three themes.
+- **A test-count guard proven red first:** the live 541 (not the documented 467) locked in `library/build.gradle.kts`; excluding one test class dropped it to 534 and failed the build.
+- **Seven isolated, individually-gated dependency bumps:** Gradle 9.7.1, JDK 21, Kotlin 2.4.20 + CMP 1.12.0, coroutines 1.11.0, kotlinx-datetime 0.8.0, JUnit 6.1.3 — each green on the first attempt at 541/0; the only forced source change was four `Clock` imports. Material3 stayed at 1.9.0, guarded by `tools/verify/check-material3.sh`.
+- **Compose Hot Reload + MCP as the agent's own inspection tool,** `:showcase` only, with 27/27 measured captures, tree dumps and clicks leaving the cursor and the foreground window untouched.
+- **A post-upgrade comparison where every difference has a cause:** 102 outside-noise differences in 8 named groups, an offline before/after page, a separate "unconfirmed" list, and a GUI hand-off only after the agent's own sweep. Released via a throwaway verify tag first, then `v3.1.0`.
+
+### What Worked
+- **Baseline first turned "nothing broke" into evidence.** Every one of the 102 differences carried before / after / highlight paths and a named cause; the one large anomaly (Classic/Layout/p3) was disproved by re-capture, not argued away.
+- **Isolated bumps, again.** The upgrade itself turned out almost free, but because each bump was its own gated commit, a regression would have pointed at one commit. Same lesson as v3.0 Phase 15, applied inside one phase instead of spread across phases.
+- **The maintainer-verified how-to beat the desk research.** `MCP-HOWTO.md` settled task names, the capture mechanism and the Windows spawn path that the research files had wrong or split on.
+- **Measuring non-interference instead of asking for it.** A 27-cell cursor/foreground matrix (bottom / covered / minimized) replaced "please don't touch the PC" with a number.
+- **Agent-first GUI review.** The maintainer approved on the first showing («+»), with the drift list and the unconfirmed list in hand — no sign-off rounds.
+- **Verify tag before the real tag** (repeated from v3.0): the JDK 21 / Gradle 9.7.1 JitPack build was proven green before anything permanent existed.
+
+### What Was Inefficient
+- **The requirement text carried stale specifics.** TOOL-16 cited 467 tests (real: 541) and HRM-01 wrote the bare `hotMcpServer` task, which started one MCP JVM per module on one stdio and hung calls to the 1800 s timeout until `883a8d3`. Both were caught in execution, one at the cost of a debugging detour.
+- **A wrong-shaped isolation check.** HRM-01's literal `grep -ic hot-reload` over all `:library` configurations returned 64 instead of 0 because CMP 1.12.0 itself registers `dev/composeHotReload*` configurations everywhere. The published surface was byte-identical, but the check still cost a maintainer decision pause.
+- **Most of the comparison effort went into proving noise was noise.** 82 of the 102 differences were one sub-pixel glyph anti-aliasing shift; one capture was contaminated by the maintainer's real cursor hovering the window.
+- **Strictly sequential execution.** 14 plans in 13 waves. That was deliberate (each step gated the next), but it made the milestone wall-clock-bound on captures.
+
+### Patterns Established
+- **Baseline before bump, same tool on both sides, noise measured run-to-run first.** Without the noise pass, every diff is a false alarm.
+- **Headless UI-test captures for states a live-window tool cannot produce** (`captureToImage` in `runComposeUiTest` with `performMouseInput` / `performKeyInput`): hover, press, focus and drag without a window on screen or system input. Ready to reuse for VER-F01.
+- **Non-interference as a measured matrix,** not a promise.
+- **The GUI hand-off package:** frames + explained-drift list + unconfirmed list; nothing unconfirmed is presented as passed.
+- **Guard numbers are re-measured live,** never carried over from documents.
+
+### Key Lessons
+1. **Treat the specifics in a requirement as claims to verify, not facts.** Two of this milestone's literal numbers and commands were wrong; re-measuring and running them first is cheaper than trusting them.
+2. **Point an isolation check at the surface that matters** — published POM / module metadata and the compile/runtime classpaths — not a grep across every configuration. The toolchain adds configurations of its own.
+3. **A capture comparison pipeline is mostly a noise-classification pipeline.** Build the noise measurement before the comparison.
+4. **Read the source of a capture primitive before trusting it with the maintainer's desktop.** The MCP server's `take_screenshot` is a real screen scrape; `PrintWindow` captures only the window.
+
+### Cost Observations
+- Model mix: opus for orchestration, MCP-driven inspection and the drift review; sonnet for plan execution. 14 plans in about two days of execution.
+- The upgrade itself was nearly free (four imports). Almost all of the spend went into the proof — baseline, two sweeps, 200+ UI-test images, the comparison and the review — and that work is reusable: the UI-test capture mechanism is the ready-made basis for VER-F01.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -261,6 +306,7 @@
 | v2.0.2 | ~1 day | 2 (13 + 13.1) | Single additive layout component + inserted orientation variant; established mandatory-spike-before-component for the highest-risk interaction (Pattern 3 two-writer coexistence), public-wrapper + internal-core for orientation symmetry, and refactor-then-extend (core extraction as its own zero-regression plan); confirmed "strictly one phase" is a soft boundary (deferred horizontal re-entered as Phase 13.1) |
 | v2.0.3 | single-day | 1 (14) | Smallest patch milestone — 3 plans (fix, repro, release); established `SideEffect`-for-snapshot-state-sync rule for `BoxWithConstraints`/`SubcomposeLayout` context and `isExpanded()`-as-structural-source-of-truth; confirmed that write-during-composition inside `SubcomposeLayout` amplifies to ×N recompose loops |
 | v3.0 | 8 days | 6 (15–20) | First milestone to migrate the toolchain, and the first to isolate that migration in its own zero-visual-change phase so "no drift" became provable. Established one-implementation-many-exposure-paths for the shared visual layer, base-then-transform state resolution, scheme-level derivation of shared visual properties (over per-call-site computation), ordering rules written into a primitive's contract, and bytecode-inspection-over-documentation for API verification. Confirmed that the external-consumer check is irreplaceable — and that per-component constant tuning is a rework generator, not a fix |
+| v3.1 | ~2 days execution | 1 (21) | First milestone to install a tool for the agent to inspect the GUI itself (Compose Hot Reload + MCP) and to measure its non-interference. Established baseline-before-bump with the same capture tool on both sides and noise measured first, headless UI-test captures for hover/press/focus/drag, the GUI hand-off package (frames + explained drift + unconfirmed list), and live re-measurement of guard numbers. Confirmed that one migration fits one phase when the bumps are isolated as gated commits inside it |
 
 ### Cumulative Quality
 
@@ -273,6 +319,7 @@
 | v2.0.2 | ~64 (+1: `AeroPanelGroup`, vertical + horizontal orientations) | 138 (unchanged) | 3 (unchanged) | 12 (LayoutSection: + vertical + 2 horizontal AeroPanelGroup demos) | unchanged (zero new dependencies) |
 | v2.0.3 | ~64 (no new components — bug fix only) | 138 (unchanged) | 3 (unchanged) | 12 (LayoutSection: + RCMP-04 permanent recompose-during-drag repro) | unchanged (zero new dependencies) |
 | v3.0 | ~64 (no new components — 8 restyled onto a new shared primitives layer) | 138 (unchanged) | 3 (unchanged) | 14 (+ Primitives gallery, + permanent Verification section) | unchanged deps; toolchain floor raised to Kotlin 2.4.10 / CMP 1.11.1, Material3 pinned to stable 1.9.0. Tests 232 → 467 |
+| v3.1 | ~64 (no new components — dependency refresh only) | 138 (unchanged) | 3 (unchanged) | unchanged (launch parameters open any theme × section × page) | toolchain floor raised to Java 21 / Kotlin 2.4.20 / CMP 1.12.0 / kotlinx-datetime 0.8.0; Material3 still pinned to 1.9.0; Hot Reload is showcase-only, not published. Tests 467 → 541 |
 
 ### Top Lessons (Verified Across Milestones)
 
@@ -282,3 +329,4 @@
 4. **Test the correctness-critical logic without the UI runtime.** v1.1 proved generated code via `compileKotlin`; v2.0 extended it — sealed state machines and pure transition functions (range commit, lazy-expand guard, HSV math) unit-tested without Compose caught the hardest pitfalls before any rendering existed. **v3.0 extended it again:** style resolution was written as pure, Compose-free transforms, so contrast and state-precedence became value-level assertions rather than things only an eye could judge.
 5. **When two things must look alike, share the mechanism — never tune both toward each other.** v3.0's most expensive lesson, learned across five separate rounds: the segmented control and the button were repeatedly recalibrated against one another until their fill and label resolution were unified onto one source of truth. Per-component constant tuning generates rework; it does not converge.
 6. **Isolate a risky migration into its own zero-change phase.** v3.0's toolchain jump (Kotlin 2.4.10 + CMP 1.11.1, an unmatched pairing) was provably inert only because no visual code moved alongside it. Mixing the two would have made every subsequent regression unattributable.
+7. **Prove "nothing changed" against a baseline taken before the change, with the noise measured first.** v3.0's pre-migration screenshots made its toolchain jump provably inert; v3.1 turned the same idea into a reusable pipeline (`PrintWindow` sweeps + headless UI-test captures + named noise regions) and every one of 102 differences got a named cause.

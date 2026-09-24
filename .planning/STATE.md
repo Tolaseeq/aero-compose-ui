@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v3.1
 milestone_name: Dependency Refresh + Hot Reload MCP
-status: milestone_complete
-stopped_at: Milestone complete (Phase 21 was final phase)
-last_updated: 2026-09-24T14:25:21.033Z
-last_activity: 2026-09-23 -- Phase 21 execution started
+status: Awaiting next milestone
+stopped_at: Milestone v3.1 completed and archived
+last_updated: "2026-09-24T14:51:07.996Z"
+last_activity: 2026-09-24 — Milestone v3.1 completed and archived
 progress:
   total_phases: 1
   completed_phases: 1
   total_plans: 14
-  completed_plans: 76
+  completed_plans: 14
   percent: 100
 ---
 
@@ -18,21 +18,21 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-23 — v3.1 roadmap created)
+See: .planning/PROJECT.md (updated 2026-09-24 — v3.1 shipped and archived)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, typed `AeroIcons`, and a showcase — no manual style work or icon-pack hunting required.
-**Current focus:** Milestone complete
+**Current focus:** Planning the next milestone (`/bm:new-milestone`; phase numbering continues from 22)
 
 ## Current Position
 
-Phase: 21
-Plan: Not started
-Status: Milestone complete
-Last activity: 2026-09-24
+Phase: Milestone v3.1 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-09-24 — Milestone v3.1 completed and archived
 
 ## Deferred Items
 
-Items acknowledged and deferred at milestone close on 2026-07-29 (v3.0). Closeout type: `override_closeout` — 9 known verification overrides. Explicitly out of v3.1 scope (see PROJECT.md "Явно НЕ в scope").
+Items acknowledged and deferred at milestone close on 2026-07-29 (v3.0). Closeout type: `override_closeout` — 9 known verification overrides. Explicitly out of v3.1 scope (see PROJECT.md "Явно НЕ в scope"). Re-checked at v3.1 close on 2026-09-24: the open-artifact audit reported the same 6 still-open items (5 todos + Phase 10 `human_needed`) and nothing new; carried forward unchanged.
 
 | Category | Item | Status |
 |----------|------|--------|
@@ -57,7 +57,7 @@ Beyond the audit list, one requirement shipped with a recorded gap rather than a
 **v2.0.2:** 8 plans (Phases 13 + 13.1), ~1-day push (2026-06-22→23), 49 commits, 4 code files, +1,516 lines.
 **v2.0.4:** 3 plans, single-day push incl. corrective release (2026-06-25→26), real RCMP root-cause fix.
 **v3.0:** 41 plans / 85 tasks across 6 phases, 2026-07-22 → 2026-07-29 (8 days), 252 commits, 248 files changed (+43,770 / −2,638) of which 71 code files (+11,104 / −409). Tests 232 → 467. Per-plan durations ranged 3 min – 2h10m; the long tail was human visual sign-off rounds, not code. Per-plan metrics are archived with the phase artifacts in `.planning/milestones/v3.0-phases/`.
-**v3.1:** in progress — 1 phase (21), 14 plans planned.
+**v3.1:** 14 plans / 35 tasks in 1 phase (21), 2026-09-21 → 2026-09-24 (execution 09-23 → 09-24), 65 commits, 91 files changed (+17,896 / −1,385) of which 31 non-planning files (+4,155 / −122). Tests 467 → 541. The long tail was the capture sweeps and the drift review, not code: the only source edit the upgrade forced was four `Clock` imports. Per-plan metrics are archived with the phase artifacts in `.planning/milestones/v3.1-phases/`.
 
 ## Accumulated Context
 
@@ -96,6 +96,9 @@ Full decision log lives in PROJECT.md "Key Decisions". Rules that constrain any 
 
 ### Future requirements (deferred, sourced from the v3.0 + v3.1 requirements archives)
 
+- **v3.1 Phase 21 code review** (`21-REVIEW.md`, 0 critical, tooling/test-side only): WR-01 `-Pages` capture filter still records an unrequested page-0 frame; WR-02 broad `catch (Throwable)` in the UI-test focus-fallback helper; IN-01 duplicated `aero.*` forwarding block in `showcase/build.gradle.kts`; IN-02 test-count guard relies on an internal Gradle API class
+- CMP 1.12.0 deprecates `LocalClipboardManager` (`IconsSection.kt`)
+
 - **VIS-F01** — visual sweep of the remaining ~40 components. Eight are glass now; the rest still read as Material — the most natural successor to v3.1
 - **VLST-F01** — `AeroListItem` mirror reflection along the bottom edge
 - **VRNG-F01** — Win7-authentic ping-pong indeterminate progress
@@ -107,16 +110,17 @@ Full decision log lives in PROJECT.md "Key Decisions". Rules that constrain any 
 
 ### Blockers/Concerns
 
-- **No real external consumer app tracks this library's current line.** `aska` and `satellite-control` stayed on the 2.0.4 toolchain through v3.0, so the project's historically strongest regression-catcher is unavailable; v3.1 explicitly accepts "tests + agent showcase sweep" instead of an external consumer gate (maintainer's choice, see PROJECT.md).
-- **v3.0's visual work was accepted at 100% DPI only.** v3.1's own verification (Phase 21 / VER-09) must name the DPI scale it ran at rather than silently implying full-scale coverage — the same gap, not yet closed.
-- **Five research conflicts flagged in `.planning/research/SUMMARY.md`** are not pre-resolved: kotlinx-datetime 0.8.0 compile-break vs. no-op (Phase 21), JBR Java-21-only vs. JBR-25-default (Phase 21), exact Hot Reload task names (Phase 21), Gradle 9.7.1 vs. Kotlin 2.4.20's documented 9.7.0 ceiling (Phase 21), and the `take_screenshot` capture mechanism (settled — see Locked decisions). Each has a named cheapest empirical check; `MCP-HOWTO.md` (maintainer-verified) already resolves several of these in practice and wins on conflict.
+- **No real external consumer app tracks this library's current line.** `aska` and `satellite-control` stayed on the 2.0.4 toolchain; v3.0 used a scratch consumer, v3.1 accepted "tests + agent showcase sweep" instead (maintainer's choice). VER-F03 would close this.
+- **Visual verification exists at 100% DPI (96) only** — v3.0 and v3.1 both named it rather than implying full-scale coverage. VER-F02 tracks 125% / 200%.
+
+Resolved at v3.1 close: the five research conflicts from `.planning/research/SUMMARY.md` were all settled empirically in Phase 21 (kotlinx-datetime 0.8.0 needed four `Clock` imports; JBR 21 runs `hotRun`; Hot Reload task is `:showcase:hotMcpServer`; Gradle 9.7.1 runs Kotlin 2.4.20 green; capture is `PrintWindow`).
 
 ## Session Continuity
 
-Last session: 2026-09-24T14:08:44.931Z
-Stopped at: Completed 21-14-PLAN.md (3.1.0 released, tag only)
+Last session: 2026-09-24
+Stopped at: Milestone v3.1 completed and archived (phase artifacts in `.planning/milestones/v3.1-phases/`)
 Resume file: None
-Next action: `/bm:complete-milestone` (v3.1)
+Next action: `/bm:new-milestone`
 
 ### Rules that outlive Phase 21
 
@@ -127,4 +131,5 @@ Next action: `/bm:complete-milestone` (v3.1)
 
 ## Operator Next Steps
 
-- Close milestone v3.1 with `/bm:complete-milestone` (3.1.0 is already tagged and on JitPack; origin master deliberately not moved).
+- Start the next milestone with `/bm:new-milestone`. Candidate goals: PROJECT.md § "Next Milestone Goals".
+- Release is tag-only: origin master is still at `bbe3658`; the local milestone commits are not pushed (maintainer's choice, as in v3.0).

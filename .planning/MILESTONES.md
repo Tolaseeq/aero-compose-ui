@@ -1,5 +1,45 @@
 # Milestones
 
+## v3.1 Dependency Refresh + Hot Reload MCP (Shipped: 2026-09-24)
+
+**Phase:** 21 (1 phase — one migration = one phase, maintainer's decision) | **Plans:** 14 | **Tasks:** 35 | **Requirements:** 24/24 (BASE-01..05, TOOL-09..17, HRM-01..03, VER-07..10, REL-03..05)
+
+**Timeline:** 2026-09-21 → 2026-09-24 (milestone start + research 09-21, requirements/roadmap/plan 09-23, execution 09-23 → 09-24)
+**Git range:** `d02b7fb` → `d50042f` — 65 commits, 91 files changed (+17,896 / −1,385), of which 31 non-planning files (+4,155 / −122) and 12 Kotlin files (+1,997 / −63)
+**Tests:** 467 → 541 green (locked count, guard proven red at 534 first)
+**Release:** `v3.1.0` on `8d3b227`, JitPack `ok`, coordinate `com.github.Tolaseeq:aero-compose-ui:v3.1.0` (v-prefixed — the v-less `3.1.0` does not resolve on JitPack). Tag-only release: origin master deliberately not moved (same as v3.0).
+**Verification:** `21-VERIFICATION.md` passed 24/24, re-checked against the live repository. No separate milestone audit (single phase, no cross-phase integration to check).
+**Sign-off:** ✅ Maintainer approved the GUI («+») after the agent's own full sweep; ruled «всё принимаем» on all 102 outside-noise drift items (8 cause groups, all traced to the CMP 1.11.1 → 1.12.0 rendering pipeline or to capture noise). Captures were taken at 100% / 96 DPI only — named as such in `21-UNCONFIRMED.md`, not implied to cover 125% / 200%.
+
+**Delivered:** The whole project moved onto the latest stable toolchain — Gradle 9.7.1, JDK 21, Kotlin 2.4.20, Compose Multiplatform 1.12.0, kotlinx-coroutines 1.11.0, plain kotlinx-datetime 0.8.0, JUnit 6.1.3, Material3 still pinned at stable 1.9.0 — proven against a pre-upgrade baseline to have broken nothing, and shipped as `3.1.0` on JitPack. Compose Hot Reload 1.2.0 + its MCP server sit in `:showcase` only, as the agent's own tool for looking at and clicking the running showcase; the agent measured that it never moves the real cursor or steals the active window. Public API unchanged; the consumer floor rose to Java 21 / CMP 1.12 / Kotlin 2.4.20 / kotlinx-datetime 0.8, stated in the README.
+
+**Key accomplishments:**
+
+1. **A pre-upgrade baseline that makes "nothing broke" provable (BASE-01..05)** — showcase launch parameters open any theme × section × page without the mouse; a committed WinAPI `PrintWindow` capture toolkit captures the window even covered or minimized without touching cursor or focus; two independent sweeps (75 frames each) named every noisy region; 69 permanent Compose UI-test captures record hover / press / keyboard focus / drag and all 13 opened popups in three themes, headless. 1152 reference files live in `.captures/old-kt2.4.10-cmp1.11.1/`.
+2. **A test-count guard proven red before it was trusted (TOOL-16)** — the live count on the old toolchain (541, not the 467 carried in the docs) is locked in `library/build.gradle.kts`; excluding one test class dropped it to 534 and failed the build. Every later bump was gated on exactly 541/0.
+3. **Every dependency bump its own gated commit, zero code changes except one compiler-forced rename (TOOL-09..15, TOOL-17)** — Gradle 9.7.1 (stale JetBrains Space repo removed) → JDK 21 → Kotlin 2.4.20 + CMP 1.12.0 → coroutines 1.11.0 → kotlinx-datetime 0.8.0 (four `kotlinx.datetime.Clock` → `kotlin.time.Clock` imports) → JUnit 6.1.3, each green on the first attempt. `tools/verify/check-material3.sh` shows no Material3 alpha on either module, including after Hot Reload.
+4. **Hot Reload + MCP as a non-interfering inspection tool (HRM-01..03)** — `:showcase` only (`:library`'s POM and module metadata byte-identical); `.mcp.json` runs the module-qualified `:showcase:hotMcpServer` (the bare task spawned one MCP JVM per module on a shared stdio). `reload` picks up `:library` edits without restarting the showcase. 27/27 measured captures, tree dumps and clicks left cursor and foreground window unchanged, covered and minimized included; the server's `take_screenshot` (a real screen scrape) is banned.
+5. **Post-upgrade comparison with every difference explained (VER-07..10)** — 75 showcase frames and 200 UI-test states re-captured and diffed against the baseline; 102 outside-noise differences sorted into 8 named causes, each with before / after / highlight paths; one large anomaly run down to a one-off capture flake by re-capture. Everything neither method confirmed sits on a separate "unconfirmed" list. The maintainer saw the GUI only after the agent's sweep.
+6. **Release verified before the real tag existed (REL-03..05)** — throwaway `v3.1.0-verify01` built green on JitPack under JDK 21 / Gradle 9.7.1 (class-file 65, `org.gradle.jvm.version = 21`); README names the new consumer floor and where to go on the old stack (`v3.0.0` / `2.0.4`), and the stale Kotlin 2.1.21 / Compose 1.7.3 line is gone.
+
+**Patterns established:**
+
+- **Baseline before bump, captured by the same tool as the after-shot** — the comparison can only separate drift from noise if both sides went through `PrintWindow` with the same parameters and the noise was measured run-to-run first.
+- **Re-measure, don't carry numbers forward** — the documented 467 was stale; the locked guard uses the live 541.
+- **Maintainer-verified how-to beats desk research** — `MCP-HOWTO.md` resolved several research conflicts (task names, capture mechanism, Windows spawn) that the research files got wrong.
+- **The agent inspects the GUI itself before the maintainer sees it** — a hand-off carries frames, the explained-drift list and the unconfirmed list.
+
+**Known gaps / debt carried forward:**
+
+- Unconfirmed (`21-UNCONFIRMED.md`): hover / focus / drag of the other ~40 components (VER-F01); popup parts past the window frame; 125% / 200% display scale (VER-F02, carried from v3.0 SHW-16); behaviour not expressed in semantics; `AeroFilePicker`'s native dialog; `AeroPasswordField` show/hide toggle never clicked.
+- Phase 21 code review (`21-REVIEW.md`, 0 critical): WR-01 `-Pages` capture filter still records an unrequested page-0 frame; WR-02 broad `catch (Throwable)` in the UI-test focus-fallback helper; IN-01 duplicated `aero.*` property-forwarding block in `showcase/build.gradle.kts`; IN-02 test-count guard relies on an internal Gradle API class. All tooling / test-side, none in the published library.
+- CMP 1.12.0 registers `dev/composeHotReload*` configurations on every subproject, `:library` included — accepted by the maintainer; the published surface is unaffected.
+- CMP 1.12.0 deprecates `LocalClipboardManager` (`IconsSection.kt`).
+- No external consumer tracks the current line; VER-F03 (scratch consumer against published `v3.1.0`) not done by the maintainer's choice.
+- Six items acknowledged at v3.0 close are carried again unchanged (STATE.md § Deferred Items), plus the v3.0 debt list (G4, IN-01 clip gap, WR-01 scratch files, `AeroRangeSlider` keyboard focus, label contrast, DROP-FIX-01).
+
+---
+
 ## v3.0 Glass Refinement (Shipped: 2026-07-29)
 
 **Phases:** 15–20 (6 phases) | **Plans:** 41 | **Tasks:** 85 | **Requirements:** 57/57 (TOOL-01..08, PRIM-01..18, VBTN-01..06, VRNG-01..09, VSEL-01..04, VLST-01..04, SHW-15..16, VER-01..06)
