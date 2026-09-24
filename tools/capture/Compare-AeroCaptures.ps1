@@ -435,8 +435,10 @@ if ($Mode -eq 'Compare') {
         }
     }
 
-    $beforeEntries = @(Get-AeroFrameEntries -RunDir $BeforeDir -Kind $Kind | Where-Object { $_.Capture -eq 1 })
-    $afterEntries = @(Get-AeroFrameEntries -RunDir $AfterDir -Kind $Kind | Where-Object { $_.Capture -eq 1 })
+    $beforeEntries = New-Object System.Collections.Generic.List[object]
+    foreach ($e in (Get-AeroFrameEntries -RunDir $BeforeDir -Kind $Kind)) { if ($e.Capture -eq 1) { $beforeEntries.Add($e) } }
+    $afterEntries = New-Object System.Collections.Generic.List[object]
+    foreach ($e in (Get-AeroFrameEntries -RunDir $AfterDir -Kind $Kind)) { if ($e.Capture -eq 1) { $afterEntries.Add($e) } }
 
     $beforeMap = @{}
     foreach ($e in $beforeEntries) { $beforeMap[$e.Key] = $e.Path }
@@ -483,7 +485,7 @@ if ($Mode -eq 'Compare') {
         $cells = [AeroPixels]::DiffCells($beforeBmp, $afterBmp, $CellSize)
         $regions = Merge-AeroDiffCellsToRegions -Cells $cells -Width $beforeBmp.Width -Height $beforeBmp.Height -Cell $CellSize -Pad $PadPx
 
-        $keyNoise = if ($noiseData.ContainsKey($key)) { $noiseData[$key] } else { @() }
+        $keyNoise = @(if ($noiseData.ContainsKey($key)) { $noiseData[$key] } else { @() })
         $classified = New-Object System.Collections.Generic.List[object]
         $outsideRects = New-Object System.Collections.Generic.List[int[]]
         $anyOutside = $false
@@ -544,7 +546,8 @@ if ($Mode -eq 'ContactSheet') {
     $afterDir = $Dirs[1]
     $diffDir = $Dirs[2]
 
-    $beforeEntries = @(Get-AeroFrameEntries -RunDir $beforeDir -Kind $Kind | Where-Object { $_.Capture -eq 1 })
+    $beforeEntries = New-Object System.Collections.Generic.List[object]
+    foreach ($e in (Get-AeroFrameEntries -RunDir $beforeDir -Kind $Kind)) { if ($e.Capture -eq 1) { $beforeEntries.Add($e) } }
 
     $groups = @{}
     foreach ($e in $beforeEntries) {
