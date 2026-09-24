@@ -1,34 +1,33 @@
 ---
 gsd_state_version: 1.0
-milestone: v3.1
-milestone_name: Dependency Refresh + Hot Reload MCP
-status: Awaiting next milestone
-stopped_at: Milestone v3.1 completed and archived
-last_updated: "2026-09-24T14:51:07.996Z"
-last_activity: 2026-09-24 — Milestone v3.1 completed and archived
+milestone: v3.2
+milestone_name: Native Window Behavior
+status: planning
+last_updated: "2026-09-24T23:07:07.513Z"
+last_activity: 2026-09-25
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 14
-  completed_plans: 14
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-24 — v3.1 shipped and archived)
+See: .planning/PROJECT.md (updated 2026-09-25 — milestone v3.2 Native Window Behavior started)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, typed `AeroIcons`, and a showcase — no manual style work or icon-pack hunting required.
-**Current focus:** Planning the next milestone (`/bm:new-milestone`; phase numbering continues from 22)
+**Current focus:** v3.2 Native Window Behavior — native Windows snap / hit testing for `AeroTitleBar` windows (release `v3.2.0`); defining requirements, phase numbering continues at 22
 
 ## Current Position
 
-Phase: Milestone v3.1 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-09-24 — Milestone v3.1 completed and archived
+Status: Defining requirements
+Last activity: 2026-09-25 — Milestone v3.2 started
 
 ## Deferred Items
 
