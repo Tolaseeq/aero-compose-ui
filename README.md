@@ -3,7 +3,7 @@
 A Windows 7 **Aero**–styled UI component library for **Compose Multiplatform** (Desktop / JVM).
 Glossy gradients, glass surfaces, rounded depth — the classic Aero look, built as idiomatic Compose composables.
 
-> Package: `com.mordred.aero` · Kotlin `2.1.21` · Compose Multiplatform `1.7.3` · JVM 17
+> Package: `com.mordred.aero` · Kotlin `2.4.20` · Compose Multiplatform `1.12.0` · JVM 21
 
 ---
 
@@ -70,16 +70,21 @@ Then declare the dependency:
 
 ```kotlin
 dependencies {
-    implementation("com.github.Tolaseeq:aero-compose-ui:v3.0.0")
+    implementation("com.github.Tolaseeq:aero-compose-ui:v3.1.0")
 }
 ```
 
 Your consuming module also needs the Compose Multiplatform plugin applied (the library
 exposes Compose types in its public API). [See available versions on JitPack →](https://jitpack.io/#Tolaseeq/aero-compose-ui)
 
-**Toolchain requirement.** `v3.0.0` is built on **Kotlin 2.4.10 + Compose Multiplatform 1.11.1**
-and cannot be consumed from an older Compose toolchain. If your project is still on Compose 1.7.3,
-stay on **`v2.0.4`** — that line remains functional and is the last release before the migration.
+**Toolchain requirement.** `v3.1.0` requires **Java 21**, **Compose Multiplatform 1.12**,
+**Kotlin 2.4.20** and **kotlinx-datetime 0.8** (the library exposes kotlinx-datetime types in its
+public API; `kotlinx.datetime.Instant` and `kotlinx.datetime.Clock` no longer exist — use
+`kotlin.time.Instant` / `kotlin.time.Clock`). A project on JDK 17 cannot resolve this artifact
+(Gradle reports the `org.gradle.jvm.version` mismatch). If your project is on Kotlin 2.4.10 +
+Compose Multiplatform 1.11.1 + Java 17, stay on **`v3.0.0`**; if it's still on Compose 1.7.3, stay
+on **`v2.0.4`** — both lines remain functional and are the last releases before their respective
+migrations.
 
 ### Usage
 
@@ -128,11 +133,11 @@ AeroTheme(colorScheme = myScheme) { /* ... */ }
 
 ## Tech stack
 
-- **Kotlin** 2.1.21 (JVM toolchain 17)
-- **Compose Multiplatform** 1.7.3 (Desktop)
-- **Material 3** (bridged under the hood)
-- kotlinx-coroutines · kotlinx-datetime
-- Tests: JUnit 5
+- **Kotlin** 2.4.20 (JVM toolchain 21)
+- **Compose Multiplatform** 1.12.0 (Desktop)
+- **Material 3** 1.9.0 (pinned)
+- kotlinx-coroutines 1.11.0 · kotlinx-datetime 0.8.0
+- Tests: JUnit 6
 
 ## License
 
