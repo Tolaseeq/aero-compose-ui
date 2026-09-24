@@ -459,3 +459,24 @@ a later plan (Plan 11), guarded by a foreground-window check. `AeroFilePicker` (
 `java.awt.FileDialog`) is on the VER-09 unconfirmed list and was never clicked in any test. No
 component in this plan's 200-key comparison needed the D-08 fallback — all 13 `Popup(`-based
 components captured a real before/after pair.
+
+## After D-04 rulings (Plan 12)
+
+The maintainer ruled `accept` on the complete 8-group drift list (`21-DRIFT.md`, verbatim reply
+`всё принимаем`). Categories E (Group 5, `*/Range/p0`) and F (Group 6, `*/Layout/p3`/`p4`) and the
+single Category B key (Group 2, `AeroDark/List/p1`) were widened into `21-noise-regions.json`, per
+the ruling; Categories A/C/D (Groups 1/3/4) keep the new rendering with no noise-list change;
+Categories G/H (Groups 7/8) are recorded as known capture limitations with no tooling change.
+`Compare-AeroCaptures.ps1 -Mode Compare` was re-run with the widened noise list against the same
+`old-kt2.4.10-cmp1.11.1/showcase/runA` (before) and `new-kt2.4.20-cmp1.12.0/showcase/runA6`
+(after) reference frames used above, output to a new path
+(`.captures\diff-r12\compare-showcase.json`) so this plan's original `compare-showcase.json` is
+untouched: `keys=75 identical=0 insideOnly=9 withOutside=66 missing=0`. The 9 `insideOnly` keys are
+exactly the widened set (`AeroDark/List/p1`; `AeroBlue/Range/p0`, `AeroDark/Range/p0`,
+`Classic/Range/p0`; `AeroBlue/Layout/p3`, `AeroBlue/Layout/p4`, `AeroDark/Layout/p3`,
+`AeroDark/Layout/p4`, `Classic/Layout/p4`) — each now reports 0 outside-noise rects. The remaining
+66 `withOutside` keys are Category A's 64 showcase-side keys plus Categories G and H (1 each),
+unchanged by design since their ruling was "keep the new rendering" / "known limitation", not "add
+to noise list". No UI-test key belongs to Groups 2/5/6, so `compare-uitest.json` was not re-run.
+Full per-key detail and the ruling transcription are in `21-DRIFT.md`'s "Rulings (D-04)" and
+"After D-04 rulings — re-comparison result" sections.
