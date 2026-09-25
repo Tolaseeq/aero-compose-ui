@@ -2,13 +2,14 @@
 gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: Native Window Behavior
-status: planning
-last_updated: "2026-09-25T00:00:00.000Z"
-last_activity: 2026-09-25
+status: ready_to_execute
+stopped_at: Phase 22 planned — 19 plans in 16 waves, plan-checker passed; 28/28 requirements covered (API-04 promoted from API-F01)
+last_updated: "2026-09-25T11:05:18.294Z"
+last_activity: 2026-09-25 — Phase 22 planned (19 plans, 16 waves; decisions D-01..D-06 in 22-CONTEXT.md)
 progress:
   total_phases: 1
   completed_phases: 0
-  total_plans: 0
+  total_plans: 19
   completed_plans: 0
   percent: 0
 ---
@@ -20,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-25 — v3.2 roadmap created)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, typed `AeroIcons`, and a showcase — no manual style work or icon-pack hunting required.
-**Current focus:** v3.2 roadmap is written (one phase, 22; 27/27 requirements mapped). Next: `/bm:plan-phase 22`.
+**Current focus:** Phase 22 planned (19 plans, 16 waves; 28/28 requirements covered). Next: `/bm:execute-phase 22`.
 
 ## Current Position
 
-Phase: 22 — Native Window Behavior + Release 3.2.0 (not started)
-Plan: —
-Status: Roadmap created, awaiting phase planning
-Last activity: 2026-09-25 — Milestone v3.2 roadmap written (ROADMAP.md Phase 22, REQUIREMENTS.md traceability 27/27 mapped)
+Phase: 22 — Native Window Behavior + Release 3.2.0 (planned)
+Plan: 0/19
+Status: Ready to execute
+Last activity: 2026-09-25 — Phase 22 planned (19 plans, 16 waves; decisions D-01..D-06 in 22-CONTEXT.md)
 
 ## Deferred Items
 
@@ -124,7 +125,7 @@ Resolved at v3.1 close: the five research conflicts from `.planning/research/SUM
 ## Session Continuity
 
 Last session: 2026-09-25
-Stopped at: v3.2 roadmap approved by the maintainer (ROADMAP.md Phase 22, 27/27 requirements mapped)
+Stopped at: Phase 22 planned — 19 plans in 16 waves, plan-checker passed
 Resume file: None
 Next action: `/bm:discuss-phase 22` or `/bm:plan-phase 22`
 

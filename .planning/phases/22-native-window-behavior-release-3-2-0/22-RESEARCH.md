@@ -295,27 +295,31 @@ if (isWindows && nativeChromeActive) return  // OS now owns HT*-code resize on t
 
 **If this table is empty:** N/A — see entries above.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **How should the ~300px narrow showcase window's minimum size interact with `AeroResizeHandles`' existing hardcoded `minW = 320f` constant?**
    - What we know: `ResizeHandles.kt` enforces `minW = 320f, minH = 240f` unconditionally, for every window using this composable; the milestone explicitly asks for a "~300px" narrow window, which is narrower than that floor.
    - What's unclear: whether the 300px figure is the window's *initial* size (which could still grow past 320px on first resize) or a true minimum the narrow window must be allowed to reach; and whether `minW`/`minH` should become per-window parameters or stay a shared constant now that WIN-02 makes this composable a no-op on Windows anyway (making the constant only relevant on non-Windows platforms going forward).
    - Recommendation: ask the maintainer directly during phase planning rather than guessing a number — this is a concrete product decision (Russian: "узкое окно ~300px — это начальный размер или минимум, до которого его можно ужать?"), not a research gap.
+   - RESOLVED: 22-CONTEXT.md D-01 — default floor 320×240 dp; an app-set `window.minimumSize` wins; the SHW-17 narrow window sets its own minimum below 300 px.
 
 2. **Does `jna-platform` 5.19.1 actually ship `GetSystemMenu`/`TrackPopupMenu`?**
    - What we know: `STACK.md` flags this as "not exhaustively checked... LOW-MEDIUM confidence," needed only if conflict #2 resolves toward "Alt+Space needs explicit handling" rather than "fully automatic."
    - What's unclear: the answer either way — this session did not independently re-verify it (would require fetching the live JNA source, which the milestone research already did once at LOW-MEDIUM confidence and flagged for re-check).
    - Recommendation: settle via conflict #2's own headless check (style-bit read-back) early in Step 1/2, per `SUMMARY.md`'s own plan — if Alt+Space turns out automatic, this becomes moot.
+   - RESOLVED: planner checked the 5.19.1 jar with javap — `GetSystemMenu`/`TrackPopupMenu` are absent and are hand-declared in 22-02 `<interfaces>`; whether they are needed is settled by conflict C2 (22-10, 22-15).
 
 3. **Will JitPack's build succeed unmodified with JNA on `:library`'s classpath, or does `jitpack.yml` need adjustment (memory limits, native-library extraction path)?**
    - What we know: JNA ships as pure-JVM jars with the native dispatch stub bundled inside; `STACK.md` found no reason this should need special JitPack handling.
    - What's unclear: this has never been tried against this project's actual JitPack pipeline.
    - Recommendation: the REL-08 "disposable verify tag" step is exactly the mechanism to answer this cheaply and safely, before the real `v3.2.0` tag — no separate research needed, just don't skip that verification step.
+   - RESOLVED: settled empirically by the verify tag in 22-18 (pushed without asking per 22-CONTEXT.md D-06).
 
 4. **What is the sanctioned way to detect the Snap Layouts flyout's appearance without a screenshot (VER-12's own requirement), given no existing UI-Automation tooling was found in this repo?**
    - What we know: the milestone brief itself says "fixed without a snapshot (e.g., via UI Automation)"; no existing script in `tools/` does this today.
    - What's unclear: whether a small new PowerShell UIA script should be built as project tooling (reusable, like `tools/capture/`), or whether this one check is simply confirmed by the maintainer's own eyes during the real-input session and recorded as maintainer-confirmed rather than agent-confirmed.
    - Recommendation: ask the maintainer which they'd prefer before Step 10 — building UIA tooling is a nontrivial new tool investment for a single check; maintainer-eyes-only confirmation is cheaper but shifts VER-12's "agent measures this" framing toward "maintainer attests to this," which is a real difference in what the phase can claim as proven.
+   - RESOLVED: 22-CONTEXT.md D-04 — a UI Automation detector under `tools/` (22-03); if UIA cannot observe the flyout, stop and ask.
 
 ## Validation Architecture
 
@@ -351,7 +355,7 @@ if (isWindows && nativeChromeActive) return  // OS now owns HT*-code resize on t
 
 ### Wave 0 Gaps
 
-- [ ] `gradle/libs.versions.toml` + `library/build.gradle.kts` — add `jna`/`jna-platform` 5.19.1 as `implementation`, gated behind a `checkpoint:human-verify` per the Package Legitimacy Audit above
+- [ ] `gradle/libs.versions.toml` + `library/build.gradle.kts` — add `jna`/`jna-platform` 5.19.1 as `implementation` (legitimacy verified by checksum against Maven Central, 22-CONTEXT.md D-03 — no human-verify checkpoint)
 - [ ] `library/src/test/kotlin/com/mordred/aero/internal/windows/` — new test package, no existing files
 - [ ] A live-window opt-in verification tool under `tools/` (Kotlin `main()`, following the `tools/capture/` precedent, not a new Gradle source set) — decide the exact shape explicitly in the first plan, per `ARCHITECTURE.md`'s own flagged decision point
 - [ ] The RED-state capture described in the VER-11 section above (probe today's unmodified `WindowDraggableArea`-based window before writing any new hit-test code)

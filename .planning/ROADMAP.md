@@ -131,11 +131,13 @@ Details: `.planning/milestones/v3.1-ROADMAP.md` · Requirements: `.planning/mile
 ## Phase Details
 
 ### Phase 22: Native Window Behavior + Release 3.2.0
+
 **Goal**: Windows treats every window built on `AeroTitleBar`/`AeroResizeHandles` as a native window — snapping, Snap Layouts, hotkeys, shared-border resize, taskbar-aware maximize, multi-monitor DPI moves, FancyZones — on a standard JDK 21 without JBR, and the behavior is released as `v3.2.0`.
 **Depends on**: Nothing (only phase of v3.2)
 **Requirements**: SNAP-01, SNAP-02, SNAP-03, SNAP-04, SNAP-05, SNAP-06, SNAP-07, WIN-01, WIN-02, WIN-03, WIN-04, WIN-05, WIN-06, BTN-01, BTN-02, API-01, API-02, API-03, API-04, DEP-01, SHW-17, VER-11, VER-12, VER-13, VER-14, REL-06, REL-07, REL-08
 
 **Conflicts to settle empirically** (`.planning/research/SUMMARY.md` § "Conflicts to Settle Empirically" — resolve each by a cheap first-hand check during execution, not by more desk research):
+
   1. Which style bits `undecorated = true` actually yields on JDK 21 — read back `GetWindowLongPtr(hwnd, GWL_STYLE)` on the unmodified window before writing any hit-test code
   2. Whether Alt+Space is automatic once `WS_SYSMENU`/`WS_CAPTION` are present, or needs explicit `GetSystemMenu`/`TrackPopupMenu` handling — and specifically whether Move/Size work once hit-testing changes
   3. Auto-hide taskbar inset size (1px vs Windows Terminal's 2px) and per-edge detection method (`SHAppBarMessage(ABM_GETAUTOHIDEBAREX)`)
@@ -145,6 +147,7 @@ Details: `.planning/milestones/v3.1-ROADMAP.md` · Requirements: `.planning/mile
   7. Whether JBR's own custom-window-decoration machinery interferes with the subclass under `:showcase`'s `hotRun` — grep for existing `JBR`/`CustomWindowDecoration` usage first, then compare a cold `run` against `hotRun`
 
 **Execution order inside the phase** (ordered, separately-committed steps, riskiest first — from `.planning/research/SUMMARY.md` § "Implications for Roadmap"; each step lands its own commit under the existing test suite):
+
   1. **Spike (existential-risk gate).** Minimal JNA `WindowProc` subclass on a standard JDK 21 (no JBR): read back the unmodified style bits (conflict #1), add the missing `WS_CAPTION | WS_THICKFRAME` (without them Snap silently does nothing), answer `HTCAPTION` over the title row except one hardcoded `HTMAXBUTTON` rect. Settles conflicts #1, #4, #7. In the early real-input session, hover the hardcoded rect and drag the window by its title to a screen edge: the Snap Layouts flyout must appear and the window must snap — a correct `HTMAXBUTTON` answer alone does not prove it; if either fails, stop and report before building anything further. Wires the JNA callback-lifetime container and the "unhandled → `DefWindowProc`" fallback as structural invariants from the start
   2. **Window styles.** Make the spike's style change production-grade: ensure `WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX` via `SetWindowLongPtr(GWL_STYLE, ...)` + `SetWindowPos(..., SWP_FRAMECHANGED)`; verify via read-back before any hit-test debugging (WIN-03)
   3. **Frame removal.** `WM_NCCALCSIZE`: 0 inset for the floating state, DPI-scaled frame-thickness inset when maximized (avoids the taskbar-overhang bug), plus the auto-hide-taskbar edge margin from conflict #3 (WIN-01, WIN-03)
@@ -157,6 +160,7 @@ Details: `.planning/milestones/v3.1-ROADMAP.md` · Requirements: `.planning/mile
   10. **Tests + proof + release plumbing.** Headless unit tests (region registry, hit-test math, DPI-thickness formula), a live-window opt-in harness promoted from Step 1's spike script, showcase wiring (SHW-17), test-count guard bumped with a commit naming the reason, capture-based before/after proof, then the full real-input session (VER-11..13), README + KDoc updates (REL-06/07), `v3.2.0` release (REL-08, DEP-01)
 
 **Success Criteria** (what must be TRUE):
+
   1. Сразу после первого черновика — ранняя сессия с настоящими мышью и клавиатурой (1–2 минуты, после предупреждения мейнтейнера и его «ок»): наведение на «развернуть» окна Compose показывает меню раскладок Windows 11, перетаскивание к краю прилепляет окно. Если нет — фаза останавливается и уходит вопрос мейнтейнеру, прежде чем строить что-либо дальше
   2. На каждом окне на `AeroTitleBar`/`AeroResizeHandles` (включая узкое ~300 px и несколько окон одновременно) снаппинг работает как у родного окна: прилипание к краю/углу с восстановлением при отрыве, Snap Layouts по наведению, Win+стрелки, двойной щелчок, Alt+Space с рабочим «закрыть» тем же путём, что Alt+F4, общая граница прилипшей пары, Snap Groups в панели задач, подхват FancyZones
   3. Развёрнутое окно занимает рабочую область монитора без перекрытия панели задач (в том числе автоскрываемой), окно без следов системной рамки, переход между мониторами 100% ↔ 150% не даёт скачков размера, а индикатор «развернуть/восстановить» и `WindowState.placement` совпадают с реальным состоянием окна; публичные вызовы `AeroTitleBar`/`AeroResizeHandles` компилируются без изменений, потребитель может пометить кликабельный элемент в шапке, полностью отключить нативное поведение для окна и получить то же поведение для своей шапки без `AeroTitleBar`, не-Windows ведёт себя как раньше
@@ -167,24 +171,71 @@ Details: `.planning/milestones/v3.1-ROADMAP.md` · Requirements: `.planning/mile
 **Plans:** 19 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 22-01-PLAN.md — Live-window probe (tools/winprobe), window-state reporter, RED baseline of the unmodified window (conflicts #1, #7a; findings F8–F11)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 22-02-PLAN.md — JNA 5.19.1 (DEP-01) + Step 1 spike: native WndProc subclass with GC-safe registry, passthrough, idempotency, child-HWND HTTRANSPARENT; conflicts #4, #7
 - [ ] 22-03-PLAN.md — Guarded real-input driver, UIA Snap Layouts watcher (D-04), scripted early gate, vetted session environment
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 22-04-PLAN.md — Step 1 existential gate: early real-input session (warn → "ok" → flyout + snap) — stop and ask on failure
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 22-05-PLAN.md — Steps 2–3: sticky frame styles, frame removal, taskbar-aware maximize with auto-hide inset (conflict #3 detection)
-- [ ] 22-06-PLAN.md — Corners/shadow: agent self-review, maintainer picks ВАРИАНТ A/B/C in the Visual Companion, DWM policy applied (conflict #6)
-- [ ] 22-07-PLAN.md — Step 4: immutable hit-test region registry, live regions from AeroTitleBar, WindowDraggableArea only on the legacy path
 - [ ] 22-08-PLAN.md — SHW-17 narrow second window fixture (own minimum, D-01) + probe multi-window geometry
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 22-06-PLAN.md — Corners/shadow: agent self-review, maintainer picks ВАРИАНТ A/B/C in the Visual Companion, DWM policy applied (conflict #6)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 22-07-PLAN.md — Step 4: immutable hit-test region registry, live regions from AeroTitleBar, WindowDraggableArea only on the legacy path
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
 - [ ] 22-09-PLAN.md — Step 5: maximize-button interaction bridge via EDT hop into the button's own interaction source (conflict #5, D-02)
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
 - [ ] 22-10-PLAN.md — Step 6: passthrough audit, WindowState sync (conflict #4 action), HWND churn hardening, GC / Hot Reload / UIA checks
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
 - [ ] 22-11-PLAN.md — Step 7: native edge/corner resize, AeroResizeHandles Windows no-op, D-01 minimum size on both paths
+
+**Wave 10** *(blocked on Wave 9 completion)*
+
 - [ ] 22-12-PLAN.md — Step 8: nativeWindowManagement opt-out, markAeroTitleBarInteractive, permanent RED control, multi-window checks
+
+**Wave 11** *(blocked on Wave 10 completion)*
+
 - [ ] 22-19-PLAN.md — Step 8 (cont.): public rememberAeroWindowChrome for custom title bars (API-04, D-05); AeroTitleBar rebuilt on it; live proof (wave 11, before 22-13)
+
+**Wave 12** *(blocked on Wave 11 completion)*
+
 - [ ] 22-13-PLAN.md — Step 10a: headless unit, pixel-parity and custom-title-bar API tests with mutation proofs; locked test count raised by named commits (VER-14)
 - [ ] 22-14-PLAN.md — Full-session environment helpers and two-pass real-input check suite (dry-run proven)
+
+**Wave 13** *(blocked on Wave 12 completion)*
+
 - [ ] 22-15-PLAN.md — Steps 9–10: full VER-12 session on JDK 21 and JBR 21 (consent → setup → both passes; conflicts #2, #3 reveal)
+
+**Wave 14** *(blocked on Wave 13 completion)*
+
 - [ ] 22-16-PLAN.md — Teardown on the maintainer's word + VER-13 hand-off (final VER-11 green/red, unconfirmed list incl. Windows 10)
+
+**Wave 15** *(blocked on Wave 14 completion)*
+
 - [ ] 22-17-PLAN.md — README "Windows window behavior" (incl. custom title bar API) + KDoc; "Aero Snap limitation" removed (REL-06, REL-07, API-04)
+
+**Wave 16** *(blocked on Wave 15 completion)*
+
 - [ ] 22-18-PLAN.md — Release 3.2.0: version bump, verify tag on JitPack (D-06), DEP-01 on the published POM, maintainer's choice, real tag (REL-08)
 
 **UI hint**: yes
