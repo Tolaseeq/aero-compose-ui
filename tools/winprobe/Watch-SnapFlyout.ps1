@@ -412,6 +412,21 @@ function Get-AeroProcessNameById {
     try { return (Get-Process -Id $ProcessId -ErrorAction Stop).ProcessName } catch { return $null }
 }
 
+function Get-AeroProcessNameMap {
+    <#
+    .SYNOPSIS
+        A pid -> ProcessName lookup built from one Get-Process call. Get-AeroShellSnapshot's raw
+        top-level window count (~200+ on this machine, most invisible) made a per-window
+        Get-Process -Id call the dominant cost (~4s/snapshot, measured live) -- far too slow for a
+        poll loop; one batched Get-Process (~60ms) plus O(1) lookups fixes it.
+    #>
+    [CmdletBinding()]
+    param()
+    $map = @{}
+    foreach ($p in (Get-Process)) { $map[[uint32]$p.Id] = $p.ProcessName }
+    return $map
+}
+
 function Get-AeroShellSnapshot {
     <#
     .SYNOPSIS
@@ -425,11 +440,13 @@ function Get-AeroShellSnapshot {
     [CmdletBinding()]
     param()
 
+    $procMap = Get-AeroProcessNameMap
+
     $windows = New-Object System.Collections.Generic.List[object]
     foreach ($hwnd in [AeroSnapWatch.Native]::EnumTopLevelAll()) {
         [uint32]$ownerPid = 0
         [AeroSnapWatch.Native]::GetWindowThreadProcessId($hwnd, [ref]$ownerPid) | Out-Null
-        $procName = Get-AeroProcessNameById -ProcessId $ownerPid
+        $procName = $procMap[$ownerPid]
         $isVisible = [bool][AeroSnapWatch.Native]::IsWindowVisible($hwnd)
         $isShell = $AeroShellProcessNames -contains $procName
         # A hidden/cloaked window is only worth keeping when it belongs to a shell process (the
@@ -456,7 +473,7 @@ function Get-AeroShellSnapshot {
         $cur = $child.Current
         [uint32]$elemPid = 0
         try { $elemPid = [uint32]$cur.ProcessId } catch { $elemPid = 0 }
-        $procName = Get-AeroProcessNameById -ProcessId $elemPid
+        $procName = $procMap[$elemPid]
         $isShell = $AeroShellProcessNames -contains $procName
         [void]$uiaElements.Add([pscustomobject]@{
             ClassName         = $cur.ClassName
