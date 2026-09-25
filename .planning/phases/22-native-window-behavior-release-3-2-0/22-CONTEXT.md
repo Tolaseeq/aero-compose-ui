@@ -12,8 +12,9 @@ snapping, Snap Layouts, hotkeys, shared-border resize, taskbar-aware maximize, m
 moves, FancyZones — on a standard JDK 21 without JBR, and the behavior ships as `v3.2.0` on JitPack.
 
 Scope, the 10-step execution order, the 7 conflicts to settle empirically and the success criteria
-are fixed by `.planning/ROADMAP.md` § Phase 22 and the 27 requirements in `.planning/REQUIREMENTS.md`
-(SNAP-01..07, WIN-01..06, BTN-01..02, API-01..03, DEP-01, SHW-17, VER-11..14, REL-06..08).
+are fixed by `.planning/ROADMAP.md` § Phase 22 and the 28 requirements in `.planning/REQUIREMENTS.md`
+(SNAP-01..07, WIN-01..06, BTN-01..02, API-01..04, DEP-01, SHW-17, VER-11..14, REL-06..08; API-04 was
+promoted from API-F01 in this session, D-05).
 
 **Not in this phase:** any change to how the title bar or its buttons look; Windows 10 verification
 (no machine — goes on the "unconfirmed" list, VER-F04); 125% / 200% DPI visual passes (VER-F02);
@@ -72,6 +73,22 @@ upgrading consumer apps (Pinya, aska, oper, …) to `v3.2.0`.
   without a screenshot, via a small UI Automation check kept under `tools/` (as VER-12 states). If UI
   Automation cannot observe the flyout, stop and ask the maintainer — do not silently downgrade that
   check to "maintainer saw it".
+
+### Low-level custom-title-bar API
+- **D-05:** `rememberAeroWindowChrome()` **ships in 3.2.0** (maintainer's choice, resolving the ROADMAP
+  Step 8 vs REQUIREMENTS API-F01 conflict in favor of the roadmap; tracked as **API-04**). It is the
+  public, additive API for an app that draws its own title bar without `AeroTitleBar`: the app marks
+  its draggable caption area, its maximize button area and its clickable elements, and reads the
+  maximize button's hover/pressed state; no JNA type in any public signature; `nativeWindowManagement`
+  opt-out semantics apply to it too. It must not stay unproven: at least one live showcase window runs
+  on it with a header that is not `AeroTitleBar` (or `AeroTitleBar` itself is built on it — planner's
+  choice), so the VER-11 probes and the VER-12 full session exercise it; README (REL-06) documents it.
+
+### Release tags
+- **D-06:** The v3.1 standing authorization carries over to 3.2.0 (maintainer confirmed): the agent
+  pushes disposable `v3.2.0-verifyNN` tags without asking (never reused, never deleted, never moving
+  remote master). The real `v3.2.0` tag and any push of master wait for the maintainer's explicit
+  choice.
 
 ### Claude's Discretion
 - Shape of the live-window opt-in harness for VER-11 (research recommends a Kotlin `main()` under

@@ -108,7 +108,6 @@ Full decision log lives in PROJECT.md "Key Decisions". Rules that constrain any 
 - **VER-F01** — hover/focus/drag UI-test snapshots (BASE-05 mechanism) extended to the remaining ~40 components — natural part of VIS-F01
 - **VER-F02** — showcase frames at 125% / 200% display scaling (gap carried from v3.0's SHW-16)
 - **VER-F03** — external scratch consumer built against the published `3.1.0` tag
-- **API-F01** (v3.2 Future Requirements) — public low-level API for consumers building their own title bar without `AeroTitleBar`
 - **VER-F04** (v3.2 Future Requirements) — verification on real Windows 10 (no Windows 10 machine available for this milestone)
 - **DLG-F01** (v3.2 Future Requirements) — native window behavior for `AeroDialog` (separate undecorated window, no `AeroTitleBar`)
 - Older candidate list: inline pickers, DataTable cell-edit/reorder/filter, TreeView DnD, ColorPicker eyedropper, StepperWizard branching, Sidebar drag-resize, `AeroDateTimeRangePicker` hover-preview

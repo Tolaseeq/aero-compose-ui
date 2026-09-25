@@ -42,6 +42,7 @@
 - [ ] **API-01**: Существующие вызовы `AeroTitleBar(...)` и `AeroResizeHandles(...)` компилируются без изменений; публичный API только дополняется, типы JNA в публичные сигнатуры не попадают. На Linux и macOS поведение прежнее (`WindowDraggableArea` + зоны растягивания Compose)
 - [ ] **API-02**: Потребитель может пометить свой элемент внутри шапки (например, кнопку «вернуть очередь» в Pinya) как кликабельный — он получает клики, а не перетаскивает окно
 - [ ] **API-03**: Потребитель может отключить нативное поведение для отдельного окна и получить сегодняшнее
+- [ ] **API-04**: Потребитель, который рисует свою шапку без `AeroTitleBar`, получает то же нативное поведение окна через публичный низкоуровневый API (`rememberAeroWindowChrome()`): сам помечает перетаскиваемую область шапки, кнопку «развернуть» и кликабельные элементы и получает состояние наведения и нажатия кнопки «развернуть»; типы JNA в публичные сигнатуры не попадают. Бывший API-F01, перенесён в v3.2 решением мейнтейнера
 
 ### Dependency (DEP)
 
@@ -68,7 +69,6 @@
 
 Признано, но в текущий roadmap не входит.
 
-- **API-F01**: Публичный низкоуровневый API для потребителей, которые строят свою шапку без `AeroTitleBar`
 - **VER-F04**: Проверка на настоящем Windows 10
 - **DLG-F01**: Нативное поведение для `AeroDialog` (отдельное undecorated-окно без `AeroTitleBar`)
 - Долги v3.0 / v3.1 и кандидаты из PROJECT.md «Next Milestone Goals» — без изменений
@@ -109,6 +109,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | API-01 | Phase 22 | Pending |
 | API-02 | Phase 22 | Pending |
 | API-03 | Phase 22 | Pending |
+| API-04 | Phase 22 | Pending |
 | DEP-01 | Phase 22 | Pending |
 | SHW-17 | Phase 22 | Pending |
 | VER-11 | Phase 22 | Pending |
@@ -120,8 +121,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REL-08 | Phase 22 | Pending |
 
 **Coverage:**
-- v3.2 requirements: 27 total
-- Mapped to phases: 27
+- v3.2 requirements: 28 total
+- Mapped to phases: 28
 - Unmapped: 0 ✓
 
 ---
