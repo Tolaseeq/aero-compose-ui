@@ -36,6 +36,10 @@ dependencies {
     api(libs.kotlinx.datetime)
     // Internal only — not exposed in any public signature.
     implementation(libs.kotlinx.coroutines.core)
+    // Internal only — not exposed in any public signature. JNA: Windows-only native window
+    // management (DEP-01).
+    implementation(libs.jna)
+    implementation(libs.jna.platform)
 
     testImplementation(libs.kotlin.test)
     testImplementation(libs.junit.jupiter)
