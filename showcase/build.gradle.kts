@@ -21,30 +21,35 @@ dependencies {
     implementation(libs.kotlinx.datetime)
 }
 
-// Forward -Paero.scheme=<name> (and aero.section / aero.page / aero.capture) to the run task as
-// system properties, so a review or capture pass can open a specific theme/section/page directly
-// (see initialScheme() / initialSection() / initialPage() / captureMode() in Main.kt) instead of
-// clicking the theme switcher or scrolling by hand. withType(...).configureEach is lazy: the
-// Compose Desktop plugin registers `run` after this script is evaluated, so tasks.named("run")
-// would fail with "Task with name 'run' not found".
+// Forward -Paero.scheme=<name> and its sibling aero.* launch properties (section, page, capture,
+// window-state reporting, chrome tracing) to the run task as system properties, so a review or
+// capture pass can open a specific theme/section/page directly (see initialScheme() /
+// initialSection() / initialPage() / captureMode() in Main.kt, WindowStateReporter in
+// WindowStateReporter.kt) instead of clicking the theme switcher or scrolling by hand.
+// withType(...).configureEach is lazy: the Compose Desktop plugin registers `run` after this
+// script is evaluated, so tasks.named("run") would fail with "Task with name 'run' not found".
 tasks.withType<JavaExec>().configureEach {
     if (name == "run") {
         (project.findProperty("aero.scheme") as String?)?.let { systemProperty("aero.scheme", it) }
         (project.findProperty("aero.section") as String?)?.let { systemProperty("aero.section", it) }
         (project.findProperty("aero.page") as String?)?.let { systemProperty("aero.page", it) }
         (project.findProperty("aero.capture") as String?)?.let { systemProperty("aero.capture", it) }
+        (project.findProperty("aero.windowState") as String?)?.let { systemProperty("aero.windowState", it) }
+        (project.findProperty("aero.chromeTrace") as String?)?.let { systemProperty("aero.chromeTrace", it) }
     }
 }
 
 // Compose Hot Reload's hotRun/hotRunAsync/hotDev/hotDevAsync tasks are org.jetbrains.compose.reload
 // .gradle.ComposeHotRun, a JavaExec subtype registered by the compose-hot-reload plugin rather than
 // the `run` task above, so they need their own sibling forwarding block for the same aero.* launch
-// parameters (see initialScheme()/initialSection()/initialPage()/captureMode() in Main.kt).
+// parameters (see the comment on the block above).
 tasks.withType<org.jetbrains.compose.reload.gradle.ComposeHotRun>().configureEach {
     (project.findProperty("aero.scheme") as String?)?.let { systemProperty("aero.scheme", it) }
     (project.findProperty("aero.section") as String?)?.let { systemProperty("aero.section", it) }
     (project.findProperty("aero.page") as String?)?.let { systemProperty("aero.page", it) }
     (project.findProperty("aero.capture") as String?)?.let { systemProperty("aero.capture", it) }
+    (project.findProperty("aero.windowState") as String?)?.let { systemProperty("aero.windowState", it) }
+    (project.findProperty("aero.chromeTrace") as String?)?.let { systemProperty("aero.chromeTrace", it) }
 }
 
 compose.desktop {

@@ -91,6 +91,8 @@ fun main() {
                 LaunchedEffect(Unit) { window.toBack() }
             }
 
+            WindowStateReporter(windowState, label = "main")
+
             var currentScheme by remember { mutableStateOf(initialScheme()) }
             AeroTheme(colorScheme = currentScheme) {
                 Box(Modifier.fillMaxSize().border(1.dp, AeroTheme.colors.titleBarGradientStart)) {
