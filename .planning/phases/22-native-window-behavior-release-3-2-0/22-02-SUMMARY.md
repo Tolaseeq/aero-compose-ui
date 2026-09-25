@@ -124,3 +124,13 @@ None - no external service configuration required.
 ---
 *Phase: 22-native-window-behavior-release-3-2-0*
 *Completed: 2026-09-25*
+
+## Self-Check: PASSED
+
+- FOUND: library/src/main/kotlin/com/mordred/aero/internal/windows/Win32Interop.kt
+- FOUND: library/src/main/kotlin/com/mordred/aero/internal/windows/WndProcSupport.kt
+- FOUND: library/src/main/kotlin/com/mordred/aero/internal/windows/Win32Chrome.kt
+- FOUND: library/src/main/kotlin/com/mordred/aero/internal/windows/AeroWndProc.kt
+- FOUND: library/src/main/kotlin/com/mordred/aero/internal/windows/NativeWindowChromeRegistry.kt
+- FOUND: .captures/22-spike/cold.json, hot-initial.json, rest.png
+- FOUND commits: 5e91d95, 3cf67f4, 0a22b5b, 18a5e3f
