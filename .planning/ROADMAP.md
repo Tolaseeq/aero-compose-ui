@@ -164,7 +164,28 @@ Details: `.planning/milestones/v3.1-ROADMAP.md` · Requirements: `.planning/mile
   5. Список «не подтверждено» явно называет всё, что не проверено, включая поведение на Windows 10 — не выдаётся за пройденное
   6. `v3.2.0` опубликован и резолвится на JitPack (`com.github.Tolaseeq:aero-compose-ui:v3.2.0`); README и KDoc обновлены, оговорка «Aero Snap limitation» снята; все существующие тесты зелёные под залоченным (и при необходимости поднятым именованным коммитом) числом
 
-**Plans**: TBD
+**Plans:** 18 plans
+
+Plans:
+- [ ] 22-01-PLAN.md — Live-window probe (tools/winprobe), window-state reporter, RED baseline of the unmodified window (conflicts #1, #7a; findings F8–F11)
+- [ ] 22-02-PLAN.md — JNA 5.19.1 (DEP-01) + Step 1 spike: native WndProc subclass with GC-safe registry, passthrough, idempotency, child-HWND HTTRANSPARENT; conflicts #4, #7
+- [ ] 22-03-PLAN.md — Guarded real-input driver, UIA Snap Layouts watcher (D-04), scripted early gate, vetted session environment
+- [ ] 22-04-PLAN.md — Step 1 existential gate: early real-input session (warn → "ok" → flyout + snap) — stop and ask on failure
+- [ ] 22-05-PLAN.md — Steps 2–3: sticky frame styles, frame removal, taskbar-aware maximize with auto-hide inset (conflict #3 detection)
+- [ ] 22-06-PLAN.md — Corners/shadow: agent self-review, maintainer picks ВАРИАНТ A/B/C in the Visual Companion, DWM policy applied (conflict #6)
+- [ ] 22-07-PLAN.md — Step 4: immutable hit-test region registry, live regions from AeroTitleBar, WindowDraggableArea only on the legacy path
+- [ ] 22-08-PLAN.md — SHW-17 narrow second window fixture (own minimum, D-01) + probe multi-window geometry
+- [ ] 22-09-PLAN.md — Step 5: maximize-button interaction bridge via EDT hop into the button's own interaction source (conflict #5, D-02)
+- [ ] 22-10-PLAN.md — Step 6: passthrough audit, WindowState sync (conflict #4 action), HWND churn hardening, GC / Hot Reload / UIA checks
+- [ ] 22-11-PLAN.md — Step 7: native edge/corner resize, AeroResizeHandles Windows no-op, D-01 minimum size on both paths
+- [ ] 22-12-PLAN.md — Step 8: nativeWindowManagement opt-out, markAeroTitleBarInteractive, permanent RED control, multi-window checks
+- [ ] 22-13-PLAN.md — Step 10a: headless unit + pixel-parity tests with mutation proofs; locked test count raised by named commits (VER-14)
+- [ ] 22-14-PLAN.md — Full-session environment helpers and two-pass real-input check suite (dry-run proven)
+- [ ] 22-15-PLAN.md — Steps 9–10: full VER-12 session on JDK 21 and JBR 21 (consent → setup → both passes; conflicts #2, #3 reveal)
+- [ ] 22-16-PLAN.md — Teardown on the maintainer's word + VER-13 hand-off (final VER-11 green/red, unconfirmed list incl. Windows 10)
+- [ ] 22-17-PLAN.md — README "Windows window behavior" + KDoc; "Aero Snap limitation" removed (REL-06, REL-07)
+- [ ] 22-18-PLAN.md — Release 3.2.0: version bump, verify tag on JitPack, DEP-01 on the published POM, maintainer's choice, real tag (REL-08)
+
 **UI hint**: yes
 
 ## Progress
@@ -193,7 +214,7 @@ Details: `.planning/milestones/v3.1-ROADMAP.md` · Requirements: `.planning/mile
 | 19. Selectors + Lists | v3.0 | 12/12 | Complete | 2026-07-28 |
 | 20. Verification | v3.0 | 9/9 | Complete | 2026-07-29 |
 | 21. Migration + Release 3.1.0 | v3.1 | 14/14 | Complete | 2026-09-24 |
-| 22. Native Window Behavior + Release 3.2.0 | v3.2 | 0/TBD | Not started | - |
+| 22. Native Window Behavior + Release 3.2.0 | v3.2 | 0/18 | Planned | - |
 
 ## Next Milestone
 
