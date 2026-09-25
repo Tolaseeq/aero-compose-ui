@@ -486,3 +486,43 @@ the always-on Hot Reload MCP server (`:showcase:hotMcpServer`, started ~12:25, u
 **Readiness verdict:** the session can start the second the maintainer says "ok" — code compiles,
 the dry run proves the script itself runs clean and restores the cursor, snap settings are
 enabled, and notepad.exe resolves.
+
+## Early gate (22-04) — result
+
+Run by the orchestrator after the maintainer's explicit reply `ok` (2026-09-25, ~16:09 local);
+`-AuthorizedBy "ok @ <UTC timestamp>"`. Command:
+`Invoke-EarlyGate.ps1 -AuthorizedBy ... -Json .captures/22-gate/early.json` (console:
+`.captures/22-gate/early-console.log`, showcase stdout: `.captures/22-gate/logs/winprobe-run-160944.335.out.log`).
+JVM `C:\Users\1\.jdks\ms-21.0.9\bin\java.exe` (standard, not JBR). Real input 29.0 s, overall 53.3 s.
+Cursor restored (499,619 → 499,619). No showcase JVM or notepad process remained afterwards.
+
+| Step | Result | Detail |
+|---|---|---|
+| Readiness | OK | `SnapAssistFlyoutOn=True WindowArrangementActive=True` |
+| Launch | OK | standard JDK 21; `restyle` + `install` + `child-subclass` traced |
+| PositiveControl | ERROR | `notepad HTMAXBUTTON span not found in its top 40px row` — no reference flyout signature |
+| ComposeFlyout | FLYOUT MISSING | hover at the `max` point (1171,64) for the 3 s watch window; watcher saw no new shell element |
+| DragSnap | SNAP MISSING (mis-specified) | released at (1,64) → rect `0,0,960,540` |
+| DragAway | RESTORE OK | 1200×800 restored |
+
+**Verdict line:** `GATE FAIL FLYOUT MISSING,SNAP MISSING`.
+
+**Reading of the evidence (orchestrator):**
+
+- Snapping itself works natively. The reporter trace shows the drag moving the window left
+  (`posDp` 48 → −531) and, on release, Windows placing it at `0,0,960,540` — the top-left
+  QUARTER of the 1920×1080 work area. The drag target (x=1, y=64) lies inside Windows' top-left
+  corner zone, so a quarter snap is the correct OS answer; the gate's "left half" expectation was
+  the tool's error (drag target must sit at the vertical middle of the edge). The drag-away then
+  shows Windows' restore-on-drag (width 960 → 1200 at the first move) — also native behavior.
+  On the RED baseline (old `WindowDraggableArea`) no snap of any kind happens.
+- The Snap Layouts flyout is UNPROVEN, not disproven: the positive control never ran (the probe
+  found no `HTMAXBUTTON` in the Windows 11 Notepad's top row — Notepad is a WinUI app with its
+  own title bar), so there is no reference signature and no proof that the watcher can observe a
+  flyout at all. D-04 applies: stop and ask; no silent downgrade.
+- Hypothesis for the missing flyout (to check before any rerun): the frame subclass forwards
+  `WM_NCMOUSEMOVE` / `WM_NCMOUSELEAVE` over `HTMAXBUTTON` to AWT's original WndProc, which may
+  consume them instead of reaching `DefWindowProc`, where the shell's flyout trigger lives.
+
+**Status:** plan 22-04 NOT complete; phase stopped at the global stop rule pending the
+maintainer's decision.
