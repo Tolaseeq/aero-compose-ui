@@ -144,6 +144,9 @@ $preSnapRect = $null
 $snapRectAfter = $null
 $snapReporterPlacement = $null
 $eventWatchStarted = $false
+$positiveEvidence = $null
+$composeEvidence = $null
+$flyoutMatch = $null
 
 try {
     # Step 0: Readiness -- never changes the maintainer's settings, only reads them.
@@ -234,6 +237,7 @@ try {
                 $baseline = Get-AeroShellSnapshot
                 Move-AeroCursor -Session $session -X ($origin.X + $maxSpan.CenterX) -Y ($origin.Y + $maxSpan.CenterY)
                 $flyout = Wait-AeroSnapFlyout -Baseline $baseline -TimeoutMs 3000 -MinHoverMs 1500 -PollMs 100
+                $positiveEvidence = ConvertTo-AeroFlyoutEvidence $flyout
 
                 if ($flyout.Found) {
                     $referenceSignature = $flyout
@@ -279,6 +283,10 @@ try {
             $baseline = Get-AeroShellSnapshot
             Move-AeroCursor -Session $session -X $maxX -Y $maxY
             $observed = Wait-AeroSnapFlyout -Baseline $baseline -TimeoutMs 3000 -MinHoverMs 1500 -PollMs 100
+            $composeEvidence = ConvertTo-AeroFlyoutEvidence $observed
+            if (-not $DryRun -and $observed.Found -and $referenceSignature) {
+                $flyoutMatch = Test-AeroFlyoutSignatureMatch -Observed $observed -Reference $referenceSignature
+            }
 
             if ($DryRun) {
                 $flyoutVerdict = 'FLYOUT MISSING'
@@ -288,13 +296,14 @@ try {
                 $flyoutVerdict = 'FLYOUT MISSING'
                 Add-GateStep 'ComposeFlyout' $flyoutVerdict 'positive control was D04 UNOBSERVABLE; Compose result is not meaningful' $stepSw.Elapsed.TotalMilliseconds
             }
-            elseif ($observed.Found -and $referenceSignature -and (Test-AeroFlyoutSignatureMatch -Observed $observed -Reference $referenceSignature).IsMatch) {
+            elseif ($flyoutMatch -and $flyoutMatch.IsMatch) {
                 $flyoutVerdict = 'FLYOUT OK'
                 Add-GateStep 'ComposeFlyout' $flyoutVerdict "matched reference after $($observed.DelayMs)ms via $($observed.Signal)" $stepSw.Elapsed.TotalMilliseconds
             }
             else {
                 $flyoutVerdict = 'FLYOUT MISSING'
-                Add-GateStep 'ComposeFlyout' $flyoutVerdict "found=$($observed.Found)" $stepSw.Elapsed.TotalMilliseconds
+                $observedSignatures = if ($flyoutMatch) { $flyoutMatch.ObservedSignatures -join ';' } else { '' }
+                Add-GateStep 'ComposeFlyout' $flyoutVerdict "found=$($observed.Found) observed=$observedSignatures" $stepSw.Elapsed.TotalMilliseconds
             }
 
             Move-AeroCursor -Session $session -X ($maxX - 150) -Y ($maxY + 150)
@@ -475,6 +484,9 @@ finally {
             OverallMs             = $overallStopwatch.Elapsed.TotalMilliseconds
             SnapRectAfter         = $snapRectAfter
             SnapReporterPlacement = $snapReporterPlacement
+            PositiveFlyout        = $positiveEvidence
+            ComposeFlyout         = $composeEvidence
+            FlyoutMatch           = $flyoutMatch
         }
         $output | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $Json -Encoding UTF8
     }

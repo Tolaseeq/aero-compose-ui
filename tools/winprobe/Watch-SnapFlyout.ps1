@@ -490,7 +490,25 @@ function Get-AeroShellSnapshot {
         CapturedAt  = Get-Date
         Windows     = $windows
         UiaElements = $uiaElements
+        EventMark   = @(Get-AeroShellEventSnapshot).Count
     }
+}
+
+function Select-AeroEventsAfterMark {
+    <#
+    .SYNOPSIS
+        The watch keeps every event since it started; a hover must only be judged on events
+        recorded after its baseline was taken, or an earlier flyout (e.g. the positive
+        control's) is counted again.
+    #>
+    param($Events, [int]$Mark)
+    $after = New-Object System.Collections.ArrayList
+    $index = 0
+    foreach ($e in $Events) {
+        if ($index -ge $Mark) { [void]$after.Add($e) }
+        $index++
+    }
+    return $after.ToArray()
 }
 
 function Test-AeroRectIntersects {
@@ -563,6 +581,8 @@ function Wait-AeroSnapFlyout {
         [void]$baselineUiaKeys.Add("$($e.ClassName)|$($e.ProcessName)|$($e.AutomationId)")
     }
 
+    $eventMark = if ($Baseline.PSObject.Properties['EventMark']) { [int]$Baseline.EventMark } else { @(Get-AeroShellEventSnapshot).Count }
+
     $firstHit = $null
     while ((Get-Date) -lt $deadline) {
         $elapsedMs = ((Get-Date) - $startedAt).TotalMilliseconds
@@ -582,7 +602,7 @@ function Wait-AeroSnapFlyout {
                 ($AeroShellProcessNames -contains $_.ProcessName) -and
                 (Test-AeroRectIntersects -A $_.BoundingRectangle -B $MonitorRect)
             })
-            $eventHits = @(Get-AeroShellEventSnapshot | Where-Object {
+            $eventHits = @(Select-AeroEventsAfterMark -Events (Get-AeroShellEventSnapshot) -Mark $eventMark | Where-Object {
                 ($_.EventName -eq 'SHOW' -or $_.EventName -eq 'UNCLOAKED') -and ($AeroShellProcessNames -contains $_.ProcessName)
             })
 
@@ -644,17 +664,43 @@ function Test-AeroFlyoutSignatureMatch {
         foreach ($w in $result.NewWindows) { [void]$set.Add("W|$($w.ClassName)|$($w.ProcessName)") }
         foreach ($e in $result.NewUiaElements) { [void]$set.Add("U|$($e.ClassName)|$($e.ProcessName)|$($e.AutomationId)") }
         foreach ($ev in $result.Events) { [void]$set.Add("E|$($ev.ClassName)|$($ev.ProcessName)") }
-        return $set
+        # The leading comma keeps PowerShell from unrolling the set on return (a one-element
+        # set would otherwise arrive as a bare string).
+        return , $set
     }
     $observedSet = Get-AeroFlyoutSignatureSet $Observed
     $referenceSet = Get-AeroFlyoutSignatureSet $Reference
-    $intersection = New-Object 'System.Collections.Generic.HashSet[string]' -ArgumentList (, $referenceSet)
-    $intersection.IntersectWith($observedSet)
+    $matched = @($referenceSet | Where-Object { $observedSet.Contains($_) })
     [pscustomobject]@{
-        IsMatch              = $intersection.Count -gt 0
-        MatchedSignatures    = @($intersection)
+        IsMatch              = $matched.Count -gt 0
+        MatchedSignatures    = $matched
         ObservedSignatures   = @($observedSet)
         ReferenceSignatures  = @($referenceSet)
+    }
+}
+
+function ConvertTo-AeroFlyoutEvidence {
+    <#
+    .SYNOPSIS
+        A JSON-friendly copy of a Wait-AeroSnapFlyout result (no UIA element handles), so the
+        raw observation survives even if a later comparison step fails.
+    #>
+    param($Result)
+    if (-not $Result) { return $null }
+    [pscustomobject]@{
+        Found      = $Result.Found
+        Signal     = $Result.Signal
+        DelayMs    = $Result.DelayMs
+        Events     = @($Result.Events | ForEach-Object {
+            [pscustomobject]@{
+                TimestampMs = $_.TimestampMs; EventName = $_.EventName; ClassName = $_.ClassName
+                ProcessName = $_.ProcessName; IdObject = $_.IdObject; IdChild = $_.IdChild
+                Rect = "$($_.Rect.Left),$($_.Rect.Top),$($_.Rect.Right),$($_.Rect.Bottom)"
+                Cloaked = $_.Cloaked; Visible = $_.Visible
+            }
+        })
+        NewWindows = @($Result.NewWindows | ForEach-Object { "$($_.ClassName)|$($_.ProcessName)|visible=$($_.Visible)|cloaked=$($_.Cloaked)" })
+        NewUia     = @($Result.NewUiaElements | ForEach-Object { "$($_.ClassName)|$($_.ProcessName)|$($_.AutomationId)" })
     }
 }
 

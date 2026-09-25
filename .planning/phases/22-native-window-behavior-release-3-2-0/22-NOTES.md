@@ -689,3 +689,40 @@ instead of the corner zone. Command for the orchestrator to run after the mainta
 ```
 tools/winprobe/Invoke-EarlyGate.ps1 -AuthorizedBy "<maintainer reply verbatim> @ <ISO timestamp>" -Json .captures/22-gate/early2.json
 ```
+
+## Early gate (22-04) — second real run and watcher fix
+
+Second real run after the maintainer's `ok` (2026-09-25 ~16:43 local), same build, fixed tooling
+from `c97570f..13660a4`. JSON `.captures/22-gate/early2.json`, console `early2-console.log`.
+Standard JDK 21. Real input 34.7 s. Cursor restored (563,987 → 563,987).
+
+| Step | Result | Detail |
+|---|---|---|
+| PositiveControl | OK | flyout observed after 646 ms via Event — reference signature `E|Windows.UI.Composition.DesktopWindowContentBridge|explorer` |
+| ComposeFlyout | ERROR | comparison threw `Cannot convert ... "E|Windows.UI.Composition.DesktopWindowContentBridge|explorer" ... to type "System.Int32"` |
+| DragSnap | SNAP OK | released at (1,540) → `0,0,960,1080` = left half of rcWork; reporter placement `Floating` |
+| DragAway | RESTORE OK | 1200×800 restored |
+
+- **Watcher calibration (D-04) is now proven:** the event-based watcher observes the Snap Layouts
+  flyout on a standard DefWindowProc window (explorer, `Windows.UI.Composition.DesktopWindowContentBridge`,
+  646 ms after the hover began).
+- **SNAP-01 half-snap and restore are proven** on the spike window (run 2).
+- **Two tooling bugs made the Compose flyout verdict unusable:**
+  1. `Get-AeroFlyoutSignatureSet` returned a `HashSet[string]` without the unary comma, so a
+     one-element set was unrolled into a bare string and `New-Object HashSet[string] -ArgumentList`
+     picked the `HashSet(int capacity)` constructor → the exception above.
+  2. The WinEvent log is cumulative since the watch started, and `Wait-AeroSnapFlyout` counted
+     every shell SHOW/UNCLOAKED event in it — so the Compose step saw the positive control's own
+     flyout events and reported `Found=True` on its first poll. That `Found` is therefore NOT
+     evidence of a flyout over the Compose window (the maintainer's recollection of seeing it is
+     not evidence either, per D-04).
+- **Fix (orchestrator):** snapshots carry `EventMark` (event count at baseline);
+  `Select-AeroEventsAfterMark` restricts a hover's judgment to events after its own baseline;
+  the signature set is returned with `return , $set` and matched with a plain `Contains` loop;
+  `ConvertTo-AeroFlyoutEvidence` writes both raw observations (`PositiveFlyout`, `ComposeFlyout`)
+  and `FlyoutMatch` into the gate JSON before any verdict is computed. Offline logic test
+  (single/multi-element match, mismatch, mark filter edge cases, typed list input, evidence JSON)
+  all PASS; `Watch-SnapFlyout.ps1 -SelfTest` PASS; gate `-DryRun` (`dryrun3.json`) exit 0 with the
+  cursor unchanged and the new JSON fields present.
+
+**Status:** the Compose flyout still needs one more real hover; plan 22-04 stays incomplete.
