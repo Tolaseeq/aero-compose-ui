@@ -18,6 +18,7 @@ import androidx.compose.foundation.window.WindowDraggableArea
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -36,6 +37,8 @@ import com.mordred.aero.icons.`internal`.FrameCorners
 import com.mordred.aero.icons.`internal`.Minus
 import com.mordred.aero.icons.`internal`.Square
 import com.mordred.aero.icons.`internal`.X
+import com.mordred.aero.internal.windows.NativeWindowChromeRegistry
+import com.mordred.aero.internal.windows.isWindowsOs
 import com.mordred.aero.theme.AeroTheme
 
 /**
@@ -80,6 +83,12 @@ public fun FrameWindowScope.AeroTitleBar(
     modifier: Modifier = Modifier
 ) {
     val colors = AeroTheme.colors
+    if (isWindowsOs) {
+        DisposableEffect(window) {
+            val handle = NativeWindowChromeRegistry.acquire(window)
+            onDispose { handle?.release() }
+        }
+    }
     WindowDraggableArea(modifier = modifier) {
         Row(
             modifier = Modifier
