@@ -1,18 +1,21 @@
 <#
 .SYNOPSIS
-    UI Automation Snap Layouts flyout watcher for the VER-12 real-input sessions
-    (aero-compose-ui v3.2.0, D-04).
+    Snap Layouts flyout watcher for the VER-12 real-input sessions (aero-compose-ui v3.2.0, D-04).
 .DESCRIPTION
-    Dot-sourceable. Get-AeroShellSnapshot takes a baseline of visible top-level HWNDs
-    (class/process/rect -- never titles) and of the desktop's own UI Automation root children
-    (class/AutomationId/ControlType/process/rect; Name is kept ONLY for shell-process elements).
-    Wait-AeroSnapFlyout polls for NEW shell-owned windows/elements that appear after the baseline
-    (the Snap Layouts flyout), records the delay, and for each new UIA element collects up to 40
-    descendant elements so a caller can find a layout zone to click.
+    Dot-sourceable. Combines three independent signals so a real appearance of the flyout is hard
+    to miss: (1) an EVENT_OBJECT_SHOW/EVENT_OBJECT_UNCLOAKED WinEvent hook on shell processes
+    (Start-AeroShellEventWatch/Stop-AeroShellEventWatch), (2) a cloak-aware baseline/diff of
+    top-level shell windows that counts a pre-created window becoming visible or uncloaked as an
+    appearance, not only a brand-new HWND, and (3) a baseline/diff of the desktop's own UI
+    Automation root children. Get-AeroShellSnapshot takes the baseline for (2) and (3) (class/
+    process/rect/visible/cloaked for windows; class/AutomationId/ControlType/process/rect for UIA
+    elements -- Name is kept only for shell-process elements). Wait-AeroSnapFlyout polls all three
+    signals for the hover window and returns which one fired, the delay, and the evidence.
     Test-AeroFlyoutSignatureMatch compares two Wait-AeroSnapFlyout results by class/process/
     AutomationId signature. Get-AeroSnapSettings reads (never writes) the two registry values
     that gate Snap Layouts and Windows snapping. Also invocable directly with -SelfTest, which
-    takes one snapshot, prints counts only, and asserts no non-shell element carries a Name.
+    proves the WinEvent hook itself works (no real input) by watching a freshly-launched,
+    non-activating positive-control window and asserting the hook saw its own SHOW/CREATE event.
 .NOTES
     PowerShell 5.1 only. Never reads a window's title text (that Win32 entry point is deliberately
     absent from this file's own P/Invoke surface) and never writes a registry value.
@@ -26,6 +29,9 @@ param(
 
 Set-StrictMode -Version 2
 
+$here = Split-Path -Parent $MyInvocation.MyCommand.Path
+. (Join-Path $here 'PositiveControlWindow.ps1')
+
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
 
@@ -33,8 +39,10 @@ if (-not ('AeroSnapWatch.Native' -as [type])) {
     Add-Type -TypeDefinition @"
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 
 namespace AeroSnapWatch
 {
@@ -66,11 +74,24 @@ namespace AeroSnapWatch
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         public static extern int GetClassNameW(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 
+        [DllImport("dwmapi.dll")]
+        public static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out int pvAttribute, int cbAttribute);
+
+        public const int DWMWA_CLOAKED = 14;
+
         public static string GetClassName(IntPtr hWnd)
         {
             StringBuilder sb = new StringBuilder(256);
             GetClassNameW(hWnd, sb, sb.Capacity);
             return sb.ToString();
+        }
+
+        public static bool IsCloaked(IntPtr hWnd)
+        {
+            int cloaked;
+            int hr = DwmGetWindowAttribute(hWnd, DWMWA_CLOAKED, out cloaked, 4);
+            if (hr != 0) { return false; }
+            return cloaked != 0;
         }
 
         public static List<IntPtr> EnumTopLevelVisible()
@@ -87,6 +108,231 @@ namespace AeroSnapWatch
             EnumWindows(callback, IntPtr.Zero);
             return found;
         }
+
+        // Includes hidden and cloaked windows -- a flyout host can be pre-created by the shell
+        // and merely uncloaked/shown on hover, so a visibility-only enumeration would miss it.
+        public static List<IntPtr> EnumTopLevelAll()
+        {
+            List<IntPtr> found = new List<IntPtr>();
+            EnumWindowsProc callback = delegate(IntPtr hWnd, IntPtr lParam)
+            {
+                found.Add(hWnd);
+                return true;
+            };
+            EnumWindows(callback, IntPtr.Zero);
+            return found;
+        }
+    }
+
+    // One WinEvent observation -- never carries a window title (GetWindowText is deliberately
+    // absent from this file's P/Invoke surface).
+    public class AeroEventRecord
+    {
+        public double TimestampMs;
+        public string EventName;
+        public IntPtr Hwnd;
+        public int IdObject;
+        public int IdChild;
+        public string ProcessName;
+        public string ClassName;
+        public SRect Rect;
+        public bool Cloaked;
+        public bool Visible;
+    }
+
+    public delegate void WinEventDelegate(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint idEventThread, uint dwmsEventTime);
+
+    // A background thread with its own GetMessage loop hosts SetWinEventHook (OUT_OF_CONTEXT
+    // hooks deliver their callback only while the registering thread pumps messages). Two hooks
+    // cover the disjoint event-id ranges this watcher cares about; EVENT_OBJECT_LOCATIONCHANGE
+    // and every other id inside the EVENT_OBJECT_* range is filtered out in OnEvent as too noisy.
+    public class EventWatcher
+    {
+        public const uint WINEVENT_OUTOFCONTEXT = 0x0000;
+        public const uint WINEVENT_SKIPOWNPROCESS = 0x0002;
+        public const uint WM_QUIT = 0x0012;
+
+        public const uint EVENT_OBJECT_CREATE = 0x8000;
+        public const uint EVENT_OBJECT_DESTROY = 0x8001;
+        public const uint EVENT_OBJECT_SHOW = 0x8002;
+        public const uint EVENT_OBJECT_HIDE = 0x8003;
+        public const uint EVENT_OBJECT_CLOAKED = 0x8017;
+        public const uint EVENT_OBJECT_UNCLOAKED = 0x8018;
+        public const uint EVENT_SYSTEM_FOREGROUND = 0x0003;
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MSG
+        {
+            public IntPtr hwnd;
+            public uint message;
+            public IntPtr wParam;
+            public IntPtr lParam;
+            public uint time;
+            public int ptX;
+            public int ptY;
+        }
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr SetWinEventHook(uint eventMin, uint eventMax, IntPtr hmodWinEventProc, WinEventDelegate lpfnWinEventProc, uint idProcess, uint idThread, uint dwFlags);
+
+        [DllImport("user32.dll")]
+        private static extern bool UnhookWinEvent(IntPtr hWinEventHook);
+
+        [DllImport("user32.dll")]
+        private static extern bool GetMessage(out MSG lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax);
+
+        [DllImport("user32.dll")]
+        private static extern bool PostThreadMessage(uint idThread, uint msg, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("kernel32.dll")]
+        private static extern uint GetCurrentThreadId();
+
+        private Thread _thread;
+        private uint _threadId;
+        private IntPtr _hookObj = IntPtr.Zero;
+        private IntPtr _hookFg = IntPtr.Zero;
+        private WinEventDelegate _callback;
+        private readonly object _eventsLock = new object();
+        private readonly List<AeroEventRecord> _events = new List<AeroEventRecord>();
+        private readonly object _idsLock = new object();
+        private HashSet<uint> _watchedProcessIds = new HashSet<uint>();
+        private List<string> _watchedProcessNames = new List<string>();
+        private DateTime _startedAt;
+        private readonly ManualResetEvent _ready = new ManualResetEvent(false);
+
+        public void Start(List<string> watchedProcessNames, List<uint> watchedProcessIds)
+        {
+            _watchedProcessNames = watchedProcessNames ?? new List<string>();
+            lock (_idsLock)
+            {
+                _watchedProcessIds = new HashSet<uint>(watchedProcessIds ?? new List<uint>());
+            }
+            _startedAt = DateTime.UtcNow;
+            _callback = new WinEventDelegate(OnEvent);
+            _thread = new Thread(new ThreadStart(ThreadProc));
+            _thread.IsBackground = true;
+            _thread.SetApartmentState(ApartmentState.STA);
+            _thread.Start();
+            _ready.WaitOne(5000);
+        }
+
+        public void AddWatchedProcessId(uint pid)
+        {
+            lock (_idsLock)
+            {
+                _watchedProcessIds.Add(pid);
+            }
+        }
+
+        private void ThreadProc()
+        {
+            _threadId = GetCurrentThreadId();
+            _hookObj = SetWinEventHook(EVENT_OBJECT_CREATE, EVENT_OBJECT_UNCLOAKED, IntPtr.Zero, _callback, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
+            _hookFg = SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, IntPtr.Zero, _callback, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
+            _ready.Set();
+
+            MSG msg;
+            while (GetMessage(out msg, IntPtr.Zero, 0, 0))
+            {
+                // No window is ever created on this thread; the hook delivers its callback
+                // directly while GetMessage pumps, without an explicit dispatched message.
+            }
+
+            if (_hookObj != IntPtr.Zero) { UnhookWinEvent(_hookObj); _hookObj = IntPtr.Zero; }
+            if (_hookFg != IntPtr.Zero) { UnhookWinEvent(_hookFg); _hookFg = IntPtr.Zero; }
+        }
+
+        private static string EventName(uint eventType)
+        {
+            if (eventType == EVENT_OBJECT_CREATE) { return "CREATE"; }
+            if (eventType == EVENT_OBJECT_DESTROY) { return "DESTROY"; }
+            if (eventType == EVENT_OBJECT_SHOW) { return "SHOW"; }
+            if (eventType == EVENT_OBJECT_HIDE) { return "HIDE"; }
+            if (eventType == EVENT_OBJECT_CLOAKED) { return "CLOAKED"; }
+            if (eventType == EVENT_OBJECT_UNCLOAKED) { return "UNCLOAKED"; }
+            if (eventType == EVENT_SYSTEM_FOREGROUND) { return "FOREGROUND"; }
+            return "OTHER";
+        }
+
+        private static string GetProcessNameSafe(uint pid)
+        {
+            try
+            {
+                using (Process p = Process.GetProcessById((int)pid))
+                {
+                    return p.ProcessName;
+                }
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private void OnEvent(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint idEventThread, uint dwmsEventTime)
+        {
+            if (eventType != EVENT_OBJECT_CREATE && eventType != EVENT_OBJECT_DESTROY &&
+                eventType != EVENT_OBJECT_SHOW && eventType != EVENT_OBJECT_HIDE &&
+                eventType != EVENT_OBJECT_CLOAKED && eventType != EVENT_OBJECT_UNCLOAKED &&
+                eventType != EVENT_SYSTEM_FOREGROUND)
+            {
+                return;
+            }
+            if (hwnd == IntPtr.Zero) { return; }
+
+            uint ownerPid = 0;
+            Native.GetWindowThreadProcessId(hwnd, out ownerPid);
+            string procName = GetProcessNameSafe(ownerPid);
+
+            bool isShell = procName != null && _watchedProcessNames.Contains(procName);
+            bool isOwn;
+            lock (_idsLock)
+            {
+                isOwn = _watchedProcessIds.Contains(ownerPid);
+            }
+            if (!isShell && !isOwn) { return; }
+
+            SRect rect = new SRect();
+            Native.GetWindowRect(hwnd, out rect);
+
+            AeroEventRecord rec = new AeroEventRecord();
+            rec.TimestampMs = (DateTime.UtcNow - _startedAt).TotalMilliseconds;
+            rec.EventName = EventName(eventType);
+            rec.Hwnd = hwnd;
+            rec.IdObject = idObject;
+            rec.IdChild = idChild;
+            rec.ProcessName = procName;
+            rec.ClassName = Native.GetClassName(hwnd);
+            rec.Rect = rect;
+            rec.Cloaked = Native.IsCloaked(hwnd);
+            rec.Visible = Native.IsWindowVisible(hwnd);
+
+            lock (_eventsLock)
+            {
+                _events.Add(rec);
+            }
+        }
+
+        public List<AeroEventRecord> GetEventsSnapshot()
+        {
+            lock (_eventsLock)
+            {
+                return new List<AeroEventRecord>(_events);
+            }
+        }
+
+        public List<AeroEventRecord> Stop()
+        {
+            if (_threadId != 0)
+            {
+                PostThreadMessage(_threadId, WM_QUIT, IntPtr.Zero, IntPtr.Zero);
+            }
+            if (_thread != null)
+            {
+                _thread.Join(5000);
+            }
+            return GetEventsSnapshot();
+        }
     }
 }
 "@
@@ -97,6 +343,70 @@ namespace AeroSnapWatch
 # (including the target app itself) is a foreign window and its Name is never read into memory.
 $AeroShellProcessNames = @('explorer', 'ShellExperienceHost', 'ShellHost', 'StartMenuExperienceHost', 'SearchHost')
 
+$Script:AeroEventWatcher = $null
+
+function Start-AeroShellEventWatch {
+    <#
+    .SYNOPSIS
+        Starts the background WinEvent hook, recording SHOW/HIDE/CREATE/DESTROY/CLOAKED/
+        UNCLOAKED/FOREGROUND events for the shell processes plus -WatchedProcessIds (this run's
+        own showcase and positive-control processes). One watch at a time.
+    #>
+    [CmdletBinding()]
+    param(
+        [string[]]$WatchedProcessNames = $AeroShellProcessNames,
+        [uint32[]]$WatchedProcessIds = @()
+    )
+    if ($Script:AeroEventWatcher) {
+        throw 'Start-AeroShellEventWatch: a watch is already running -- call Stop-AeroShellEventWatch first'
+    }
+    $namesList = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($n in $WatchedProcessNames) { [void]$namesList.Add($n) }
+    $idsList = New-Object 'System.Collections.Generic.List[uint32]'
+    foreach ($i in $WatchedProcessIds) { [void]$idsList.Add([uint32]$i) }
+
+    $watcher = New-Object AeroSnapWatch.EventWatcher
+    $watcher.Start($namesList, $idsList)
+    $Script:AeroEventWatcher = $watcher
+}
+
+function Add-AeroShellEventWatchProcessId {
+    <#
+    .SYNOPSIS
+        Adds one more process id to the running watch's own-process allow-list (e.g. the
+        positive-control window's PID, known only after the watch has already started).
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)][uint32]$ProcessId)
+    if ($Script:AeroEventWatcher) {
+        $Script:AeroEventWatcher.AddWatchedProcessId($ProcessId)
+    }
+}
+
+function Get-AeroShellEventSnapshot {
+    <#
+    .SYNOPSIS
+        A point-in-time copy of every event recorded by the running watch so far.
+    #>
+    [CmdletBinding()]
+    param()
+    if (-not $Script:AeroEventWatcher) { return @() }
+    return $Script:AeroEventWatcher.GetEventsSnapshot()
+}
+
+function Stop-AeroShellEventWatch {
+    <#
+    .SYNOPSIS
+        Stops the background thread and returns every event it recorded.
+    #>
+    [CmdletBinding()]
+    param()
+    if (-not $Script:AeroEventWatcher) { return @() }
+    $events = $Script:AeroEventWatcher.Stop()
+    $Script:AeroEventWatcher = $null
+    return $events
+}
+
 function Get-AeroProcessNameById {
     param([Parameter(Mandatory = $true)][uint32]$ProcessId)
     try { return (Get-Process -Id $ProcessId -ErrorAction Stop).ProcessName } catch { return $null }
@@ -105,26 +415,37 @@ function Get-AeroProcessNameById {
 function Get-AeroShellSnapshot {
     <#
     .SYNOPSIS
-        (a) every visible top-level HWND: class name, owning process NAME, rect -- titles are
-        never read. (b) every UI Automation root-element child: ClassName, AutomationId,
-        ControlType, process name, BoundingRectangle, and the live AutomationElement (for later
-        descendant walks); Name is kept only when the owning process is in $AeroShellProcessNames,
-        blanked otherwise.
+        (a) every shell-process top-level HWND (any visible/cloaked state) plus every visible
+        top-level HWND of any other process: class name, owning process NAME, rect, Visible,
+        Cloaked -- titles are never read. (b) every UI Automation root-element child: ClassName,
+        AutomationId, ControlType, process name, BoundingRectangle, and the live AutomationElement
+        (for later descendant walks); Name is kept only when the owning process is in
+        $AeroShellProcessNames, blanked otherwise.
     #>
     [CmdletBinding()]
     param()
 
     $windows = New-Object System.Collections.Generic.List[object]
-    foreach ($hwnd in [AeroSnapWatch.Native]::EnumTopLevelVisible()) {
+    foreach ($hwnd in [AeroSnapWatch.Native]::EnumTopLevelAll()) {
         [uint32]$ownerPid = 0
         [AeroSnapWatch.Native]::GetWindowThreadProcessId($hwnd, [ref]$ownerPid) | Out-Null
+        $procName = Get-AeroProcessNameById -ProcessId $ownerPid
+        $isVisible = [bool][AeroSnapWatch.Native]::IsWindowVisible($hwnd)
+        $isShell = $AeroShellProcessNames -contains $procName
+        # A hidden/cloaked window is only worth keeping when it belongs to a shell process (the
+        # flyout host may be pre-created and merely uncloaked/shown on hover); every other
+        # process's top-level windows are kept only while actually visible, matching prior
+        # behavior for the non-shell entries this file's other consumers rely on.
+        if (-not $isShell -and -not $isVisible) { continue }
         $rect = New-Object AeroSnapWatch.SRect
         [AeroSnapWatch.Native]::GetWindowRect($hwnd, [ref]$rect) | Out-Null
         [void]$windows.Add([pscustomobject]@{
             Hwnd        = $hwnd
             ClassName   = [AeroSnapWatch.Native]::GetClassName($hwnd)
-            ProcessName = Get-AeroProcessNameById -ProcessId $ownerPid
+            ProcessName = $procName
             Rect        = $rect
+            Visible     = $isVisible
+            Cloaked     = [bool][AeroSnapWatch.Native]::IsCloaked($hwnd)
         })
     }
 
@@ -197,75 +518,104 @@ function Get-AeroDescendantsForElement {
 function Wait-AeroSnapFlyout {
     <#
     .SYNOPSIS
-        Polls Get-AeroShellSnapshot until a NEW shell-owned window or UIA element appears (not in
-        -Baseline), optionally restricted to elements whose rect intersects -MonitorRect, or
-        -TimeoutMs elapses. Returns Found, DelayMs, NewWindows, NewUiaElements (each UIA element
-        carries a Descendants property with up to 40 descendant elements).
+        Watches, for at least -MinHoverMs and up to -TimeoutMs, for any of: a shell-process SHOW/
+        UNCLOAKED WinEvent (requires a watch already running via Start-AeroShellEventWatch), a
+        shell top-level window newly visible or newly uncloaked versus -Baseline, or a new shell
+        UIA element versus -Baseline. Returns Found, Signal (Event/Window/Uia), DelayMs (from the
+        first hit, not inflated by the minimum hold), NewWindows, NewUiaElements (each UIA element
+        carries a Descendants property), Events.
     #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]$Baseline,
         [int]$TimeoutMs = 3000,
+        [int]$MinHoverMs = 1500,
         [int]$PollMs = 100,
         $MonitorRect
     )
     $deadline = (Get-Date).AddMilliseconds($TimeoutMs)
     $startedAt = Get-Date
 
-    $baselineWindowKeys = New-Object System.Collections.Generic.HashSet[string]
+    $baselineWindowState = @{}
     foreach ($w in $Baseline.Windows) {
-        [void]$baselineWindowKeys.Add("$($w.ClassName)|$($w.ProcessName)|$($w.Hwnd)")
+        $key = "$($w.ClassName)|$($w.ProcessName)|$($w.Hwnd)"
+        $baselineWindowState[$key] = [pscustomobject]@{ Visible = $w.Visible; Cloaked = $w.Cloaked }
     }
     $baselineUiaKeys = New-Object System.Collections.Generic.HashSet[string]
     foreach ($e in $Baseline.UiaElements) {
         [void]$baselineUiaKeys.Add("$($e.ClassName)|$($e.ProcessName)|$($e.AutomationId)")
     }
 
+    $firstHit = $null
     while ((Get-Date) -lt $deadline) {
-        $snap = Get-AeroShellSnapshot
+        $elapsedMs = ((Get-Date) - $startedAt).TotalMilliseconds
 
-        $newWindows = @($snap.Windows | Where-Object {
-            $key = "$($_.ClassName)|$($_.ProcessName)|$($_.Hwnd)"
-            (-not $baselineWindowKeys.Contains($key)) -and
-            ($AeroShellProcessNames -contains $_.ProcessName) -and
-            (Test-AeroRectIntersects -A $_.Rect -B $MonitorRect)
-        })
-        $newUia = @($snap.UiaElements | Where-Object {
-            $key = "$($_.ClassName)|$($_.ProcessName)|$($_.AutomationId)"
-            (-not $baselineUiaKeys.Contains($key)) -and
-            ($AeroShellProcessNames -contains $_.ProcessName) -and
-            (Test-AeroRectIntersects -A $_.BoundingRectangle -B $MonitorRect)
-        })
+        if (-not $firstHit) {
+            $snap = Get-AeroShellSnapshot
 
-        if ($newWindows.Count -gt 0 -or $newUia.Count -gt 0) {
-            $delayMs = [int](((Get-Date) - $startedAt).TotalMilliseconds)
-            foreach ($elem in $newUia) {
-                $descendants = Get-AeroDescendantsForElement -Element $elem.Element
-                $elem | Add-Member -NotePropertyName Descendants -NotePropertyValue $descendants -Force
-            }
-            return [pscustomobject]@{
-                Found          = $true
-                DelayMs        = $delayMs
-                NewWindows     = $newWindows
-                NewUiaElements = $newUia
+            $newWindows = @($snap.Windows | Where-Object {
+                $key = "$($_.ClassName)|$($_.ProcessName)|$($_.Hwnd)"
+                $prior = $baselineWindowState[$key]
+                $becameVisible = (-not $prior) -or ((-not $prior.Visible -or $prior.Cloaked) -and $_.Visible -and -not $_.Cloaked)
+                $becameVisible -and ($AeroShellProcessNames -contains $_.ProcessName) -and (Test-AeroRectIntersects -A $_.Rect -B $MonitorRect)
+            })
+            $newUia = @($snap.UiaElements | Where-Object {
+                $key = "$($_.ClassName)|$($_.ProcessName)|$($_.AutomationId)"
+                (-not $baselineUiaKeys.Contains($key)) -and
+                ($AeroShellProcessNames -contains $_.ProcessName) -and
+                (Test-AeroRectIntersects -A $_.BoundingRectangle -B $MonitorRect)
+            })
+            $eventHits = @(Get-AeroShellEventSnapshot | Where-Object {
+                ($_.EventName -eq 'SHOW' -or $_.EventName -eq 'UNCLOAKED') -and ($AeroShellProcessNames -contains $_.ProcessName)
+            })
+
+            if ($newWindows.Count -gt 0 -or $newUia.Count -gt 0 -or $eventHits.Count -gt 0) {
+                foreach ($elem in $newUia) {
+                    $descendants = Get-AeroDescendantsForElement -Element $elem.Element
+                    $elem | Add-Member -NotePropertyName Descendants -NotePropertyValue $descendants -Force
+                }
+                $signal = if ($eventHits.Count -gt 0) { 'Event' } elseif ($newWindows.Count -gt 0) { 'Window' } else { 'Uia' }
+                $firstHit = [pscustomobject]@{
+                    DelayMs        = [int]$elapsedMs
+                    Signal         = $signal
+                    NewWindows     = $newWindows
+                    NewUiaElements = $newUia
+                    Events         = $eventHits
+                }
             }
         }
+
+        if ($firstHit -and $elapsedMs -ge $MinHoverMs) { break }
         Start-Sleep -Milliseconds $PollMs
+    }
+
+    if ($firstHit) {
+        return [pscustomobject]@{
+            Found          = $true
+            DelayMs        = $firstHit.DelayMs
+            Signal         = $firstHit.Signal
+            NewWindows     = $firstHit.NewWindows
+            NewUiaElements = $firstHit.NewUiaElements
+            Events         = $firstHit.Events
+        }
     }
 
     return [pscustomobject]@{
         Found          = $false
         DelayMs        = $TimeoutMs
+        Signal          = $null
         NewWindows     = @()
         NewUiaElements = @()
+        Events         = @()
     }
 }
 
 function Test-AeroFlyoutSignatureMatch {
     <#
     .SYNOPSIS
-        Compares two Wait-AeroSnapFlyout results by class/process[/AutomationId] signature and
-        reports whether any signature in -Observed also appears in -Reference.
+        Compares two Wait-AeroSnapFlyout results by class/process[/AutomationId] signature (plus
+        an event-based class/process signature) and reports whether any signature in -Observed
+        also appears in -Reference.
     #>
     [CmdletBinding()]
     param(
@@ -276,6 +626,7 @@ function Test-AeroFlyoutSignatureMatch {
         $set = New-Object System.Collections.Generic.HashSet[string]
         foreach ($w in $result.NewWindows) { [void]$set.Add("W|$($w.ClassName)|$($w.ProcessName)") }
         foreach ($e in $result.NewUiaElements) { [void]$set.Add("U|$($e.ClassName)|$($e.ProcessName)|$($e.AutomationId)") }
+        foreach ($ev in $result.Events) { [void]$set.Add("E|$($ev.ClassName)|$($ev.ProcessName)") }
         return $set
     }
     $observedSet = Get-AeroFlyoutSignatureSet $Observed
@@ -318,7 +669,11 @@ function Get-AeroSnapSettings {
 function Test-AeroWatchSnapFlyoutSelf {
     <#
     .SYNOPSIS
-        Takes one snapshot, prints counts only, and asserts no non-shell element carries a Name.
+        (1) Takes one snapshot, prints counts, and asserts no non-shell/non-own element carries a
+        Name. (2) Starts the WinEvent watch, launches a non-activating positive-control window
+        (no real input, no foreground change), and asserts the hook itself recorded a SHOW or
+        CREATE event for that window's own HWND -- proving the hook works without any real input.
+        Asserts the cursor position is unchanged throughout.
     .NOTES
         Uses Write-Host for its diagnostic lines, not Write-Output -- see RealInput.ps1's
         Test-AeroRealInputSelf for why (a captured `$ok = ...` assignment would otherwise swallow
@@ -334,6 +689,52 @@ function Test-AeroWatchSnapFlyoutSelf {
         Write-Host "WATCHSNAPFLYOUT_SELFTEST FAIL: $($leak.Count) non-shell element(s) carry a Name"
         return $false
     }
+
+    Initialize-AeroDpiAwareness
+    $cursorBefore = Get-AeroInputState
+
+    $ok = $true
+    $pcInfo = $null
+    $watchStarted = $false
+    try {
+        $pcInfo = Start-AeroPositiveControlWindow -NoActivate
+        Start-AeroShellEventWatch -WatchedProcessIds @([uint32]$pcInfo.Process.Id) | Out-Null
+        $watchStarted = $true
+
+        $pcHwnd = [IntPtr]::Zero
+        try {
+            $pcHwnd = Find-AeroShowcaseWindow -Title $pcInfo.Title -TimeoutSec 10
+        }
+        catch {
+            Write-Host "WATCHSNAPFLYOUT_SELFTEST FAIL: positive-control window never appeared: $($_.Exception.Message)"
+            $ok = $false
+        }
+
+        if ($ok) {
+            Start-Sleep -Milliseconds 500
+            $events = Get-AeroShellEventSnapshot
+            $hit = @($events | Where-Object { ($_.EventName -eq 'SHOW' -or $_.EventName -eq 'CREATE') -and $_.Hwnd -eq $pcHwnd })
+            if ($hit.Count -eq 0) {
+                Write-Host 'WATCHSNAPFLYOUT_SELFTEST FAIL: no SHOW/CREATE event recorded for the positive-control window'
+                $ok = $false
+            }
+            else {
+                Write-Host "WATCHSNAPFLYOUT_SELFTEST hook recorded $($hit[0].EventName) for hwnd=$($pcHwnd) at $([int]$hit[0].TimestampMs)ms"
+            }
+        }
+    }
+    finally {
+        if ($watchStarted) { Stop-AeroShellEventWatch | Out-Null }
+        if ($pcInfo) { Stop-AeroPositiveControlWindow -Info $pcInfo }
+    }
+
+    $cursorAfter = Get-AeroInputState
+    if ($cursorBefore.CursorX -ne $cursorAfter.CursorX -or $cursorBefore.CursorY -ne $cursorAfter.CursorY) {
+        Write-Host 'WATCHSNAPFLYOUT_SELFTEST FAIL: cursor position changed during the self-test'
+        $ok = $false
+    }
+
+    if (-not $ok) { return $false }
     Write-Host 'WATCHSNAPFLYOUT_SELFTEST PASS'
     return $true
 }
