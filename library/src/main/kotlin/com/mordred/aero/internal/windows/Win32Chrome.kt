@@ -5,11 +5,29 @@ import com.sun.jna.platform.win32.User32
 import com.sun.jna.platform.win32.WinDef.HWND
 
 /**
- * SNAP-01: `undecorated = true` alone yields
+ * WIN-03: the five style bits a native-chrome window on `AeroTitleBar` must always carry.
+ * `undecorated = true` alone yields
  * `WS_POPUP | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_CLIPCHILDREN` — neither
  * `WS_CAPTION` nor `WS_THICKFRAME` is present, so DWM/Shell never treat the window as
- * resizable-with-a-frame. This adds both back (keeping every bit already present) and
- * invalidates Windows' cached frame geometry so the new style actually takes effect.
+ * resizable-with-a-frame.
+ */
+internal const val REQUIRED_FRAME_STYLES: Int =
+    WS_CAPTION or WS_SYSMENU or WS_THICKFRAME or WS_MINIMIZEBOX or WS_MAXIMIZEBOX
+
+/**
+ * WIN-03: a pure OR — every bit already present in [style] is kept, nothing is ever cleared.
+ * Used both at install time ([Win32Chrome.ensureNativeFrameStyles]) and from
+ * `AeroFrameWndProc`'s `WM_STYLECHANGING` handler, so a later AWT-driven style rewrite cannot
+ * drop these bits without them being added straight back before the new style is applied.
+ */
+internal fun withRequiredFrameStyles(style: Int): Int = style or REQUIRED_FRAME_STYLES
+
+/**
+ * SNAP-01: guard-rail (CMP-3757 / PITFALLS 17), restated for every file in this package —
+ * never enable window transparency on the owning `Window`, and never add the layered
+ * extended window style to this HWND. That combination crashes with
+ * EXCEPTION_ACCESS_VIOLATION on Windows 11; see `AeroTitleBar.kt`'s own KDoc. The Aero glass
+ * effect is provided by `Modifier.glassEffect`, never by window transparency.
  */
 internal object Win32Chrome {
 
@@ -17,7 +35,7 @@ internal object Win32Chrome {
 
     internal fun ensureNativeFrameStyles(hwnd: HWND): StyleResult {
         val before = readStyle(hwnd)
-        val target = before or WS_CAPTION or WS_SYSMENU or WS_THICKFRAME or WS_MINIMIZEBOX or WS_MAXIMIZEBOX
+        val target = withRequiredFrameStyles(before)
         if (target != before) {
             writeStyle(hwnd, target)
             User32.INSTANCE.SetWindowPos(

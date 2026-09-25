@@ -6,7 +6,8 @@ import com.sun.jna.platform.win32.WinDef.POINT
 import com.sun.jna.win32.StdCallLibrary
 import com.sun.jna.win32.W32APIOptions
 
-// SNAP-01 / SNAP-02: WM_* message identifiers this spike's WindowProc implementations own.
+// SNAP-01 / SNAP-02 / WIN-03: WM_* message identifiers this WindowProc implementations own.
+internal const val WM_STYLECHANGING = 0x007C
 internal const val WM_NCDESTROY = 0x0082
 internal const val WM_NCCALCSIZE = 0x0083
 internal const val WM_NCHITTEST = 0x0084

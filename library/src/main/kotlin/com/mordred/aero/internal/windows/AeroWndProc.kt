@@ -36,6 +36,8 @@ internal class AeroFrameWndProc(
 
         WM_NCHITTEST -> handleNcHitTest(hwnd, wParam, lParam)
 
+        WM_STYLECHANGING -> handleStyleChanging(hwnd, uMsg, wParam, lParam)
+
         WM_NCDESTROY -> {
             val result = callPrevious(hwnd, uMsg, wParam, lParam).toLong()
             NativeWindowChromeRegistry.onDestroyed(this.hwnd)
@@ -43,6 +45,30 @@ internal class AeroFrameWndProc(
         }
 
         else -> callPrevious(hwnd, uMsg, wParam, lParam).toLong()
+    }
+
+    /**
+     * WIN-03: keeps [REQUIRED_FRAME_STYLES] set even if AWT rewrites `GWL_STYLE` later
+     * (activation changes, DnD registration, always-on-top toggles — Pitfall 4). `STYLESTRUCT`
+     * is `{ DWORD styleOld; DWORD styleNew }`; writing `styleNew` in place before forwarding
+     * changes the style Windows actually applies. Only `GWL_STYLE` is touched —
+     * `GWL_EXSTYLE` changes pass through unread.
+     */
+    private fun handleStyleChanging(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): Long {
+        if (wParam.toInt() == GWL_STYLE) {
+            val styleStruct = Pointer(lParam.toLong())
+            val styleNew = styleStruct.getInt(4)
+            val kept = withRequiredFrameStyles(styleNew)
+            if (kept != styleNew) {
+                styleStruct.setInt(4, kept)
+                chromeTrace(
+                    "style-kept",
+                    this.hwnd,
+                    "styleNew=0x${styleNew.toString(16)} kept=0x${kept.toString(16)}",
+                )
+            }
+        }
+        return callPrevious(hwnd, uMsg, wParam, lParam).toLong()
     }
 
     private fun handleNcHitTest(hwnd: HWND, wParam: WPARAM, lParam: LPARAM): Long {
