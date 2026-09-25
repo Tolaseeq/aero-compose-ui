@@ -164,7 +164,7 @@ Details: `.planning/milestones/v3.1-ROADMAP.md` · Requirements: `.planning/mile
   5. Список «не подтверждено» явно называет всё, что не проверено, включая поведение на Windows 10 — не выдаётся за пройденное
   6. `v3.2.0` опубликован и резолвится на JitPack (`com.github.Tolaseeq:aero-compose-ui:v3.2.0`); README и KDoc обновлены, оговорка «Aero Snap limitation» снята; все существующие тесты зелёные под залоченным (и при необходимости поднятым именованным коммитом) числом
 
-**Plans:** 18 plans
+**Plans:** 19 plans
 
 Plans:
 - [ ] 22-01-PLAN.md — Live-window probe (tools/winprobe), window-state reporter, RED baseline of the unmodified window (conflicts #1, #7a; findings F8–F11)
@@ -179,12 +179,13 @@ Plans:
 - [ ] 22-10-PLAN.md — Step 6: passthrough audit, WindowState sync (conflict #4 action), HWND churn hardening, GC / Hot Reload / UIA checks
 - [ ] 22-11-PLAN.md — Step 7: native edge/corner resize, AeroResizeHandles Windows no-op, D-01 minimum size on both paths
 - [ ] 22-12-PLAN.md — Step 8: nativeWindowManagement opt-out, markAeroTitleBarInteractive, permanent RED control, multi-window checks
-- [ ] 22-13-PLAN.md — Step 10a: headless unit + pixel-parity tests with mutation proofs; locked test count raised by named commits (VER-14)
+- [ ] 22-19-PLAN.md — Step 8 (cont.): public rememberAeroWindowChrome for custom title bars (API-04, D-05); AeroTitleBar rebuilt on it; live proof (wave 11, before 22-13)
+- [ ] 22-13-PLAN.md — Step 10a: headless unit, pixel-parity and custom-title-bar API tests with mutation proofs; locked test count raised by named commits (VER-14)
 - [ ] 22-14-PLAN.md — Full-session environment helpers and two-pass real-input check suite (dry-run proven)
 - [ ] 22-15-PLAN.md — Steps 9–10: full VER-12 session on JDK 21 and JBR 21 (consent → setup → both passes; conflicts #2, #3 reveal)
 - [ ] 22-16-PLAN.md — Teardown on the maintainer's word + VER-13 hand-off (final VER-11 green/red, unconfirmed list incl. Windows 10)
-- [ ] 22-17-PLAN.md — README "Windows window behavior" + KDoc; "Aero Snap limitation" removed (REL-06, REL-07)
-- [ ] 22-18-PLAN.md — Release 3.2.0: version bump, verify tag on JitPack, DEP-01 on the published POM, maintainer's choice, real tag (REL-08)
+- [ ] 22-17-PLAN.md — README "Windows window behavior" (incl. custom title bar API) + KDoc; "Aero Snap limitation" removed (REL-06, REL-07, API-04)
+- [ ] 22-18-PLAN.md — Release 3.2.0: version bump, verify tag on JitPack (D-06), DEP-01 on the published POM, maintainer's choice, real tag (REL-08)
 
 **UI hint**: yes
 
@@ -214,7 +215,7 @@ Plans:
 | 19. Selectors + Lists | v3.0 | 12/12 | Complete | 2026-07-28 |
 | 20. Verification | v3.0 | 9/9 | Complete | 2026-07-29 |
 | 21. Migration + Release 3.1.0 | v3.1 | 14/14 | Complete | 2026-09-24 |
-| 22. Native Window Behavior + Release 3.2.0 | v3.2 | 0/18 | Planned | - |
+| 22. Native Window Behavior + Release 3.2.0 | v3.2 | 0/19 | Planned | - |
 
 ## Next Milestone
 

@@ -29,8 +29,8 @@ created: 2026-09-25
 
 ## Sampling Rate
 
-- **After every task commit:** full `./gradlew :library:test --rerun` at the locked count — the project's standing rule since v3.1, stricter than quick-run sampling. Until Plan 13 the locked count is 541; Plan 13 raises it in two named commits (VER-14).
-- **After every plan that touches native behavior (02, 05, 07, 09, 10, 11, 12):** the live-window harness against the showcase window(s), results written to 22-NOTES.md.
+- **After every task commit:** full `./gradlew :library:test --rerun` at the locked count — the project's standing rule since v3.1, stricter than quick-run sampling. Until Plan 13 the locked count is 541; Plan 13 raises it in three named commits (VER-14).
+- **After every plan that touches native behavior (02, 05, 07, 09, 10, 11, 12, 19):** the live-window harness against the showcase window(s), results written to 22-NOTES.md.
 - **Before `/bm:verify-work`:** full suite green at exactly the (named-commit) locked count; every VER-11 check shown RED (Plan 01 baseline, `-Paero.nativeChrome=false` control) and GREEN (Plan 16 final run); VER-12 full session done on JDK 21 and JBR 21 (Plan 15).
 - **Max feedback latency:** one full-suite run.
 
@@ -54,6 +54,11 @@ created: 2026-09-25
 | 22-11-T3 | D-01 / WIN-02 | min-size floor: main 320×240 dp, narrow 260×200 (app's own) | live-window harness | V11-MINSIZE, V11-N-MINSIZE | ❌ (Plans 01/08) | ⬜ pending |
 | 22-12-T3, 22-16-T3 | API-03 / VER-11 RED control | opt-out window reproduces pre-phase answers and style | live-window harness | `-GradleProps -Paero.nativeChrome=false -ExpectRed` → `RED OK` | ❌ (Plan 12) | ⬜ pending |
 | 22-12-T1 | API-01 | old call sites compile unchanged; no JNA in public API | build + grep | `./gradlew :library:compileKotlin :showcase:compileKotlin` with untouched showcase; JNA only under internal/windows/ | ✅ call sites exist | ⬜ pending |
+| 22-19-T1, 22-19-T2 | API-04 / API-01 / D-05 | public `rememberAeroWindowChrome` + `AeroWindowChromeState`; AeroTitleBar built on it (reaches native code only through the public API); no JNA in the public file | build + grep | `./gradlew :library:compileKotlin :showcase:compileKotlin`; `grep -c "rememberAeroWindowChrome(" …/AeroTitleBar.kt` ≥ 1; `grep -c NativeWindowChromeRegistry …/AeroTitleBar.kt` = 0 | ❌ (Plan 19) | ⬜ pending |
+| 22-19-T3 | API-04 / VER-11 | every V11 / V11-N check GREEN on the API-driven windows; `nativeWindowManagement = false` RED OK; one install per HWND | live-window harness | `Invoke-WinProbe.ps1 -Windows main,narrow -AssertV11`; `-Paero.nativeChrome=false -ExpectRed` | ❌ (Plan 19) | ⬜ pending |
+| 22-13-T3 | API-04 / API-01 | custom (non-AeroTitleBar) layout publishes 2 caption + 1 maximize + 1 interactive rect and classifies 2/9/1; inert when opted out; no `com.sun.jna` in any public signature | UI test + reflection | `./gradlew :library:test --tests "*AeroWindowChromeStateTest*" --tests "*PublicApiNoJnaTest*"` | ❌ (Plan 13) | ⬜ pending |
+| 22-14-T2, 22-15-T3, 22-16-T3 | API-04 / D-05 | both VER-12 passes and the final VER-11 run drive windows built on the API; `A04-OPTOUT` (probe RED on the opted-out launch) | real input + live | `Invoke-FullSession.ps1` results header `API-04 path` + `A04-OPTOUT`; final `-AssertV11` / `-ExpectRed` | ❌ (Plan 14) | ⬜ pending |
+| 22-17-T1, 22-17-T2 | API-04 / REL-06 / REL-07 | README custom-title-bar subsection; KDoc for every public member of the new API | grep | `grep -c "rememberAeroWindowChrome" README.md` ≥ 1 | ✅ files exist | ⬜ pending |
 | 22-08-T1, 22-08-T2, 22-12-T3 | SHW-17 / WIN-06 | second narrow window (300 dp, own minimum, marked element); two independent installs; close one keeps the other | build + live | `./gradlew :showcase:compileKotlin`; probe finds 2 HWNDs, WM_CLOSE on narrow | ❌ (Plan 08) | ⬜ pending |
 | 22-13-T1 | SNAP-01..04, BTN-02, API-02 | `classifyHitTest` table (caption / buttons / interactive / client / 8 bands / maximized) | unit | `./gradlew :library:test --tests "*HitTestClassificationTest*"` | ❌ (Plan 13) | ⬜ pending |
 | 22-13-T1 | WIN-01, WIN-04 | maximized client rect incl. taskbar on each edge + auto-hide inset; DPI band formula at 100/125/150/200 % | unit | `./gradlew :library:test --tests "*Win32GeometryTest*"` | ❌ (Plan 13) | ⬜ pending |
@@ -61,7 +66,7 @@ created: 2026-09-25
 | 22-13-T1 | WIN-06 | registry: no torn reads, per-window isolation | unit (stress) | `./gradlew :library:test --tests "*HitTestRegionRegistryTest*"` | ❌ (Plan 13) | ⬜ pending |
 | 22-13-T1 | PITFALLS 7 / WIN-02 gate | dispatchSafely fallback; resize-handle gate predicate | unit | `--tests "*WndProcSupportTest*" --tests "*ResizeHandlesGateTest*"` | ❌ (Plan 13) | ⬜ pending |
 | 22-13-T2 | BTN-01 / D-02 | bridged hover/press pixel-identical to Compose-driven, 3 themes | UI test | `./gradlew :library:test --tests "*TitleBarButtonParityTest*"` | ❌ (Plan 13) | ⬜ pending |
-| 22-13-T1, 22-13-T2 | VER-14 | locked count raised by commits naming the reason; guard failure recorded before each raise | build | `./gradlew :library:test --rerun` → `AERO_TEST_COUNT total=<N> … expected=<N>` | ✅ mechanism (`ffece58`) | ⬜ pending |
+| 22-13-T1, 22-13-T2, 22-13-T3 | VER-14 | locked count raised by commits naming the reason; guard failure recorded before each raise | build | `./gradlew :library:test --rerun` → `AERO_TEST_COUNT total=<N> … expected=<N>` | ✅ mechanism (`ffece58`) | ⬜ pending |
 | 22-15-T3 | VER-12 full, SNAP-01..07, WIN-01..06, BTN-01..02, C2, C3 | two-pass real-input suite (JDK 21 `run`, JBR 21 `hotRun`) | real input (authorized) | `Invoke-FullSession.ps1 -AuthorizedBy … -Pass Both -Phase All` | ❌ (Plan 14) | ⬜ pending |
 | 22-16-T2 | VER-12 teardown | driver removed, auto-hide restored, PowerToys per word | env check | `SessionEnv.ps1 -SelfTest`; `Screen.AllScreens.Count` = pre-session | ❌ (Plan 14) | ⬜ pending |
 | 22-16-T3 | VER-13 / VER-11 | agent frame review; final GREEN + RED; unconfirmed list names Windows 10 | live + docs | `-AssertV11` + `-ExpectRed`; `grep -c "Windows 10" 22-UNCONFIRMED.md` | ❌ (Plan 16) | ⬜ pending |
