@@ -12,6 +12,7 @@ A Compose Desktop UI component library styled after Windows Aero (Windows 7): gl
 - ✅ **v2.0.4 PanelGroup Recompose Fix** — Phase 14 (shipped 2026-06-26) — horizontal-controlled recompose-during-drag duplication fix (real root cause: non-`@Composable` DSL); v2.0.3 was a superseded wrong-cause release
 - ✅ **v3.0 Glass Refinement** — Phases 15–20 (shipped 2026-07-29) — toolchain migration (Kotlin 2.4.10 / CMP 1.11.1), repaired + extended Aero primitives layer, eight components restyled to genuine Win7 glass
 - ✅ **v3.1 Dependency Refresh + Hot Reload MCP** — Phase 21 (shipped 2026-09-24) — whole toolchain on latest stable (Gradle 9.7.1 / JDK 21 / Kotlin 2.4.20 / CMP 1.12.0), proven against a pre-upgrade baseline, Compose Hot Reload + MCP for agent-driven showcase QA, `3.1.0` on JitPack
+- 🚧 **v3.2 Native Window Behavior** — Phase 22 (in progress) — native Windows snap/hit-testing (Aero Snap, Snap Layouts, Snap Groups, taskbar-aware maximize, DPI-aware multi-monitor) for windows on `AeroTitleBar` via a JNA `WndProc` subclass on a standard JDK 21, release `v3.2.0`
 
 Full ship-time snapshots (milestone goal, all phase details, decisions, tech debt) are archived per milestone:
 
@@ -115,6 +116,57 @@ Details: `.planning/milestones/v3.0-ROADMAP.md` · Requirements: `.planning/mile
 Details: `.planning/milestones/v3.1-ROADMAP.md` · Requirements: `.planning/milestones/v3.1-REQUIREMENTS.md` · Phase artifacts: `.planning/milestones/v3.1-phases/` · Summary: `.planning/MILESTONES.md`
 </details>
 
+### 🚧 v3.2 Native Window Behavior (Phase 22) — IN PROGRESS
+
+**Milestone Goal:** Windows treats windows built on `AeroTitleBar` (+ `AeroResizeHandles`) as native windows — edge/corner Aero Snap, Snap Layouts flyout, Win+arrow hotkeys, shared-border resize of a snapped pair, taskbar-aware maximize, correct behavior across 100%/150% DPI monitors, FancyZones — in every application built on the library. First consumer: Pinya (Phase 2, decision D-25) — its detachable queue window relies on Windows' own snapping and is waiting on `v3.2.0`.
+
+**Global stop rule:** if the required behavior cannot be reached on `undecorated = true, transparent = false` on a standard JDK 21 (no JBR), work stops and the question goes to the maintainer. Switching to a decorated window, transparency, or a JBR-only API without that decision is not allowed.
+
+**Size:** one phase (22) — one goal, one phase (maintainer's rule). The steps below are ordered, separately-committed steps inside that one phase, riskiest first — not separate phases.
+
+**Real-input rule (carried from v3.1):** anything needing real mouse/keyboard goes through two maintainer-supervised sessions, each preceded by a warning and an explicit "ok" and closed with "you can come back": an early 1–2 minute session right after the first draft (does Windows even show the Snap Layouts flyout and snap a Compose window at all — if not, stop and ask before building anything further), and a full session at the end of the phase covering everything that has no message-based, headless-provable trigger.
+
+- [ ] **Phase 22: Native Window Behavior + Release 3.2.0** - A JNA `WndProc` subclass answers Windows' hit-testing/frame/non-client questions for `AeroTitleBar` windows so Snap, Snap Layouts, Snap Groups, taskbar-aware maximize and FancyZones all work natively; verified live on Windows 11 on both a standard JDK 21 and JBR 21; `v3.2.0` released on JitPack
+
+## Phase Details
+
+### Phase 22: Native Window Behavior + Release 3.2.0
+**Goal**: Windows treats every window built on `AeroTitleBar`/`AeroResizeHandles` as a native window — snapping, Snap Layouts, hotkeys, shared-border resize, taskbar-aware maximize, multi-monitor DPI moves, FancyZones — on a standard JDK 21 without JBR, and the behavior is released as `v3.2.0`.
+**Depends on**: Nothing (only phase of v3.2)
+**Requirements**: SNAP-01, SNAP-02, SNAP-03, SNAP-04, SNAP-05, SNAP-06, SNAP-07, WIN-01, WIN-02, WIN-03, WIN-04, WIN-05, WIN-06, BTN-01, BTN-02, API-01, API-02, API-03, DEP-01, SHW-17, VER-11, VER-12, VER-13, VER-14, REL-06, REL-07, REL-08
+
+**Conflicts to settle empirically** (`.planning/research/SUMMARY.md` § "Conflicts to Settle Empirically" — resolve each by a cheap first-hand check during execution, not by more desk research):
+  1. Which style bits `undecorated = true` actually yields on JDK 21 — read back `GetWindowLongPtr(hwnd, GWL_STYLE)` on the unmodified window before writing any hit-test code
+  2. Whether Alt+Space is automatic once `WS_SYSMENU`/`WS_CAPTION` are present, or needs explicit `GetSystemMenu`/`TrackPopupMenu` handling — and specifically whether Move/Size work once hit-testing changes
+  3. Auto-hide taskbar inset size (1px vs Windows Terminal's 2px) and per-edge detection method (`SHAppBarMessage(ABM_GETAUTOHIDEBAREX)`)
+  4. Whether `WindowState.placement` stays in sync automatically once `WM_SIZE` is forwarded via `CallWindowProc`, or needs an explicit push from the WndProc on OS-native maximize/restore/snap transitions
+  5. Maximize-button interaction: a direct native → `State<Boolean>` EDT-hop bridge (`AeroMaxButtonInteraction`, try first) vs. FlatLaf-style re-injection of non-client mouse messages as ordinary client messages (fallback only)
+  6. Whether `DwmExtendFrameIntoClientArea`/`DWMWA_WINDOW_CORNER_PREFERENCE` are needed at all, or rounded corners/shadow come free once `WS_CAPTION` is kept — resolve with a headless `SC_MAXIMIZE`/`SC_RESTORE` capture comparison before writing any DWM-attribute code
+  7. Whether JBR's own custom-window-decoration machinery interferes with the subclass under `:showcase`'s `hotRun` — grep for existing `JBR`/`CustomWindowDecoration` usage first, then compare a cold `run` against `hotRun`
+
+**Execution order inside the phase** (ordered, separately-committed steps, riskiest first — from `.planning/research/SUMMARY.md` § "Implications for Roadmap"; each step lands its own commit under the existing test suite):
+  1. **Spike (existential-risk gate).** Minimal JNA `WindowProc` subclass on a standard JDK 21 (no JBR): read back the unmodified style bits (conflict #1), add the missing `WS_CAPTION | WS_THICKFRAME` (without them Snap silently does nothing), answer `HTCAPTION` over the title row except one hardcoded `HTMAXBUTTON` rect. Settles conflicts #1, #4, #7. In the early real-input session, hover the hardcoded rect and drag the window by its title to a screen edge: the Snap Layouts flyout must appear and the window must snap — a correct `HTMAXBUTTON` answer alone does not prove it; if either fails, stop and report before building anything further. Wires the JNA callback-lifetime container and the "unhandled → `DefWindowProc`" fallback as structural invariants from the start
+  2. **Window styles.** Make the spike's style change production-grade: ensure `WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX` via `SetWindowLongPtr(GWL_STYLE, ...)` + `SetWindowPos(..., SWP_FRAMECHANGED)`; verify via read-back before any hit-test debugging (WIN-03)
+  3. **Frame removal.** `WM_NCCALCSIZE`: 0 inset for the floating state, DPI-scaled frame-thickness inset when maximized (avoids the taskbar-overhang bug), plus the auto-hide-taskbar edge margin from conflict #3 (WIN-01, WIN-03)
+  4. **Region registry + real hit-testing.** `HitTestRegionRegistry`/`HitTestSnapshot`, `onGloballyPositioned` wiring in `AeroTitleBar` for caption/button/interactive (`leading`) rects, replacing Step 1's hardcoded rect (SNAP-01..07, BTN-02, API-02)
+  5. **Maximize-button interaction bridge.** `TrackMouseEvent(TME_NONCLIENT | TME_LEAVE)` re-armed on every move, `AeroMaxButtonInteraction` state via an EDT hop, Compose's own hover/click suppressed for this one button only (BTN-01, conflict #5)
+  6. **"Don't break what works" checkpoint.** Audit every unhandled message reaches `CallWindowProc`; re-run the full 541-test suite; confirm `WindowState.placement`/size/position, focus, minimize animation and Alt+Space are unchanged from before the phase (SNAP-05, WIN-05, conflict #2's remaining half)
+  7. **`AeroResizeHandles` Windows no-op + edge/corner classification.** Native `WM_NCHITTEST` resize codes take over on Windows; the Compose-side `pointerInput` handlers stay unchanged on non-Windows; verified against the narrow ~300px window specifically (WIN-02, WIN-06)
+  8. **Public API surface.** `nativeWindowManagement: Boolean = true` opt-out, `markAeroTitleBarInteractive()`, `rememberAeroWindowChrome()` — all additive, source-compatible; multi-window smoke test (main + narrow queue window, open-while-dragging, close-during-drag) (API-01..03, WIN-06, SHW-17)
+  9. **DPI/multi-monitor + taskbar pass.** 100%/150% scaling via the temporarily installed virtual display, drag across differently-scaled monitors, snapped-pair shared border, Snap Groups and FancyZones smoke checks, visible-taskbar case with auto-hide temporarily disabled (WIN-01, WIN-04, SNAP-06, SNAP-07)
+  10. **Tests + proof + release plumbing.** Headless unit tests (region registry, hit-test math, DPI-thickness formula), a live-window opt-in harness promoted from Step 1's spike script, showcase wiring (SHW-17), test-count guard bumped with a commit naming the reason, capture-based before/after proof, then the full real-input session (VER-11..13), README + KDoc updates (REL-06/07), `v3.2.0` release (REL-08, DEP-01)
+
+**Success Criteria** (what must be TRUE):
+  1. Сразу после первого черновика — ранняя сессия с настоящими мышью и клавиатурой (1–2 минуты, после предупреждения мейнтейнера и его «ок»): наведение на «развернуть» окна Compose показывает меню раскладок Windows 11, перетаскивание к краю прилепляет окно. Если нет — фаза останавливается и уходит вопрос мейнтейнеру, прежде чем строить что-либо дальше
+  2. На каждом окне на `AeroTitleBar`/`AeroResizeHandles` (включая узкое ~300 px и несколько окон одновременно) снаппинг работает как у родного окна: прилипание к краю/углу с восстановлением при отрыве, Snap Layouts по наведению, Win+стрелки, двойной щелчок, Alt+Space с рабочим «закрыть» тем же путём, что Alt+F4, общая граница прилипшей пары, Snap Groups в панели задач, подхват FancyZones
+  3. Развёрнутое окно занимает рабочую область монитора без перекрытия панели задач (в том числе автоскрываемой), окно без следов системной рамки, переход между мониторами 100% ↔ 150% не даёт скачков размера, а индикатор «развернуть/восстановить» и `WindowState.placement` совпадают с реальным состоянием окна; публичные вызовы `AeroTitleBar`/`AeroResizeHandles` компилируются без изменений, потребитель может пометить кликабельный элемент в шапке и полностью отключить нативное поведение для окна, не-Windows ведёт себя как раньше
+  4. Полная сессия в конце фазы с настоящими мышью и клавиатурой на живом Windows 11 проходит дважды — на обычном JDK 21 и на JBR 21 (витрина под Hot Reload) — и агент сам осматривает окна кадрами `PrintWindow` до того, как их увидит мейнтейнер
+  5. Список «не подтверждено» явно называет всё, что не проверено, включая поведение на Windows 10 — не выдаётся за пройденное
+  6. `v3.2.0` опубликован и резолвится на JitPack (`com.github.Tolaseeq:aero-compose-ui:v3.2.0`); README и KDoc обновлены, оговорка «Aero Snap limitation» снята; все существующие тесты зелёные под залоченным (и при необходимости поднятым именованным коммитом) числом
+
+**Plans**: TBD
+**UI hint**: yes
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -141,11 +193,12 @@ Details: `.planning/milestones/v3.1-ROADMAP.md` · Requirements: `.planning/mile
 | 19. Selectors + Lists | v3.0 | 12/12 | Complete | 2026-07-28 |
 | 20. Verification | v3.0 | 9/9 | Complete | 2026-07-29 |
 | 21. Migration + Release 3.1.0 | v3.1 | 14/14 | Complete | 2026-09-24 |
+| 22. Native Window Behavior + Release 3.2.0 | v3.2 | 0/TBD | Not started | - |
 
 ## Next Milestone
 
-Not yet scoped — start with `/bm:new-milestone`. Candidate goals are tracked in `.planning/PROJECT.md` § "Next Milestone Goals" (VIS-F01 visual sweep of the remaining ~40 components with VER-F01 UI-test captures, v3.0 debt, VER-F02 125%/200% DPI, `AeroPanelGroup` reorder/nest/keyboard-resize, `AeroDropdown` popup-offset carry-over). Phase numbering continues from **22**.
+Not yet scoped. Candidate goals are tracked in `.planning/PROJECT.md` § "Next Milestone Goals" (v3.0 debt, VIS-F01 visual sweep of the remaining ~40 components, VER-F02 125%/200% DPI, VER-F03 external scratch consumer, `AeroPanelGroup` reorder/nest/keyboard-resize, `AeroDropdown` popup-offset carry-over). Phase numbering will continue from **23** once v3.2 ships.
 
 ---
 
-*Roadmap last updated: 2026-09-24 — v3.1 Dependency Refresh + Hot Reload MCP shipped and archived (Phase 21, 14 plans, 24/24 requirements, `v3.1.0` on JitPack). Previous: 2026-09-23 — v3.1 roadmapped.*
+*Roadmap last updated: 2026-09-25 — v3.2 Native Window Behavior roadmapped (one phase, 22 — one goal = one phase per the maintainer's rule; 27/27 requirements mapped, plans TBD). Previous: 2026-09-24 — v3.1 Dependency Refresh + Hot Reload MCP shipped and archived (Phase 21, 14 plans, 24/24 requirements, `v3.1.0` on JitPack).*

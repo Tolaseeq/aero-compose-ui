@@ -91,12 +91,39 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
+| SNAP-01 | Phase 22 | Pending |
+| SNAP-02 | Phase 22 | Pending |
+| SNAP-03 | Phase 22 | Pending |
+| SNAP-04 | Phase 22 | Pending |
+| SNAP-05 | Phase 22 | Pending |
+| SNAP-06 | Phase 22 | Pending |
+| SNAP-07 | Phase 22 | Pending |
+| WIN-01 | Phase 22 | Pending |
+| WIN-02 | Phase 22 | Pending |
+| WIN-03 | Phase 22 | Pending |
+| WIN-04 | Phase 22 | Pending |
+| WIN-05 | Phase 22 | Pending |
+| WIN-06 | Phase 22 | Pending |
+| BTN-01 | Phase 22 | Pending |
+| BTN-02 | Phase 22 | Pending |
+| API-01 | Phase 22 | Pending |
+| API-02 | Phase 22 | Pending |
+| API-03 | Phase 22 | Pending |
+| DEP-01 | Phase 22 | Pending |
+| SHW-17 | Phase 22 | Pending |
+| VER-11 | Phase 22 | Pending |
+| VER-12 | Phase 22 | Pending |
+| VER-13 | Phase 22 | Pending |
+| VER-14 | Phase 22 | Pending |
+| REL-06 | Phase 22 | Pending |
+| REL-07 | Phase 22 | Pending |
+| REL-08 | Phase 22 | Pending |
 
 **Coverage:**
 - v3.2 requirements: 27 total
-- Mapped to phases: 0
-- Unmapped: 27 ⚠️
+- Mapped to phases: 27
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-09-25*
-*Last updated: 2026-09-25 after initial definition*
+*Last updated: 2026-09-25 after roadmap creation — one phase (22), 27/27 mapped; the 10 execution steps and the 7 empirical conflicts from research/SUMMARY.md live inside Phase 22's roadmap detail, not as separate requirements*
