@@ -4,13 +4,13 @@ milestone: v3.2
 milestone_name: Native Window Behavior
 status: executing
 stopped_at: Phase 22 Plan 03 complete -- VER-12 real-input tooling + session environment vetting (RealInput.ps1, Watch-SnapFlyout.ps1, Invoke-EarlyGate.ps1, 22-SESSION-ENV.md)
-last_updated: "2026-09-25T12:42:40.770Z"
+last_updated: "2026-09-25T13:58:48.216Z"
 last_activity: 2026-09-25 -- Phase 22 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 19
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-25 — v3.2 roadmap created)
 ## Current Position
 
 Phase: 22 (Native Window Behavior + Release 3.2.0) — EXECUTING
-Plan: 4 of 19
+Plan: 5 of 19
 Status: Executing Phase 22
 Last activity: 2026-09-25 -- Phase 22 execution started
 

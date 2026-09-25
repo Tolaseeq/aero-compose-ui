@@ -726,3 +726,26 @@ Standard JDK 21. Real input 34.7 s. Cursor restored (563,987 → 563,987).
   cursor unchanged and the new JSON fields present.
 
 **Status:** the Compose flyout still needs one more real hover; plan 22-04 stays incomplete.
+
+## Early gate (22-04) — third real run: GATE PASS
+
+Third real run after the maintainer's `ОК` (2026-09-25, evening), same library build as runs 1–2,
+tooling at `1357137`. JSON `.captures/22-gate/early3.json`, console `early3-console.log`.
+JVM `C:\Users\1\.jdks\ms-21.0.9\bin\java.exe` (standard, not JBR). Real input 36.1 s, overall 66.4 s.
+Cursor restored (596,648 → 596,648). No showcase JVM or positive-control process remained.
+
+| Step | Result | Detail |
+|---|---|---|
+| PositiveControl | OK | 666 ms: `SHOW Windows.UI.Composition.DesktopWindowContentBridge` (explorer), rect `751,231,1095,475` — under the WinForms window's max button |
+| ComposeFlyout | FLYOUT OK | 804 ms: `SHOW Windows.UI.Composition.DesktopWindowContentBridge` rect `999,79,1343,323`, then `SHOW Xaml_WindowedPopupClass` rect `989,77,1353,341`, then `UNCLOAKED XamlExplorerHostIslandWindow` rect `999,79,1343,323` (all explorer) — a 344×244 flyout centred on x≈1171, directly under the showcase's maximize button (hover point 1171,64); matched signature `E|Windows.UI.Composition.DesktopWindowContentBridge|explorer` |
+| DragSnap | SNAP OK | released at (1,540) → `0,0,960,1080` = left half of rcWork; reporter placement `Floating` |
+| DragAway | RESTORE OK | 1200×800 restored |
+
+**Verdict line:** `GATE PASS`.
+
+**Settled:** Windows 11 24H2 shows the Snap Layouts flyout for a Compose window on a standard
+JDK 21 once the frame answers `HTMAXBUTTON` through the child→frame `HTTRANSPARENT` chain (22-02
+spike), and edge snapping / restore-on-drag are native. The flyout host is explorer's pre-created
+`XamlExplorerHostIslandWindow` (uncloaked on hover) with a `DesktopWindowContentBridge` child — the
+survey candidate from the tooling fix is confirmed. The milestone's existential risk is retired;
+the phase continues.
