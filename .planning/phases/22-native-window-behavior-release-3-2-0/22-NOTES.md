@@ -526,3 +526,166 @@ Cursor restored (499,619 → 499,619). No showcase JVM or notepad process remain
 
 **Status:** plan 22-04 NOT complete; phase stopped at the global stop rule pending the
 maintainer's decision.
+
+## Early gate (22-04) — tooling fix
+
+Recorded after the real run above, fixing the tooling gaps it exposed so the SAME short
+real-input session can be rerun with agent-recorded evidence (D-04). No real input was sent while
+building or verifying any of this — every check below is either read-only, a WM_NCHITTEST query
+message, or gated behind `-DryRun`/`-SelfTest`, neither of which reaches `SendInput`.
+
+### Q1: Why did the positive control fail entirely (no reference flyout signature)?
+
+**Check performed:** Read `Find-AeroMaxButtonSpan`'s scan geometry against `Get-WinProbeWindowInfo`
+for a real `WS_CAPTION` window, live.
+
+**Observed:** The scan asked `Invoke-WinProbeHitTest` for `ClientY=10` — a positive offset from
+the client-area origin, i.e. *inside* client content. That is correct for the Compose showcase
+window (an undecorated window whose "caption" is client-drawn, at the top of client content) but
+wrong for any normal `WS_CAPTION` window (Notepad, or any other standard app): its real caption
+and max button live in the *non-client* area, **above** the client origin — a negative `ClientY`.
+A positive-`ClientY` scan can never land inside a real caption's HTMAXBUTTON span, on any
+standard window, regardless of which app it is. This was a tooling bug, not a Notepad-specific
+one (WinUI vs. Win32 is a red herring for this particular symptom, even though Windows 11's
+Notepad genuinely no longer has its own `HTMAXBUTTON`-answering non-client caption at all).
+
+**Decision:** Two things, both required: (1) stop depending on Notepad, whose own status as a
+real answerer of `HTMAXBUTTON` is no longer guaranteed on Windows 11 in the first place; (2) fix
+the scan geometry itself to also try the real caption's row. `PositiveControlHost.ps1` +
+`PositiveControlWindow.ps1` launch our own `WS_CAPTION`/`WS_THICKFRAME`/`WS_MAXIMIZEBOX` WinForms
+window in its own process; `Find-AeroMaxButtonSpan` now computes the real caption's vertical
+midpoint as `-(clientOriginScreenY - windowRectTop) / 2` (negative `ClientY`) and tries it before
+the Compose-style `ClientY=10` row, so the same function works for either window kind. Live-tested
+against the positive-control window: caption offset 31px, span found at `ClientY=-16`,
+`CenterX=732` (see the dry-run proof below).
+
+### Q2: Why did the ComposeFlyout step see `found=False` when the maintainer reports seeing the
+flyout?
+
+**Check performed:** Re-read `Wait-AeroSnapFlyout`'s baseline/diff logic against what a Snap
+Layouts flyout host is likely to do (desk knowledge, flagged unverified until the real run below
+confirms or denies it): Windows 11 shell surfaces are frequently pre-created and cloaked, then
+merely uncloaked/shown on demand, not created fresh each time.
+
+**Observed:** The old diff only checked "is this HWND new since baseline" (`EnumWindows`-visible
+only). A pre-created, cloaked flyout host that was already present (just invisible) at baseline
+time, and only gets shown/uncloaked on hover, keeps the *same* HWND across baseline and observed
+snapshots — the key `"$ClassName|$ProcessName|$Hwnd"` is identical in both, so the old diff would
+never flag it as new. Since the positive control also never produced a reference signature (Q1),
+there was no way to tell "watcher can't see anything" apart from "nothing appeared".
+
+**Decision:** `Get-AeroShellSnapshot` now enumerates ALL top-level shell-process windows
+(`EnumTopLevelAll`, not `EnumTopLevelVisible`) carrying `Visible`/`Cloaked` flags, and
+`Wait-AeroSnapFlyout`'s diff now also flags a window transitioning from
+hidden-or-cloaked→visible-and-uncloaked as an appearance, on the *same* HWND. A second, independent
+signal was added on top: `Start-AeroShellEventWatch` hosts a `SetWinEventHook`
+(`WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS`) on a dedicated background thread with its own
+`GetMessage` loop, recording `EVENT_OBJECT_SHOW`/`UNCLOAKED`/`CREATE`/`DESTROY`/`HIDE`/`CLOAKED`
+and `EVENT_SYSTEM_FOREGROUND` for shell processes plus this run's own PIDs — a genuine SHOW or
+UNCLOAKED event on a shell process now also counts as "found". `-SelfTest` proves the hook fires
+at all (see below) without any real input. A third-order bug (Rule 1) was found and fixed while
+proving this live: the cloak-aware snapshot's raw top-level window count on this machine is ~226
+(mostly invisible), and looking up each one's process name via `Get-Process -Id` cost ~4s per
+snapshot — far too slow for a 100ms poll inside a 1.5–3s hover window. `Get-AeroProcessNameMap`
+batches this into one `Get-Process` call (~60ms) plus O(1) lookups; live-measured snapshot cost is
+now ~260ms.
+
+### Q3 (Task C): Flyout host survey — which shell-owned window is the Snap Layouts flyout likely
+to be?
+
+**Check performed:** Read-only, no input, no screenshots: `Get-AeroShellSnapshot` (cloak-aware)
+filtered to shell-process top-level windows, sorted by process/class; separately confirmed
+`ShellExperienceHost`, `StartMenuExperienceHost`, `SearchHost`, `ShellHost` are all running
+processes on this machine (`Get-Process`).
+
+**Observed:** 55 shell-owned top-level windows exist right now, entirely under `explorer.exe`
+except two single-window entries under `SearchHost` and `ShellHost` (neither resembling a flyout
+host by class name or geometry). `ShellExperienceHost` and `StartMenuExperienceHost` — both
+running — currently own **zero** top-level windows of any kind (not even hidden ones), consistent
+with those processes creating their surfaces only while shown rather than keeping one pre-created.
+One `explorer.exe`-owned window stands out as the strongest candidate:
+
+```
+explorer|XamlExplorerHostIslandWindow|visible=False|cloaked=True|rect=0,0,1920,1080|size=1920x1080
+```
+
+Hidden, cloaked, and sized to exactly the full monitor — exactly the shape Q2's "pre-created,
+merely uncloaked/shown on hover" hypothesis predicts for a XAML-island-hosted shell flyout. The
+name itself ("XamlExplorerHostIslandWindow") is consistent with desk knowledge that Windows 11's
+newer shell flyouts (Snap Layouts among them) are hosted via `explorer.exe`'s own XAML-island
+infrastructure — **this attribution is unverified until the real hover run confirms this specific
+window (or a UIA element within it) is what actually shows/uncloaks on hover.** Two other
+`explorer.exe` windows were cloaked-but-visible (`DummyDWMListenerWindow` ×5, tiny/zero-rect; and
+`EdgeUiInputTopWndClass`, a 1905×4px strip at the very top of the screen) — geometry makes both
+poor candidates for the flyout itself (too small, or a thin activation strip rather than content),
+but are recorded here in case the real run's evidence points at one of them instead.
+
+**Decision:** No code change from this alone (Task C is observation-only); the watcher already
+watches all of `explorer.exe`'s top-level windows regardless of which one turns out to be the
+actual host, so no watcher change is gated on this identification. Recorded for the real run to
+confirm or refute.
+
+### Q4: Why did DragSnap land on a quarter-snap instead of the expected half-snap?
+
+**Check performed:** Compared the real run's drop point `(1, 64)` against Windows' documented
+snap-zone geometry (corner zones extend from the very top-left of the work area down to roughly
+half the screen height on each edge; edge zones are the remaining middle band).
+
+**Observed:** `y=64` (the showcase's caption height in physical pixels) sits well inside the
+top-left corner zone at this resolution, so Windows correctly answered with a quarter snap
+(`0,0,960,540`) — the OS behaved correctly for the point given to it; the gate's own drop target
+was wrong, not Windows' snap logic.
+
+**Decision:** `DragSnap` now releases at `(workLeft + 1, workAreaCenterY)` — the vertical middle
+of the left work-area edge — so the edge zone applies instead of the corner zone. The existing
+"left half of `rcWork`, ≤8px per edge" tolerance check did not need to change, only the drop
+point did. The reporter's placement line and the final window rect are now also recorded in the
+JSON output (`SnapRectAfter`, `SnapReporterPlacement`).
+
+### Dry-run and self-test proof (Task E)
+
+`./gradlew :showcase:classes --console=plain` → `BUILD SUCCESSFUL`, all tasks `UP-TO-DATE`.
+
+`Watch-SnapFlyout.ps1 -SelfTest`: exit `0`. `windows=63 uiaElements=7` (no non-shell/non-own
+element carried a `Name`). The hook recorded a `CREATE` event for the positive-control window's
+own HWND at `497ms` after the watch started. Cursor position unchanged throughout (asserted
+inside the self-test).
+
+`Invoke-EarlyGate.ps1 -DryRun -Json .captures/22-gate/dryrun2.json`: exit `0`.
+`CursorBefore=(1229,412)`, `CursorAfter=(1229,412)` — unchanged. Step results:
+
+| Step | Result | Detail | Elapsed |
+|---|---|---|---|
+| Readiness | OK | `SnapAssistFlyoutOn=True WindowArrangementActive=True` | 28.5ms |
+| Launch | OK | `jvm=standard path=C:\Users\1\.jdks\ms-21.0.9\bin\java.exe` | 5986.7ms |
+| PositiveControl | OK | dry run — `maxButtonCenter=732,-16` (window closed, no input sent) | 1059.4ms |
+| ComposeFlyout | FLYOUT MISSING | dry run — no real hover performed | 3477.7ms |
+| DragSnap | SNAP MISSING | dry run — no real drag performed | 82.9ms |
+| DragAway | RESTORE MISSING | dry run — no real drag performed | 26.8ms |
+
+`RealInputMs=10792.3` (dry-run's simulated action-log timing, not real `SendInput`),
+`OverallMs=34766.7`. No showcase JVM, positive-control, or gate process remained afterward
+(checked via `Get-CimInstance Win32_Process`, excluding the checking command's own process).
+
+**Showcase launch time (this run):** 5986.7ms ≈ 5.99s.
+
+**Minutes estimate for the maintainer (N), same formula as Task 1:** 5.99s (launch) + 120s
+(planned real-input cap) = 125.99s ≈ 2.10 min → round up to 3 min → add 1 → **N = 4 minutes**
+(unchanged from the original readiness estimate).
+
+**Commit-organization note:** the plan's suggested commit split names four separate commits; the
+positive-control-usage change and the event-watch wiring inside `Invoke-EarlyGate.ps1` turned out
+to be inseparable at the line level (the `PositiveControl` step's own correctness now depends on
+the event watch already running), so those two landed in one wiring commit alongside the
+drag-target fix, while the two new positive-control files and the `Watch-SnapFlyout.ps1` rewrite
+each kept their own commit. An additional, unplanned commit (Rule 1) fixes the `Get-Process`
+performance regression the cloak-aware snapshot introduced, found live while proving this section.
+
+**Readiness verdict:** the SAME short real-input session can be rerun the moment the maintainer
+says "ok" again — the positive control finds a real reference signature, the watcher can observe
+a pre-created-and-uncloaked flyout as well as a brand-new one, and the drag lands in the edge zone
+instead of the corner zone. Command for the orchestrator to run after the maintainer's next "ok":
+
+```
+tools/winprobe/Invoke-EarlyGate.ps1 -AuthorizedBy "<maintainer reply verbatim> @ <ISO timestamp>" -Json .captures/22-gate/early2.json
+```
