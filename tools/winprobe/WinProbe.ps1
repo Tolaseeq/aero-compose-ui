@@ -504,10 +504,10 @@ function Get-WinProbeWindowInfo {
     if (($style -band [AeroWinProbe.Native]::WS_MAXIMIZEBOX) -ne 0) { $styleNames.Add('WS_MAXIMIZEBOX') }
     if (($style -band [AeroWinProbe.Native]::WS_CLIPCHILDREN) -ne 0) { $styleNames.Add('WS_CLIPCHILDREN') }
 
-    [uint32]$pid = 0
-    [AeroWinProbe.Native]::GetWindowThreadProcessId($Hwnd, [ref]$pid) | Out-Null
+    [uint32]$ownerPid = 0
+    [AeroWinProbe.Native]::GetWindowThreadProcessId($Hwnd, [ref]$ownerPid) | Out-Null
     $exePath = $null
-    try { $exePath = (Get-Process -Id $pid -ErrorAction Stop).Path } catch { $exePath = $null }
+    try { $exePath = (Get-Process -Id $ownerPid -ErrorAction Stop).Path } catch { $exePath = $null }
     $jvmKind = if ($exePath -and $exePath -match '(?i)jbr') { 'JBR' } else { 'standard' }
 
     [pscustomobject]@{
@@ -522,7 +522,7 @@ function Get-WinProbeWindowInfo {
         IsZoomed       = [bool][AeroWinProbe.Native]::IsZoomed($Hwnd)
         IsIconic       = [bool][AeroWinProbe.Native]::IsIconic($Hwnd)
         WndProc        = [AeroWinProbe.Native]::GetWindowLongPtrW($Hwnd, [AeroWinProbe.Native]::GWLP_WNDPROC)
-        ProcessId      = $pid
+        ProcessId      = $ownerPid
         ProcessPath    = $exePath
         JvmKind        = $jvmKind
     }
@@ -902,7 +902,7 @@ function Invoke-WinProbeV11 {
 
     # V11-STYLE
     $requiredStyles = @('WS_CAPTION', 'WS_SYSMENU', 'WS_THICKFRAME', 'WS_MINIMIZEBOX', 'WS_MAXIMIZEBOX')
-    $missing = $requiredStyles | Where-Object { $info.StyleNames -notcontains $_ }
+    $missing = @($requiredStyles | Where-Object { $info.StyleNames -notcontains $_ })
     $styleResult = if ($missing.Count -eq 0) { 'PASS' } else { 'FAIL' }
     $results.Add((New-V11Result 'V11-STYLE' $styleResult ($requiredStyles -join ',') ($info.StyleNames -join ',')))
 
@@ -920,12 +920,12 @@ function Invoke-WinProbeV11 {
     $minHit = Invoke-WinProbeHitTest -Hwnd $Hwnd -ClientX $points['min'].x -ClientY $points['min'].y
     $captionLeftHit = Invoke-WinProbeHitTest -Hwnd $Hwnd -ClientX $points['captionLeftOfMin'].x -ClientY $points['captionLeftOfMin'].y
     $minBoundaryPass = ($minHit.Code -eq 1) -and ($captionLeftHit.Code -eq 2)
-    $results.Add((New-V11Result 'V11-HT-MIN-BOUNDARY' (if ($minBoundaryPass) { 'PASS' } else { 'FAIL' }) 'min=1,captionLeftOfMin=2' "min=$($minHit.Code),captionLeftOfMin=$($captionLeftHit.Code)"))
+    $results.Add((New-V11Result 'V11-HT-MIN-BOUNDARY' $(if ($minBoundaryPass) { 'PASS' } else { 'FAIL' }) 'min=1,captionLeftOfMin=2' "min=$($minHit.Code),captionLeftOfMin=$($captionLeftHit.Code)"))
 
     $closeHit = Invoke-WinProbeHitTest -Hwnd $Hwnd -ClientX $points['close'].x -ClientY $points['close'].y
     $maxHit = Invoke-WinProbeHitTest -Hwnd $Hwnd -ClientX $points['max'].x -ClientY $points['max'].y
     $closeBoundaryPass = ($closeHit.Code -eq 1) -and ($maxHit.Code -eq 9)
-    $results.Add((New-V11Result 'V11-HT-CLOSE-BOUNDARY' (if ($closeBoundaryPass) { 'PASS' } else { 'FAIL' }) 'close=1,max=9' "close=$($closeHit.Code),max=$($maxHit.Code)"))
+    $results.Add((New-V11Result 'V11-HT-CLOSE-BOUNDARY' $(if ($closeBoundaryPass) { 'PASS' } else { 'FAIL' }) 'close=1,max=9' "close=$($closeHit.Code),max=$($maxHit.Code)"))
 
     Add-HitCheck 'V11-HT-EDGE-L' 'edgeLeft' 10 | Out-Null
     Add-HitCheck 'V11-HT-EDGE-R' 'edgeRight' 11 | Out-Null
@@ -939,28 +939,47 @@ function Invoke-WinProbeV11 {
     $clientHit = Invoke-WinProbeHitTest -Hwnd $Hwnd -ClientX $points['client'].x -ClientY $points['client'].y
     $edgeLeftHit = Invoke-WinProbeHitTest -Hwnd $Hwnd -ClientX $points['edgeLeft'].x -ClientY $points['edgeLeft'].y
     $clientBoundaryPass = ($clientHit.Code -eq 1) -and ($edgeLeftHit.Code -eq 10)
-    $results.Add((New-V11Result 'V11-HT-CLIENT-BOUNDARY' (if ($clientBoundaryPass) { 'PASS' } else { 'FAIL' }) 'client=1,edgeLeft=10' "client=$($clientHit.Code),edgeLeft=$($edgeLeftHit.Code)"))
+    $results.Add((New-V11Result 'V11-HT-CLIENT-BOUNDARY' $(if ($clientBoundaryPass) { 'PASS' } else { 'FAIL' }) 'client=1,edgeLeft=10' "client=$($clientHit.Code),edgeLeft=$($edgeLeftHit.Code)"))
+
+    # Read taskbar auto-hide state before maximizing: V11-MAX-WORKAREA's tolerance is
+    # edge-dependent (an auto-hide edge must be LEFT UNCOVERED by 1-4px so the reveal-on-hover
+    # strip still works; a non-auto-hide edge must be flush, ~0px). A single blanket "delta <=
+    # 4px on every edge" tolerance is not a guard here — on this machine's auto-hide-bottom
+    # monitor, the pre-phase window already matches rcWork exactly on all four edges (CMP's own
+    # WM_SIZE-driven placement sync fills the full monitor, deltas=0,0,0,0), which would make
+    # a blanket check PASS on unmodified code. Splitting the tolerance by edge is what actually
+    # distinguishes "native-computed inset" from "old code happens to fill the monitor".
+    $taskbar = Get-WinProbeTaskbar -Hwnd $Hwnd
 
     if ($SkipMaximize) {
         $results.Add((New-V11Result 'V11-HT-MAXIMIZED-TOP' 'SKIP' 'edgeTop=2 while maximized' '-SkipMaximize'))
-        $results.Add((New-V11Result 'V11-MAX-WORKAREA' 'SKIP' 'maximized client == rcWork (inset 1-4px on auto-hide edges)' '-SkipMaximize'))
+        $results.Add((New-V11Result 'V11-MAX-WORKAREA' 'SKIP' 'maximized client == rcWork (inset 1-4px on auto-hide edges, ~0px elsewhere)' '-SkipMaximize'))
     }
     else {
         $maxResult = Invoke-WinProbeMaximize -Hwnd $Hwnd -LogPath $LogPath -Label $Label
         $maxTopCode = $maxResult.EdgeTopHitWhileMaximized.Code
-        $results.Add((New-V11Result 'V11-HT-MAXIMIZED-TOP' (if ($maxTopCode -eq 2) { 'PASS' } else { 'FAIL' }) '2' "$maxTopCode"))
+        $results.Add((New-V11Result 'V11-HT-MAXIMIZED-TOP' $(if ($maxTopCode -eq 2) { 'PASS' } else { 'FAIL' }) '2' "$maxTopCode"))
 
         $wr = $maxResult.WindowRectMaximized
         $work = $maxResult.MonitorRcWork
-        $deltaLeft = [Math]::Abs($wr.Left - $work.Left)
-        $deltaTop = [Math]::Abs($wr.Top - $work.Top)
-        $deltaRight = [Math]::Abs($wr.Right - $work.Right)
-        $deltaBottom = [Math]::Abs($wr.Bottom - $work.Bottom)
-        $withinTolerance = ($deltaLeft -le 4) -and ($deltaTop -le 4) -and ($deltaRight -le 4) -and ($deltaBottom -le 4)
-        $results.Add((New-V11Result 'V11-MAX-WORKAREA' (if ($withinTolerance) { 'PASS' } else { 'FAIL' }) "rcWork=$($work.Left),$($work.Top),$($work.Right),$($work.Bottom)" "window=$($wr.Left),$($wr.Top),$($wr.Right),$($wr.Bottom) deltas=$deltaLeft,$deltaTop,$deltaRight,$deltaBottom foregroundTaken=$($maxResult.ForegroundTaken)"))
+        $deltas = [ordered]@{
+            Left   = [Math]::Abs($wr.Left - $work.Left)
+            Top    = [Math]::Abs($wr.Top - $work.Top)
+            Right  = [Math]::Abs($wr.Right - $work.Right)
+            Bottom = [Math]::Abs($wr.Bottom - $work.Bottom)
+        }
+        $edgeChecks = New-Object System.Collections.Generic.List[string]
+        $withinTolerance = $true
+        foreach ($edgeName in $deltas.Keys) {
+            $delta = $deltas[$edgeName]
+            $isAutoHide = $taskbar.AutoHideEdges -contains $edgeName
+            $edgeOk = if ($isAutoHide) { ($delta -ge 1) -and ($delta -le 4) } else { $delta -le 1 }
+            if (-not $edgeOk) { $withinTolerance = $false }
+            $edgeChecks.Add("$edgeName=$delta$(if ($isAutoHide) { '(autoHide,need 1-4)' } else { '(need <=1)' })=$(if ($edgeOk) { 'ok' } else { 'BAD' })")
+        }
+        $results.Add((New-V11Result 'V11-MAX-WORKAREA' $(if ($withinTolerance) { 'PASS' } else { 'FAIL' }) "rcWork=$($work.Left),$($work.Top),$($work.Right),$($work.Bottom) autoHideEdges=$($taskbar.AutoHideEdges -join ',')" "window=$($wr.Left),$($wr.Top),$($wr.Right),$($wr.Bottom) $($edgeChecks -join ' ') foregroundTaken=$($maxResult.ForegroundTaken)"))
     }
 
-    $taskbar = Get-WinProbeTaskbar -Hwnd $Hwnd
     if ($taskbar.AutoHideEdges.Count -eq 0) {
         $results.Add((New-V11Result 'V11-AUTOHIDE-EDGE' 'SKIP' 'at least one auto-hide edge' 'no auto-hide edge on this monitor'))
     }
@@ -975,15 +994,19 @@ function Invoke-WinProbeV11 {
     $expectedMinW = [Math]::Round(320 * $info.Scale)
     $expectedMinH = [Math]::Round(240 * $info.Scale)
     $minSizePass = ($minSize.ObtainedWidth -ge $expectedMinW) -and ($minSize.ObtainedHeight -ge $expectedMinH)
-    $results.Add((New-V11Result 'V11-MINSIZE' (if ($minSizePass) { 'PASS' } else { 'FAIL' }) ">=${expectedMinW}x${expectedMinH}" "$($minSize.ObtainedWidth)x$($minSize.ObtainedHeight)"))
+    $results.Add((New-V11Result 'V11-MINSIZE' $(if ($minSizePass) { 'PASS' } else { 'FAIL' }) ">=${expectedMinW}x${expectedMinH}" "$($minSize.ObtainedWidth)x$($minSize.ObtainedHeight)"))
 
+    # Write-Host, not Write-Output: this function's return value is $results itself, and
+    # anything written to the success/output stream here would flatten into the caller's
+    # captured $v11Results alongside the real result objects (a well-known PowerShell function
+    # gotcha), corrupting Invoke-WinProbe.ps1's own pass/fail counting downstream.
     foreach ($r in $results) {
-        Write-Output "V11 $($r.Id) $($r.Result) expected=$($r.Expected) observed=$($r.Observed)"
+        Write-Host "V11 $($r.Id) $($r.Result) expected=$($r.Expected) observed=$($r.Observed)"
     }
-    $passCount = ($results | Where-Object { $_.Result -eq 'PASS' }).Count
-    $failCount = ($results | Where-Object { $_.Result -eq 'FAIL' }).Count
-    $skipCount = ($results | Where-Object { $_.Result -eq 'SKIP' }).Count
-    Write-Output "V11 SUMMARY pass=$passCount fail=$failCount skip=$skipCount"
+    $passCount = @($results | Where-Object { $_.Result -eq 'PASS' }).Count
+    $failCount = @($results | Where-Object { $_.Result -eq 'FAIL' }).Count
+    $skipCount = @($results | Where-Object { $_.Result -eq 'SKIP' }).Count
+    Write-Host "V11 SUMMARY pass=$passCount fail=$failCount skip=$skipCount"
 
     return $results
 }

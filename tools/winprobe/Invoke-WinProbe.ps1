@@ -18,7 +18,6 @@ param(
     [bool]$Capture = $true,
     [string[]]$GradleProps = @(),
     [string]$Title,
-    [ValidateSet('styles', 'children', 'hittest', 'maximize', 'taskbar', 'minsize', 'uia', 'process', 'v11')]
     [string[]]$Report = @('styles', 'children', 'hittest', 'maximize', 'taskbar', 'minsize', 'uia', 'process', 'v11'),
     [switch]$SkipMaximize,
     [string]$Json,
@@ -32,6 +31,18 @@ param(
 )
 
 Set-StrictMode -Version 2
+
+# Some hosts pass a comma-separated -Report value through as a single string instead of splitting
+# it into array elements before binding (mirrors tools/capture/Invoke-ShowcaseSweep.ps1's -Themes
+# / -Sections normalization) — split and validate manually rather than via [ValidateSet], which
+# rejects a joined string outright before this normalization can run.
+$Report = @($Report | ForEach-Object { $_ -split ',' } | Where-Object { $_ -ne '' })
+$validReports = @('styles', 'children', 'hittest', 'maximize', 'taskbar', 'minsize', 'uia', 'process', 'v11')
+$invalidReports = @($Report | Where-Object { $validReports -notcontains $_ })
+if ($invalidReports.Count -gt 0) {
+    throw "Invoke-WinProbe: -Report has unknown value(s) $($invalidReports -join ','); valid values are $($validReports -join ',')"
+}
+
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 . (Join-Path $here 'WinProbe.ps1')
 
