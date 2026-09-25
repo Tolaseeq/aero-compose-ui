@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: Native Window Behavior
-status: ready_to_execute
-stopped_at: Phase 22 planned — 19 plans in 16 waves, plan-checker passed; 28/28 requirements covered (API-04 promoted from API-F01)
-last_updated: "2026-09-25T11:05:18.294Z"
-last_activity: 2026-09-25 — Phase 22 planned (19 plans, 16 waves; decisions D-01..D-06 in 22-CONTEXT.md)
+status: executing
+stopped_at: Phase 22 Plan 01 complete — live-window probe harness + RED baseline (VER-11)
+last_updated: "2026-09-25T11:37:00.240Z"
+last_activity: 2026-09-25 -- Phase 22 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 19
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-25 — v3.2 roadmap created)
 
 **Core value:** Connect one Gradle dependency and get the full Aero-styled component set with three themes, custom window chrome, typed `AeroIcons`, and a showcase — no manual style work or icon-pack hunting required.
-**Current focus:** Phase 22 planned (19 plans, 16 waves; 28/28 requirements covered). Next: `/bm:execute-phase 22`.
+**Current focus:** Phase 22 — Native Window Behavior + Release 3.2.0
 
 ## Current Position
 
-Phase: 22 — Native Window Behavior + Release 3.2.0 (planned)
-Plan: 0/19
-Status: Ready to execute
-Last activity: 2026-09-25 — Phase 22 planned (19 plans, 16 waves; decisions D-01..D-06 in 22-CONTEXT.md)
+Phase: 22 (Native Window Behavior + Release 3.2.0) — EXECUTING
+Plan: 2 of 19
+Status: Executing Phase 22
+Last activity: 2026-09-25 -- Phase 22 execution started
 
 ## Deferred Items
 
@@ -58,7 +58,7 @@ Beyond the audit list, one requirement shipped with a recorded gap rather than a
 **v2.0.4:** 3 plans, single-day push incl. corrective release (2026-06-25→26), real RCMP root-cause fix.
 **v3.0:** 41 plans / 85 tasks across 6 phases, 2026-07-22 → 2026-07-29 (8 days), 252 commits, 248 files changed (+43,770 / −2,638) of which 71 code files (+11,104 / −409). Tests 232 → 467. Per-plan durations ranged 3 min – 2h10m; the long tail was human visual sign-off rounds, not code. Per-plan metrics are archived with the phase artifacts in `.planning/milestones/v3.0-phases/`.
 **v3.1:** 14 plans / 35 tasks in 1 phase (21), 2026-09-21 → 2026-09-24 (execution 09-23 → 09-24), 65 commits, 91 files changed (+17,896 / −1,385) of which 31 non-planning files (+4,155 / −122). Tests 467 → 541. The long tail was the capture sweeps and the drift review, not code: the only source edit the upgrade forced was four `Clock` imports. Per-plan metrics are archived with the phase artifacts in `.planning/milestones/v3.1-phases/`.
-**v3.2:** in progress — 1 phase (22) roadmapped, plan counts TBD.
+**v3.2:** in progress — 1 phase (22), 19 plans roadmapped. Plan 01 (live-window probe harness + RED baseline), 2026-09-25, 19 min, 3 tasks + 1 fix commit, 6 files (4 created, 2 modified).
 
 ## Accumulated Context
 
@@ -87,6 +87,9 @@ Full decision log lives in PROJECT.md "Key Decisions". Rules that constrain any 
 - **[v3.1]** BASE-03/BASE-04/BASE-05 pre-upgrade baseline (Phase 21 Plan 04) is captured and named: two independent showcase sweeps (75 frames each, 96 DPI) found only `AeroProgressBar` indeterminate shimmer and `LayoutSection`'s 30fps recompose-drive counter as showcase noise (9/75 keys, all <0.5% frame area); UI-test captures (200 keys) carry zero run-to-run noise. `21-noise-regions.json`/`21-BASELINE.md`/`21-NOISE.md` are the D-05 threshold source for every post-upgrade VER-07/VER-08 comparison
 - **[v3.2, pending — not yet empirically confirmed]** Native window behavior lives in the library (`AeroTitleBar`), not in a consumer app — Pinya D-25 needs every library consumer to get snapping; the Pinya executor does not touch this repo
 - **[v3.2, pending]** Real mouse/keyboard verification only after the maintainer's warning and "ok": an early 1–2 minute session right after the first draft (does Windows even show the Snap Layouts flyout on a Compose window — the existential risk), and a full session at the end of the phase; the v3.1 "never touch the maintainer's input" default still applies
+- **[v3.2, 22-01]** `V11-MAX-WORKAREA` needs a per-edge tolerance (auto-hide edge: 1-4px uncovered; other edges: ≤1px) — a blanket ≤4px-on-every-edge tolerance false-positive-passed on the unmodified window, since CMP's own maximize already fills the monitor exactly when the taskbar auto-hides
+- **[v3.2, 22-01]** F9: a probe-driven `SC_MAXIMIZE` never takes the foreground on this machine (measured 3×) — maximize-dependent VER-11 checks run headless without `-SkipMaximize`
+- **[v3.2, 22-01]** F8: the native hit-test subclass must attach to the child HWND (`SunAwtCanvas`, Skiko's `HardwareLayer`), not the frame alone — it covers the whole client area and answers `WM_NCHITTEST` first
 
 ### Open technical debt
 
@@ -124,8 +127,8 @@ Resolved at v3.1 close: the five research conflicts from `.planning/research/SUM
 
 ## Session Continuity
 
-Last session: 2026-09-25
-Stopped at: Phase 22 planned — 19 plans in 16 waves, plan-checker passed
+Last session: 2026-09-25T11:37:00.231Z
+Stopped at: Phase 22 Plan 01 complete — live-window probe harness + RED baseline (VER-11)
 Resume file: None
 Next action: `/bm:discuss-phase 22` or `/bm:plan-phase 22`
 
