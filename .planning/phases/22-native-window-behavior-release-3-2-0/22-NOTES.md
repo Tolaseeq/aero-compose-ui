@@ -296,3 +296,138 @@ table).
 `.captures/22-baseline/AeroBlue-rest.png`, `AeroDark-rest.png`, `Classic-rest.png` (floating-state
 frames, one per theme), `.captures/22-baseline/AeroBlue-maximized.png` (F9 = safe, so the
 maximized frame was captured).
+
+## Spike (22-02)
+
+Recorded by Plan 02 (Task 3), 2026-09-25, against the showcase window with the new native
+WndProc subclass (`internal/windows/`) installed. Same machine as the RED baseline (Windows 11
+24H2 build 26100, one 1920x1080 monitor at 100% DPI, taskbar auto-hide ON, capture mode
+non-focusable). Probed with `tools/winprobe/Invoke-WinProbe.ps1 -Report
+process,styles,children,hittest,maximize,uia -Json .captures/22-spike/{cold,hot-initial}.json`.
+
+### C1 (after) — style read-back with the subclass installed
+
+**Cold run JVM:** `C:\Users\1\.jdks\ms-21.0.9\bin\java.exe`, `jvmKind=standard` (confirmed not
+JBR).
+
+**Observed style after install:** `GWL_STYLE = 0x96CF0000` decodes to `WS_POPUP | WS_CAPTION |
+WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_CLIPCHILDREN` — all five bits
+`Win32Chrome.ensureNativeFrameStyles` is responsible for (`WS_CAPTION`, `WS_SYSMENU`,
+`WS_THICKFRAME`, `WS_MINIMIZEBOX`, `WS_MAXIMIZEBOX`) are present, versus the RED baseline's
+`0x960B0000` (`WS_CAPTION`/`WS_THICKFRAME` absent). `GWL_EXSTYLE = 0x08000100` — the same
+`WS_EX_NOACTIVATE` capture-mode bit as the RED baseline plus `WS_EX_WINDOWEDGE`, unrelated to
+this feature.
+
+**Children subclassed:** the trace log (`aero.chromeTrace=true`) shows exactly one
+`event=child-subclass` line per run, matching F8's finding of exactly one descendant
+(`SunAwtCanvas`, Skiko's `HardwareLayer`):
+```
+AERO_CHROME event=restyle hwnd=0x630746 before=0x-79f50000 after=0x-79310000
+AERO_CHROME event=install hwnd=0x630746 frameProc=native@0x70190010
+AERO_CHROME event=child-subclass hwnd=0x630746 childHwnd=0x3b071a
+```
+(`before`/`after` print via `Int.toString(16)`, which renders a negative-Int magnitude with a
+leading `-` rather than raw two's-complement hex — a cosmetic trace-formatting quirk, not a
+correctness issue; the authoritative style value is the cross-process `GetWindowLongPtr` read
+above, `0x96CF0000`.)
+
+**Hit-test chain, both JVMs, all 14 named points** (cold standard JDK 21 and hot JBR 21 produced
+byte-identical answers):
+```
+caption            code=2 (HTCAPTION)    chain=SunAwtCanvas:-1 -> SunAwtFrame:2
+captionLeftOfMin   code=2 (HTCAPTION)    chain=SunAwtCanvas:-1 -> SunAwtFrame:2
+min                code=1 (HTCLIENT)     chain=SunAwtCanvas:1
+max                code=9 (HTMAXBUTTON)  chain=SunAwtCanvas:-1 -> SunAwtFrame:9
+close              code=1 (HTCLIENT)     chain=SunAwtCanvas:1
+client             code=1 (HTCLIENT)     chain=SunAwtCanvas:1
+edgeLeft           code=1 (HTCLIENT)     chain=SunAwtCanvas:1
+edgeRight          code=1 (HTCLIENT)     chain=SunAwtCanvas:1
+edgeTop            code=2 (HTCAPTION)    chain=SunAwtCanvas:-1 -> SunAwtFrame:2
+edgeBottom         code=1 (HTCLIENT)     chain=SunAwtCanvas:1
+cornerTL           code=2 (HTCAPTION)    chain=SunAwtCanvas:-1 -> SunAwtFrame:2
+cornerTR           code=2 (HTCAPTION)    chain=SunAwtCanvas:-1 -> SunAwtFrame:2
+cornerBL           code=1 (HTCLIENT)     chain=SunAwtCanvas:1
+cornerBR           code=1 (HTCLIENT)     chain=SunAwtCanvas:1
+```
+`V11-HT-CAPTION` (expected=2) and `V11-HT-MAX` (expected=9) are now PASS against the RED
+baseline's `observed=1` for both — the child→frame `HTTRANSPARENT` bounce (F8) works exactly as
+predicted: the frame's classification is reached through the child. `edgeTop`/`cornerTL`/`cornerTR`
+answer HTCAPTION only because they fall inside the 32dp title row in this spike's hardcoded
+classifier — genuine edge/corner resize hit-testing is out of this spike's scope. This is
+**spike state, not GREEN**: the full `V11` table (edges, maximize geometry, min-size) is settled
+by later steps per the plan's own scope note.
+
+**New finding, not previously predicted in this repo's notes:** `MAXIMIZE` reports
+`windowRect=(-8,-8)-(1928,1088)` against `rcWork=(0,0)-(1920,1080)` — an 8px overhang on every
+edge past the monitor, exactly the "naive `WM_NCCALCSIZE` return 0 unconditionally" maximized
+overhang failure mode (the frame's sizing-border math still applies even though the caption
+paint is hidden). Compare to the RED baseline, where the *pre-subclass* window maximized to
+exactly `rcWork` with zero overhang (no `WM_NCCALCSIZE` handler existed to interfere). This
+spike's `WM_NCCALCSIZE` handler returns 0 unconditionally regardless of maximized state — the
+inset fix for the maximized case is explicitly out of this spike's scope (see the frame proc's
+own `WM_NCCALCSIZE` branch comment). Tracked as a known, expected gap for a later step, not a
+regression to fix here.
+
+**Settled:** C1 (after) — SETTLED. Confirmed against the observed values above.
+
+### C4 — does `WindowState.placement` still sync automatically once the subclass is installed?
+
+**Check performed:** Same headless `SC_MAXIMIZE` → `SC_RESTORE` cycle as the RED baseline's C4
+check (`Invoke-WinProbeMaximize`), this time against the window with the native subclass
+installed, reading the `AERO_WINDOW_STATE` lines the reporter prints.
+
+**Observed:**
+```
+... placement=Floating   awtExtendedState=0 ...   (before)
+... placement=Maximized  awtExtendedState=6 ...   (after SC_MAXIMIZE, awtBounds=-8,-8,1936,1096 — the overhang above)
+... placement=Floating   awtExtendedState=0 ...   (after SC_RESTORE)
+```
+
+**Decision:** unchanged from the RED baseline's conclusion — `WindowState.placement` still
+flips to `Maximized`/back to `Floating` with **zero explicit sync code**, now proven *with* the
+native subclass installed and actively answering `WM_NCHITTEST`/`WM_NCCALCSIZE`. This confirms
+the frame proc's `else -> CallWindowProc(previous, ...)` passthrough (every message this feature
+doesn't explicitly own, including `WM_SIZE`/`WM_SYSCOMMAND`) does not disturb AWT's own
+extendedState → `WindowStateListener` pipeline. No explicit placement-push code is needed for
+this spike or for a plain native `SC_MAXIMIZE`.
+
+**Settled:** C4 — SETTLED, "syncs automatically" confirmed with the subclass live.
+
+### C7 (runtime half) — JBR `hotRun` vs cold standard-JDK `run`
+
+**Cold run:** `C:\Users\1\.jdks\ms-21.0.9\bin\java.exe`, `jvmKind=standard`.
+**Hot run:** `C:\Users\1\.jdks\jbr-21.0.9\bin\java.exe`, `jvmKind=JBR`.
+
+Both runs produced byte-identical `STYLE`, `HITTEST` (all 14 points) and `MAXIMIZE` answers
+(see C1/C4 above) — no behavioral drift between the standard JDK the published library targets
+and the JBR the showcase's Hot Reload path runs on.
+
+**Three-reload idempotency check:** with the `hotRun` app kept alive (`-KeepRunning`), a
+temporary, never-committed edit inside `AeroTitleBar.kt` (`Spacer(Modifier.width(8.dp))` →
+`8.01.dp`) was applied and reverted three times, running the top-level `reload` Gradle task
+(`./gradlew tasks --all` confirmed the task name is `reload`, not `:showcase:reload`) after each
+edit:
+
+| Reload # | Edit state | New `AERO_CHROME` trace lines | Hit-test answers after reload |
+|---|---|---|---|
+| 1 | `8.01.dp` | none (only the original `restyle`/`install`/`child-subclass` triple from initial launch) | identical to pre-reload |
+| 2 | reverted to `8.dp` | none | identical to pre-reload |
+| 3 | `8.01.dp` again | none | identical to pre-reload |
+
+Pass = exactly one live install for the HWND held throughout (no second `install` or `reuse`
+line ever appeared — Hot Reload's method-body swap did not re-trigger `AeroTitleBar`'s
+`DisposableEffect(window)` for this particular edit shape, so the idempotent-reuse path in
+`NativeWindowChromeRegistry` was never even exercised by this specific edit — but the WNDPROC
+chain was never re-stacked or broken either, and hit-test answers stayed byte-identical across
+all three reload cycles, which is the load-bearing guarantee). The temporary edit was reverted
+in the source file after the third reload; `git diff --quiet HEAD -- library/` holds.
+
+**Settled by:** 22-02 T3 — SETTLED. C7 fully settled (grep half was 22-01 T3; runtime half is
+this task).
+
+**Artifacts:** `.captures/22-spike/cold.json`, `.captures/22-spike/hot-initial.json`,
+`.captures/22-spike/rest.png` (PrintWindow frame of the spike window, floating state — agent
+inspection: no ghost native caption, no white strip, no content offset visible; the title bar
+renders as a single Compose-drawn gradient band exactly as before this phase, consistent with
+`WM_NCCALCSIZE` returning 0 hiding the native caption's paint while the style bits stay set for
+DWM/Shell).
