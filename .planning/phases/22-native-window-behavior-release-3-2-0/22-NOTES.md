@@ -431,3 +431,58 @@ inspection: no ghost native caption, no white strip, no content offset visible; 
 renders as a single Compose-drawn gradient band exactly as before this phase, consistent with
 `WM_NCCALCSIZE` returning 0 hiding the native caption's paint while the style bits stay set for
 DWM/Shell).
+
+## Early gate (22-04) — readiness
+
+Recorded by Plan 04 (Task 1), 2026-09-25, before asking the maintainer for the early VER-12
+"ok". `:showcase:classes` compiled clean (`BUILD SUCCESSFUL in 20s`, 7 actionable tasks) so the
+post-"ok" launch in Task 3 does not pay a compile cost. Ran
+`tools/winprobe/Invoke-EarlyGate.ps1 -DryRun -Json .captures/22-gate/readiness.json` against
+`HEAD` (commit `1093568`).
+
+**Dry-run result:** exit code `0`. Cursor unchanged: `CursorBefore=(890,986)`,
+`CursorAfter=(890,986)` — proven live, not assumed. Verdict line printed is
+`GATE FAIL FLYOUT MISSING,SNAP MISSING,RESTORE MISSING`, which is the dry run's expected,
+inapplicable verdict (per 22-03's own decision: a dry run never sends input, so FLYOUT/SNAP/
+RESTORE can never legitimately read OK — the exit code, not this verdict string, is what proves
+the dry run itself worked).
+
+**Step timings (`.captures/22-gate/readiness.json`):**
+
+| Step | Result | Detail | Elapsed |
+|---|---|---|---|
+| Readiness | OK | `SnapAssistFlyoutOn=True WindowArrangementActive=True` | 33.6ms |
+| Launch | OK | `jvm=standard path=C:\Users\1\.jdks\ms-21.0.9\bin\java.exe` | 5683.9ms |
+| PositiveControl | SKIPPED | notepad not started in dry run | 0.03ms |
+| ComposeFlyout | FLYOUT MISSING | dry run — no real hover performed | 4004.0ms |
+| DragSnap | SNAP MISSING | dry run — no real drag performed | 62.3ms |
+| DragAway | RESTORE MISSING | dry run — no real drag performed | 25.1ms |
+
+`RealInputMs=9886.0` (the dry-run's simulated action-log timing, not real `SendInput`),
+`OverallMs=28943.3`.
+
+**Showcase launch time:** the `Launch` step (showcase process start + window found + reporter
+`main` state ready) took **5683.9ms ≈ 5.68s**. JVM launched: `C:\Users\1\.jdks\ms-21.0.9\bin\
+java.exe` (`jvmKind=standard`, confirmed not JBR — matches every prior plan's finding of the
+default `java` on this machine).
+
+**Minutes estimate for the maintainer (N):** measured launch time (5.68s) + the planned real-input
+cap (≤ 2 min = 120s) = 125.68s ≈ 2.09 min → round up to 3 min → add 1 → **N = 4 minutes**.
+
+**Snap settings (read-only, `Get-AeroSnapSettings`):** `SnapAssistFlyoutOn=True`,
+`WindowArrangementActive=True` — both snapping and Snap Layouts are enabled on this machine;
+nothing was changed (read-only check, per plan instruction).
+
+**`notepad.exe` resolution:** `where notepad.exe` →
+`C:\Windows\System32\notepad.exe` and `C:\Windows\notepad.exe` (first match used by
+`Start-Process -FilePath 'notepad.exe'`).
+
+**Cleanup check:** after the dry run, no `java.exe` process with `-Paero.chromeTrace=true` /
+`-Paero.capture=true` in its command line remained (checked via `Get-CimInstance Win32_Process`);
+the many other `java.exe` processes present on this machine are pre-existing Gradle daemons and
+the always-on Hot Reload MCP server (`:showcase:hotMcpServer`, started ~12:25, unrelated to this
+15:46 dry run) — none traces back to this gate's own launch.
+
+**Readiness verdict:** the session can start the second the maintainer says "ok" — code compiles,
+the dry run proves the script itself runs clean and restores the cursor, snap settings are
+enabled, and notepad.exe resolves.
