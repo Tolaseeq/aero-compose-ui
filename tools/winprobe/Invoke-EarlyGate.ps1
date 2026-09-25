@@ -38,55 +38,54 @@ if (-not $DryRun -and [string]::IsNullOrWhiteSpace($AuthorizedBy)) {
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 . (Join-Path $here 'WinProbe.ps1')
 . (Join-Path $here 'RealInput.ps1')
+. (Join-Path $here 'PositiveControlWindow.ps1')
 . (Join-Path $here 'Watch-SnapFlyout.ps1')
-
-function Find-AeroWindowByProcessId {
-    <#
-    .SYNOPSIS
-        Finds a visible top-level window owned by -ProcessId. Language-independent (no title
-        matching) -- used instead of Find-AeroShowcaseWindow's exact-title match for notepad.exe,
-        whose title text varies by locale.
-    #>
-    [CmdletBinding()]
-    param([Parameter(Mandatory = $true)][int]$ProcessId, [int]$TimeoutSec = 10)
-    $deadline = (Get-Date).AddSeconds($TimeoutSec)
-    while ((Get-Date) -lt $deadline) {
-        foreach ($hwnd in [AeroSnapWatch.Native]::EnumTopLevelVisible()) {
-            [uint32]$ownerPid = 0
-            [AeroSnapWatch.Native]::GetWindowThreadProcessId($hwnd, [ref]$ownerPid) | Out-Null
-            if ($ownerPid -eq $ProcessId) { return $hwnd }
-        }
-        Start-Sleep -Milliseconds 200
-    }
-    return [IntPtr]::Zero
-}
 
 function Find-AeroMaxButtonSpan {
     <#
     .SYNOPSIS
-        Scans -Hwnd's top 40px client row via Invoke-WinProbeHitTest (a WM_NCHITTEST query
-        message, not synthetic input) for the contiguous HTMAXBUTTON (9) span -- language
-        independent, no window text is ever read.
+        Scans -Hwnd's caption row via Invoke-WinProbeHitTest (a WM_NCHITTEST query message, not
+        synthetic input) for the contiguous HTMAXBUTTON (9) span -- language independent, no
+        window text is ever read.
+    .DESCRIPTION
+        The caption row's Y offset differs by window kind: an undecorated, client-drawn caption
+        (the Compose showcase window) sits at a small positive ClientY; a real WS_CAPTION
+        non-client caption (the positive-control window) sits ABOVE the client origin, at a
+        negative ClientY equal to half the window-to-client offset. Both are tried in order so
+        this one function works for either window kind without the caller having to know which.
     #>
     [CmdletBinding()]
     param([Parameter(Mandatory = $true)][IntPtr]$Hwnd)
     $info = Get-WinProbeWindowInfo -Hwnd $Hwnd
+    $origin = New-Object AeroWinProbe.WPoint
+    [AeroWinProbe.Native]::ClientToScreen($Hwnd, [ref]$origin) | Out-Null
     $clientWidth = $info.ClientRect.Right - $info.ClientRect.Left
-    $y = 10
-    $start = $null
-    $end = $null
-    for ($x = 0; $x -lt $clientWidth; $x += 2) {
-        $hit = Invoke-WinProbeHitTest -Hwnd $Hwnd -ClientX $x -ClientY $y
-        if ($hit.Code -eq 9) {
-            if ($null -eq $start) { $start = $x }
-            $end = $x
+    $captionTopOffsetPx = $origin.Y - $info.WindowRect.Top
+
+    $candidateRows = New-Object System.Collections.Generic.List[int]
+    if ($captionTopOffsetPx -gt 0) {
+        [void]$candidateRows.Add([int](-$captionTopOffsetPx / 2))
+    }
+    [void]$candidateRows.Add(10)
+
+    foreach ($y in $candidateRows) {
+        $start = $null
+        $end = $null
+        for ($x = 0; $x -lt $clientWidth; $x += 2) {
+            $hit = Invoke-WinProbeHitTest -Hwnd $Hwnd -ClientX $x -ClientY $y
+            if ($hit.Code -eq 9) {
+                if ($null -eq $start) { $start = $x }
+                $end = $x
+            }
+            elseif ($null -ne $start) {
+                break
+            }
         }
-        elseif ($null -ne $start) {
-            break
+        if ($null -ne $start) {
+            return [pscustomobject]@{ CenterX = [int](($start + $end) / 2); CenterY = $y }
         }
     }
-    if ($null -eq $start) { return $null }
-    [pscustomobject]@{ CenterX = [int](($start + $end) / 2); CenterY = $y }
+    return $null
 }
 
 function Get-AeroMainWindowGeometry {
@@ -133,7 +132,6 @@ $realInputStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
 $hwnd = [IntPtr]::Zero
 $launchInfo = $null
-$notepadProcess = $null
 $blocked = $false
 $verdict = 'GATE FAIL unstarted'
 $savedCursor = $null
@@ -143,6 +141,9 @@ $flyoutVerdict = 'FLYOUT MISSING'
 $snapVerdict = 'SNAP MISSING'
 $restoreVerdict = 'RESTORE MISSING'
 $preSnapRect = $null
+$snapRectAfter = $null
+$snapReporterPlacement = $null
+$eventWatchStarted = $false
 
 try {
     # Step 0: Readiness -- never changes the maintainer's settings, only reads them.
@@ -196,53 +197,67 @@ try {
 
     $savedCursor = Save-AeroCursor
 
-    # Step 1: PositiveControl -- a native Windows window (notepad) whose max-button is known to
-    # answer HTMAXBUTTON, so "flyout not seen on the Compose window" can be told apart from
-    # "UI Automation cannot see flyouts at all" (D-04).
+    if (-not $blocked) {
+        [uint32]$showcasePid = 0
+        [AeroWinProbe.Native]::GetWindowThreadProcessId($hwnd, [ref]$showcasePid) | Out-Null
+        Start-AeroShellEventWatch -WatchedProcessIds @($showcasePid) | Out-Null
+        $eventWatchStarted = $true
+    }
+
+    # Step 1: PositiveControl -- our own standard Win32 window (a WinForms Form, its frame drawn
+    # by DefWindowProc) whose max-button is known to answer HTMAXBUTTON, so "flyout not seen on
+    # the Compose window" can be told apart from "the watcher cannot see a flyout at all" (D-04).
     $stepSw = [System.Diagnostics.Stopwatch]::StartNew()
+    $pcInfo = $null
+    $pcHwnd = [IntPtr]::Zero
     try {
         if ($blocked) {
             Add-GateStep 'PositiveControl' 'SKIPPED' 'gate already blocked' $stepSw.Elapsed.TotalMilliseconds
         }
-        elseif ($DryRun) {
-            Add-GateStep 'PositiveControl' 'SKIPPED' 'notepad not started in dry run' $stepSw.Elapsed.TotalMilliseconds
-        }
         else {
-            $notepadProcess = Start-Process -FilePath 'notepad.exe' -PassThru
-            $notepadHwnd = Find-AeroWindowByProcessId -ProcessId $notepadProcess.Id -TimeoutSec 10
-            if ($notepadHwnd -eq [IntPtr]::Zero) { throw 'notepad window not found within timeout' }
+            $pcInfo = Start-AeroPositiveControlWindow -NoActivate:$DryRun
+            Add-AeroShellEventWatchProcessId -ProcessId ([uint32]$pcInfo.Process.Id)
+            $pcHwnd = Find-AeroShowcaseWindow -Title $pcInfo.Title -TimeoutSec 10
 
-            $maxSpan = Find-AeroMaxButtonSpan -Hwnd $notepadHwnd
-            if (-not $maxSpan) { throw 'notepad HTMAXBUTTON span not found in its top 40px row' }
+            $maxSpan = Find-AeroMaxButtonSpan -Hwnd $pcHwnd
+            if (-not $maxSpan) { throw 'positive-control HTMAXBUTTON span not found on its caption row' }
 
-            $origin = New-Object AeroWinProbe.WPoint
-            [AeroWinProbe.Native]::ClientToScreen($notepadHwnd, [ref]$origin) | Out-Null
-
-            Invoke-AeroClick -Session $session -X ($origin.X + 20) -Y ($origin.Y + 10)
-
-            $baseline = Get-AeroShellSnapshot
-            Move-AeroCursor -Session $session -X ($origin.X + $maxSpan.CenterX) -Y ($origin.Y + $maxSpan.CenterY)
-            $flyout = Wait-AeroSnapFlyout -Baseline $baseline -TimeoutMs 3000 -PollMs 100
-
-            if ($flyout.Found) {
-                $referenceSignature = $flyout
-                Add-GateStep 'PositiveControl' 'OK' "flyout observed after $($flyout.DelayMs)ms" $stepSw.Elapsed.TotalMilliseconds
+            if ($DryRun) {
+                Add-GateStep 'PositiveControl' 'OK' "dry run -- maxButtonCenter=$($maxSpan.CenterX),$($maxSpan.CenterY) (window closed, no input sent)" $stepSw.Elapsed.TotalMilliseconds
             }
             else {
-                $flyoutUnobservable = $true
-                Add-GateStep 'PositiveControl' 'D04 UNOBSERVABLE' 'UI Automation saw no new shell element on the positive control window' $stepSw.Elapsed.TotalMilliseconds
-            }
+                $origin = New-Object AeroWinProbe.WPoint
+                [AeroWinProbe.Native]::ClientToScreen($pcHwnd, [ref]$origin) | Out-Null
 
-            Move-AeroCursor -Session $session -X ($origin.X - 100) -Y ($origin.Y - 100)
-            Send-AeroKeyChord -Session $session -Keys @('Escape')
+                Invoke-AeroClick -Session $session -X ($origin.X + 20) -Y ($origin.Y + 10)
+
+                $baseline = Get-AeroShellSnapshot
+                Move-AeroCursor -Session $session -X ($origin.X + $maxSpan.CenterX) -Y ($origin.Y + $maxSpan.CenterY)
+                $flyout = Wait-AeroSnapFlyout -Baseline $baseline -TimeoutMs 3000 -MinHoverMs 1500 -PollMs 100
+
+                if ($flyout.Found) {
+                    $referenceSignature = $flyout
+                    Add-GateStep 'PositiveControl' 'OK' "flyout observed after $($flyout.DelayMs)ms via $($flyout.Signal)" $stepSw.Elapsed.TotalMilliseconds
+                }
+                else {
+                    $flyoutUnobservable = $true
+                    Add-GateStep 'PositiveControl' 'D04 UNOBSERVABLE' 'no shell SHOW/UNCLOAKED event and no new shell window/UIA element seen on the positive control window' $stepSw.Elapsed.TotalMilliseconds
+                }
+
+                Move-AeroCursor -Session $session -X ($origin.X - 100) -Y ($origin.Y - 100)
+                Send-AeroKeyChord -Session $session -Keys @('Escape')
+            }
         }
     }
     catch {
         Add-GateStep 'PositiveControl' 'ERROR' $_.Exception.Message $stepSw.Elapsed.TotalMilliseconds
     }
     finally {
-        if ($notepadProcess) {
-            try { Stop-Process -Id $notepadProcess.Id -Force -ErrorAction SilentlyContinue } catch { }
+        if ($pcHwnd -ne [IntPtr]::Zero) {
+            Stop-AeroProcessOfWindow -Hwnd $pcHwnd
+        }
+        elseif ($pcInfo) {
+            Stop-AeroPositiveControlWindow -Info $pcInfo
         }
     }
 
@@ -263,7 +278,7 @@ try {
             Invoke-AeroClick -Session $session -X $captionX -Y $captionY
             $baseline = Get-AeroShellSnapshot
             Move-AeroCursor -Session $session -X $maxX -Y $maxY
-            $observed = Wait-AeroSnapFlyout -Baseline $baseline -TimeoutMs 3000 -PollMs 100
+            $observed = Wait-AeroSnapFlyout -Baseline $baseline -TimeoutMs 3000 -MinHoverMs 1500 -PollMs 100
 
             if ($DryRun) {
                 $flyoutVerdict = 'FLYOUT MISSING'
@@ -275,7 +290,7 @@ try {
             }
             elseif ($observed.Found -and $referenceSignature -and (Test-AeroFlyoutSignatureMatch -Observed $observed -Reference $referenceSignature).IsMatch) {
                 $flyoutVerdict = 'FLYOUT OK'
-                Add-GateStep 'ComposeFlyout' $flyoutVerdict "matched reference after $($observed.DelayMs)ms" $stepSw.Elapsed.TotalMilliseconds
+                Add-GateStep 'ComposeFlyout' $flyoutVerdict "matched reference after $($observed.DelayMs)ms via $($observed.Signal)" $stepSw.Elapsed.TotalMilliseconds
             }
             else {
                 $flyoutVerdict = 'FLYOUT MISSING'
@@ -290,7 +305,10 @@ try {
         Add-GateStep 'ComposeFlyout' 'ERROR' $_.Exception.Message $stepSw.Elapsed.TotalMilliseconds
     }
 
-    # Step 3: DragSnap -- drag the showcase's caption to the monitor's left work-area edge.
+    # Step 3: DragSnap -- drag the showcase's caption to the vertical middle of the monitor's
+    # left work-area edge, so Windows applies the edge zone (half snap) rather than a corner zone
+    # (quarter snap): the corner zone extends well below the top of the screen, so a drop near
+    # the top-left corner snaps to a quarter, not a half, regardless of x position.
     $stepSw = [System.Diagnostics.Stopwatch]::StartNew()
     try {
         if ($blocked) {
@@ -307,8 +325,9 @@ try {
 
             $monitorInfo = Get-AeroMonitorInfoForWindow -Hwnd $hwnd
             $workLeft = $monitorInfo.rcWork.Left
+            $workAreaCenterY = [int](($monitorInfo.rcWork.Top + $monitorInfo.rcWork.Bottom) / 2)
 
-            Invoke-AeroDrag -Session $session -FromX $captionX -FromY $captionY -ToX ($workLeft + 1) -ToY $captionY -Steps 20 -DurationMs 700 -HoldMs 500
+            Invoke-AeroDrag -Session $session -FromX $captionX -FromY $captionY -ToX ($workLeft + 1) -ToY $workAreaCenterY -Steps 20 -DurationMs 700 -HoldMs 500
 
             if (-not $DryRun) { Start-Sleep -Milliseconds 800 }
             Send-AeroKeyChord -Session $session -Keys @('Escape')
@@ -316,6 +335,8 @@ try {
             $windowRectAfter = New-Object AeroWinProbe.WRect
             [AeroWinProbe.Native]::GetWindowRect($hwnd, [ref]$windowRectAfter) | Out-Null
             $reporterAfterSnap = Get-WinProbeReporterState -LogPath $launchInfo.StdOut -Label 'main'
+            $snapRectAfter = $windowRectAfter
+            $snapReporterPlacement = $reporterAfterSnap.placement
 
             $expectedRight = $workLeft + [int](($monitorInfo.rcWork.Right - $monitorInfo.rcWork.Left) / 2)
             $withinTolerance = (
@@ -335,7 +356,7 @@ try {
             }
             else {
                 $snapVerdict = 'SNAP MISSING'
-                Add-GateStep 'DragSnap' $snapVerdict "rect=$($windowRectAfter.Left),$($windowRectAfter.Top),$($windowRectAfter.Right),$($windowRectAfter.Bottom) expected=leftHalfOf($($monitorInfo.rcWork.Left),$($monitorInfo.rcWork.Top),$($monitorInfo.rcWork.Right),$($monitorInfo.rcWork.Bottom))" $stepSw.Elapsed.TotalMilliseconds
+                Add-GateStep 'DragSnap' $snapVerdict "rect=$($windowRectAfter.Left),$($windowRectAfter.Top),$($windowRectAfter.Right),$($windowRectAfter.Bottom) placement=$($reporterAfterSnap.placement) expected=leftHalfOf($($monitorInfo.rcWork.Left),$($monitorInfo.rcWork.Top),$($monitorInfo.rcWork.Right),$($monitorInfo.rcWork.Bottom))" $stepSw.Elapsed.TotalMilliseconds
             }
         }
     }
@@ -401,6 +422,10 @@ finally {
         Add-GateStep 'Cleanup' 'ERROR' "cursor restore failed: $($_.Exception.Message)" 0
     }
 
+    if ($eventWatchStarted) {
+        try { Stop-AeroShellEventWatch | Out-Null } catch { }
+    }
+
     if ($hwnd -ne [IntPtr]::Zero) {
         Stop-AeroProcessOfWindow -Hwnd $hwnd
         if ($launchInfo -and $launchInfo.Process) {
@@ -439,15 +464,17 @@ finally {
             New-Item -ItemType Directory -Path $jsonDir -Force | Out-Null
         }
         $output = [ordered]@{
-            Verdict       = $verdict
-            Blocked       = $blocked
-            DryRun        = [bool]$DryRun
-            Steps         = $steps
-            ActionLog     = @($session.ActionLog)
-            CursorBefore  = $savedCursor
-            CursorAfter   = $cursorAfter
-            RealInputMs   = $realInputStopwatch.Elapsed.TotalMilliseconds
-            OverallMs     = $overallStopwatch.Elapsed.TotalMilliseconds
+            Verdict               = $verdict
+            Blocked               = $blocked
+            DryRun                = [bool]$DryRun
+            Steps                 = $steps
+            ActionLog             = @($session.ActionLog)
+            CursorBefore          = $savedCursor
+            CursorAfter           = $cursorAfter
+            RealInputMs           = $realInputStopwatch.Elapsed.TotalMilliseconds
+            OverallMs             = $overallStopwatch.Elapsed.TotalMilliseconds
+            SnapRectAfter         = $snapRectAfter
+            SnapReporterPlacement = $snapReporterPlacement
         }
         $output | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $Json -Encoding UTF8
     }
