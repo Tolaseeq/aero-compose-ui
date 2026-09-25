@@ -1,8 +1,13 @@
 package com.mordred.aero.internal.windows
 
 import com.sun.jna.Pointer
+import com.sun.jna.platform.win32.Shell32
+import com.sun.jna.platform.win32.ShellAPI
 import com.sun.jna.platform.win32.User32
+import com.sun.jna.platform.win32.WinDef.DWORD
 import com.sun.jna.platform.win32.WinDef.HWND
+import com.sun.jna.platform.win32.WinDef.RECT
+import com.sun.jna.platform.win32.WinDef.UINT
 
 /**
  * WIN-03: the five style bits a native-chrome window on `AeroTitleBar` must always carry.
@@ -63,4 +68,52 @@ internal object Win32Chrome {
     private fun writeStyle(hwnd: HWND, style: Int) {
         User32.INSTANCE.SetWindowLongPtr(hwnd, GWL_STYLE, Pointer(style.toLong()))
     }
+}
+
+private val AUTO_HIDE_EDGE_CODES: List<Pair<ScreenEdge, Int>> = listOf(
+    ScreenEdge.Left to ShellAPI.ABE_LEFT,
+    ScreenEdge.Top to ShellAPI.ABE_TOP,
+    ScreenEdge.Right to ShellAPI.ABE_RIGHT,
+    ScreenEdge.Bottom to ShellAPI.ABE_BOTTOM,
+)
+
+/**
+ * WIN-01 / PITFALLS 9: per-edge auto-hide taskbar detection on [monitorRect] (the maximizing
+ * window's own monitor — from `MonitorFromWindow` + `GetMonitorInfo`, never a hardcoded
+ * primary monitor). `ABM_GETSTATE` short-circuits to no edges when the shell reports no
+ * auto-hide bar exists anywhere; otherwise each `ABE_*` edge is queried individually via
+ * `ABM_GETAUTOHIDEBAREX`, and a non-null bar HWND means that edge is docked on this monitor.
+ */
+internal fun autoHideEdges(monitorRect: PxRect): Set<ScreenEdge> {
+    val stateQuery = newAppBarData()
+    val state = Shell32.INSTANCE.SHAppBarMessage(DWORD(ShellAPI.ABM_GETSTATE.toLong()), stateQuery)
+    if (state.toInt() and ABS_AUTOHIDE == 0) return emptySet()
+
+    val edges = mutableSetOf<ScreenEdge>()
+    for ((edge, edgeCode) in AUTO_HIDE_EDGE_CODES) {
+        val query = newAppBarData()
+        query.uEdge = UINT(edgeCode.toLong())
+        query.rc = monitorRect.toWinRect()
+        val bar = Shell32.INSTANCE.SHAppBarMessage(DWORD(ABM_GETAUTOHIDEBAREX.toLong()), query)
+        if (bar.toLong() != 0L) edges += edge
+    }
+    return edges
+}
+
+private fun newAppBarData(): ShellAPI.APPBARDATA {
+    val data = ShellAPI.APPBARDATA()
+    data.cbSize = DWORD(data.size().toLong())
+    return data
+}
+
+/** WIN-01: `MONITORINFO.rcWork` / `rcMonitor` (screen pixels) as a pure [PxRect]. */
+internal fun RECT.toPxRect(): PxRect = PxRect(left, top, right, bottom)
+
+private fun PxRect.toWinRect(): RECT {
+    val rect = RECT()
+    rect.left = left
+    rect.top = top
+    rect.right = right
+    rect.bottom = bottom
+    return rect
 }

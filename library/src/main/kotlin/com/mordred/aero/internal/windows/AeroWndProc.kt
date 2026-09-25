@@ -29,10 +29,7 @@ internal class AeroFrameWndProc(
         )
 
     private fun handle(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): Long = when (uMsg) {
-        WM_NCCALCSIZE ->
-            // Floating state only: a maximized window's overhang fix is a separate, later
-            // concern (returning 0 unconditionally would push maximized content off-screen).
-            if (wParam.toInt() != 0) 0L else callPrevious(hwnd, uMsg, wParam, lParam).toLong()
+        WM_NCCALCSIZE -> handleNcCalcSize(hwnd, wParam, lParam)
 
         WM_NCHITTEST -> handleNcHitTest(hwnd, wParam, lParam)
 
@@ -82,6 +79,38 @@ internal class AeroFrameWndProc(
         val code = classifySpikeTitleRow(point.x, point.y, clientWidthPx, scale)
         // HTCLIENT: let AWT's own answer stand (keeps its default outside the title row).
         return if (code == HTCLIENT) callPrevious(hwnd, WM_NCHITTEST, wParam, lParam).toLong() else code.toLong()
+    }
+
+    /**
+     * WIN-01 / PITFALLS 8+9: `wParam == 0` is forwarded untouched (AWT owns that shape).
+     * `wParam != 0` (proposed-rect form): floating state returns 0 with `rgrc[0]` unchanged
+     * (client = the full proposed window rect, hiding the native caption paint); maximized
+     * state rewrites `rgrc[0]` in place to [maximizedClientRect] — the intersection with the
+     * window's own monitor work area, minus a taskbar-aware auto-hide inset — before also
+     * returning 0. Never touches `WM_GETMINMAXINFO` or `WM_DPICHANGED` (out of this handler's
+     * scope, forward-only per PITFALLS 14).
+     */
+    private fun handleNcCalcSize(hwnd: HWND, wParam: WPARAM, lParam: LPARAM): Long {
+        if (wParam.toInt() == 0) return callPrevious(hwnd, WM_NCCALCSIZE, wParam, lParam).toLong()
+
+        if (aeroUser32.IsZoomed(hwnd)) {
+            val params = Pointer(lParam.toLong())
+            val proposed = PxRect(params.getInt(0), params.getInt(4), params.getInt(8), params.getInt(12))
+
+            val monitor = User32.INSTANCE.MonitorFromWindow(hwnd, WinUser.MONITOR_DEFAULTTONEAREST)
+            val monitorInfo = WinUser.MONITORINFO()
+            User32.INSTANCE.GetMonitorInfo(monitor, monitorInfo)
+            val workArea = monitorInfo.rcWork.toPxRect()
+            val edges = autoHideEdges(monitorInfo.rcMonitor.toPxRect())
+
+            val client = maximizedClientRect(proposed, workArea, edges)
+            params.setInt(0, client.left)
+            params.setInt(4, client.top)
+            params.setInt(8, client.right)
+            params.setInt(12, client.bottom)
+            chromeTrace("nccalc-max", this.hwnd, "rect=$client edges=$edges")
+        }
+        return 0L
     }
 
     private fun callPrevious(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): LRESULT =

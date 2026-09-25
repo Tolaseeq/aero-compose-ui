@@ -42,6 +42,12 @@ internal const val SWP_NOACTIVATE = 0x0010
 internal const val SWP_FRAMECHANGED = 0x0020
 internal const val SWP_NOOWNERZORDER = 0x0200
 
+// WIN-01: SHAppBarMessage flag/message constants jna-platform's ShellAPI does not declare
+// (ABM_GETSTATE and the four ABE_* edges are already present there and are used from that
+// interface directly).
+internal const val ABM_GETAUTOHIDEBAREX = 0xB
+internal const val ABS_AUTOHIDE = 0x0001
+
 /**
  * SNAP-01: guards every native call site. Touches no JNA class, so evaluating it never
  * triggers a native load on a non-Windows platform.
