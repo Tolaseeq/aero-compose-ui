@@ -749,3 +749,125 @@ spike), and edge snapping / restore-on-drag are native. The flyout host is explo
 `XamlExplorerHostIslandWindow` (uncloaked on hover) with a `DesktopWindowContentBridge` child — the
 survey candidate from the tooling fix is confirmed. The milestone's existential risk is retired;
 the phase continues.
+
+## Frame removal (22-05)
+
+Recorded by Plan 05 (Task 3), 2026-09-25, against the showcase with the production style-keeper
+(`WM_STYLECHANGING`) and taskbar-aware maximized `WM_NCCALCSIZE` from Tasks 1–2 installed. Same
+machine as every prior plan (Windows 11 24H2 build 26100, one 1920x1080 monitor at 100% DPI,
+taskbar auto-hide ON). Probed via `tools/winprobe/Invoke-WinProbe.ps1 -Launch run -Report
+styles,hittest,maximize,taskbar,minsize,uia,process,v11` and an ad-hoc capture script built for
+this task (dot-sources `tools/winprobe/WinProbe.ps1`, one `:showcase:run` launch,
+`-Paero.scheme=AeroBlue -Paero.capture=true`), non-focusable capture mode throughout, `-Paero.
+chromeTrace=true` used once to confirm the computed rect. F9 (settled 22-01: probe-driven
+`SC_MAXIMIZE` never takes the foreground on this machine) held again — no `-SkipMaximize` used.
+
+### V11 results (this task's scope)
+
+```
+V11 V11-STYLE PASS expected=WS_CAPTION,WS_SYSMENU,WS_THICKFRAME,WS_MINIMIZEBOX,WS_MAXIMIZEBOX observed=WS_POPUP,WS_CAPTION,WS_SYSMENU,WS_THICKFRAME,WS_MINIMIZEBOX,WS_MAXIMIZEBOX,WS_CLIPCHILDREN
+V11 V11-HT-CAPTION PASS / V11-HT-MAX PASS / V11-HT-MIN-BOUNDARY PASS / V11-HT-CLOSE-BOUNDARY PASS (unchanged from 22-02 spike — title-row hit-testing is out of this plan's scope)
+V11 V11-HT-MAXIMIZED-TOP PASS expected=2 observed=2
+V11 V11-MAX-WORKAREA PASS expected=rcWork=0,0,1920,1080 autoHideEdges=Bottom observed=client=0,0,1920,1078 window=-8,-8,1928,1088 Left=0(need<=1)=ok Top=0(need<=1)=ok Right=0(need<=1)=ok Bottom=2(autoHide,need1-4)=ok foregroundTaken=False
+V11 V11-AUTOHIDE-EDGE PASS expected=auto-hide edges uncovered by >=1px observed=detected edges=Bottom deltas=Bottom=2
+V11 SUMMARY pass=8 fail=10 skip=0
+```
+
+`V11-HT-EDGE-L/R/T/B`, `V11-HT-CORNER-*`, `V11-HT-CLIENT-BOUNDARY` (genuine edge/corner resize
+hit-testing, out of this plan's scope per the 22-02 spike note) and `V11-MINSIZE` (the 320×240dp
+floor, D-01, not touched by this plan) remain FAIL — unchanged from the 22-02 spike, not a
+regression, tracked by their own later plans.
+
+**Tool fix (Rule 1 — bug):** `Invoke-WinProbeV11`'s `V11-AUTOHIDE-EDGE` check was a hardcoded
+`FAIL` placeholder written in 22-01 ("no native inset code yet") and could never pass regardless
+of correct implementation. Separately, `V11-MAX-WORKAREA` compared `GetWindowRect` (the OUTER
+window bounding box) against `rcWork` — but `WM_NCCALCSIZE` only ever controls the CLIENT
+rectangle (confirmed live via `-Paero.chromeTrace=true`: the frame proc computed and wrote exactly
+`PxRect(left=0, top=0, right=1920, bottom=1078)`, while `GetWindowRect` still reported
+`-8,-8,1928,1088` — the pre-existing sizing-border overhang this plan deliberately leaves alone,
+since `WM_GETMINMAXINFO` is explicitly out of scope here, Plan 11 territory). Both checks now
+measure the CLIENT rect in screen coordinates (`ClientToScreen` + `GetClientRect`, added to
+`Invoke-WinProbeMaximize`'s return as `ClientRectMaximized`) — the rectangle that actually governs
+what AWT/Skia renders and what a person looking at the screen actually sees. Fixed in
+`tools/winprobe/WinProbe.ps1` / `Invoke-WinProbe.ps1`; live-verified PASS above.
+
+### Reporter consistency (insets, sizeDp/scale/awtBounds)
+
+```
+REPORTER label=main placement=Floating minimized=false awtExtendedState=0 sizeDp=1200.0x800.0 posDp=360.0,140.0 awtBounds=360,140,1200,800 insets=0,0,0,0 scale=1.0 minSizeSet=false minSize=1x1 resizable=true jvm=21.0.9/Microsoft
+```
+
+`insets=0,0,0,0` — no non-client frame reported to AWT. `sizeDp=1200.0x800.0 × scale=1.0 =
+1200x800` px, matching `awtBounds` width/height (`1200,800`) exactly (±1 tolerance satisfied
+trivially, delta 0).
+
+### Taskbar re-confirm
+
+`Get-WinProbeTaskbar`: `autoHideOn=True autoHideEdges=Bottom` — unchanged from C3's original
+detection (22-01).
+
+### Frame comparisons (D-02, WIN-03)
+
+`.captures/22-frame/AeroBlue-rest.png` (1200×800, floating) vs
+`.captures/22-baseline/AeroBlue-rest.png` (pre-phase, unmodified window), both `AeroBlue`:
+
+```
+COMPARE title-band baseline-vs-rest top=0 bottom=31 diffPixels=0 maxDelta=0 comparable=True
+COMPARE white-strip baseline-vs-rest top=0 bottom=2  diffPixels=0 maxDelta=0 comparable=True
+```
+
+Zero differing pixels in the title row band and the top-3-row white-strip check — the floating
+title bar is pixel-identical to the pre-phase baseline. Agent inspection of both frames: single
+Compose-drawn gradient title band, `AeroBlue`/`AeroDark`/`Classic` switcher directly below it, no
+native caption glyphs, no white strip, no content offset — matches the baseline exactly.
+
+**Ghost-caption check (WM_NCACTIVATE):** `Send-WinProbeMessage` `WM_NCACTIVATE` (`0x0086`) with
+`wParam=0` then `wParam=1`, re-capturing after each:
+
+```
+COMPARE title-band rest-vs-deactivated diffPixels=0 maxDelta=0 comparable=True
+COMPARE title-band rest-vs-reactivated diffPixels=0 maxDelta=0 comparable=True
+```
+
+Zero differing pixels both times — **no ghost native caption or repaint artifact appears on
+activation/deactivation**. The documented mitigation (forwarding `WM_NCACTIVATE` with `lParam=-1`
+from `AeroFrameWndProc`) was NOT needed; no extra fix commit was made for this.
+
+**Maximized frame (`.captures/22-frame/AeroBlue-maximized.png`, 1936×1096):** pixel-sampled
+(not just visually inspected) to separate a real defect from an expected-but-invisible artifact.
+`PrintWindow` renders the FULL **window** rect (`-8,-8`–`1928,1088`, 1936×1096), not the client
+rect — so the image itself shows an ~8px near-white/black border around the content (sampled:
+`(0,0)`≈white `(244,243,243)`, `(8,8)`≈title-bar navy `(26,57,107)` — the client starts exactly at
+the +8,+8 offset the window/client rect math predicts; `(1930,100)` and `(100,1088)+` sample pure
+black, the off-window-rect padding PrintWindow fills for area it has no content for). Cross-checked
+against monitor bounds: since the window rect's negative/overshoot portions
+(`x<0`, `x>=1920`, `y<0`, `y>=1080`) are **off the physical 1920×1080 screen**, Windows never
+paints them to the real display — only the overlap between the window rect and the monitor is
+visible, and that overlap equals the client rect exactly (screen `(0,0)`–`(1920,1078)`) plus the
+deliberate 2px bottom auto-hide strip. **Conclusion: the border visible in the raw `PrintWindow`
+capture is a capture-method artifact (it renders off-screen window-rect pixels no user ever sees),
+not a real visual defect** — nothing to fix here; this is the direct, expected consequence of
+scoping this plan to `WM_NCCALCSIZE` only and leaving `WM_GETMINMAXINFO` for Plan 11.
+
+### Conflict #3 (auto-hide inset) — detection half + inset now settled
+
+**Detection method:** `SHAppBarMessage(ABM_GETSTATE)` for the `ABS_AUTOHIDE` flag, then
+`SHAppBarMessage(ABM_GETAUTOHIDEBAREX)` per `ABE_LEFT/TOP/RIGHT/BOTTOM` edge against the
+maximizing window's own monitor rect (`MonitorFromWindow` + `GetMonitorInfo`, never a hardcoded
+primary monitor) — implemented in `Win32Chrome.autoHideEdges`.
+
+**Edges found:** `Bottom` only (matches C3's original 22-01 finding).
+
+**Inset chosen:** 2px (Windows Terminal's production value, `AUTO_HIDE_INSET_PX` in
+`Win32Geometry.kt`) — no source supports 1px for this purpose.
+
+**Measured maximized client rect:** `(0,0)-(1920,1078)` — the intersection of the proposed rect
+with the monitor's work area (`(0,0)-(1920,1080)`, identical to `rcMonitor` on this auto-hide
+monitor per C3), with the Bottom edge inset by the 2px.
+
+**Reveal-on-hover half:** still explicitly assigned to Plan 15 (real input) — this task only
+proves the maximized client rect leaves the auto-hide edge geometrically uncovered by the
+production inset; whether hovering there actually reveals the taskbar needs real mouse input.
+
+**Settled:** C3 — detection method, edges, chosen inset and the measured rect are all settled
+here; the reveal-on-hover confirmation remains Plan 15's.
