@@ -871,3 +871,49 @@ production inset; whether hovering there actually reveals the taskbar needs real
 
 **Settled:** C3 — detection method, edges, chosen inset and the measured rect are all settled
 here; the reveal-on-hover confirmation remains Plan 15's.
+
+## Corners and shadow (22-06)
+
+Recorded by Plan 06 (Task 1), 2026-09-26, agent self-review before the maintainer sees the
+window (VER-13 discipline, feedback_gui_self_review_before_user). Same machine as every prior
+plan. Captured via `.captures/22-corners/Invoke-CornersSweep.ps1` — one `:showcase:run` launch
+per scheme (`-Paero.scheme=<scheme> -Paero.capture=true`, non-focusable capture mode),
+PrintWindow rest frames into `.captures/22-corners/<scheme>-rest.png`, LockBits comparison
+against the pre-phase baseline in `.captures/22-baseline/`. Every process the sweep started was
+stopped by the sweep itself.
+
+### Self-review: title bands identical to the baseline
+
+```
+COMPARE AeroBlue title-band baseline-vs-rest top=0 bottom=31 diffPixels=0 maxDelta=0 comparable=True
+COMPARE AeroBlue white-strip baseline-vs-rest top=0 bottom=2  diffPixels=0 maxDelta=0 comparable=True
+COMPARE AeroDark title-band baseline-vs-rest top=0 bottom=31 diffPixels=0 maxDelta=0 comparable=True
+COMPARE AeroDark white-strip baseline-vs-rest top=0 bottom=2  diffPixels=0 maxDelta=0 comparable=True
+COMPARE Classic  title-band baseline-vs-rest top=0 bottom=31 diffPixels=0 maxDelta=0 comparable=True
+COMPARE Classic  white-strip baseline-vs-rest top=0 bottom=2  diffPixels=0 maxDelta=0 comparable=True
+```
+
+Zero differing pixels in the title row band and the top-3-row white-strip check for all three
+schemes. Style read-back on each run: `GWL_STYLE = 0x96CF0000` (all five style bits present,
+unchanged from 22-05), window rect `(360,140)-(1560,940)` (1200x800 floating, no extra
+sizing-border growth in floating state). Agent visual inspection of all three frames: a single
+Compose-drawn gradient title band per scheme (AeroBlue navy / AeroDark indigo / Classic grey),
+the title text, the three caption glyphs, the theme switcher directly below the band — no
+native caption glyphs, no ghost caption, no white strip, no content offset. The windows look
+exactly as the pre-phase baseline.
+
+### Conflict #6 observability note (recorded fact, not a settlement)
+
+The three PrintWindow frames show square corners and no drop shadow in every scheme — but this
+is NOT evidence about what Windows 11 does on screen. PrintWindow renders only the window's own
+content into a bitmap; corner rounding and the drop shadow are applied by the DWM compositor
+OUTSIDE the window's content, after the window has drawn itself, so neither can ever appear in
+a PrintWindow frame regardless of whether the OS applies them. The roadmap's PrintWindow-
+comparison check therefore cannot answer C6 ("does Windows 11 round the corners / draw a shadow
+by default once WS_CAPTION|WS_THICKFRAME are present?"). Whether the live window shows rounded
+corners and/or a shadow is maintainer-observed only (22-06 Task 2), and whatever look is chosen
+is then applied explicitly via DWM attributes with read-back (Task 3) so the result is
+deterministic across Windows builds rather than depending on an unobservable default.
+
+**Settled by:** 22-06 Task 2 (maintainer's observation + choice) and Task 3 (explicit DWM
+application + attribute read-back).

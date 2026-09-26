@@ -1,0 +1,75 @@
+<h2>Углы окна и тень</h2>
+<p class="subtitle">Как будет выглядеть рамка каждого окна на библиотеке — выбери один вариант (клик). В развёрнутом на весь экран окне углы в любом варианте прямые.</p>
+
+<div class="options" style="align-items:stretch">
+
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>ВАРИАНТ A</h3>
+      <div style="width:360px;height:220px;border-radius:0;overflow:hidden;background:#0D1B2A;border:1px solid rgba(255,255,255,0.25);margin:0 auto;text-align:left">
+        <div style="height:32px;background:linear-gradient(180deg,rgba(26,58,108,0.87),rgba(13,31,60,0.87));display:flex;align-items:center;justify-content:space-between;padding:0 12px">
+          <span style="color:#E0E8F0;font-size:13px">aero-compose-ui Showcase</span>
+          <span style="display:flex;align-items:center;gap:16px">
+            <svg width="10" height="10" viewBox="0 0 10 10"><line x1="1" y1="7.5" x2="9" y2="7.5" stroke="#E0E8F0" stroke-width="1"/></svg>
+            <svg width="10" height="10" viewBox="0 0 10 10"><rect x="1.5" y="1.5" width="7" height="7" fill="none" stroke="#E0E8F0" stroke-width="1"/></svg>
+            <svg width="10" height="10" viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8" stroke="#E0E8F0" stroke-width="1"/><line x1="8" y1="2" x2="2" y2="8" stroke="#E0E8F0" stroke-width="1"/></svg>
+          </span>
+        </div>
+        <div style="padding:14px 16px">
+          <div style="width:120px;height:18px;border-radius:4px;background:rgba(79,195,247,0.25);border:1px solid rgba(79,195,247,0.5)"></div>
+          <div style="width:240px;height:8px;border-radius:4px;background:rgba(224,232,240,0.12);margin-top:12px"></div>
+          <div style="width:200px;height:8px;border-radius:4px;background:rgba(224,232,240,0.12);margin-top:8px"></div>
+        </div>
+      </div>
+      <p style="margin-top:10px">Прямые углы, без тени — как окно выглядело до этой работы.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>ВАРИАНТ B</h3>
+      <div style="width:360px;height:220px;border-radius:8px;overflow:hidden;background:#0D1B2A;border:1px solid rgba(255,255,255,0.25);box-shadow:0 12px 32px rgba(0,0,0,0.55),0 3px 8px rgba(0,0,0,0.4);margin:0 auto;text-align:left">
+        <div style="height:32px;background:linear-gradient(180deg,rgba(26,58,108,0.87),rgba(13,31,60,0.87));display:flex;align-items:center;justify-content:space-between;padding:0 12px">
+          <span style="color:#E0E8F0;font-size:13px">aero-compose-ui Showcase</span>
+          <span style="display:flex;align-items:center;gap:16px">
+            <svg width="10" height="10" viewBox="0 0 10 10"><line x1="1" y1="7.5" x2="9" y2="7.5" stroke="#E0E8F0" stroke-width="1"/></svg>
+            <svg width="10" height="10" viewBox="0 0 10 10"><rect x="1.5" y="1.5" width="7" height="7" fill="none" stroke="#E0E8F0" stroke-width="1"/></svg>
+            <svg width="10" height="10" viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8" stroke="#E0E8F0" stroke-width="1"/><line x1="8" y1="2" x2="2" y2="8" stroke="#E0E8F0" stroke-width="1"/></svg>
+          </span>
+        </div>
+        <div style="padding:14px 16px">
+          <div style="width:120px;height:18px;border-radius:4px;background:rgba(79,195,247,0.25);border:1px solid rgba(79,195,247,0.5)"></div>
+          <div style="width:240px;height:8px;border-radius:4px;background:rgba(224,232,240,0.12);margin-top:12px"></div>
+          <div style="width:200px;height:8px;border-radius:4px;background:rgba(224,232,240,0.12);margin-top:8px"></div>
+        </div>
+      </div>
+      <p style="margin-top:10px">Скруглённые углы и мягкая системная тень — как у обычных окон Windows 11.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>ВАРИАНТ C</h3>
+      <div style="width:360px;height:220px;border-radius:8px;overflow:hidden;background:#0D1B2A;border:1px solid rgba(255,255,255,0.25);margin:0 auto;text-align:left">
+        <div style="height:32px;background:linear-gradient(180deg,rgba(26,58,108,0.87),rgba(13,31,60,0.87));display:flex;align-items:center;justify-content:space-between;padding:0 12px">
+          <span style="color:#E0E8F0;font-size:13px">aero-compose-ui Showcase</span>
+          <span style="display:flex;align-items:center;gap:16px">
+            <svg width="10" height="10" viewBox="0 0 10 10"><line x1="1" y1="7.5" x2="9" y2="7.5" stroke="#E0E8F0" stroke-width="1"/></svg>
+            <svg width="10" height="10" viewBox="0 0 10 10"><rect x="1.5" y="1.5" width="7" height="7" fill="none" stroke="#E0E8F0" stroke-width="1"/></svg>
+            <svg width="10" height="10" viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8" stroke="#E0E8F0" stroke-width="1"/><line x1="8" y1="2" x2="2" y2="8" stroke="#E0E8F0" stroke-width="1"/></svg>
+          </span>
+        </div>
+        <div style="padding:14px 16px">
+          <div style="width:120px;height:18px;border-radius:4px;background:rgba(79,195,247,0.25);border:1px solid rgba(79,195,247,0.5)"></div>
+          <div style="width:240px;height:8px;border-radius:4px;background:rgba(224,232,240,0.12);margin-top:12px"></div>
+          <div style="width:200px;height:8px;border-radius:4px;background:rgba(224,232,240,0.12);margin-top:8px"></div>
+        </div>
+      </div>
+      <p style="margin-top:10px">Скруглённые углы без тени.</p>
+    </div>
+  </div>
+
+</div>
