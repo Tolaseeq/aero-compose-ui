@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: Native Window Behavior
 status: executing
-stopped_at: Phase 22 Plan 03 complete -- VER-12 real-input tooling + session environment vetting (RealInput.ps1, Watch-SnapFlyout.ps1, Invoke-EarlyGate.ps1, 22-SESSION-ENV.md)
-last_updated: "2026-09-26T20:14:15.733Z"
+stopped_at: Phase 22 Plan 08 complete -- SHW-17 narrow second window fixture + probe narrow checks (V11-N set, API-02 RED live)
+last_updated: "2026-09-26T20:35:22.433Z"
 last_activity: 2026-09-25 -- Phase 22 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 19
-  completed_plans: 5
+  completed_plans: 6
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-25 — v3.2 roadmap created)
 ## Current Position
 
 Phase: 22 (Native Window Behavior + Release 3.2.0) — EXECUTING
-Plan: 6 of 19
+Plan: 7 of 19
 Status: Executing Phase 22
 Last activity: 2026-09-25 -- Phase 22 execution started
 
@@ -58,7 +58,7 @@ Beyond the audit list, one requirement shipped with a recorded gap rather than a
 **v2.0.4:** 3 plans, single-day push incl. corrective release (2026-06-25→26), real RCMP root-cause fix.
 **v3.0:** 41 plans / 85 tasks across 6 phases, 2026-07-22 → 2026-07-29 (8 days), 252 commits, 248 files changed (+43,770 / −2,638) of which 71 code files (+11,104 / −409). Tests 232 → 467. Per-plan durations ranged 3 min – 2h10m; the long tail was human visual sign-off rounds, not code. Per-plan metrics are archived with the phase artifacts in `.planning/milestones/v3.0-phases/`.
 **v3.1:** 14 plans / 35 tasks in 1 phase (21), 2026-09-21 → 2026-09-24 (execution 09-23 → 09-24), 65 commits, 91 files changed (+17,896 / −1,385) of which 31 non-planning files (+4,155 / −122). Tests 467 → 541. The long tail was the capture sweeps and the drift review, not code: the only source edit the upgrade forced was four `Clock` imports. Per-plan metrics are archived with the phase artifacts in `.planning/milestones/v3.1-phases/`.
-**v3.2:** in progress — 1 phase (22), 19 plans roadmapped. Plan 01 (live-window probe harness + RED baseline), 2026-09-25, 19 min, 3 tasks + 1 fix commit, 6 files (4 created, 2 modified). Plan 02 (JNA dependency + native WndProc subclass spike), 2026-09-25, 35 min, 3 tasks, 9 files (5 created, 4 modified). Plan 03 (VER-12 real-input tooling + session environment vetting), 2026-09-25, 9 min, 3 tasks, 4 files created.
+**v3.2:** in progress — 1 phase (22), 19 plans roadmapped. Plan 01 (live-window probe harness + RED baseline), 2026-09-25, 19 min, 3 tasks + 1 fix commit, 6 files (4 created, 2 modified). Plan 02 (JNA dependency + native WndProc subclass spike), 2026-09-25, 35 min, 3 tasks, 9 files (5 created, 4 modified). Plan 03 (VER-12 real-input tooling + session environment vetting), 2026-09-25, 9 min, 3 tasks, 4 files created. Plan 08 (SHW-17 narrow second window fixture + probe narrow checks, run ahead of 06/07 per wave 4 parallelization), 2026-09-26, 13 min, 2 tasks, 5 files (1 created, 4 modified).
 
 ## Accumulated Context
 
@@ -98,6 +98,8 @@ Full decision log lives in PROJECT.md "Key Decisions". Rules that constrain any 
 - **[v3.2, 22-03]** Every SendInput-capable function in `tools/winprobe/RealInput.ps1` requires an `AeroInputSession` that only a non-empty `-AuthorizedBy` can create; `-DryRun` sessions log the planned action and send nothing — proven live (cursor unchanged before/after both self-tests and the early-gate dry run)
 - **[v3.2, 22-03]** Vetted VER-12 full-session candidates, nothing installed: VirtualDrivers/Virtual-Display-Driver 25.7.23 (MttVDD) — Authenticode Valid on installer, driver DLL and catalog (SignPath Foundation via GlobalSign GCC R45 CodeSigning CA 2020), no test-signing needed; PowerToys v0.101.2362.0 `PowerToysUserSetup` (per-user, no UAC) — Authenticode Valid Microsoft Corporation. Full commands/hashes in `22-SESSION-ENV.md`
 - **[v3.2, 22-03]** `winget` is absent on this dev machine, confirming 22-RESEARCH.md's own fallback path (GitHub release asset + Authenticode check) for PowerToys vetting
+- **[v3.2, 22-08]** Windows honors AWT `minimumSize` natively on the native-chrome path (a probe 50x50 request on the narrow window clamped to exactly the app-set 260x200 with zero library floor code) — Plan 11's default 320x240dp floor must not clobber an app-set minimum (D-01)
+- **[v3.2, 22-08]** The unmarked "Вернуть" overlay's `V11-N-HT-MARKED-BOUNDARY` FAIL (`marked=2,captionLeftOfMarked=2`, both HTCAPTION) is the standing RED for API-02; Plan 12's `markAeroTitleBarInteractive()` is what turns it GREEN
 
 ### Open technical debt
 
@@ -135,8 +137,8 @@ Resolved at v3.1 close: the five research conflicts from `.planning/research/SUM
 
 ## Session Continuity
 
-Last session: 2026-09-25T12:42:40.761Z
-Stopped at: Phase 22 Plan 03 complete -- VER-12 real-input tooling + session environment vetting (RealInput.ps1, Watch-SnapFlyout.ps1, Invoke-EarlyGate.ps1, 22-SESSION-ENV.md)
+Last session: 2026-09-26T20:35:22.425Z
+Stopped at: Phase 22 Plan 08 complete -- SHW-17 narrow second window fixture + probe narrow checks (V11-N set, API-02 RED live)
 Resume file: None
 Next action: `/bm:discuss-phase 22` or `/bm:plan-phase 22`
 

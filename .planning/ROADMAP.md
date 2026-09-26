@@ -168,7 +168,7 @@ Details: `.planning/milestones/v3.1-ROADMAP.md` · Requirements: `.planning/mile
   5. Список «не подтверждено» явно называет всё, что не проверено, включая поведение на Windows 10 — не выдаётся за пройденное
   6. `v3.2.0` опубликован и резолвится на JitPack (`com.github.Tolaseeq:aero-compose-ui:v3.2.0`); README и KDoc обновлены, оговорка «Aero Snap limitation» снята; все существующие тесты зелёные под залоченным (и при необходимости поднятым именованным коммитом) числом
 
-**Plans:** 5/19 plans executed
+**Plans:** 6/19 plans executed
 
 Plans:
 **Wave 1**
@@ -187,7 +187,7 @@ Plans:
 **Wave 4** *(blocked on Wave 3 completion)*
 
 - [x] 22-05-PLAN.md — Steps 2–3: sticky frame styles, frame removal, taskbar-aware maximize with auto-hide inset (conflict #3 detection)
-- [ ] 22-08-PLAN.md — SHW-17 narrow second window fixture (own minimum, D-01) + probe multi-window geometry
+- [x] 22-08-PLAN.md — SHW-17 narrow second window fixture (own minimum, D-01) + probe multi-window geometry
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -266,7 +266,7 @@ Plans:
 | 19. Selectors + Lists | v3.0 | 12/12 | Complete | 2026-07-28 |
 | 20. Verification | v3.0 | 9/9 | Complete | 2026-07-29 |
 | 21. Migration + Release 3.1.0 | v3.1 | 14/14 | Complete | 2026-09-24 |
-| 22. Native Window Behavior + Release 3.2.0 | v3.2 | 5/19 | In Progress|  |
+| 22. Native Window Behavior + Release 3.2.0 | v3.2 | 6/19 | In Progress|  |
 
 ## Next Milestone
 
