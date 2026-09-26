@@ -153,7 +153,7 @@ try {
     if ($Report -contains 'maximize' -and -not $SkipMaximize) {
         $maxResult = Invoke-WinProbeMaximize -Hwnd $hwnd -LogPath $(if ($launchInfo) { $launchInfo.StdOut } else { $null }) -Label $Label
         $output['maximize'] = $maxResult
-        Write-Output "MAXIMIZE foregroundTaken=$($maxResult.ForegroundTaken) rcWork=$($maxResult.MonitorRcWork.Left),$($maxResult.MonitorRcWork.Top),$($maxResult.MonitorRcWork.Right),$($maxResult.MonitorRcWork.Bottom) windowRect=$($maxResult.WindowRectMaximized.Left),$($maxResult.WindowRectMaximized.Top),$($maxResult.WindowRectMaximized.Right),$($maxResult.WindowRectMaximized.Bottom)"
+        Write-Output "MAXIMIZE foregroundTaken=$($maxResult.ForegroundTaken) rcWork=$($maxResult.MonitorRcWork.Left),$($maxResult.MonitorRcWork.Top),$($maxResult.MonitorRcWork.Right),$($maxResult.MonitorRcWork.Bottom) windowRect=$($maxResult.WindowRectMaximized.Left),$($maxResult.WindowRectMaximized.Top),$($maxResult.WindowRectMaximized.Right),$($maxResult.WindowRectMaximized.Bottom) clientRect=$($maxResult.ClientRectMaximized.Left),$($maxResult.ClientRectMaximized.Top),$($maxResult.ClientRectMaximized.Right),$($maxResult.ClientRectMaximized.Bottom)"
     }
 
     $v11Results = $null

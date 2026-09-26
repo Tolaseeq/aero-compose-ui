@@ -700,6 +700,25 @@ function Invoke-WinProbeMaximize {
     $windowRectMax = New-Object AeroWinProbe.WRect
     [AeroWinProbe.Native]::GetWindowRect($Hwnd, [ref]$windowRectMax) | Out-Null
 
+    # WIN-01 (22-05): WM_NCCALCSIZE only ever controls the CLIENT rectangle, never the outer
+    # window rectangle GetWindowRect reports (WM_GETMINMAXINFO owns that, and this milestone's
+    # NCCALCSIZE-only fix deliberately leaves it untouched — Plan 11 territory). The window rect
+    # keeps its pre-existing sizing-border overhang past the monitor by design; what must match
+    # the work area (minus the auto-hide inset) is the CLIENT rect converted to screen
+    # coordinates via ClientToScreen, which is what AWT/Skia actually renders into and what a
+    # human looking at the maximized window actually sees.
+    $clientOrigin = New-Object AeroWinProbe.WPoint
+    $clientOrigin.X = 0
+    $clientOrigin.Y = 0
+    [AeroWinProbe.Native]::ClientToScreen($Hwnd, [ref]$clientOrigin) | Out-Null
+    $clientRectLocal = New-Object AeroWinProbe.WRect
+    [AeroWinProbe.Native]::GetClientRect($Hwnd, [ref]$clientRectLocal) | Out-Null
+    $clientRectMax = New-Object AeroWinProbe.WRect
+    $clientRectMax.Left = $clientOrigin.X
+    $clientRectMax.Top = $clientOrigin.Y
+    $clientRectMax.Right = $clientOrigin.X + ($clientRectLocal.Right - $clientRectLocal.Left)
+    $clientRectMax.Bottom = $clientOrigin.Y + ($clientRectLocal.Bottom - $clientRectLocal.Top)
+
     $monitor = [AeroWinProbe.Native]::MonitorFromWindow($Hwnd, [AeroWinProbe.Native]::MONITOR_DEFAULTTONEAREST)
     $monitorInfo = New-Object AeroWinProbe.MonitorInfo
     $monitorInfo.cbSize = [System.Runtime.InteropServices.Marshal]::SizeOf([type]([AeroWinProbe.MonitorInfo]))
@@ -717,6 +736,7 @@ function Invoke-WinProbeMaximize {
         ForegroundTaken          = $foregroundDuringMaximize
         ForegroundAfterRestore   = $foregroundAfterRestore
         WindowRectMaximized      = $windowRectMax
+        ClientRectMaximized      = $clientRectMax
         MonitorRcWork            = $monitorInfo.rcWork
         MonitorRcMonitor         = $monitorInfo.rcMonitor
         ReporterAfterMaximize    = $reporterAfterMax
@@ -954,13 +974,19 @@ function Invoke-WinProbeV11 {
     if ($SkipMaximize) {
         $results.Add((New-V11Result 'V11-HT-MAXIMIZED-TOP' 'SKIP' 'edgeTop=2 while maximized' '-SkipMaximize'))
         $results.Add((New-V11Result 'V11-MAX-WORKAREA' 'SKIP' 'maximized client == rcWork (inset 1-4px on auto-hide edges, ~0px elsewhere)' '-SkipMaximize'))
+        $results.Add((New-V11Result 'V11-AUTOHIDE-EDGE' 'SKIP' 'auto-hide edges uncovered by >=1px' '-SkipMaximize'))
     }
     else {
         $maxResult = Invoke-WinProbeMaximize -Hwnd $Hwnd -LogPath $LogPath -Label $Label
         $maxTopCode = $maxResult.EdgeTopHitWhileMaximized.Code
         $results.Add((New-V11Result 'V11-HT-MAXIMIZED-TOP' $(if ($maxTopCode -eq 2) { 'PASS' } else { 'FAIL' }) '2' "$maxTopCode"))
 
-        $wr = $maxResult.WindowRectMaximized
+        # WIN-01: the CLIENT rect (screen coords, ClientToScreen) is what must match the work
+        # area — WM_NCCALCSIZE's whole job. GetWindowRect (Invoke-WinProbeMaximize's separately
+        # recorded WindowRectMaximized) keeps its pre-existing sizing-border overhang by design
+        # (WM_GETMINMAXINFO is untouched in this plan, Plan 11 territory) and is not the right
+        # measurement for "does the visible content cover the work area".
+        $wr = $maxResult.ClientRectMaximized
         $work = $maxResult.MonitorRcWork
         $deltas = [ordered]@{
             Left   = [Math]::Abs($wr.Left - $work.Left)
@@ -977,17 +1003,26 @@ function Invoke-WinProbeV11 {
             if (-not $edgeOk) { $withinTolerance = $false }
             $edgeChecks.Add("$edgeName=$delta$(if ($isAutoHide) { '(autoHide,need 1-4)' } else { '(need <=1)' })=$(if ($edgeOk) { 'ok' } else { 'BAD' })")
         }
-        $results.Add((New-V11Result 'V11-MAX-WORKAREA' $(if ($withinTolerance) { 'PASS' } else { 'FAIL' }) "rcWork=$($work.Left),$($work.Top),$($work.Right),$($work.Bottom) autoHideEdges=$($taskbar.AutoHideEdges -join ',')" "window=$($wr.Left),$($wr.Top),$($wr.Right),$($wr.Bottom) $($edgeChecks -join ' ') foregroundTaken=$($maxResult.ForegroundTaken)"))
-    }
+        $results.Add((New-V11Result 'V11-MAX-WORKAREA' $(if ($withinTolerance) { 'PASS' } else { 'FAIL' }) "rcWork=$($work.Left),$($work.Top),$($work.Right),$($work.Bottom) autoHideEdges=$($taskbar.AutoHideEdges -join ',')" "client=$($wr.Left),$($wr.Top),$($wr.Right),$($wr.Bottom) window=$($maxResult.WindowRectMaximized.Left),$($maxResult.WindowRectMaximized.Top),$($maxResult.WindowRectMaximized.Right),$($maxResult.WindowRectMaximized.Bottom) $($edgeChecks -join ' ') foregroundTaken=$($maxResult.ForegroundTaken)"))
 
-    if ($taskbar.AutoHideEdges.Count -eq 0) {
-        $results.Add((New-V11Result 'V11-AUTOHIDE-EDGE' 'SKIP' 'at least one auto-hide edge' 'no auto-hide edge on this monitor'))
-    }
-    else {
-        # This RED-baseline plan only proves detection; the actual >=1px-uncovered assertion needs
-        # native code from Plan 03+ to be meaningful, so a bare detection pass is recorded here and
-        # the real geometry assertion is added once the frame-removal step exists.
-        $results.Add((New-V11Result 'V11-AUTOHIDE-EDGE' 'FAIL' 'auto-hide edges uncovered by >=1px' "detected edges=$($taskbar.AutoHideEdges -join ',') (no native inset code yet)"))
+        # WIN-01 (22-05): the native inset code now exists, so this reuses the same per-edge
+        # deltas V11-MAX-WORKAREA already measured — every detected auto-hide edge must be left
+        # uncovered by 1-4px (Windows Terminal's 2px, plus slack), not the placeholder "detection
+        # only, always FAIL" this checked against pre-05 code.
+        if ($taskbar.AutoHideEdges.Count -eq 0) {
+            $results.Add((New-V11Result 'V11-AUTOHIDE-EDGE' 'SKIP' 'at least one auto-hide edge' 'no auto-hide edge on this monitor'))
+        }
+        else {
+            $autoHideDetail = New-Object System.Collections.Generic.List[string]
+            $autoHideOk = $true
+            foreach ($edgeName in $taskbar.AutoHideEdges) {
+                $delta = $deltas[$edgeName]
+                $edgeOk = ($delta -ge 1) -and ($delta -le 4)
+                if (-not $edgeOk) { $autoHideOk = $false }
+                $autoHideDetail.Add("$edgeName=$delta")
+            }
+            $results.Add((New-V11Result 'V11-AUTOHIDE-EDGE' $(if ($autoHideOk) { 'PASS' } else { 'FAIL' }) 'auto-hide edges uncovered by >=1px' "detected edges=$($taskbar.AutoHideEdges -join ',') deltas=$($autoHideDetail -join ',')"))
+        }
     }
 
     $minSize = Invoke-WinProbeMinSize -Hwnd $Hwnd
