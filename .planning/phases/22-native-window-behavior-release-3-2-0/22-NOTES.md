@@ -915,5 +915,19 @@ corners and/or a shadow is maintainer-observed only (22-06 Task 2), and whatever
 is then applied explicitly via DWM attributes with read-back (Task 3) so the result is
 deterministic across Windows builds rather than depending on an unobservable default.
 
+### Maintainer's observation and choice (Task 2)
+
+Asked 2026-09-26 with the real showcase window open and the Visual Companion preview
+(`22-corners-preview.html`, ВАРИАНТ A/B/C side by side) in the browser next to it.
+
+**Reply (verbatim):** variant choice: «a»; observation (follow-up message): «углы не
+скруглены щас».
+
+**Recorded:** chosen variant = **A** (square corners, no system shadow — how the window
+looked before this phase). Conflict #6 observation: on this machine Windows 11 did NOT
+round the window's corners by default once `WS_CAPTION | WS_THICKFRAME` returned (no
+explicit DWM attribute was set at that point). The maintainer did not mention a shadow —
+recorded verbatim as shadow-unobserved, not inferred either way.
+
 **Settled by:** 22-06 Task 2 (maintainer's observation + choice) and Task 3 (explicit DWM
 application + attribute read-back).
