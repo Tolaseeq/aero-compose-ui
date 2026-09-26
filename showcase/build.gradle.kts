@@ -36,6 +36,7 @@ tasks.withType<JavaExec>().configureEach {
         (project.findProperty("aero.capture") as String?)?.let { systemProperty("aero.capture", it) }
         (project.findProperty("aero.windowState") as String?)?.let { systemProperty("aero.windowState", it) }
         (project.findProperty("aero.chromeTrace") as String?)?.let { systemProperty("aero.chromeTrace", it) }
+        (project.findProperty("aero.secondWindow") as String?)?.let { systemProperty("aero.secondWindow", it) }
     }
 }
 
@@ -50,6 +51,7 @@ tasks.withType<org.jetbrains.compose.reload.gradle.ComposeHotRun>().configureEac
     (project.findProperty("aero.capture") as String?)?.let { systemProperty("aero.capture", it) }
     (project.findProperty("aero.windowState") as String?)?.let { systemProperty("aero.windowState", it) }
     (project.findProperty("aero.chromeTrace") as String?)?.let { systemProperty("aero.chromeTrace", it) }
+    (project.findProperty("aero.secondWindow") as String?)?.let { systemProperty("aero.secondWindow", it) }
 }
 
 compose.desktop {

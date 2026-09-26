@@ -20,6 +20,7 @@ import com.mordred.aero.components.navigation.AeroResizeHandles
 import com.mordred.aero.components.navigation.AeroTitleBar
 import com.mordred.aero.theme.AeroColorScheme
 import com.mordred.aero.theme.AeroTheme
+import kotlinx.coroutines.delay
 
 /**
  * Scheme the showcase opens on, from `-Daero.scheme=AeroBlue|AeroDark|Classic`.
@@ -62,10 +63,24 @@ private fun initialPage(): Int =
  */
 private fun captureMode(): Boolean = System.getProperty("aero.capture") == "true"
 
+/**
+ * When the narrow queue window opens, from `-Daero.secondWindow=true|=<milliseconds>`.
+ *
+ * Exists so a verification pass can open the SHW-17 narrow window deterministically: `"true"`
+ * opens it at start (0 ms), a positive integer opens it after that delay (used to open the
+ * window while the main window is being dragged), and absent or unrecognised values never
+ * open it — so a default launch is unchanged.
+ */
+private fun secondWindowOpenDelayMs(): Long? = when (val value = System.getProperty("aero.secondWindow")) {
+    "true" -> 0L
+    else -> value?.toLongOrNull()?.takeIf { it > 0L }
+}
+
 fun main() {
     val section = initialSection()
     val page = initialPage()
     val capture = captureMode()
+    val secondWindowDelayMs = secondWindowOpenDelayMs()
 
     application {
         val windowState = rememberWindowState(
@@ -112,6 +127,17 @@ fun main() {
                     AeroResizeHandles(windowState)
                 }
             }
+        }
+
+        var narrowOpen by remember { mutableStateOf(secondWindowDelayMs == 0L) }
+        if (secondWindowDelayMs != null && secondWindowDelayMs > 0L) {
+            LaunchedEffect(Unit) {
+                delay(secondWindowDelayMs)
+                narrowOpen = true
+            }
+        }
+        if (narrowOpen) {
+            NarrowQueueWindow(initialScheme(), capture, onClose = { narrowOpen = false })
         }
     }
 }
