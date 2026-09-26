@@ -313,14 +313,33 @@ namespace AeroWinProbe
 
 # Single source of probe geometry, in dp, scaled by GetDpiForWindow/96 at point-computation time.
 # 'main' matches AeroTitleBar.kt's current layout: 32dp row, 8dp horizontal padding, three 46dp
-# buttons in order Minimize/Maximize/Close from the right. A 'narrow' entry is added by Plan 08
-# for the ~300px second showcase window.
+# buttons in order Minimize/Maximize/Close from the right. 'narrow' is the SHW-17 fixture
+# (NarrowQueueWindow.kt, 300x480dp): same row/button constants plus the fixture's own elements —
+# a 24x20dp badge starting at x 8dp and the 60x22dp "Вернуть" overlay at x 88..148dp — and its
+# own AWT minimum (260x200, D-01), which V11-N-MINSIZE checks against instead of 320x240.
 $WinProbeLayout = @{
     main = @{
         titleHeightDp = 32
         rowPaddingDp  = 8
         buttonWidthDp = 46
         buttonOrder   = @('Minimize', 'Maximize', 'Close')
+    }
+    narrow = @{
+        titleHeightDp = 32
+        rowPaddingDp  = 8
+        buttonWidthDp = 46
+        buttonOrder   = @('Minimize', 'Maximize', 'Close')
+        # The caption probe point sits left of the "Вернуть" overlay (x 88dp), not at the
+        # midpoint of the free span (which the overlay cuts into).
+        captionXDp    = 70
+        extraPointsDp = @{
+            leading               = @{ x = 20;  y = 16 }
+            captionRightOfLeading = @{ x = 36;  y = 16 }
+            marked                = @{ x = 118; y = 16 }
+            captionLeftOfMarked   = @{ x = 82;  y = 16 }
+        }
+        minWidthDp    = 260
+        minHeightDp   = 200
     }
 }
 
@@ -347,7 +366,7 @@ function Get-WinProbeNamedPoints {
     $minCenterDp = $ClientWidthDp - $padding - (2.5 * $btnW)
     $minLeftEdgeDp = $ClientWidthDp - $padding - (3.0 * $btnW)
     $captionLeftOfMinDp = $minLeftEdgeDp - 6
-    $captionXDp = ($padding + $minLeftEdgeDp) / 2.0
+    $captionXDp = if ($Layout.ContainsKey('captionXDp')) { [double]$Layout.captionXDp } else { ($padding + $minLeftEdgeDp) / 2.0 }
 
     function Px([double]$dp) { return [int][Math]::Round($dp * $Scale) }
 
@@ -369,6 +388,12 @@ function Get-WinProbeNamedPoints {
         cornerTR           = @{ x = ($widthPx - 2); y = 2 }
         cornerBL           = @{ x = 2; y = ($heightPx - 2) }
         cornerBR           = @{ x = ($widthPx - 2); y = ($heightPx - 2) }
+    }
+    if ($Layout.ContainsKey('extraPointsDp')) {
+        foreach ($name in $Layout.extraPointsDp.Keys) {
+            $ep = $Layout.extraPointsDp[$name]
+            $points[$name] = @{ x = (Px ([double]$ep.x)); y = (Px ([double]$ep.y)) }
+        }
     }
     return $points
 }
@@ -474,6 +499,32 @@ function Wait-WinProbeReporter {
         Start-Sleep -Milliseconds 150
     }
     return $null
+}
+
+function Wait-WinProbeEvent {
+    <#
+    .SYNOPSIS
+        Polls a launch's stdout log for an `AERO_EVENT name=<Name>` line (optionally requiring
+        -Detail to appear in it) until one appears or -TimeoutSec elapses. Lets a verification
+        session read click/close-request evidence without sending any real input.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$LogPath,
+        [Parameter(Mandatory = $true)][string]$Name,
+        [string]$Detail = '',
+        [int]$TimeoutSec = 10
+    )
+    $prefix = "AERO_EVENT name=$Name"
+    return Wait-WinProbeReporter -Predicate {
+        if (-not (Test-Path -LiteralPath $LogPath)) { return $null }
+        $lines = Get-Content -LiteralPath $LogPath -ErrorAction SilentlyContinue
+        if (-not $lines) { return $null }
+        foreach ($line in $lines) {
+            if ($line.StartsWith($prefix) -and ($Detail -eq '' -or $line.Contains($Detail))) { return $line }
+        }
+        return $null
+    } -TimeoutSec $TimeoutSec
 }
 
 function Get-WinProbeWindowInfo {
@@ -919,6 +970,61 @@ function Invoke-WinProbeV11 {
     }
 
     $results = New-Object System.Collections.Generic.List[object]
+
+    function New-V11HitResult([string]$Id, [string]$PointName, [int]$Expected) {
+        $pt = $points[$PointName]
+        $hit = Invoke-WinProbeHitTest -Hwnd $Hwnd -ClientX $pt.x -ClientY $pt.y
+        $r = if ($hit.Code -eq $Expected) { 'PASS' } else { 'FAIL' }
+        $results.Add((New-V11Result $Id $r "$Expected" "$($hit.Code) ($($hit.CodeName)) chain=$($hit.Chain)"))
+        return $hit
+    }
+
+    if ($Layout -eq 'narrow') {
+        # Narrow-window VER-11 set (SHW-17 fixture, 300x480dp): caption/button classification,
+        # the leading badge and the "Вернуть" overlay boundaries, resize edges, and the app's
+        # own minimum size (D-01: 260x200, NOT the library's 320x240 default floor). Maximize
+        # checks are not part of this set. The marked-element boundary is expected to FAIL until
+        # the element is marked interactive on the native path (API-02) — that FAIL is the RED.
+        New-V11HitResult 'V11-N-HT-CAPTION' 'caption' 2 | Out-Null
+        New-V11HitResult 'V11-N-HT-MAX' 'max' 9 | Out-Null
+
+        $leadingHit = Invoke-WinProbeHitTest -Hwnd $Hwnd -ClientX $points['leading'].x -ClientY $points['leading'].y
+        $captionRightHit = Invoke-WinProbeHitTest -Hwnd $Hwnd -ClientX $points['captionRightOfLeading'].x -ClientY $points['captionRightOfLeading'].y
+        $leadingBoundaryPass = ($leadingHit.Code -eq 1) -and ($captionRightHit.Code -eq 2)
+        $results.Add((New-V11Result 'V11-N-HT-LEADING-BOUNDARY' $(if ($leadingBoundaryPass) { 'PASS' } else { 'FAIL' }) 'leading=1,captionRightOfLeading=2' "leading=$($leadingHit.Code),captionRightOfLeading=$($captionRightHit.Code)"))
+
+        $markedHit = Invoke-WinProbeHitTest -Hwnd $Hwnd -ClientX $points['marked'].x -ClientY $points['marked'].y
+        $captionLeftHit = Invoke-WinProbeHitTest -Hwnd $Hwnd -ClientX $points['captionLeftOfMarked'].x -ClientY $points['captionLeftOfMarked'].y
+        $markedBoundaryPass = ($markedHit.Code -eq 1) -and ($captionLeftHit.Code -eq 2)
+        $results.Add((New-V11Result 'V11-N-HT-MARKED-BOUNDARY' $(if ($markedBoundaryPass) { 'PASS' } else { 'FAIL' }) 'marked=1,captionLeftOfMarked=2' "marked=$($markedHit.Code),captionLeftOfMarked=$($captionLeftHit.Code)"))
+
+        New-V11HitResult 'V11-N-HT-EDGE-L' 'edgeLeft' 10 | Out-Null
+        New-V11HitResult 'V11-N-HT-EDGE-R' 'edgeRight' 11 | Out-Null
+        New-V11HitResult 'V11-N-HT-EDGE-B' 'edgeBottom' 15 | Out-Null
+
+        $narrowMinSize = Invoke-WinProbeMinSize -Hwnd $Hwnd
+        $expectedMinW = [Math]::Round($layoutDef.minWidthDp * $info.Scale)
+        $expectedMinH = [Math]::Round($layoutDef.minHeightDp * $info.Scale)
+        $defaultMinW = [Math]::Round(320 * $info.Scale)
+        $defaultMinH = [Math]::Round(240 * $info.Scale)
+        # Three-way discrimination: app minimum honored lands at 260x200 (PASS); the library's
+        # default floor lands at 320x240 (FAIL, D-01 violated); no floor at all stays 50x50 (FAIL).
+        $narrowMinSizePass = ($narrowMinSize.ObtainedWidth -ge $expectedMinW) -and ($narrowMinSize.ObtainedHeight -ge $expectedMinH) `
+            -and ($narrowMinSize.ObtainedWidth -lt $defaultMinW) -and ($narrowMinSize.ObtainedHeight -lt $defaultMinH)
+        $results.Add((New-V11Result 'V11-N-MINSIZE' $(if ($narrowMinSizePass) { 'PASS' } else { 'FAIL' }) ">=${expectedMinW}x${expectedMinH} and <${defaultMinW}x${defaultMinH}" "$($narrowMinSize.ObtainedWidth)x$($narrowMinSize.ObtainedHeight)"))
+
+        # Write-Host, not Write-Output: see the main path below for why the success stream must
+        # carry only the result objects themselves.
+        foreach ($r in $results) {
+            Write-Host "V11 $($r.Id) $($r.Result) expected=$($r.Expected) observed=$($r.Observed)"
+        }
+        $passCount = @($results | Where-Object { $_.Result -eq 'PASS' }).Count
+        $failCount = @($results | Where-Object { $_.Result -eq 'FAIL' }).Count
+        $skipCount = @($results | Where-Object { $_.Result -eq 'SKIP' }).Count
+        Write-Host "V11 SUMMARY narrow pass=$passCount fail=$failCount skip=$skipCount"
+
+        return $results
+    }
 
     # V11-STYLE
     $requiredStyles = @('WS_CAPTION', 'WS_SYSMENU', 'WS_THICKFRAME', 'WS_MINIMIZEBOX', 'WS_MAXIMIZEBOX')

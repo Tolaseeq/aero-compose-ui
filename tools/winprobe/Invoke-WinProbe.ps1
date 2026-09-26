@@ -27,7 +27,8 @@ param(
     [switch]$SelfTest,
     [string]$RepoRoot = 'C:\1A_WORK\ui_lib',
     [int]$ReadyTimeoutSec = 300,
-    [string]$Label = 'main'
+    [string]$Label = 'main',
+    [string[]]$Windows = @()
 )
 
 Set-StrictMode -Version 2
@@ -43,6 +44,13 @@ if ($invalidReports.Count -gt 0) {
     throw "Invoke-WinProbe: -Report has unknown value(s) $($invalidReports -join ','); valid values are $($validReports -join ',')"
 }
 
+# Same comma-split normalization for -Windows; valid values name $WinProbeLayout entries.
+$Windows = @($Windows | ForEach-Object { $_ -split ',' } | Where-Object { $_ -ne '' })
+$invalidWindows = @($Windows | Where-Object { @('main', 'narrow') -notcontains $_ })
+if ($invalidWindows.Count -gt 0) {
+    throw "Invoke-WinProbe: -Windows has unknown value(s) $($invalidWindows -join ','); valid values are main,narrow"
+}
+
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 . (Join-Path $here 'WinProbe.ps1')
 
@@ -54,6 +62,12 @@ if ($SelfTest) {
     }
     Write-Output 'WINPROBE_SELFTEST layout=main present'
 
+    if (-not $WinProbeLayout.ContainsKey('narrow')) {
+        Write-Output 'WINPROBE_SELFTEST FAIL: $WinProbeLayout.narrow missing'
+        exit 1
+    }
+    Write-Output 'WINPROBE_SELFTEST layout=narrow present'
+
     $ok = $true
     foreach ($scale in @(1.0, 1.5)) {
         $points = Get-WinProbeNamedPoints -Layout $WinProbeLayout.main -ClientWidthDp 1200 -ClientHeightDp 800 -Scale $scale
@@ -64,6 +78,26 @@ if ($SelfTest) {
         $expectedMaxX = [int][Math]::Round((1200 - 8 - 46 - 23) * $scale)
         if ($points['max'].x -ne $expectedMaxX) {
             Write-Output "WINPROBE_SELFTEST FAIL: scale=$scale expected max.x=$expectedMaxX got $($points['max'].x)"
+            $ok = $false
+        }
+    }
+
+    # Narrow fixture (SHW-17): 300x480dp window; the "Вернуть" overlay center is 118dp, so at
+    # 1.5 scale it must land at 177px.
+    foreach ($scale in @(1.0, 1.5)) {
+        $points = Get-WinProbeNamedPoints -Layout $WinProbeLayout.narrow -ClientWidthDp 300 -ClientHeightDp 480 -Scale $scale
+        foreach ($name in $points.Keys) {
+            $p = $points[$name]
+            Write-Output "WINPROBE_SELFTEST layout=narrow scale=$scale point=$name x=$($p.x) y=$($p.y)"
+        }
+        $expectedMarkedX = [int][Math]::Round(118 * $scale)
+        if ($points['marked'].x -ne $expectedMarkedX) {
+            Write-Output "WINPROBE_SELFTEST FAIL: scale=$scale expected marked.x=$expectedMarkedX got $($points['marked'].x)"
+            $ok = $false
+        }
+        $expectedLeadingX = [int][Math]::Round(20 * $scale)
+        if ($points['leading'].x -ne $expectedLeadingX) {
+            Write-Output "WINPROBE_SELFTEST FAIL: scale=$scale expected leading.x=$expectedLeadingX got $($points['leading'].x)"
             $ok = $false
         }
     }
@@ -82,6 +116,88 @@ if (-not $Title) {
 }
 
 Initialize-AeroDpiAwareness
+
+if ($Windows.Count -gt 0) {
+    # Multi-window mode: one launch, one probe pass per named window, found by exact title.
+    # 'narrow' exists only when the launch forwards -Paero.secondWindow=true.
+    $mainTitle = if ($Capture) { 'aero-compose-ui Showcase [capture]' } else { 'aero-compose-ui Showcase' }
+    $narrowTitle = if ($Capture) { 'aero-compose-ui Queue [capture]' } else { 'aero-compose-ui Queue' }
+    $windowTitles = @{ main = $mainTitle; narrow = $narrowTitle }
+
+    $logDir = Join-Path $RepoRoot '.captures\22-baseline\logs'
+    $launchInfo = $null
+    $hwnd = [IntPtr]::Zero
+    try {
+        if ($Launch -ne 'none') {
+            $props = @($GradleProps)
+            if ($Capture) { $props += '-Paero.capture=true' }
+            if ($Windows -contains 'narrow') { $props += '-Paero.secondWindow=true' }
+            $launchInfo = Start-WinProbeShowcase -Task $Launch -GradleProps $props -LogDir $logDir -RepoRoot $RepoRoot
+        }
+
+        $output = [ordered]@{}
+        $allV11 = New-Object System.Collections.Generic.List[object]
+        foreach ($w in $Windows) {
+            $hwnd = Find-AeroShowcaseWindow -Title $windowTitles[$w] -TimeoutSec $ReadyTimeoutSec
+            if ($launchInfo) {
+                Wait-WinProbeReporter -Predicate { Get-WinProbeReporterState -LogPath $launchInfo.StdOut -Label $w } -TimeoutSec $ReadyTimeoutSec | Out-Null
+            }
+            Start-Sleep -Milliseconds 500
+
+            $windowInfo = Get-WinProbeWindowInfo -Hwnd $hwnd
+            Write-Output "WINDOW $w hwnd=$('0x{0:X}' -f $hwnd.ToInt64()) pid=$($windowInfo.ProcessId) jvmKind=$($windowInfo.JvmKind)"
+            Write-Output "STYLE $w $($windowInfo.StyleHex) exStyle=$($windowInfo.ExStyleHex) names=$($windowInfo.StyleNames -join ',')"
+
+            $v11Results = Invoke-WinProbeV11 -Hwnd $hwnd -Layout $w -LogPath $(if ($launchInfo) { $launchInfo.StdOut } else { $null }) -Label $w -SkipMaximize:$SkipMaximize
+            $output[$w] = [ordered]@{ windowInfo = $windowInfo; v11 = $v11Results }
+            foreach ($r in $v11Results) { $allV11.Add($r) }
+        }
+
+        if ($Json) {
+            $jsonDir = Split-Path -Path $Json -Parent
+            if ($jsonDir -and -not (Test-Path -LiteralPath $jsonDir)) {
+                New-Item -ItemType Directory -Path $jsonDir -Force | Out-Null
+            }
+            $output | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $Json -Encoding UTF8
+        }
+
+        $exitCode = 0
+        if ($AssertV11) {
+            $failedIds = @($allV11 | Where-Object { $_.Result -eq 'FAIL' } | ForEach-Object { $_.Id })
+            if ($failedIds.Count -gt 0) {
+                Write-Output "V11 ASSERT FAIL: $($failedIds -join ',')"
+                $exitCode = 1
+            }
+        }
+        if ($ExpectRed) {
+            $passedIds = @($allV11 | Where-Object { $_.Result -eq 'PASS' } | ForEach-Object { $_.Id })
+            if ($passedIds.Count -eq 0) {
+                Write-Output 'RED OK'
+            }
+            else {
+                Write-Output "RED BROKEN $($passedIds -join ',')"
+                $exitCode = 1
+            }
+        }
+        exit $exitCode
+    }
+    finally {
+        if (-not $KeepRunning) {
+            # Both windows belong to the same showcase process; stopping by the last-seen HWND
+            # ends it, then the gradle process tree if it outlives its child.
+            if ($hwnd -ne [IntPtr]::Zero -and $Launch -ne 'none') {
+                Stop-AeroProcessOfWindow -Hwnd $hwnd
+                if ($launchInfo -and $launchInfo.Process) {
+                    $exited = $launchInfo.Process.WaitForExit(30000)
+                    if (-not $exited -and -not $launchInfo.Process.HasExited) {
+                        & taskkill /PID $launchInfo.Process.Id /T /F 2>$null | Out-Null
+                    }
+                }
+            }
+            Remove-AeroOrphanShowcaseProcesses | Out-Null
+        }
+    }
+}
 
 $logDir = Join-Path $RepoRoot '.captures\22-baseline\logs'
 $launchInfo = $null
