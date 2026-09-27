@@ -131,7 +131,9 @@ $AeroCursorIdMap = [ordered]@{
 
 # Key-name -> virtual-key-code table for Send-AeroKeyChord. Matches this plan's own
 # <interfaces> block (VK_LWIN 0x5B, VK_SHIFT 0x10, VK_MENU 0x12, VK_ESCAPE 0x1B, VK_SPACE 0x20,
-# VK_LEFT 0x25, VK_UP 0x26, VK_RIGHT 0x27, VK_DOWN 0x28, VK_RETURN 0x0D, VK_F4 0x73).
+# VK_LEFT 0x25, VK_UP 0x26, VK_RIGHT 0x27, VK_DOWN 0x28, VK_RETURN 0x0D, VK_F4 0x73) plus
+# VK_HOME/VK_END for system-menu navigation: menu-item letters are locale-dependent (a Russian
+# Windows uses different mnemonics), but Home/End land on the first/last item in every locale.
 $AeroKeyNameToVk = [ordered]@{
     LWin   = 0x5B
     Shift  = 0x10
@@ -144,6 +146,8 @@ $AeroKeyNameToVk = [ordered]@{
     Down   = 0x28
     Enter  = 0x0D
     F4     = 0x73
+    Home   = 0x24
+    End    = 0x23
 }
 
 function New-AeroInputSession {

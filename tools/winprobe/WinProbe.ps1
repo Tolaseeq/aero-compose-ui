@@ -467,7 +467,7 @@ function Get-WinProbeReporterState {
         [int]$AfterLineIndex = 0
     )
     if (-not (Test-Path -LiteralPath $LogPath)) { return $null }
-    $lines = Get-Content -LiteralPath $LogPath -ErrorAction SilentlyContinue
+    $lines = @(Get-Content -LiteralPath $LogPath -ErrorAction SilentlyContinue)
     if (-not $lines) { return $null }
     $prefix = "AERO_WINDOW_STATE label=$Label "
     $match = $null
