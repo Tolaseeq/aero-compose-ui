@@ -1247,3 +1247,101 @@ hardening regressed nothing.
   holding nested pscustomobjects (a stored reporter line) spun at 100% CPU for minutes in run 1;
   flattening those entries to strings fixed it. Run 1's own measurements (before the dump) all
   matched run 3's.
+
+## Native resize (22-11)
+
+Recorded by Plan 11 (Task 3), 2026-09-27, against the capture-mode showcase with the Tasks 1-2
+changes installed (edge/corner bands in `classifyHitTest` behind a DPI-correct `resizeBandPx`,
+the WM_GETMINMAXINFO min-track floor, `AeroResizeHandles` standing down while native chrome is
+active). Same machine as every prior plan (Windows 11 24H2 build 26100, one 1920x1080 monitor
+at 100% DPI, taskbar auto-hide ON). Probed via `tools/winprobe/Invoke-WinProbe.ps1 -Launch run
+-Windows main,narrow -GradleProps "-Paero.chromeTrace=true"` — one launch, pid 3060, standard
+JDK 21, both windows in non-focusable capture mode. Evidence: `.captures/22-resize/live.json`,
+`.captures/22-resize/console.log`, launch log
+`.captures/22-baseline/logs/winprobe-run-191550.489.out.log`. Maximize cycle included (F9:
+probe-driven `SC_MAXIMIZE` never takes the foreground on this machine).
+
+### Band metrics at 100% DPI
+
+Measured read-only (`GetSystemMetricsForDpi` at DPI 96, `.captures/22-resize/Measure-Band.ps1`):
+`SM_CXSIZEFRAME=4` (SM_CYSIZEFRAME also 4), `SM_CXPADDEDBORDER=4` → system sum 8 px; CMP's own
+resizer `8 dp × 1.0 = 8 px` → `resizeBandPx = max(8, 8) = 8 px`. The two lower bounds coincide
+on this machine, so the native band exactly covers every pixel CMP's own undecorated resizer
+could claim — and inside the band the child answers `HTTRANSPARENT` (chains below), so neither
+`AeroResizeHandles` (a no-op on this path since Task 2) nor CMP's resizer can receive the
+press (WIN-02, T-22-25).
+
+### Main window — V11 SUMMARY pass=18 fail=0 skip=0 (all 18 PASS)
+
+```
+V11 V11-STYLE PASS ... observed=WS_POPUP,WS_CAPTION,WS_SYSMENU,WS_THICKFRAME,WS_MINIMIZEBOX,WS_MAXIMIZEBOX,WS_CLIPCHILDREN
+V11 V11-HT-CAPTION PASS expected=2 observed=2 (HTCAPTION) chain=SunAwtCanvas:-1 -> SunAwtFrame:2
+V11 V11-HT-MAX PASS expected=9 observed=9 (HTMAXBUTTON) chain=SunAwtCanvas:-1 -> SunAwtFrame:9
+V11 V11-HT-MIN-BOUNDARY PASS / V11-HT-CLOSE-BOUNDARY PASS
+V11 V11-HT-EDGE-L PASS expected=10 observed=10 (HTLEFT) chain=SunAwtCanvas:-1 -> SunAwtFrame:10
+V11 V11-HT-EDGE-R PASS expected=11 observed=11 (HTRIGHT) chain=SunAwtCanvas:-1 -> SunAwtFrame:11
+V11 V11-HT-EDGE-T PASS expected=12 observed=12 (HTTOP) chain=SunAwtCanvas:-1 -> SunAwtFrame:12
+V11 V11-HT-EDGE-B PASS expected=15 observed=15 (HTBOTTOM) chain=SunAwtCanvas:-1 -> SunAwtFrame:15
+V11 V11-HT-CORNER-TL PASS expected=13 observed=13 (HTTOPLEFT) chain=SunAwtCanvas:-1 -> SunAwtFrame:13
+V11 V11-HT-CORNER-TR PASS expected=14 observed=14 (HTTOPRIGHT) chain=SunAwtCanvas:-1 -> SunAwtFrame:14
+V11 V11-HT-CORNER-BL PASS expected=16 observed=16 (HTBOTTOMLEFT) chain=SunAwtCanvas:-1 -> SunAwtFrame:16
+V11 V11-HT-CORNER-BR PASS expected=17 observed=17 (HTBOTTOMRIGHT) chain=SunAwtCanvas:-1 -> SunAwtFrame:17
+V11 V11-HT-CLIENT-BOUNDARY PASS expected=client=1,edgeLeft=10 observed=client=1,edgeLeft=10
+V11 V11-HT-MAXIMIZED-TOP PASS expected=2 observed=2
+V11 V11-MAX-WORKAREA PASS ... client=0,0,1920,1078 window=-8,-8,1928,1088 ... Bottom=2(autoHide,need 1-4)=ok foregroundTaken=False
+V11 V11-AUTOHIDE-EDGE PASS ... deltas=Bottom=2
+V11 V11-MINSIZE PASS expected=>=320x240 observed=320x240
+```
+
+- The nine previously-FAILING Plan 11 targets all turned GREEN in one step: the four edge
+  codes, the four corner codes, V11-HT-CLIENT-BOUNDARY, and V11-MINSIZE. Every edge/corner
+  answer arrives through the real child→frame chain (`SunAwtCanvas:-1 -> SunAwtFrame:<code>`
+  at 2 px inside each edge/corner — the child bounces HTTRANSPARENT, the frame classifies the
+  band), i.e. the answer comes from the frame after the child stepped aside, exactly as
+  required.
+- `V11-MINSIZE observed=320x240`: the probe's 50x50 `SetWindowPos` request clamped to exactly
+  the 320×240 dp floor × scale 1.0. The plan's contingency ("SetWindowPos not clamped at all →
+  record and move the min-size proof to Plan 15") did NOT trigger on this machine —
+  DefWindowProc's `WM_WINDOWPOSCHANGING` applies the `WM_GETMINMAXINFO` min-track size to
+  `SetWindowPos` for this `WS_THICKFRAME` window (pre-plan observed was 136x50, the raw
+  tracking-size clamp with no library floor). The check itself is unchanged.
+- The eight previously-passing checks are unregressed (four title-bar checks, V11-STYLE,
+  V11-HT-MAXIMIZED-TOP, V11-MAX-WORKAREA, V11-AUTOHIDE-EDGE — identical observed values to
+  22-07/22-10).
+- Chrome trace (main hwnd 0xe80556): `AERO_CHROME event=mintrack appMinimumSet=false dpi=96
+  floor=320x240` — the WM_GETMINMAXINFO handler raising ptMinTrackSize live, with F11's
+  `minSizeSet=false` confirming the default-floor branch is the one taken.
+
+### Narrow window (300x480 dp, own minimum 260x200) — pass=7 fail=1
+
+```
+V11 V11-N-HT-CAPTION PASS expected=2 observed=2 (HTCAPTION) chain=SunAwtCanvas:-1 -> SunAwtFrame:2
+V11 V11-N-HT-MAX PASS expected=9 observed=9 (HTMAXBUTTON) chain=SunAwtCanvas:-1 -> SunAwtFrame:9
+V11 V11-N-HT-LEADING-BOUNDARY PASS expected=leading=1,captionRightOfLeading=2 observed=leading=1,captionRightOfLeading=2
+V11 V11-N-HT-MARKED-BOUNDARY FAIL expected=marked=1,captionLeftOfMarked=2 observed=marked=2,captionLeftOfMarked=2
+V11 V11-N-HT-EDGE-L PASS expected=10 observed=10 (HTLEFT) chain=SunAwtCanvas:-1 -> SunAwtFrame:10
+V11 V11-N-HT-EDGE-R PASS expected=11 observed=11 (HTRIGHT) chain=SunAwtCanvas:-1 -> SunAwtFrame:11
+V11 V11-N-HT-EDGE-B PASS expected=15 observed=15 (HTBOTTOM) chain=SunAwtCanvas:-1 -> SunAwtFrame:15
+V11 V11-N-MINSIZE PASS expected=>=260x200 and <320x240 observed=260x200
+V11 SUMMARY narrow pass=7 fail=1 skip=0
+```
+
+- `V11-N-MINSIZE observed=260x200`: clamped to exactly the app's own AWT minimum, NOT
+  320x240 — the library floor did not clobber the app value (D-01, T-22-24). No
+  `event=mintrack` line exists for the narrow hwnd (0x950302): with `appMinimumSet=true` the
+  handler leaves AWT's ptMinTrackSize untouched (it only writes when it raises a value).
+- `V11-N-HT-EDGE-L/R/B` PASS — the narrow window resizes natively too; the 8 px band on a
+  300 px-wide window still leaves the app's 260 px floor reachable from both sides.
+- `V11-N-HT-LEADING-BOUNDARY` is now PASS (leading=1, captionRightOfLeading=2) — green since
+  22-07's leading publishing (the 22-08 FAIL predates 22-07).
+- `V11-N-HT-MARKED-BOUNDARY` FAIL (`marked=2, captionLeftOfMarked=2`, both HTCAPTION) is the
+  standing RED for API-02, quoted verbatim above and not weakened — Plan 12's
+  `markAeroTitleBarInteractive()` is what turns it GREEN.
+
+### Interference / cleanup
+
+`foregroundTaken=False` at the maximize step (in V11-MAX-WORKAREA's observed line); the
+showcase process never owned the foreground — no interference with the maintainer's session
+(the multi-window runner emits no separate INTERFERENCE line; the foreground flag inside the
+maximize check is the observable). Post-run sweep: zero `com.mordred.showcase.MainKt` JVMs
+remain (`.captures/22-resize/Sweep-Leftovers.ps1` → `NO-LEFTOVERS`).
