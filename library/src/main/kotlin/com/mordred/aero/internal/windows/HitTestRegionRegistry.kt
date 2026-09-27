@@ -31,13 +31,18 @@ internal const val LEADING_INTERACTIVE_ID: Long = 0L
  * never a Compose state object (PITFALLS 6: touching Compose state from the AWT toolkit
  * thread deadlocks or corrupts). Worst case during an active resize is a one-frame-late
  * boundary, never a torn read (T-22-19).
+ *
+ * [captions] (API-04) holds the id-keyed draggable caption areas a custom title bar marks
+ * through `AeroWindowChromeState.captionArea()` — an app may have several (e.g. left and
+ * right of a search field); every entry classifies exactly like the Caption role.
  */
 internal data class HitTestSnapshot(
     val roles: Map<TitleBarRole, PxRect>,
     val interactive: Map<Long, PxRect>,
+    val captions: Map<Long, PxRect> = emptyMap(),
 ) {
     companion object {
-        val EMPTY = HitTestSnapshot(emptyMap(), emptyMap())
+        val EMPTY = HitTestSnapshot(emptyMap(), emptyMap(), emptyMap())
     }
 }
 
@@ -61,6 +66,7 @@ internal class HitTestRegionRegistry {
             HitTestSnapshot(
                 roles = if (rect == null) snap.roles - role else snap.roles + (role to rect),
                 interactive = snap.interactive,
+                captions = snap.captions,
             )
         }
     }
@@ -71,12 +77,34 @@ internal class HitTestRegionRegistry {
             HitTestSnapshot(
                 roles = snap.roles,
                 interactive = if (rect == null) snap.interactive - id else snap.interactive + (id to rect),
+                captions = snap.captions,
+            )
+        }
+    }
+
+    /**
+     * API-04: publishes (or, with a null [rect], removes) a draggable caption area by [id].
+     * Copy-on-write like the other publishers, so the WndProc's snapshot read stays lock-free.
+     */
+    fun publishCaption(id: Long, rect: PxRect?) {
+        current.updateAndGet { snap ->
+            HitTestSnapshot(
+                roles = snap.roles,
+                interactive = snap.interactive,
+                captions = if (rect == null) snap.captions - id else snap.captions + (id to rect),
             )
         }
     }
 
     /** Allocates an interactive-region id; [LEADING_INTERACTIVE_ID] is reserved and never returned. */
     fun newInteractiveId(): Long = nextInteractiveId.getAndIncrement()
+
+    /**
+     * API-04: allocates a caption-area id for `captionArea()` usage. Shares the counter with
+     * [newInteractiveId] — the two maps are independent, but a single sequence keeps every
+     * allocated id distinct per registry.
+     */
+    fun newCaptionId(): Long = nextInteractiveId.getAndIncrement()
 }
 
 /**

@@ -21,7 +21,8 @@ private fun PxRect.containsPoint(x: Int, y: Int): Boolean =
  *  2. maximize rect → [HTMAXBUTTON] (OS-owned, unlocks the Snap Layouts flyout, SNAP-04)
  *  3. minimize rect, close rect, any interactive rect (e.g. the `leading` slot) → [HTCLIENT],
  *     so Compose keeps receiving ordinary clicks there and never starts a window drag (BTN-02)
- *  4. caption rect → [HTCAPTION] (SNAP-01: the native drag path)
+ *  4. caption rect, or any API-04 `captions` entry a custom title bar marked through
+ *     `captionArea()` → [HTCAPTION] (SNAP-01: the native drag path)
  *  5. everywhere else → [HTCLIENT]
  *
  * [clientWidth] / [clientHeight] are the client-area size in physical px. [resizeBandPx] is
@@ -57,5 +58,8 @@ internal fun classifyHitTest(
         if (rect.containsPoint(x, y)) return HTCLIENT
     }
     snapshot.roles[TitleBarRole.Caption]?.let { if (it.containsPoint(x, y)) return HTCAPTION }
+    for (rect in snapshot.captions.values) {
+        if (rect.containsPoint(x, y)) return HTCAPTION
+    }
     return HTCLIENT
 }
