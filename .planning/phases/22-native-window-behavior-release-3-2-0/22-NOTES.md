@@ -1345,3 +1345,111 @@ showcase process never owned the foreground — no interference with the maintai
 (the multi-window runner emits no separate INTERFERENCE line; the foreground flag inside the
 maximize check is the observable). Post-run sweep: zero `com.mordred.showcase.MainKt` JVMs
 remain (`.captures/22-resize/Sweep-Leftovers.ps1` → `NO-LEFTOVERS`).
+
+## Public API and multi-window (22-12)
+
+Recorded by Plan 12 (Task 3), 2026-09-27, against the capture-mode showcase with the Task 1
+public surface (`nativeWindowManagement` opt-out, `markAeroTitleBarInteractive()`) and the
+Task 2 showcase wiring (marked "Вернуть" overlay, `-Paero.nativeChrome=false` control) in
+place. Same machine as every prior plan (Windows 11 24H2 build 26100, one 1920x1080 monitor
+at 100% DPI, taskbar auto-hide ON), standard JDK 21 throughout. Evidence:
+`.captures/22-publicapi/` — `green.json`, `multiwindow.json` + `multiwindow-console.log`,
+`red-control.json` + `red-control-console.log`, scripts `Invoke-MultiWindowCheck.ps1`,
+`Invoke-RedControl.ps1`, `Test-OptOut.ps1` (git-ignored); launch logs under
+`.captures/22-baseline/logs/` and `.captures/22-publicapi/logs/`.
+
+### GREEN: API-02 RED→GREEN (V11-N-HT-MARKED-BOUNDARY)
+
+`Invoke-WinProbe.ps1 -Launch run -Windows main,narrow -GradleProps "-Paero.chromeTrace=true"
+-AssertV11` (one launch, maximize cycle included per F9):
+
+```
+V11 SUMMARY main pass=18 fail=0 skip=0
+V11 V11-N-HT-MARKED-BOUNDARY PASS expected=marked=1,captionLeftOfMarked=2 observed=marked=1,captionLeftOfMarked=2
+V11 SUMMARY narrow pass=8 fail=0 skip=0
+```
+
+`V11-N-HT-MARKED-BOUNDARY` — FAIL (`marked=2,captionLeftOfMarked=2`) in 22-08 and 22-11,
+quoted verbatim as the standing RED — now PASS: the marked overlay's pixels answer HTCLIENT
+through the interactive-region path, the caption point left of it still answers HTCAPTION.
+All 18 main checks and all 8 narrow checks PASS; nothing regressed. `-AssertV11` exited 0.
+
+### BTN-02 message-level proxy (narrow window)
+
+Posted `WM_LBUTTONDOWN`/`WM_LBUTTONUP` (MK_LBUTTON, client coordinates of the `marked`
+(118,16) and `leading` (20,16) points) to the narrow window's client-covering `SunAwtCanvas`
+child HWND (0x50482's canvas in the recorded run):
+
+```
+BTN02-PROXY marked UNREACHED (no AERO_EVENT within 3s)
+BTN02-PROXY leading UNREACHED (no AERO_EVENT within 3s)
+```
+
+Posted client messages did not reach Compose within 3 s at either point — the same outcome
+22-07 recorded for the `min` point on the main window. Recorded, not faked, and not a library
+failure: the HTCLIENT classification that lets REAL clicks reach the elements is proven by
+`V11-N-HT-MARKED-BOUNDARY` / `V11-N-HT-LEADING-BOUNDARY` PASS above; the actual click proof
+stays with Plan 15's real-input session.
+
+### Permanent RED control: -Paero.nativeChrome=false
+
+`Invoke-RedControl.ps1` (wrapper around `Invoke-WinProbe.ps1 -Launch run -Windows main,narrow
+-GradleProps @('-Paero.nativeChrome=false','-Paero.chromeTrace=true') -ExpectRed`):
+
+```
+STYLE main 0x960B0000 exStyle=0x08000000 names=WS_POPUP,WS_SYSMENU,WS_MINIMIZEBOX,WS_MAXIMIZEBOX,WS_CLIPCHILDREN
+V11 SUMMARY main pass=0 fail=18 skip=0
+STYLE narrow 0x960B0000 (same names)
+V11 SUMMARY narrow pass=0 fail=8 skip=0
+RED OK
+```
+
+- `RED OK` for BOTH windows: all 26 checks fail on the opt-out path, including
+  `V11-N-HT-MARKED-BOUNDARY` (`marked=1,captionLeftOfMarked=1` — with no subclass the overlay
+  point is plain client area, so even the boundary half fails) and `V11-N-MINSIZE`
+  (`observed=50x50`: on the legacy style Windows does NOT clamp `SetWindowPos` to the app's
+  AWT minimum — the honored-minimum behavior is itself a native-chrome-path trait).
+- GWL_STYLE `0x960B0000` equals the pre-phase C1 value exactly (capture mode, so
+  `WS_EX_NOACTIVATE` present per C1); the launch log contains ZERO `AERO_CHROME` lines — no
+  restyle, no install, no child-subclass. The opt-out composes exactly the legacy branch.
+- This launch property is the permanent RED control for every VER-11 check, including the
+  narrow-window checks whose fixture did not exist before the phase.
+
+**Tooling pitfall (recorded for every future probe invocation):** two earlier RED attempts
+measured an all-PASS native window with zero `AERO_CHROME` lines because
+`powershell.exe -File ... -GradleProps "-Paero.nativeChrome=false","-Paero.chromeTrace=true"`
+from bash collapses the comma pair into ONE string (bash strips the inner quotes, so
+PowerShell argument-mode binding never sees an array; the runner comma-normalizes `-Report`
+and `-Windows` but not `-GradleProps`), so gradlew received
+`-Paero.nativeChrome=false,-Paero.chromeTrace=true` — the property value was not `"false"`,
+the opt-out never engaged, and the trace stayed off. A wrapper `.ps1` binding the array
+literally is the reliable invocation shape from bash.
+
+### WIN-06: multi-window independence
+
+Part A (`Invoke-MultiWindowCheck.ps1`, one launch, both windows subclassed, pid 9596):
+posted `WM_CLOSE` to the narrow window (hwnd 0x50482):
+
+```
+WIN06-CLOSE event=AERO_EVENT name=close-request label=narrow
+AERO_CHROME event=ncdestroy hwnd=0x50482 entry dropped
+WIN06-CLOSE narrowUninstall=1 mainUninstall=0 mainInstallSingle=True
+WIN06-CLOSE mainTitleChecks=5/5 PASS (V11-STYLE, HT-CAPTION, HT-MAX, HT-MIN-BOUNDARY, HT-CLOSE-BOUNDARY)
+V11 SUMMARY main pass=15 fail=0 skip=3 (post-close sweep, -SkipMaximize)
+INTERFERENCE foregroundOwnedByShowcase=False (before=14116 after=14116 showcase=9596)
+```
+
+The posted WM_CLOSE runs the narrow window's own `onCloseRequest` (the reporter event proves
+it), the HWND is destroyed before the composable's `onDispose` can run `release()`, so the
+registry's WM_NCDESTROY path drops the entry — now traced (`event=ncdestroy`, added in
+`44b91ae` after the first run left the close path silent). The main window shows no
+uninstall/ncdestroy line, its install count stayed 1, and its title-bar hit-test answers are
+byte-identical after its sibling closed.
+
+Part B (same script, `-Paero.secondWindow=3000`): the main window's reporter was ready at
+03.336, the narrow window's at 06.556 (gap 3220 ms ≈ the 3 s delay); the trace shows two
+independent installs, each with its own child-subclass (`install hwnd=0x700a6` +
+`child-subclass`, then `install hwnd=0x70486` + `child-subclass`) — a window opened while
+another is already subclassed gets its own install.
+
+Post-run sweep: zero `com.mordred.showcase.MainKt` JVMs remain.
