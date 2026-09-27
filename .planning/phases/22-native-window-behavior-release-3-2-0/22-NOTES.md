@@ -931,3 +931,33 @@ recorded verbatim as shadow-unobserved, not inferred either way.
 
 **Settled by:** 22-06 Task 2 (maintainer's observation + choice) and Task 3 (explicit DWM
 application + attribute read-back).
+
+### C6 (SETTLED) — does Windows 11 round the corners / draw a shadow by default?
+
+**Observation (maintainer, 2026-09-26, verbatim):** «углы не скруглены щас» — on this machine
+Windows 11 did NOT round the window's corners by default once `WS_CAPTION | WS_THICKFRAME`
+returned; no shadow was mentioned (recorded as unobserved, not inferred). The agent's own
+capture (PrintWindow) structurally cannot see compositor effects — recorded in the self-review.
+
+**Choice (maintainer):** variant **A** — square corners, no system shadow (the pre-phase look),
+picked from the Visual Companion preview (`22-corners-preview.html`) with the real window open.
+
+**Application (Task 3):** `Win32Dwm.kt` hand-declares `dwmapi` (DwmSetWindowAttribute /
+DwmGetWindowAttribute / DwmExtendFrameIntoClientArea + MARGINS); `CHOSEN_CORNER_LOOK =
+WindowCornerLook.SQUARE_NO_SHADOW` (DWMWCP_DONOTROUND, 0 margins). `applyCornerPolicy` runs at
+install (NativeWindowChromeRegistry) and on WM_SIZE SIZE_MAXIMIZED / SIZE_RESTORED AFTER
+CallWindowProc(previous) (PITFALLS 24: square while maximized).
+
+**Read-back (live, capture mode, standard JDK 21):** every call returned S_OK and the corner
+preference read back as 1 (DONOTROUND) at install (floating), after SC_MAXIMIZE and after
+SC_RESTORE — trace lines `AERO_CHROME event=dwm ... setHr=0x0 getHr=0x0 readBack=1` in
+`.captures/22-corners/logs/winprobe-run-004636.929.out.log`. Maximize geometry unchanged
+(client 0,0,1920,1078 vs rcWork 0,0,1920,1080).
+
+**Visual effect:** the DWM visual itself is maintainer-observed, not agent-captured — goes to
+the unconfirmed list in Plan 16. Title band + white-strip comparisons vs the pre-phase
+baseline after the change: `COMPARE title-band baseline-vs-dwm diffPixels=0`,
+`COMPARE white-strip baseline-vs-dwm diffPixels=0` (`.captures/22-corners/AeroBlue-rest-dwm.png`).
+
+**Settled by:** 22-06 Tasks 2-3 (maintainer's observation + choice, explicit application,
+attribute read-back). C6 SETTLED.
