@@ -95,6 +95,8 @@ import kotlin.math.roundToInt
  * @param onCloseRequest invoked when the user clicks the close button.
  * @param leading optional composable rendered before the title (e.g., an app icon).
  * @param modifier optional layout modifier.
+ * @param nativeWindowManagement `false` opts this window out of the native Windows chrome
+ * and keeps exactly the legacy behavior (`WindowDraggableArea` drag, Compose resize handles).
  */
 @Composable
 public fun FrameWindowScope.AeroTitleBar(
@@ -102,16 +104,17 @@ public fun FrameWindowScope.AeroTitleBar(
     windowState: WindowState,
     onCloseRequest: () -> Unit,
     leading: (@Composable () -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    nativeWindowManagement: Boolean = true
 ) {
-    val nativeRequested = isWindowsOs
+    val nativeRequested = isWindowsOs && nativeWindowManagement
     var nativeFailed by remember { mutableStateOf(false) }
     if (nativeRequested && !nativeFailed) {
         // SNAP-01 / PITFALLS 15: native HTCAPTION hit-testing owns the drag — a single drag
         // path, no WindowDraggableArea wrapper.
         val regions = remember(window) { WindowRegionsDirectory.forWindow(window) }
         val maxInteraction = remember(window) { MaxButtonDirectory.forWindow(window) }
-        DisposableEffect(window) {
+        DisposableEffect(window, nativeRequested) {
             val handle = NativeWindowChromeRegistry.acquire(window)
             // T-22-02: a failed install flips to the legacy draggable path below.
             if (handle == null) nativeFailed = true
