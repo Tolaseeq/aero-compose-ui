@@ -200,6 +200,11 @@ namespace AeroWinProbe
         [DllImport("user32.dll")]
         public static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
 
+        [DllImport("user32.dll")]
+        public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        public const int SW_SHOWNOACTIVATE = 4;
+
         public static IntPtr MakeLParam(int x, int y)
         {
             return (IntPtr)(((y & 0xFFFF) << 16) | (x & 0xFFFF));
