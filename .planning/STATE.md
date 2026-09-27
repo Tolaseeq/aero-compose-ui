@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: Native Window Behavior
 status: executing
-stopped_at: Phase 22 Plan 09 complete -- maximize-button interaction bridge; NC click toggles placement; conflict #5 settled (BTN-01, D-02)
-last_updated: "2026-09-27T14:53:29.241Z"
+stopped_at: Phase 22 Plan 10 complete -- don't-break-what-works checkpoint: owned-message sets enforced at dispatch, churn verify/reinstall hardening, no C4 push (syncs automatically re-proven 6/6), GC/UIA/Hot-Reload/V11 intact (WIN-05, VER-11)
+last_updated: "2026-09-27T15:58:12.155Z"
 last_activity: 2026-09-25 -- Phase 22 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 19
-  completed_plans: 9
+  completed_plans: 10
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-25 — v3.2 roadmap created)
 ## Current Position
 
 Phase: 22 (Native Window Behavior + Release 3.2.0) — EXECUTING
-Plan: 10 of 19
+Plan: 11 of 19
 Status: Executing Phase 22
 Last activity: 2026-09-25 -- Phase 22 execution started
 
@@ -58,7 +58,7 @@ Beyond the audit list, one requirement shipped with a recorded gap rather than a
 **v2.0.4:** 3 plans, single-day push incl. corrective release (2026-06-25→26), real RCMP root-cause fix.
 **v3.0:** 41 plans / 85 tasks across 6 phases, 2026-07-22 → 2026-07-29 (8 days), 252 commits, 248 files changed (+43,770 / −2,638) of which 71 code files (+11,104 / −409). Tests 232 → 467. Per-plan durations ranged 3 min – 2h10m; the long tail was human visual sign-off rounds, not code. Per-plan metrics are archived with the phase artifacts in `.planning/milestones/v3.0-phases/`.
 **v3.1:** 14 plans / 35 tasks in 1 phase (21), 2026-09-21 → 2026-09-24 (execution 09-23 → 09-24), 65 commits, 91 files changed (+17,896 / −1,385) of which 31 non-planning files (+4,155 / −122). Tests 467 → 541. The long tail was the capture sweeps and the drift review, not code: the only source edit the upgrade forced was four `Clock` imports. Per-plan metrics are archived with the phase artifacts in `.planning/milestones/v3.1-phases/`.
-**v3.2:** in progress — 1 phase (22), 19 plans roadmapped. Plan 01 (live-window probe harness + RED baseline), 2026-09-25, 19 min, 3 tasks + 1 fix commit, 6 files (4 created, 2 modified). Plan 02 (JNA dependency + native WndProc subclass spike), 2026-09-25, 35 min, 3 tasks, 9 files (5 created, 4 modified). Plan 03 (VER-12 real-input tooling + session environment vetting), 2026-09-25, 9 min, 3 tasks, 4 files created. Plan 08 (SHW-17 narrow second window fixture + probe narrow checks, run ahead of 06/07 per wave 4 parallelization), 2026-09-26, 13 min, 2 tasks, 5 files (1 created, 4 modified). Plan 07 (live hit-test region registry + classifier, AeroTitleBar live-region publishing, single native drag path; 4/4 title V11 checks PASS at two window sizes), 2026-09-27, ~45 min, 3 tasks, 8 files (3 created incl. git-ignored probe script, 5 modified). Plan 09 (maximize-button interaction bridge: native NC mouse messages fed as real Hover/Press interactions into the shared MutableInteractionSource; posted NC click toggles placement Maximized/Floating live; title band 0 px diff vs baseline; conflict #5 settled), 2026-09-27, ~25 min, 3 tasks, 6 files (1 created incl. git-ignored probe script, 5 modified).
+**v3.2:** in progress — 1 phase (22), 19 plans roadmapped. Plan 01 (live-window probe harness + RED baseline), 2026-09-25, 19 min, 3 tasks + 1 fix commit, 6 files (4 created, 2 modified). Plan 02 (JNA dependency + native WndProc subclass spike), 2026-09-25, 35 min, 3 tasks, 9 files (5 created, 4 modified). Plan 03 (VER-12 real-input tooling + session environment vetting), 2026-09-25, 9 min, 3 tasks, 4 files created. Plan 08 (SHW-17 narrow second window fixture + probe narrow checks, run ahead of 06/07 per wave 4 parallelization), 2026-09-26, 13 min, 2 tasks, 5 files (1 created, 4 modified). Plan 07 (live hit-test region registry + classifier, AeroTitleBar live-region publishing, single native drag path; 4/4 title V11 checks PASS at two window sizes), 2026-09-27, ~45 min, 3 tasks, 8 files (3 created incl. git-ignored probe script, 5 modified). Plan 09 (maximize-button interaction bridge: native NC mouse messages fed as real Hover/Press interactions into the shared MutableInteractionSource; posted NC click toggles placement Maximized/Floating live; title band 0 px diff vs baseline; conflict #5 settled), 2026-09-27, ~25 min, 3 tasks, 6 files (1 created incl. git-ignored probe script, 5 modified). Plan 10 (don't-break-what-works checkpoint: OWNED_FRAME/CHILD_MESSAGES enforced at dispatch; registry verify re-installs a lost frame proc on top of the current proc and subclasses new children; no C4 push -- syncs automatically re-proven 6/6 incl. move/resize; GC stress 500 hit-tests stable; UIA = baseline; 3 Hot Reload cycles one install; V11 pass=8 unchanged), 2026-09-27, ~1h25m, 2 tasks, 5 files (3 library, 1 tool, 1 NOTES) + 2 git-ignored probe scripts.
 
 ## Accumulated Context
 
@@ -106,6 +106,10 @@ Full decision log lives in PROJECT.md "Key Decisions". Rules that constrain any 
 - **[v3.2, 22-09]** C5 SETTLED: the max-button bridge emits real `HoverInteraction`/`PressInteraction` objects into the `MutableInteractionSource` shared with the unchanged `hoverable` + `clickable` chain (D-02 parity structural, not a matching exercise); native → Compose crosses threads only through `SwingUtilities.invokeLater`, the native side keeps two plain booleans; `TrackMouseEvent(TME_LEAVE|TME_NONCLIENT)` is re-armed on every `WM_NCMOUSEMOVE` over the button; NC down/up/dblclk at HTMAXBUTTON return 0 without `CallWindowProc`; `WM_NCMOUSEMOVE` still forwards (the 22-04 flyout path is unregressed). FlatLaf-style re-injection recorded as not needed unless Plan 15's real-hover frames mismatch
 - **[v3.2, 22-09]** Posted `WM_NCLBUTTONDOWN`/`UP` (wParam HTMAXBUTTON, lParam = the `max` point in SCREEN coordinates) toggles the reporter placement Maximized ↔ Floating live through today's `onClick` code path, and like F9's SC_MAXIMIZE never takes the foreground on this machine — BTN-01's hover clause stays unproven until Plan 13's pixel test and Plan 15's real-hover frames (TRACKMOUSEEVENT reports leave instantly while the real cursor is elsewhere, so hover cannot be proven headlessly)
 - **[v3.2, 22-09]** jna-platform 5.19.1 genuinely ships no `TRACKMOUSEEVENT` class (verified against the resolved jar) — the hand-declared Structure + `TrackMouseEvent` in `Win32Interop.kt` is required, not precautionary
+- **[v3.2, 22-10]** The owned-message sets are the dispatcher's guard, not just documentation: `OWNED_FRAME_MESSAGES` / `OWNED_CHILD_MESSAGES` are checked before any owned logic runs, so a message cannot gain handling without being declared — the passthrough audit (PITFALLS 3) is structural, re-proven by UIA equality with the 22-01 baseline
+- **[v3.2, 22-10]** C4 re-proven on the hardened subclass: OS-originated SC_MINIMIZE / SW_SHOWNOACTIVATE restore / SC_MAXIMIZE / SC_RESTORE / SetWindowPos move(+100,+50) / resize(1000x700) all followed by WindowState 6/6 with ZERO push code; the WM_SIZE branch KDoc records why no push exists (T-22-23 feedback-loop risk) — WIN-05's snapping clause stays Plan 15's
+- **[v3.2, 22-10]** Churn repair contract: `verify` re-subclasses a lost frame proc ON TOP of the current proc (never the stale saved pointer, PITFALLS 4) and retires replaced procs into the registry entry until WM_NCDESTROY (PITFALLS 1); the intact outcome traces `event=verify frame=ok` — the in-process eviction signal, because cross-process WNDPROC reads return 0 (F8)
+- **[v3.2, 22-10]** GC stress (20 x jcmd GC.run around 500 real-chain hit-tests) leaves answers byte-identical with no hs_err — the strong-reference lifetime design holds; PS 5.1 ConvertTo-Json on nested pscustomobjects can spin (probe scripts must flatten stored reporter lines)
 
 ### Open technical debt
 
@@ -143,10 +147,10 @@ Resolved at v3.1 close: the five research conflicts from `.planning/research/SUM
 
 ## Session Continuity
 
-Last session: 2026-09-27T14:53:29.232Z
-Stopped at: Phase 22 Plan 09 complete -- maximize-button interaction bridge; NC click toggles placement; conflict #5 settled (BTN-01, D-02)
+Last session: 2026-09-27T16:05:00Z
+Stopped at: Phase 22 Plan 10 complete -- don't-break-what-works checkpoint (owned-message audit, churn hardening, C4 = no push re-proven, GC/UIA/Hot-Reload/V11 intact)
 Resume file: None
-Next action: `/bm:discuss-phase 22` or `/bm:plan-phase 22`
+Next action: `/bm:execute-phase 22` (Plan 11: resize bands + min-size floor, wave 9)
 
 ### Rules that outlive Phase 21
 
