@@ -961,3 +961,104 @@ baseline after the change: `COMPARE title-band baseline-vs-dwm diffPixels=0`,
 
 **Settled by:** 22-06 Tasks 2-3 (maintainer's observation + choice, explicit application,
 attribute read-back). C6 SETTLED.
+
+## Live regions (22-07)
+
+Recorded by Plan 07 (Task 3), 2026-09-27, against the capture-mode showcase with live
+region reporting (`HitTestRegionRegistry` + `classifyHitTest`, AeroTitleBar publishing via
+`onGloballyPositioned`) and the single native drag path (no `WindowDraggableArea` on
+Windows). Same machine as every prior plan. Probed via
+`.captures/22-regions/Invoke-RegionsCheck.ps1` — one `:showcase:run` launch
+(`-Paero.capture=true -Paero.chromeTrace=true`, pid 12636, standard JDK 21), full V11 at the
+stock 1200x800, a `SetWindowPos` resize to 900x600 (SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE),
+500 ms settle, V11 re-run, size restored. JSON `.captures/22-regions/live.json`, launch log
+`.captures/22-regions/logs/`.
+
+Deviation from the plan's parenthetical: `-SkipMaximize` was NOT used on pass A — F9
+(probe-driven `SC_MAXIMIZE` never takes the foreground on this machine, measured 3x in
+22-01) says it is not required, and running the maximize cycle re-proves 22-05's passing
+checks against the new classifier (orchestrator rule: do not regress passing V11 checks).
+Pass B (resized) used `-SkipMaximize` only to keep the resized window's geometry undisturbed
+for measurement.
+
+### V11 at 1200x800 (pass A)
+
+```
+V11 V11-STYLE PASS
+V11 V11-HT-CAPTION PASS expected=2 observed=2 (HTCAPTION) chain=SunAwtCanvas:-1 -> SunAwtFrame:2
+V11 V11-HT-MAX PASS expected=9 observed=9 (HTMAXBUTTON) chain=SunAwtCanvas:-1 -> SunAwtFrame:9
+V11 V11-HT-MIN-BOUNDARY PASS expected=min=1,captionLeftOfMin=2 observed=min=1,captionLeftOfMin=2
+V11 V11-HT-CLOSE-BOUNDARY PASS expected=close=1,max=9 observed=close=1,max=9
+V11 V11-HT-MAXIMIZED-TOP PASS expected=2 observed=2
+V11 V11-MAX-WORKAREA PASS ... client=0,0,1920,1078 ... Bottom=2(autoHide,need1-4)=ok foregroundTaken=False
+V11 V11-AUTOHIDE-EDGE PASS expected=auto-hide edges uncovered by >=1px observed=detected edges=Bottom deltas=Bottom=2
+V11 SUMMARY pass=8 fail=10 skip=0
+```
+
+All four title-bar checks now answer from AeroTitleBar's OWN published layout rects, and
+22-05's maximize/inset checks (V11-HT-MAXIMIZED-TOP, V11-MAX-WORKAREA, V11-AUTOHIDE-EDGE)
+still PASS unchanged — the new classifier did not regress frame removal. Still FAIL,
+expected and unchanged (Plan 11 scope): `V11-HT-EDGE-L/R/T/B`, `V11-HT-CORNER-*`,
+`V11-HT-CLIENT-BOUNDARY` (resize bands), `V11-MINSIZE` (320x240 floor, observed 136x50 — the
+WS_THICKFRAME tracking-size width clamp plus no library floor yet). Note the live-classifier
+change in the FAIL texture vs 22-05: `edgeTop`/`cornerTL`/`cornerTR` previously answered
+HTCAPTION via the spike's hardcoded 32dp row; corners TL/TR now answer HTCLIENT because the
+published caption rect starts after the row's 8dp horizontal padding (the
+`onGloballyPositioned` sits after `padding(horizontal = 8.dp)` per plan), while `edgeTop`
+still lands inside the caption rect. All three remain FAIL against their HTTOP/HTTOPLEFT/
+HTTOPRIGHT expectations either way — Plan 11's bands own them.
+
+### Layout-follow check at 900x600 (pass B)
+
+After `SetWindowPos` to 900x600 (client measured exactly 900x600), 500 ms settle:
+
+```
+V11 V11-HT-CAPTION PASS expected=2 observed=2 (HTCAPTION) chain=SunAwtCanvas:-1 -> SunAwtFrame:2
+V11 V11-HT-MAX PASS expected=9 observed=9 (HTMAXBUTTON) chain=SunAwtCanvas:-1 -> SunAwtFrame:9
+V11 V11-HT-MIN-BOUNDARY PASS expected=min=1,captionLeftOfMin=2 observed=min=1,captionLeftOfMin=2
+V11 V11-HT-CLOSE-BOUNDARY PASS expected=close=1,max=9 observed=close=1,max=9
+V11 SUMMARY pass=5 fail=10 skip=3
+LAYOUT-FOLLOW PASS (4/4 title checks at 900x600)
+```
+
+The probe's named points are recomputed from the NEW client size (min.x 1077 -> 777), and
+all four checks PASS at the new geometry — the hit-test answers follow the live Compose
+layout through a resize, proving the published regions are real layout reads, not the
+spike's hardcoded rectangles. Size was restored to 1200x800 afterwards.
+
+### BTN-02 message-level proxy
+
+Posted `WM_LBUTTONDOWN` (wParam MK_LBUTTON=1) / `WM_LBUTTONUP` with client coordinates of
+the `min` point (1077,16) to the client-covering `SunAwtCanvas` child HWND found by
+`Get-WinProbeChildren`:
+
+```
+BTN02-PROXY UNREACHED: posted WM_LBUTTONDOWN/UP produced no minimized=true reporter line within 5s
+```
+
+The posted messages did not reach Compose's `clickable` — no `minimized=true` reporter line
+appeared within 5 s (recorded in `live.json` as `btn02Proxy.result = "posted messages did
+not reach Compose within 5s"`). Per the plan this is NOT faked and NOT treated as a failure
+of the library: a synthesized `PostMessage` mouse click is not the real input path (AWT is
+known to drop or misroute posted button messages), and the HTCLIENT classification that
+lets real clicks reach the buttons is already proven by `V11-HT-MIN-BOUNDARY` /
+`V11-HT-CLOSE-BOUNDARY` PASS above. The actual click proof for BTN-02 stays with Plan 15's
+real-input session. Nothing was left minimized; no restore was needed.
+
+### Legacy structure (API-01), confirmed by code read
+
+`AeroTitleBar.kt`: the non-Windows / install-failed branch composes exactly
+`WindowDraggableArea(modifier = modifier) { TitleBarRow(..., rowModifier = Modifier, regions = null) }`.
+With `regions == null`, `regionModifier` returns the no-op `Modifier` (so the Row's chain
+stays `fillMaxWidth().height(32.dp).background(gradient).padding(horizontal = 8.dp)` and each
+`TitleBarButton`'s chain stays `size(46,32).hoverable.clickable.background`), and `leading`
+is invoked directly with no wrapper Box — the legacy composition is structurally identical
+to the pre-22-07 component. Exactly one `WindowDraggableArea(` call site remains in the
+file, inside that branch.
+
+### Interference
+
+`INTERFERENCE foregroundOwnedByShowcase=False (before=7060 after=7060 showcase=12636)` — the
+showcase process never owned the foreground at any point in the run; the maintainer's
+session was untouched. Every process this run started was stopped by the script itself
+(post-run sweep: zero `com.mordred.showcase.MainKt` JVMs remain).
