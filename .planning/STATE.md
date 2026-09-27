@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: Native Window Behavior
 status: executing
-stopped_at: Phase 22 Plan 12 complete -- public API surface (nativeWindowManagement opt-out, markAeroTitleBarInteractive); API-02 RED->GREEN, opt-out RED control 0/18+0/8, WIN-06 multi-window independence
-last_updated: "2026-09-27T17:21:36.271Z"
+stopped_at: Phase 22 Plan 19 complete -- public rememberAeroWindowChrome (API-04), AeroTitleBar rebuilt on it (D-05); VER-11 through the API 18/18+8/8, opt-out RED control, one install per HWND
+last_updated: "2026-09-27T20:59:39.292Z"
 last_activity: 2026-09-25 -- Phase 22 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 19
-  completed_plans: 12
+  completed_plans: 13
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-25 — v3.2 roadmap created)
 ## Current Position
 
 Phase: 22 (Native Window Behavior + Release 3.2.0) — EXECUTING
-Plan: 13 of 19
+Plan: 13 of 19 (next by ROADMAP wave order; Plan 19 already executed early per wave 11 — 13 of 19 done)
 Status: Executing Phase 22
 Last activity: 2026-09-25 -- Phase 22 execution started
 
@@ -58,7 +58,7 @@ Beyond the audit list, one requirement shipped with a recorded gap rather than a
 **v2.0.4:** 3 plans, single-day push incl. corrective release (2026-06-25→26), real RCMP root-cause fix.
 **v3.0:** 41 plans / 85 tasks across 6 phases, 2026-07-22 → 2026-07-29 (8 days), 252 commits, 248 files changed (+43,770 / −2,638) of which 71 code files (+11,104 / −409). Tests 232 → 467. Per-plan durations ranged 3 min – 2h10m; the long tail was human visual sign-off rounds, not code. Per-plan metrics are archived with the phase artifacts in `.planning/milestones/v3.0-phases/`.
 **v3.1:** 14 plans / 35 tasks in 1 phase (21), 2026-09-21 → 2026-09-24 (execution 09-23 → 09-24), 65 commits, 91 files changed (+17,896 / −1,385) of which 31 non-planning files (+4,155 / −122). Tests 467 → 541. The long tail was the capture sweeps and the drift review, not code: the only source edit the upgrade forced was four `Clock` imports. Per-plan metrics are archived with the phase artifacts in `.planning/milestones/v3.1-phases/`.
-**v3.2:** in progress — 1 phase (22), 19 plans roadmapped. Plan 01 (live-window probe harness + RED baseline), 2026-09-25, 19 min, 3 tasks + 1 fix commit, 6 files (4 created, 2 modified). Plan 02 (JNA dependency + native WndProc subclass spike), 2026-09-25, 35 min, 3 tasks, 9 files (5 created, 4 modified). Plan 03 (VER-12 real-input tooling + session environment vetting), 2026-09-25, 9 min, 3 tasks, 4 files created. Plan 08 (SHW-17 narrow second window fixture + probe narrow checks, run ahead of 06/07 per wave 4 parallelization), 2026-09-26, 13 min, 2 tasks, 5 files (1 created, 4 modified). Plan 07 (live hit-test region registry + classifier, AeroTitleBar live-region publishing, single native drag path; 4/4 title V11 checks PASS at two window sizes), 2026-09-27, ~45 min, 3 tasks, 8 files (3 created incl. git-ignored probe script, 5 modified). Plan 09 (maximize-button interaction bridge: native NC mouse messages fed as real Hover/Press interactions into the shared MutableInteractionSource; posted NC click toggles placement Maximized/Floating live; title band 0 px diff vs baseline; conflict #5 settled), 2026-09-27, ~25 min, 3 tasks, 6 files (1 created incl. git-ignored probe script, 5 modified). Plan 10 (don't-break-what-works checkpoint: OWNED_FRAME/CHILD_MESSAGES enforced at dispatch; registry verify re-installs a lost frame proc on top of the current proc and subclasses new children; no C4 push -- syncs automatically re-proven 6/6 incl. move/resize; GC stress 500 hit-tests stable; UIA = baseline; 3 Hot Reload cycles one install; V11 pass=8 unchanged), 2026-09-27, ~1h25m, 2 tasks, 5 files (3 library, 1 tool, 1 NOTES) + 2 git-ignored probe scripts. Plan 11 (native edge/corner resize + D-01 min-size floor: band = max(DPI-scaled sizing frame, CMP 8dp) = 8px at 100%, WM_GETMINMAXINFO raises ptMinTrackSize only when the app set no minimum, AeroResizeHandles gated by NativeChromeStatus; main V11 18/18 PASS incl. MINSIZE exactly 320x240, narrow 7/8 with only the Plan 12 marked RED left), 2026-09-27, ~15min, 3 tasks, 9 files (2 created library, 6 modified library/NOTES, 1 SUMMARY) + 4 git-ignored capture artifacts. Plan 12 (additive public API: AeroTitleBar nativeWindowManagement opt-out + Modifier.markAeroTitleBarInteractive; showcase -Paero.nativeChrome=false RED control; narrow overlay marked — V11-N-HT-MARKED-BOUNDARY FAIL->PASS; RED control 0/18+0/8 at pre-phase GWL_STYLE 0x960B0000; WIN-06 close-independence with new ncdestroy trace; 541 green), 2026-09-27, ~40min, 3 tasks + 1 fix commit, 7 tracked files (1 created library, 5 modified library/showcase, 1 NOTES) + git-ignored probe scripts/evidence.
+**v3.2:** in progress — 1 phase (22), 19 plans roadmapped. Plan 01 (live-window probe harness + RED baseline), 2026-09-25, 19 min, 3 tasks + 1 fix commit, 6 files (4 created, 2 modified). Plan 02 (JNA dependency + native WndProc subclass spike), 2026-09-25, 35 min, 3 tasks, 9 files (5 created, 4 modified). Plan 03 (VER-12 real-input tooling + session environment vetting), 2026-09-25, 9 min, 3 tasks, 4 files created. Plan 08 (SHW-17 narrow second window fixture + probe narrow checks, run ahead of 06/07 per wave 4 parallelization), 2026-09-26, 13 min, 2 tasks, 5 files (1 created, 4 modified). Plan 07 (live hit-test region registry + classifier, AeroTitleBar live-region publishing, single native drag path; 4/4 title V11 checks PASS at two window sizes), 2026-09-27, ~45 min, 3 tasks, 8 files (3 created incl. git-ignored probe script, 5 modified). Plan 09 (maximize-button interaction bridge: native NC mouse messages fed as real Hover/Press interactions into the shared MutableInteractionSource; posted NC click toggles placement Maximized/Floating live; title band 0 px diff vs baseline; conflict #5 settled), 2026-09-27, ~25 min, 3 tasks, 6 files (1 created incl. git-ignored probe script, 5 modified). Plan 10 (don't-break-what-works checkpoint: OWNED_FRAME/CHILD_MESSAGES enforced at dispatch; registry verify re-installs a lost frame proc on top of the current proc and subclasses new children; no C4 push -- syncs automatically re-proven 6/6 incl. move/resize; GC stress 500 hit-tests stable; UIA = baseline; 3 Hot Reload cycles one install; V11 pass=8 unchanged), 2026-09-27, ~1h25m, 2 tasks, 5 files (3 library, 1 tool, 1 NOTES) + 2 git-ignored probe scripts. Plan 11 (native edge/corner resize + D-01 min-size floor: band = max(DPI-scaled sizing frame, CMP 8dp) = 8px at 100%, WM_GETMINMAXINFO raises ptMinTrackSize only when the app set no minimum, AeroResizeHandles gated by NativeChromeStatus; main V11 18/18 PASS incl. MINSIZE exactly 320x240, narrow 7/8 with only the Plan 12 marked RED left), 2026-09-27, ~15min, 3 tasks, 9 files (2 created library, 6 modified library/NOTES, 1 SUMMARY) + 4 git-ignored capture artifacts. Plan 12 (additive public API: AeroTitleBar nativeWindowManagement opt-out + Modifier.markAeroTitleBarInteractive; showcase -Paero.nativeChrome=false RED control; narrow overlay marked — V11-N-HT-MARKED-BOUNDARY FAIL->PASS; RED control 0/18+0/8 at pre-phase GWL_STYLE 0x960B0000; WIN-06 close-independence with new ncdestroy trace; 541 green), 2026-09-27, ~40min, 3 tasks + 1 fix commit, 7 tracked files (1 created library, 5 modified library/showcase, 1 NOTES) + git-ignored probe scripts/evidence. Plan 19 (public rememberAeroWindowChrome for custom title bars, run early per wave 11: AeroWindowChromeState with captionArea/captionExclude/maximizeButtonArea + hover/press state, id-keyed captions map in HitTestSnapshot, AeroTitleBar rebuilt ON the public API so it is the single native path; VER-11 through the API main 18/18 + narrow 8/8 identical to 22-12, opt-out RED control 0/18+0/8 zero installs, one install per HWND zero reuse, NC click toggle preserved, title band 0 px diff; 541 green after both code commits), 2026-09-27, ~18min, 3 tasks, 5 tracked files (4 library modified, 1 NOTES) + git-ignored probe scripts/evidence in .captures/22-apicustom/.
 
 ## Accumulated Context
 
@@ -113,6 +113,8 @@ Full decision log lives in PROJECT.md "Key Decisions". Rules that constrain any 
 - **[v3.2, 22-11]** One resize path per window: the native band (max(DPI-scaled SM_CXSIZEFRAME+SM_CXPADDEDBORDER, CMP's 8dp resizer), recomputed per WM_NCHITTEST at GetDpiForWindow DPI) fully shadows CMP's resizer while `AeroResizeHandles` composes nothing (NativeChromeStatus gate); the D-01 floor (app minimum if `isMinimumSizeSet`, else 320x240dp) lives in pure MinimumSize.kt shared by the WM_GETMINMAXINFO px path and the Compose dp clamps — proven live: main clamps a 50x50 SetWindowPos to exactly 320x240, the narrow window keeps its own 260x200 (the library never writes window.minimumSize)
 - **[v3.2, 22-12]** The additive public surface is in: `AeroTitleBar(..., nativeWindowManagement: Boolean = true)` (false = exact legacy branch, no install) and `Modifier.markAeroTitleBarInteractive()` in `AeroWindowChrome.kt` (composed{} + DisposableEffect over `WindowRegionsDirectory`, one interactive id per usage, null-rect publish on dispose, inert off Windows / without a subclass). Proven: showcase compiles with call sites byte-unchanged (API-01 at d85bc86); `V11-N-HT-MARKED-BOUNDARY` FAIL→PASS (API-02); `-Paero.nativeChrome=false` is the permanent RED control — RED OK 0/18 main + 0/8 narrow, GWL_STYLE = 0x960B0000 (pre-phase C1), zero install traces
 - **[v3.2, 22-12]** WIN-06 headless proof: a posted WM_CLOSE to the narrow window runs its own `onCloseRequest` and drops only its registry entry (new `event=ncdestroy` trace — the HWND is destroyed before onDispose can run `release()`, so without the trace the close path was silent); the main window's install count stays 1 and its title checks stay PASS; `-Paero.secondWindow=3000` delayed window gets its own install ~3.2s after the main one. Probe pitfall: never pass comma-separated `-GradleProps` through `powershell.exe -File` from bash (collapses to one string) — use a wrapper .ps1
+- **[v3.2, 22-19]** One native title-bar path, and it is the public one: AeroTitleBar is built on `rememberAeroWindowChrome` (API-04, the D-05 proof choice) — the API inherits the whole phase's live verification (VER-11 18/18+8/8 through it, opt-out RED control, one install per HWND, title band 0 px diff vs baseline); `AeroTitleBar.kt` holds no subclass wiring of its own (grep `NativeWindowChromeRegistry` = 0)
+- **[v3.2, 22-19]** HitTestSnapshot multiplicity rule: the enum role stays for the single Maximize rect (one per window, last laid out wins); caption areas and clickable elements are id-keyed maps (`captions`/`interactive`) — an app can have several of each; every region self-removes on dispose through its own modifier's DisposableEffect
 
 ### Open technical debt
 
@@ -150,10 +152,10 @@ Resolved at v3.1 close: the five research conflicts from `.planning/research/SUM
 
 ## Session Continuity
 
-Last session: 2026-09-27T17:20:16.796Z
-Stopped at: Phase 22 Plan 12 complete -- public API surface (nativeWindowManagement opt-out, markAeroTitleBarInteractive); API-02 RED->GREEN, opt-out RED control 0/18+0/8, WIN-06 multi-window independence
+Last session: 2026-09-27T20:58:00.000Z
+Stopped at: Phase 22 Plan 19 complete -- public rememberAeroWindowChrome (API-04), AeroTitleBar rebuilt on it (D-05); VER-11 through the API 18/18+8/8, opt-out RED control, one install per HWND
 Resume file: None
-Next action: `/bm:execute-phase 22` (Plan 13: per ROADMAP wave order)
+Next action: `/bm:execute-phase 22` (Plan 13: per ROADMAP wave order; 13 of 19 plans done, 19 executed early)
 
 ### Rules that outlive Phase 21
 
