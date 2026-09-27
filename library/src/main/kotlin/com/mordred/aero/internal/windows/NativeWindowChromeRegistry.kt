@@ -49,14 +49,22 @@ internal object NativeWindowChromeRegistry {
 
     /**
      * Installs (or reuses) native chrome for [window]'s HWND. Returns `null` off-Windows
-     * (T-22-SC-adjacent: no native call happens at all). If the AWT peer does not exist yet
-     * ([Window.isDisplayable] false), install is deferred to a one-shot [HierarchyListener]
-     * (`Native.getWindowPointer` needs a displayable AWT peer to return a valid pointer).
+     * (T-22-SC-adjacent: no native call happens at all) or when install itself throws
+     * (T-22-02: traced as `install-failed`; the caller falls back to its legacy
+     * `WindowDraggableArea` path so the window stays draggable). If the AWT peer does not
+     * exist yet ([Window.isDisplayable] false), install is deferred to a one-shot
+     * [HierarchyListener] (`Native.getWindowPointer` needs a displayable AWT peer to return
+     * a valid pointer).
      */
     internal fun acquire(window: Window): ChromeHandle? {
         if (!isWindowsOs) return null
         if (!window.isDisplayable) return acquireDeferred(window)
-        return installOrReuse(window)
+        return try {
+            installOrReuse(window)
+        } catch (t: Throwable) {
+            chromeTrace("install-failed", 0L, "${t::class.java.name}: ${t.message}")
+            null
+        }
     }
 
     private fun acquireDeferred(window: Window): ChromeHandle {
