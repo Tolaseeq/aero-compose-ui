@@ -1,5 +1,6 @@
 package com.mordred.aero.components.navigation
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
@@ -44,6 +45,8 @@ import com.mordred.aero.icons.`internal`.Square
 import com.mordred.aero.icons.`internal`.X
 import com.mordred.aero.internal.windows.HitTestRegionRegistry
 import com.mordred.aero.internal.windows.LEADING_INTERACTIVE_ID
+import com.mordred.aero.internal.windows.AeroMaxButtonInteraction
+import com.mordred.aero.internal.windows.MaxButtonDirectory
 import com.mordred.aero.internal.windows.NativeWindowChromeRegistry
 import com.mordred.aero.internal.windows.PxRect
 import com.mordred.aero.internal.windows.TitleBarRole
@@ -107,6 +110,7 @@ public fun FrameWindowScope.AeroTitleBar(
         // SNAP-01 / PITFALLS 15: native HTCAPTION hit-testing owns the drag — a single drag
         // path, no WindowDraggableArea wrapper.
         val regions = remember(window) { WindowRegionsDirectory.forWindow(window) }
+        val maxInteraction = remember(window) { MaxButtonDirectory.forWindow(window) }
         DisposableEffect(window) {
             val handle = NativeWindowChromeRegistry.acquire(window)
             // T-22-02: a failed install flips to the legacy draggable path below.
@@ -120,6 +124,7 @@ public fun FrameWindowScope.AeroTitleBar(
             leading = leading,
             rowModifier = modifier,
             regions = regions,
+            maxInteraction = maxInteraction,
         )
     } else {
         WindowDraggableArea(modifier = modifier) {
@@ -130,6 +135,7 @@ public fun FrameWindowScope.AeroTitleBar(
                 leading = leading,
                 rowModifier = Modifier,
                 regions = null,
+                maxInteraction = null,
             )
         }
     }
@@ -158,7 +164,9 @@ private fun regionModifier(regions: HitTestRegionRegistry?, publish: HitTestRegi
  * The shared title-bar row for both drag paths. With [regions] non-null (Windows native
  * path) every region reports its live bounds via `onGloballyPositioned`; with [regions]
  * null the composition is exactly the legacy row (no region-reporting modifiers, no
- * wrapper Box around [leading]).
+ * wrapper Box around [leading]). [maxInteraction] is non-null exactly on that same native
+ * path: the maximize button then reads hover/press from the native-fed interaction source
+ * and the bridge's `onClick` carries the same placement toggle (BTN-01 / D-02 / WIN-05).
  */
 @Composable
 private fun TitleBarRow(
@@ -168,6 +176,7 @@ private fun TitleBarRow(
     leading: (@Composable () -> Unit)?,
     rowModifier: Modifier,
     regions: HitTestRegionRegistry?,
+    maxInteraction: AeroMaxButtonInteraction?,
 ) {
     val colors = AeroTheme.colors
     if (regions != null) {
@@ -179,6 +188,20 @@ private fun TitleBarRow(
                 regions.publishRole(TitleBarRole.Close, null)
                 regions.publishInteractive(LEADING_INTERACTIVE_ID, null)
             }
+        }
+    }
+    val togglePlacement = {
+        windowState.placement =
+            if (windowState.placement == WindowPlacement.Maximized)
+                WindowPlacement.Floating
+            else
+                WindowPlacement.Maximized
+    }
+    if (maxInteraction != null) {
+        // BTN-01 / WIN-05: a native-fed click over HTMAXBUTTON runs exactly today's toggle.
+        DisposableEffect(maxInteraction, windowState) {
+            maxInteraction.onClick = togglePlacement
+            onDispose { maxInteraction.onClick = null }
         }
     }
     Row(
@@ -242,14 +265,9 @@ private fun TitleBarRow(
                                          "Restore window"
                                      else
                                          "Maximize window",
-                onClick = {
-                    windowState.placement =
-                        if (windowState.placement == WindowPlacement.Maximized)
-                            WindowPlacement.Floating
-                        else
-                            WindowPlacement.Maximized
-                },
-                modifier = regionModifier(regions) { rect -> publishRole(TitleBarRole.Maximize, rect.toPxRect()) }
+                onClick = togglePlacement,
+                modifier = regionModifier(regions) { rect -> publishRole(TitleBarRole.Maximize, rect.toPxRect()) },
+                interactionSource = maxInteraction?.interactionSource
             )
             TitleBarButton(
                 icon = AeroIcons.X,
@@ -262,22 +280,45 @@ private fun TitleBarRow(
     }
 }
 
+/**
+ * One caption button (46.dp × 32.dp). With [interactionSource] null the body is the legacy
+ * one verbatim (own remembered source; `clickable(onClick)`). With a source given (the
+ * native-fed maximize bridge, BTN-01) `hoverable` and `clickable` share it, so the same
+ * background expression and the same `LocalIndication` produce hover/press visuals from
+ * whichever side fed the interactions (D-02 parity by construction; role/focus/keyboard
+ * activation unchanged, T-22-22).
+ */
 @Composable
-private fun TitleBarButton(
+internal fun TitleBarButton(
     icon: ImageVector,
     hoverColor: Color,
     contentDescription: String?,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    interactionSource: MutableInteractionSource? = null
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val hovered by interactionSource.collectIsHoveredAsState()
+    val ownSource = remember { MutableInteractionSource() }
+    val source = interactionSource ?: ownSource
+    val hovered by source.collectIsHoveredAsState()
+
+    val interactionModifier = if (interactionSource == null) {
+        Modifier
+            .hoverable(source)
+            .clickable(onClick = onClick)
+    } else {
+        Modifier
+            .hoverable(source)
+            .clickable(
+                interactionSource = source,
+                indication = LocalIndication.current,
+                onClick = onClick,
+            )
+    }
 
     Box(
         modifier = modifier
             .size(width = 46.dp, height = 32.dp)
-            .hoverable(interactionSource)
-            .clickable(onClick = onClick)
+            .then(interactionModifier)
             .background(if (hovered) hoverColor else Color.Transparent),
         contentAlignment = Alignment.Center
     ) {
