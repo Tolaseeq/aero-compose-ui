@@ -12,18 +12,12 @@ import java.util.concurrent.atomic.AtomicReference
  */
 
 /**
- * BTN-02 / PITFALLS 19: the semantic regions of `AeroTitleBar`'s row that Windows must
- * distinguish at hit-test time — the draggable caption, and the three caption buttons whose
- * pixels must NOT become draggable (minimize/close keep ordinary Compose clicks; maximize is
- * reported as HTMAXBUTTON so Windows offers Snap Layouts).
+ * BTN-02 / SNAP-02: the semantic region role Windows must distinguish at hit-test time —
+ * the maximize button, reported as HTMAXBUTTON so Windows offers Snap Layouts. Caption
+ * areas and clickable elements are id-keyed maps instead (`captions` / `interactive`),
+ * because a window can have several of each.
  */
-internal enum class TitleBarRole { Caption, Minimize, Maximize, Close }
-
-/**
- * PITFALLS 19: reserved interactive-region id for `AeroTitleBar`'s `leading` slot, so the
- * slot never has to allocate an id through [HitTestRegionRegistry.newInteractiveId].
- */
-internal const val LEADING_INTERACTIVE_ID: Long = 0L
+internal enum class TitleBarRole { Maximize }
 
 /**
  * SNAP-01 / PITFALLS 6: an immutable, copy-on-write view of every published title-bar region.
@@ -48,14 +42,16 @@ internal data class HitTestSnapshot(
 
 /**
  * SNAP-01 / BTN-02: per-window region store. Compose publishes through [publishRole] /
- * [publishInteractive]; every publish builds a NEW [HitTestSnapshot] and swaps it into the
- * [AtomicReference] (copy-on-write — a null rect removes the entry, so a disposed title bar
- * stops claiming pixels). The native side only calls [snapshot].
+ * [publishInteractive] / [publishCaption]; every publish builds a NEW [HitTestSnapshot] and
+ * swaps it into the [AtomicReference] (copy-on-write — a null rect removes the entry, so a
+ * disposed title bar stops claiming pixels). The native side only calls [snapshot].
  */
 internal class HitTestRegionRegistry {
 
     private val current = AtomicReference(HitTestSnapshot.EMPTY)
-    private val nextInteractiveId = AtomicLong(LEADING_INTERACTIVE_ID + 1)
+
+    // Starts at 1: id 0 was the historical reserved leading-slot id and stays unused.
+    private val nextInteractiveId = AtomicLong(1L)
 
     /** PITFALLS 6: a plain volatile read, safe on the native WndProc thread. */
     fun snapshot(): HitTestSnapshot = current.get()
@@ -96,7 +92,7 @@ internal class HitTestRegionRegistry {
         }
     }
 
-    /** Allocates an interactive-region id; [LEADING_INTERACTIVE_ID] is reserved and never returned. */
+    /** Allocates an interactive-region id (0 stays unused — the historical leading id). */
     fun newInteractiveId(): Long = nextInteractiveId.getAndIncrement()
 
     /**

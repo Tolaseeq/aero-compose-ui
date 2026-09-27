@@ -19,10 +19,11 @@ private fun PxRect.containsPoint(x: Int, y: Int): Boolean =
  *     HTLEFT/HTRIGHT/HTTOP/HTBOTTOM — Windows owns resizing from every edge and corner
  *     (WIN-02); a maximized window has no resize bands
  *  2. maximize rect → [HTMAXBUTTON] (OS-owned, unlocks the Snap Layouts flyout, SNAP-04)
- *  3. minimize rect, close rect, any interactive rect (e.g. the `leading` slot) → [HTCLIENT],
- *     so Compose keeps receiving ordinary clicks there and never starts a window drag (BTN-02)
- *  4. caption rect, or any API-04 `captions` entry a custom title bar marked through
- *     `captionArea()` → [HTCAPTION] (SNAP-01: the native drag path)
+ *  3. any interactive rect (the caption buttons, the `leading` slot, elements marked via
+ *     API-02 / `captionExclude()`) → [HTCLIENT], so Compose keeps receiving ordinary
+ *     clicks there and never starts a window drag (BTN-02)
+ *  4. any caption rect (an API-04 `captionArea()` marking) → [HTCAPTION] (SNAP-01: the
+ *     native drag path)
  *  5. everywhere else → [HTCLIENT]
  *
  * [clientWidth] / [clientHeight] are the client-area size in physical px. [resizeBandPx] is
@@ -52,12 +53,9 @@ internal fun classifyHitTest(
         if (nearBottom) return HTBOTTOM
     }
     snapshot.roles[TitleBarRole.Maximize]?.let { if (it.containsPoint(x, y)) return HTMAXBUTTON }
-    snapshot.roles[TitleBarRole.Minimize]?.let { if (it.containsPoint(x, y)) return HTCLIENT }
-    snapshot.roles[TitleBarRole.Close]?.let { if (it.containsPoint(x, y)) return HTCLIENT }
     for (rect in snapshot.interactive.values) {
         if (rect.containsPoint(x, y)) return HTCLIENT
     }
-    snapshot.roles[TitleBarRole.Caption]?.let { if (it.containsPoint(x, y)) return HTCAPTION }
     for (rect in snapshot.captions.values) {
         if (rect.containsPoint(x, y)) return HTCAPTION
     }

@@ -19,19 +19,13 @@ import androidx.compose.foundation.window.WindowDraggableArea
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.boundsInWindow
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,17 +37,7 @@ import com.mordred.aero.icons.`internal`.FrameCorners
 import com.mordred.aero.icons.`internal`.Minus
 import com.mordred.aero.icons.`internal`.Square
 import com.mordred.aero.icons.`internal`.X
-import com.mordred.aero.internal.windows.HitTestRegionRegistry
-import com.mordred.aero.internal.windows.LEADING_INTERACTIVE_ID
-import com.mordred.aero.internal.windows.AeroMaxButtonInteraction
-import com.mordred.aero.internal.windows.MaxButtonDirectory
-import com.mordred.aero.internal.windows.NativeWindowChromeRegistry
-import com.mordred.aero.internal.windows.PxRect
-import com.mordred.aero.internal.windows.TitleBarRole
-import com.mordred.aero.internal.windows.WindowRegionsDirectory
-import com.mordred.aero.internal.windows.isWindowsOs
 import com.mordred.aero.theme.AeroTheme
-import kotlin.math.roundToInt
 
 /**
  * NAV-01: Aero-styled custom window title bar.
@@ -63,12 +47,12 @@ import kotlin.math.roundToInt
  *  - [title] text
  *  - Minimize / Maximize-or-Restore / Close buttons (46.dp × 32.dp each)
  *
- * On Windows the row's live layout regions are published to the native hit-test
- * subclass (SNAP-01): the caption area answers HTCAPTION to the OS, which owns
- * window dragging natively, and the maximize button answers HTMAXBUTTON (Snap
- * Layouts). Minimize, close and [leading] content stay HTCLIENT and keep their
- * ordinary Compose clicks (BTN-02). If the native install fails, the bar falls
- * back to the legacy path below so the window stays draggable.
+ * On Windows the row's live layout regions are published through the public
+ * [rememberAeroWindowChrome] API (SNAP-01): the caption area answers HTCAPTION to the OS,
+ * which owns window dragging natively, and the maximize button answers HTMAXBUTTON (Snap
+ * Layouts). Minimize, close and [leading] content stay HTCLIENT and keep their ordinary
+ * Compose clicks (BTN-02). If the native install fails, the bar falls back to the legacy
+ * path below so the window stays draggable.
  *
  * Off Windows (and on the fallback path) the whole row is wrapped in
  * `WindowDraggableArea`, so users can drag the window from any non-button area.
@@ -107,27 +91,18 @@ public fun FrameWindowScope.AeroTitleBar(
     modifier: Modifier = Modifier,
     nativeWindowManagement: Boolean = true
 ) {
-    val nativeRequested = isWindowsOs && nativeWindowManagement
-    var nativeFailed by remember { mutableStateOf(false) }
-    if (nativeRequested && !nativeFailed) {
-        // SNAP-01 / PITFALLS 15: native HTCAPTION hit-testing owns the drag — a single drag
-        // path, no WindowDraggableArea wrapper.
-        val regions = remember(window) { WindowRegionsDirectory.forWindow(window) }
-        val maxInteraction = remember(window) { MaxButtonDirectory.forWindow(window) }
-        DisposableEffect(window, nativeRequested) {
-            val handle = NativeWindowChromeRegistry.acquire(window)
-            // T-22-02: a failed install flips to the legacy draggable path below.
-            if (handle == null) nativeFailed = true
-            onDispose { handle?.release() }
-        }
+    // API-04 / D-05: the native path IS the public chrome API — AeroTitleBar holds no
+    // window-subclass wiring of its own, so every app title bar and every custom one
+    // run through the same single install.
+    val chrome = rememberAeroWindowChrome(windowState, nativeWindowManagement)
+    if (chrome.isNative) {
         TitleBarRow(
             title = title,
             windowState = windowState,
             onCloseRequest = onCloseRequest,
             leading = leading,
             rowModifier = modifier,
-            regions = regions,
-            maxInteraction = maxInteraction,
+            chrome = chrome,
         )
     } else {
         WindowDraggableArea(modifier = modifier) {
@@ -137,39 +112,20 @@ public fun FrameWindowScope.AeroTitleBar(
                 onCloseRequest = onCloseRequest,
                 leading = leading,
                 rowModifier = Modifier,
-                regions = null,
-                maxInteraction = null,
+                chrome = null,
             )
         }
     }
 }
 
-private fun Rect.toPxRect(): PxRect =
-    PxRect(left.roundToInt(), top.roundToInt(), right.roundToInt(), bottom.roundToInt())
-
-/** Client-area bounds in physical px — the pre-1.12 no-arg `boundsInWindow()` semantics. */
-private fun androidx.compose.ui.layout.LayoutCoordinates.clientBounds(): Rect =
-    boundsInWindow(clipBounds = true)
-
 /**
- * The modifier a region-publishing call site prepends/appends when [regions] is non-null;
- * [Modifier] (a no-op element) otherwise, so the non-Windows / fallback composition keeps
- * exactly the legacy modifier chain.
- */
-private fun regionModifier(regions: HitTestRegionRegistry?, publish: HitTestRegionRegistry.(Rect) -> Unit): Modifier =
-    if (regions == null) {
-        Modifier
-    } else {
-        Modifier.onGloballyPositioned { regions.publish(it.clientBounds()) }
-    }
-
-/**
- * The shared title-bar row for both drag paths. With [regions] non-null (Windows native
- * path) every region reports its live bounds via `onGloballyPositioned`; with [regions]
- * null the composition is exactly the legacy row (no region-reporting modifiers, no
- * wrapper Box around [leading]). [maxInteraction] is non-null exactly on that same native
- * path: the maximize button then reads hover/press from the native-fed interaction source
- * and the bridge's `onClick` carries the same placement toggle (BTN-01 / D-02 / WIN-05).
+ * The shared title-bar row for both drag paths. With [chrome] non-null (Windows native
+ * path) every region reports its live bounds through the public chrome API — the row is
+ * `captionArea()`, minimize/close and the [leading] wrapper are `captionExclude()`, the
+ * maximize button is `maximizeButtonArea()` sharing the native-fed interaction source —
+ * and each region removes itself when its element leaves composition. With [chrome] null
+ * the composition is exactly the legacy row (no region modifiers, no wrapper Box around
+ * [leading]).
  */
 @Composable
 private fun TitleBarRow(
@@ -178,34 +134,15 @@ private fun TitleBarRow(
     onCloseRequest: () -> Unit,
     leading: (@Composable () -> Unit)?,
     rowModifier: Modifier,
-    regions: HitTestRegionRegistry?,
-    maxInteraction: AeroMaxButtonInteraction?,
+    chrome: AeroWindowChromeState?,
 ) {
     val colors = AeroTheme.colors
-    if (regions != null) {
-        DisposableEffect(regions) {
-            onDispose {
-                regions.publishRole(TitleBarRole.Caption, null)
-                regions.publishRole(TitleBarRole.Minimize, null)
-                regions.publishRole(TitleBarRole.Maximize, null)
-                regions.publishRole(TitleBarRole.Close, null)
-                regions.publishInteractive(LEADING_INTERACTIVE_ID, null)
-            }
-        }
-    }
     val togglePlacement = {
         windowState.placement =
             if (windowState.placement == WindowPlacement.Maximized)
                 WindowPlacement.Floating
             else
                 WindowPlacement.Maximized
-    }
-    if (maxInteraction != null) {
-        // BTN-01 / WIN-05: a native-fed click over HTMAXBUTTON runs exactly today's toggle.
-        DisposableEffect(maxInteraction, windowState) {
-            maxInteraction.onClick = togglePlacement
-            onDispose { maxInteraction.onClick = null }
-        }
     }
     Row(
         modifier = rowModifier
@@ -220,20 +157,18 @@ private fun TitleBarRow(
                 )
             )
             .padding(horizontal = 8.dp)
-            .then(regionModifier(regions) { rect -> publishRole(TitleBarRole.Caption, rect.toPxRect()) }),
+            .then(
+                if (chrome == null) Modifier else with(chrome) { Modifier.captionArea() }
+            ),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (leading != null) {
-            if (regions != null) {
+            if (chrome != null) {
                 // BTN-02 / PITFALLS 19: the leading slot is interactive content inside the
-                // caption band — published as interactive so it answers HTCLIENT and keeps
-                // its ordinary clicks instead of starting a window drag. A wrap-content Box
-                // leaves the layout identical.
-                Box(
-                    Modifier.onGloballyPositioned {
-                        regions.publishInteractive(LEADING_INTERACTIVE_ID, it.clientBounds().toPxRect())
-                    }
-                ) {
+                // caption band — excluded so it answers HTCLIENT and keeps its ordinary
+                // clicks instead of starting a window drag. A wrap-content Box leaves the
+                // layout identical.
+                Box(with(chrome) { Modifier.captionExclude() }) {
                     leading()
                 }
             } else {
@@ -256,7 +191,7 @@ private fun TitleBarRow(
                 hoverColor = colors.buttonHover,
                 contentDescription = "Minimize window",
                 onClick = { windowState.isMinimized = true },
-                modifier = regionModifier(regions) { rect -> publishRole(TitleBarRole.Minimize, rect.toPxRect()) }
+                modifier = if (chrome == null) Modifier else with(chrome) { Modifier.captionExclude() }
             )
             TitleBarButton(
                 icon = if (windowState.placement == WindowPlacement.Maximized)
@@ -269,15 +204,15 @@ private fun TitleBarRow(
                                      else
                                          "Maximize window",
                 onClick = togglePlacement,
-                modifier = regionModifier(regions) { rect -> publishRole(TitleBarRole.Maximize, rect.toPxRect()) },
-                interactionSource = maxInteraction?.interactionSource
+                modifier = if (chrome == null) Modifier else with(chrome) { Modifier.maximizeButtonArea() },
+                interactionSource = chrome?.maximizeInteractionSource
             )
             TitleBarButton(
                 icon = AeroIcons.X,
                 hoverColor = colors.closeButtonHover,
                 contentDescription = "Close window",
                 onClick = onCloseRequest,
-                modifier = regionModifier(regions) { rect -> publishRole(TitleBarRole.Close, rect.toPxRect()) }
+                modifier = if (chrome == null) Modifier else with(chrome) { Modifier.captionExclude() }
             )
         }
     }
