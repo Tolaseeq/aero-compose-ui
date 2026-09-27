@@ -4,13 +4,13 @@ milestone: v3.2
 milestone_name: Native Window Behavior
 status: executing
 stopped_at: Phase 22 Plan 08 complete -- SHW-17 narrow second window fixture + probe narrow checks (V11-N set, API-02 RED live)
-last_updated: "2026-09-26T20:35:22.433Z"
+last_updated: "2026-09-27T13:46:52.683Z"
 last_activity: 2026-09-25 -- Phase 22 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 19
-  completed_plans: 6
+  completed_plans: 7
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-25 — v3.2 roadmap created)
 ## Current Position
 
 Phase: 22 (Native Window Behavior + Release 3.2.0) — EXECUTING
-Plan: 7 of 19
+Plan: 8 of 19
 Status: Executing Phase 22
 Last activity: 2026-09-25 -- Phase 22 execution started
 
