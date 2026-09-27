@@ -114,6 +114,8 @@ internal object NativeWindowChromeRegistry {
         return try {
             installOrReuse(window)
         } catch (t: Throwable) {
+            // WIN-02: a failed install leaves the Compose resize path active.
+            NativeChromeStatus.set(window, false)
             chromeTrace("install-failed", 0L, "${t::class.java.name}: ${t.message}")
             null
         }
@@ -146,6 +148,7 @@ internal object NativeWindowChromeRegistry {
         if (existing != null && currentWndProcPointer(hwnd) == existing.frameProcPtr) {
             existing.ownerCount += 1
             chromeTrace("reuse", hwndLong, "ownerCount=${existing.ownerCount}")
+            NativeChromeStatus.set(window, true)
             return ChromeHandle { release(hwndLong) }
         }
 
@@ -198,6 +201,8 @@ internal object NativeWindowChromeRegistry {
         }
         chrome.ownerCount += 1
         syncChildren(hwndLong, hwnd, chrome, regions)
+        // WIN-02: native chrome is live — the Compose resize path stands down for this window.
+        NativeChromeStatus.set(window, true)
 
         return ChromeHandle { release(hwndLong) }
     }
@@ -367,6 +372,9 @@ internal object NativeWindowChromeRegistry {
         } else {
             chromeTrace("uninstall-skipped", hwndLong, "frame")
         }
+
+        // WIN-02: the native resize path is gone — the Compose resize path may act again.
+        NativeChromeStatus.set(chrome.window, false)
 
         // Only drop the entry after restoration is attempted and read back (or deliberately
         // skipped because another subclass is now on top) — never before.

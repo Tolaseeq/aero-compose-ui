@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,7 +22,18 @@ import androidx.compose.ui.window.FrameWindowScope
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.WindowState
+import com.mordred.aero.internal.windows.NativeChromeStatus
+import com.mordred.aero.internal.windows.resolveComposeMinimumDp
 import java.awt.Cursor
+
+/**
+ * WIN-02: the drag zones compose only on the platform path that owns resizing —
+ * Floating placement AND no active native chrome (once the Windows subclass answers
+ * HTLEFT..HTBOTTOMRIGHT for this window, Windows owns resizing and a second,
+ * Compose-side drag path must not exist).
+ */
+internal fun shouldComposeResizeHandles(placement: WindowPlacement, nativeChromeActive: Boolean): Boolean =
+    placement == WindowPlacement.Floating && !nativeChromeActive
 
 /**
  * Eight invisible resize-zone Boxes (4 edges + 4 corners) for an undecorated
@@ -31,14 +43,18 @@ import java.awt.Cursor
  *    top/left/top-corner zones, so the anchored opposite edge stays fixed)
  *
  * Disabled when `windowState.placement != WindowPlacement.Floating` (resizing a
- * Maximized window doesn't make sense).
+ * Maximized window doesn't make sense) AND on Windows while native chrome is
+ * active for this window — there Windows itself resizes from every edge and
+ * corner, so composing a second drag path would only double-handle presses.
  *
  * Zone dimensions:
  *  - Edge bands: 4.dp thick, run the length of their side (corners overlay on top
  *    so corner zones win on intersection by virtue of being painted later).
  *  - Corners: 8.dp × 8.dp, anchored at each corner of the window.
  *
- * Minimum size: 320 × 240 dp.
+ * Minimum size: the app's own AWT `window.minimumSize` when set, otherwise
+ * 320 × 240 dp (D-01) — read at drag time, so a minimum the app sets later is
+ * honored.
  *
  * Place this composable inside the same Box as your title bar + content, e.g.:
  * ```
@@ -53,12 +69,11 @@ import java.awt.Cursor
  */
 @Composable
 public fun FrameWindowScope.AeroResizeHandles(windowState: WindowState) {
-    if (windowState.placement != WindowPlacement.Floating) return
+    val nativeChromeActive by NativeChromeStatus.activeState(window)
+    if (!shouldComposeResizeHandles(windowState.placement, nativeChromeActive)) return
 
     val edge = 4.dp
     val corner = 8.dp
-    val minW = 320f
-    val minH = 240f
 
     // Native cursor icons (built once, reused per recomposition)
     val cursorN  = remember { PointerIcon(Cursor(Cursor.N_RESIZE_CURSOR))  }
@@ -81,6 +96,9 @@ public fun FrameWindowScope.AeroResizeHandles(windowState: WindowState) {
                 .pointerHoverIcon(cursorN)
                 .pointerInput(Unit) {
                     detectDragGestures { _, drag ->
+                        val (minW, minH) = resolveComposeMinimumDp(
+                            window.isMinimumSizeSet, window.minimumSize.width, window.minimumSize.height,
+                        )
                         val dyDp = drag.y.toDp().value
                         val newH = (windowState.size.height.value - dyDp).coerceAtLeast(minH).dp
                         val deltaApplied = windowState.size.height.value - newH.value
@@ -102,6 +120,9 @@ public fun FrameWindowScope.AeroResizeHandles(windowState: WindowState) {
                 .pointerHoverIcon(cursorS)
                 .pointerInput(Unit) {
                     detectDragGestures { _, drag ->
+                        val (minW, minH) = resolveComposeMinimumDp(
+                            window.isMinimumSizeSet, window.minimumSize.width, window.minimumSize.height,
+                        )
                         val newH = (windowState.size.height.value + drag.y.toDp().value).coerceAtLeast(minH).dp
                         windowState.size = DpSize(windowState.size.width, newH)
                     }
@@ -117,6 +138,9 @@ public fun FrameWindowScope.AeroResizeHandles(windowState: WindowState) {
                 .pointerHoverIcon(cursorE)
                 .pointerInput(Unit) {
                     detectDragGestures { _, drag ->
+                        val (minW, minH) = resolveComposeMinimumDp(
+                            window.isMinimumSizeSet, window.minimumSize.width, window.minimumSize.height,
+                        )
                         val newW = (windowState.size.width.value + drag.x.toDp().value).coerceAtLeast(minW).dp
                         windowState.size = DpSize(newW, windowState.size.height)
                     }
@@ -132,6 +156,9 @@ public fun FrameWindowScope.AeroResizeHandles(windowState: WindowState) {
                 .pointerHoverIcon(cursorW)
                 .pointerInput(Unit) {
                     detectDragGestures { _, drag ->
+                        val (minW, minH) = resolveComposeMinimumDp(
+                            window.isMinimumSizeSet, window.minimumSize.width, window.minimumSize.height,
+                        )
                         val dxDp = drag.x.toDp().value
                         val newW = (windowState.size.width.value - dxDp).coerceAtLeast(minW).dp
                         val deltaApplied = windowState.size.width.value - newW.value
@@ -153,6 +180,9 @@ public fun FrameWindowScope.AeroResizeHandles(windowState: WindowState) {
                 .pointerHoverIcon(cursorNW)
                 .pointerInput(Unit) {
                     detectDragGestures { _, drag ->
+                        val (minW, minH) = resolveComposeMinimumDp(
+                            window.isMinimumSizeSet, window.minimumSize.width, window.minimumSize.height,
+                        )
                         val dxDp = drag.x.toDp().value
                         val dyDp = drag.y.toDp().value
                         val newW = (windowState.size.width.value  - dxDp).coerceAtLeast(minW).dp
@@ -179,6 +209,9 @@ public fun FrameWindowScope.AeroResizeHandles(windowState: WindowState) {
                 .pointerHoverIcon(cursorNE)
                 .pointerInput(Unit) {
                     detectDragGestures { _, drag ->
+                        val (minW, minH) = resolveComposeMinimumDp(
+                            window.isMinimumSizeSet, window.minimumSize.width, window.minimumSize.height,
+                        )
                         val dyDp = drag.y.toDp().value
                         val newW = (windowState.size.width.value  + drag.x.toDp().value).coerceAtLeast(minW).dp
                         val newH = (windowState.size.height.value - dyDp).coerceAtLeast(minH).dp
@@ -200,6 +233,9 @@ public fun FrameWindowScope.AeroResizeHandles(windowState: WindowState) {
                 .pointerHoverIcon(cursorSW)
                 .pointerInput(Unit) {
                     detectDragGestures { _, drag ->
+                        val (minW, minH) = resolveComposeMinimumDp(
+                            window.isMinimumSizeSet, window.minimumSize.width, window.minimumSize.height,
+                        )
                         val dxDp = drag.x.toDp().value
                         val newW = (windowState.size.width.value  - dxDp).coerceAtLeast(minW).dp
                         val newH = (windowState.size.height.value + drag.y.toDp().value).coerceAtLeast(minH).dp
@@ -221,6 +257,9 @@ public fun FrameWindowScope.AeroResizeHandles(windowState: WindowState) {
                 .pointerHoverIcon(cursorSE)
                 .pointerInput(Unit) {
                     detectDragGestures { _, drag ->
+                        val (minW, minH) = resolveComposeMinimumDp(
+                            window.isMinimumSizeSet, window.minimumSize.width, window.minimumSize.height,
+                        )
                         val newW = (windowState.size.width.value  + drag.x.toDp().value).coerceAtLeast(minW).dp
                         val newH = (windowState.size.height.value + drag.y.toDp().value).coerceAtLeast(minH).dp
                         windowState.size = DpSize(newW, newH)
