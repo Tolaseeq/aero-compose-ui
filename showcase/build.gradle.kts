@@ -37,6 +37,7 @@ tasks.withType<JavaExec>().configureEach {
         (project.findProperty("aero.windowState") as String?)?.let { systemProperty("aero.windowState", it) }
         (project.findProperty("aero.chromeTrace") as String?)?.let { systemProperty("aero.chromeTrace", it) }
         (project.findProperty("aero.secondWindow") as String?)?.let { systemProperty("aero.secondWindow", it) }
+        (project.findProperty("aero.nativeChrome") as String?)?.let { systemProperty("aero.nativeChrome", it) }
     }
 }
 
@@ -52,6 +53,7 @@ tasks.withType<org.jetbrains.compose.reload.gradle.ComposeHotRun>().configureEac
     (project.findProperty("aero.windowState") as String?)?.let { systemProperty("aero.windowState", it) }
     (project.findProperty("aero.chromeTrace") as String?)?.let { systemProperty("aero.chromeTrace", it) }
     (project.findProperty("aero.secondWindow") as String?)?.let { systemProperty("aero.secondWindow", it) }
+    (project.findProperty("aero.nativeChrome") as String?)?.let { systemProperty("aero.nativeChrome", it) }
 }
 
 compose.desktop {

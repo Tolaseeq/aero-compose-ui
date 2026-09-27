@@ -76,10 +76,21 @@ private fun secondWindowOpenDelayMs(): Long? = when (val value = System.getPrope
     else -> value?.toLongOrNull()?.takeIf { it > 0L }
 }
 
+/**
+ * Whether the windows opt into native window management, from `-Daero.nativeChrome=false`.
+ *
+ * Exists so a review pass can open the pre-phase behavior (`WindowDraggableArea` drag, Compose
+ * resize handles, no native subclass) as a permanent RED control for the VER-11 live checks:
+ * every native-path check must fail on this launch. Absent or any other value keeps the
+ * default native behavior, so a default launch is unchanged.
+ */
+private fun nativeChromeEnabled(): Boolean = System.getProperty("aero.nativeChrome") != "false"
+
 fun main() {
     val section = initialSection()
     val page = initialPage()
     val capture = captureMode()
+    val nativeChrome = nativeChromeEnabled()
     val secondWindowDelayMs = secondWindowOpenDelayMs()
 
     application {
@@ -115,7 +126,8 @@ fun main() {
                         AeroTitleBar(
                             title = "aero-compose-ui Showcase",
                             windowState = windowState,
-                            onCloseRequest = ::exitApplication
+                            onCloseRequest = ::exitApplication,
+                            nativeWindowManagement = nativeChrome
                         )
                         ShowcaseApp(
                             currentScheme = currentScheme,
@@ -137,7 +149,7 @@ fun main() {
             }
         }
         if (narrowOpen) {
-            NarrowQueueWindow(initialScheme(), capture, onClose = { narrowOpen = false })
+            NarrowQueueWindow(initialScheme(), capture, nativeChrome, onClose = { narrowOpen = false })
         }
     }
 }

@@ -22,6 +22,7 @@ import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberWindowState
 import com.mordred.aero.components.navigation.AeroResizeHandles
 import com.mordred.aero.components.navigation.AeroTitleBar
+import com.mordred.aero.components.navigation.markAeroTitleBarInteractive
 import com.mordred.aero.theme.AeroColorScheme
 import com.mordred.aero.theme.AeroTheme
 import java.awt.Dimension
@@ -40,12 +41,13 @@ import java.awt.Dimension
  *
  * Every externally observable interaction prints an `AERO_EVENT` line (gated by
  * `-Daero.windowState=true`): `name=leading` for the badge click, `name=marked` for the
- * overlay click, `close-request label=narrow` for either close path. The overlay is
- * deliberately not marked as an interactive title-bar element on the native path yet; until
- * it is, its hit-test boundary check is expected to fail.
+ * overlay click, `close-request label=narrow` for either close path. The overlay is marked
+ * interactive via `markAeroTitleBarInteractive()` (API-02), so on the native path its pixels
+ * answer HTCLIENT and it keeps its ordinary clicks; [nativeChrome] = false opens the
+ * pre-phase behavior for this window instead (the permanent RED control).
  */
 @Composable
-public fun ApplicationScope.NarrowQueueWindow(scheme: AeroColorScheme, capture: Boolean, onClose: () -> Unit) {
+public fun ApplicationScope.NarrowQueueWindow(scheme: AeroColorScheme, capture: Boolean, nativeChrome: Boolean, onClose: () -> Unit) {
     val state = rememberWindowState(
         width = 300.dp,
         height = 480.dp,
@@ -88,6 +90,7 @@ public fun ApplicationScope.NarrowQueueWindow(scheme: AeroColorScheme, capture: 
                             title = "Queue",
                             windowState = state,
                             onCloseRequest = requestClose,
+                            nativeWindowManagement = nativeChrome,
                             leading = {
                                 Box(
                                     Modifier
@@ -108,6 +111,7 @@ public fun ApplicationScope.NarrowQueueWindow(scheme: AeroColorScheme, capture: 
                         // + 6 dp gap).
                         Box(
                             Modifier
+                                .markAeroTitleBarInteractive()
                                 .align(Alignment.TopEnd)
                                 .padding(top = 5.dp, end = 152.dp)
                                 .size(60.dp, 22.dp)
