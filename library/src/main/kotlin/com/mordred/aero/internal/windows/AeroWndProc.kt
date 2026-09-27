@@ -12,10 +12,57 @@ import com.sun.jna.platform.win32.WinUser
 import javax.swing.SwingUtilities
 
 /**
- * SNAP-01 / SNAP-02 / BTN-01: the frame's `WindowProc`. Owns exactly WM_NCCALCSIZE,
- * WM_NCHITTEST, WM_NCDESTROY and the non-client mouse messages at HTMAXBUTTON; every other
- * message is `CallWindowProc(previous, ...)` verbatim — AWT's own WndProc still needs to run
- * for focus, IME, painting and `WindowState` sync.
+ * WIN-05 / PITFALLS 3: the single, authoritative declaration of the messages
+ * [AeroFrameWndProc] owns. Every message NOT in this set is forwarded verbatim through
+ * `CallWindowProc(previous, ...)` — AWT's own WndProc still runs for focus, IME, painting,
+ * drag-and-drop and accessibility, and its extendedState → `WindowState` sync pipeline stays
+ * undisturbed (conflict C4: "syncs automatically", settled 22-02).
+ *
+ * Ownership mode per message — the ONLY branches allowed to return something other than
+ * `CallWindowProc`'s result are WM_NCCALCSIZE (wParam 1), WM_NCHITTEST and the NC button
+ * messages at HTMAXBUTTON:
+ *  - WM_NCCALCSIZE   — wParam 0: forwarded untouched; wParam 1: modified-then-swallowed
+ *                      (`rgrc[0]` rewritten in place, return 0; WIN-01).
+ *  - WM_NCHITTEST    — answered from the live region snapshot; HTCLIENT forwards so AWT's
+ *                      own answer stands (SNAP-01).
+ *  - WM_NCMOUSEMOVE / WM_NCMOUSELEAVE — observed-then-forwarded (max-button hover bridge,
+ *                      BTN-01; forwarding keeps `DefWindowProc`'s Snap Layouts flyout path).
+ *  - WM_NCLBUTTONDOWN / WM_NCLBUTTONUP / WM_NCLBUTTONDBLCLK — swallowed ONLY at
+ *                      HTMAXBUTTON (return 0, no classic-button paint, no double-fire);
+ *                      every other hit code forwards unchanged (BTN-01).
+ *  - WM_STYLECHANGING — modified-then-forwarded (required styles written into `styleNew`
+ *                      in place before forwarding, WIN-03 / PITFALLS 4).
+ *  - WM_SIZE         — observed-then-forwarded (corner policy re-applied AFTER
+ *                      `CallWindowProc`; WIN-03 / PITFALLS 24).
+ *  - WM_PARENTNOTIFY — observed-then-forwarded (a child-create notification hops to the EDT
+ *                      so the registry subclasses the new child; PITFALLS 4/16).
+ *  - WM_NCDESTROY    — observed-then-forwarded (registry entry dropped after forwarding,
+ *                      PITFALLS 5).
+ */
+internal val OWNED_FRAME_MESSAGES: Set<Int> = setOf(
+    WM_NCCALCSIZE,
+    WM_NCHITTEST,
+    WM_NCMOUSEMOVE,
+    WM_NCMOUSELEAVE,
+    WM_NCLBUTTONDOWN,
+    WM_NCLBUTTONUP,
+    WM_NCLBUTTONDBLCLK,
+    WM_STYLECHANGING,
+    WM_SIZE,
+    WM_PARENTNOTIFY,
+    WM_NCDESTROY,
+)
+
+/**
+ * PITFALLS 3: the child proc owns WM_NCHITTEST only — every other message the child receives
+ * is forwarded verbatim through `CallWindowProc(previous, ...)`.
+ */
+internal val OWNED_CHILD_MESSAGES: Set<Int> = setOf(WM_NCHITTEST)
+
+/**
+ * SNAP-01 / SNAP-02 / BTN-01: the frame's `WindowProc`. Owns exactly
+ * [OWNED_FRAME_MESSAGES]; every other message is `CallWindowProc(previous, ...)` verbatim —
+ * AWT's own WndProc still needs to run for focus, IME, painting and `WindowState` sync.
  */
 internal class AeroFrameWndProc(
     val hwnd: Long,
@@ -38,30 +85,56 @@ internal class AeroFrameWndProc(
             ),
         )
 
-    private fun handle(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): Long = when (uMsg) {
-        WM_NCCALCSIZE -> handleNcCalcSize(hwnd, wParam, lParam)
+    private fun handle(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): Long =
+        // PITFALLS 3: nothing outside OWNED_FRAME_MESSAGES is ever touched — the set is the
+        // authoritative audit of ownership, so a message cannot gain handling here without
+        // also being declared in it (and every owned branch below returns `CallWindowProc`'s
+        // result unless it is one of the three sanctioned swallow/answer cases).
+        if (uMsg !in OWNED_FRAME_MESSAGES) {
+            callPrevious(hwnd, uMsg, wParam, lParam).toLong()
+        } else {
+            when (uMsg) {
+                WM_NCCALCSIZE -> handleNcCalcSize(hwnd, wParam, lParam)
 
-        WM_NCHITTEST -> handleNcHitTest(hwnd, wParam, lParam)
+                WM_NCHITTEST -> handleNcHitTest(hwnd, wParam, lParam)
 
-        WM_NCMOUSEMOVE -> handleNcMouseMove(hwnd, uMsg, wParam, lParam)
+                WM_NCMOUSEMOVE -> handleNcMouseMove(hwnd, uMsg, wParam, lParam)
 
-        WM_NCMOUSELEAVE -> handleNcMouseLeave(hwnd, uMsg, wParam, lParam)
+                WM_NCMOUSELEAVE -> handleNcMouseLeave(hwnd, uMsg, wParam, lParam)
 
-        WM_NCLBUTTONDOWN, WM_NCLBUTTONDBLCLK -> handleNcButtonDown(hwnd, uMsg, wParam, lParam)
+                WM_NCLBUTTONDOWN, WM_NCLBUTTONDBLCLK -> handleNcButtonDown(hwnd, uMsg, wParam, lParam)
 
-        WM_NCLBUTTONUP -> handleNcButtonUp(hwnd, uMsg, wParam, lParam)
+                WM_NCLBUTTONUP -> handleNcButtonUp(hwnd, uMsg, wParam, lParam)
 
-        WM_STYLECHANGING -> handleStyleChanging(hwnd, uMsg, wParam, lParam)
+                WM_STYLECHANGING -> handleStyleChanging(hwnd, uMsg, wParam, lParam)
 
-        WM_SIZE -> handleSize(hwnd, uMsg, wParam, lParam)
+                WM_SIZE -> handleSize(hwnd, uMsg, wParam, lParam)
 
-        WM_NCDESTROY -> {
-            val result = callPrevious(hwnd, uMsg, wParam, lParam).toLong()
-            NativeWindowChromeRegistry.onDestroyed(this.hwnd)
-            result
+                WM_PARENTNOTIFY -> handleParentNotify(hwnd, uMsg, wParam, lParam)
+
+                WM_NCDESTROY -> {
+                    val result = callPrevious(hwnd, uMsg, wParam, lParam).toLong()
+                    NativeWindowChromeRegistry.onDestroyed(this.hwnd)
+                    result
+                }
+
+                else -> callPrevious(hwnd, uMsg, wParam, lParam).toLong()
+            }
         }
 
-        else -> callPrevious(hwnd, uMsg, wParam, lParam).toLong()
+    /**
+     * WIN-05 / PITFALLS 4+16: AWT/Skiko may create a NEW child HWND at any time (canvas
+     * re-creation); until subclassed it answers `WM_NCHITTEST` with HTCLIENT everywhere and
+     * the child→frame bounce is broken. The message itself is forwarded untouched; a
+     * child-create notification hops to the EDT (PITFALLS 6 — never install from inside the
+     * callback) where the registry re-enumerates and subclasses what is missing.
+     */
+    private fun handleParentNotify(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): Long {
+        val result = callPrevious(hwnd, uMsg, wParam, lParam).toLong()
+        if ((wParam.toLong() and 0xFFFF).toInt() == WM_CREATE) {
+            SwingUtilities.invokeLater { NativeWindowChromeRegistry.verifyByHwnd(this.hwnd) }
+        }
+        return result
     }
 
     /**
@@ -139,6 +212,11 @@ internal class AeroFrameWndProc(
      * forwarded to `CallWindowProc(previous)` FIRST — AWT owns the `WindowState` sync
      * pipeline (C4) and nothing here may replace it — then the corner policy is re-applied
      * for the new state (square while maximized, the maintainer's chosen look when floating).
+     *
+     * C4 (settled 22-02, subclass live): `WindowState.placement` / `isMinimized` follow
+     * OS-originated SC_MAXIMIZE / SC_RESTORE / SC_MINIMIZE and non-Compose moves/resizes
+     * through AWT's own extendedState pipeline with zero native code, so this branch adds NO
+     * explicit placement push — a push could only risk a feedback loop (T-22-23).
      */
     private fun handleSize(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): Long {
         val result = callPrevious(hwnd, uMsg, wParam, lParam).toLong()
@@ -257,10 +335,17 @@ internal class AeroChildWndProc(
             ),
         )
 
-    private fun handle(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): Long = when (uMsg) {
-        WM_NCHITTEST -> handleNcHitTest(hwnd, wParam, lParam)
-        else -> callPrevious(hwnd, uMsg, wParam, lParam).toLong()
-    }
+    private fun handle(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): Long =
+        // PITFALLS 3: the child owns WM_NCHITTEST only (OWNED_CHILD_MESSAGES); everything
+        // else forwards verbatim before any owned logic can touch it.
+        if (uMsg !in OWNED_CHILD_MESSAGES) {
+            callPrevious(hwnd, uMsg, wParam, lParam).toLong()
+        } else {
+            when (uMsg) {
+                WM_NCHITTEST -> handleNcHitTest(hwnd, wParam, lParam)
+                else -> callPrevious(hwnd, uMsg, wParam, lParam).toLong()
+            }
+        }
 
     private fun handleNcHitTest(hwnd: HWND, wParam: WPARAM, lParam: LPARAM): Long {
         val (screenX, screenY) = decodeScreenPoint(lParam.toLong())

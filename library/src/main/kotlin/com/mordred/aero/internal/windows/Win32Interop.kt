@@ -9,6 +9,11 @@ import com.sun.jna.win32.W32APIOptions
 
 // SNAP-01 / SNAP-02 / WIN-03: WM_* message identifiers this WindowProc implementations own.
 internal const val WM_SIZE = 0x0005
+
+// WIN-05 / PITFALLS 4: the LOWORD(wParam) value of WM_PARENTNOTIFY that reports a child
+// window creation — the frame proc forwards the message and hops to the EDT so the registry
+// can subclass the new child HWND.
+internal const val WM_CREATE = 0x0001
 internal const val WM_STYLECHANGING = 0x007C
 internal const val WM_NCDESTROY = 0x0082
 internal const val WM_NCCALCSIZE = 0x0083

@@ -7,8 +7,12 @@ import com.sun.jna.platform.win32.User32
 import com.sun.jna.platform.win32.WinDef.HWND
 import com.sun.jna.platform.win32.WinUser
 import java.awt.Window
+import java.awt.event.ComponentEvent
+import java.awt.event.ComponentListener
 import java.awt.event.HierarchyEvent
 import java.awt.event.HierarchyListener
+import java.awt.event.WindowEvent
+import java.awt.event.WindowStateListener
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -29,12 +33,41 @@ internal object NativeWindowChromeRegistry {
     )
 
     private class InstalledChrome(
-        val frameProc: AeroFrameWndProc,
-        val frameProcPtr: Pointer,
-        val previousFrameProc: Pointer,
+        val window: Window,
+        var frameProc: AeroFrameWndProc,
+        var frameProcPtr: Pointer,
+        var previousFrameProc: Pointer,
         val children: MutableList<InstalledChild>,
+        val churnGuard: ChurnGuard,
         var ownerCount: Int,
-    )
+    ) {
+        /**
+         * Procs (and their native pointers) replaced by a later re-install. They stay strongly
+         * referenced until the entry is dropped at WM_NCDESTROY / release: a replaced proc may
+         * still sit in whoever evicted us, and a `Callback` becoming unreachable while still in
+         * a live chain crashes the JVM (PITFALLS 1+4).
+         */
+        val retiredProcs = mutableListOf<Any>()
+    }
+
+    /**
+     * WIN-05 / PITFALLS 4: AWT may re-assert its own WndProc and Skiko may re-create child
+     * canvases at any time (activation changes, DnD registration, always-on-top toggles), and
+     * a silent eviction throws no exception anywhere. Every shown / moved / resized /
+     * window-state event re-verifies the install on the EDT — cheap, idempotent, and the only
+     * reliable signal that the subclass is still ours. Registered at install, removed at
+     * uninstall.
+     */
+    private class ChurnGuard(private val window: Window) : ComponentListener, WindowStateListener {
+
+        override fun componentShown(event: ComponentEvent) = verify()
+        override fun componentResized(event: ComponentEvent) = verify()
+        override fun componentMoved(event: ComponentEvent) = verify()
+        override fun componentHidden(event: ComponentEvent) = Unit
+        override fun windowStateChanged(event: WindowEvent) = verify()
+
+        private fun verify() = NativeWindowChromeRegistry.verify(window)
+    }
 
     private val installed = ConcurrentHashMap<Long, InstalledChrome>()
 
@@ -88,6 +121,7 @@ internal object NativeWindowChromeRegistry {
         val hwndPointer = Native.getWindowPointer(window)
         val hwndLong = Pointer.nativeValue(hwndPointer)
         val hwnd = HWND(hwndPointer)
+        val regions = WindowRegionsDirectory.forWindow(window)
 
         val existing = installed[hwndLong]
         if (existing != null && currentWndProcPointer(hwnd) == existing.frameProcPtr) {
@@ -96,39 +130,154 @@ internal object NativeWindowChromeRegistry {
             return ChromeHandle { release(hwndLong) }
         }
 
-        // SNAP-01: the per-window region registry `AeroTitleBar` publishes into; both procs
-        // read its snapshot on every WM_NCHITTEST. BTN-01: the per-window maximize-button
-        // interaction bridge the frame proc feeds through EDT hops.
-        val regions = WindowRegionsDirectory.forWindow(window)
-        val maxButton = MaxButtonDirectory.forWindow(window)
+        val chrome: InstalledChrome
+        if (existing != null) {
+            // The entry is alive but the frame proc is no longer ours (AWT/Skiko re-subclassed,
+            // PITFALLS 4). Re-subclass on top of the CURRENT proc, reusing the entry so its
+            // churn guard, children and retired-proc references survive; children re-sync below.
+            reinstallFrameProc(hwndLong, hwnd, existing, window)
+            chrome = existing
+        } else {
+            // SNAP-01: the per-window region registry `AeroTitleBar` publishes into; both procs
+            // read its snapshot on every WM_NCHITTEST. BTN-01: the per-window maximize-button
+            // interaction bridge the frame proc feeds through EDT hops.
+            val maxButton = MaxButtonDirectory.forWindow(window)
 
-        Win32Chrome.ensureNativeFrameStyles(hwnd)
-        val previousFrameProc = currentWndProcPointer(hwnd)
-        val frameProc = AeroFrameWndProc(hwndLong, previousFrameProc, regions, maxButton)
-        val frameProcPtr = CallbackReference.getFunctionPointer(frameProc)
-        val chrome = InstalledChrome(
-            frameProc = frameProc,
-            frameProcPtr = frameProcPtr,
-            previousFrameProc = previousFrameProc,
-            children = mutableListOf(),
-            ownerCount = 1,
+            Win32Chrome.ensureNativeFrameStyles(hwnd)
+            val previousFrameProc = currentWndProcPointer(hwnd)
+            val frameProc = AeroFrameWndProc(hwndLong, previousFrameProc, regions, maxButton)
+            val frameProcPtr = CallbackReference.getFunctionPointer(frameProc)
+            val churnGuard = ChurnGuard(window)
+            chrome = InstalledChrome(
+                window = window,
+                frameProc = frameProc,
+                frameProcPtr = frameProcPtr,
+                previousFrameProc = previousFrameProc,
+                children = mutableListOf(),
+                churnGuard = churnGuard,
+                ownerCount = 0,
+            )
+            // Strong refs recorded BEFORE the frame's WNDPROC is swapped, so a message dispatched
+            // the instant after SetWindowLongPtr always finds a live registry entry (Pitfall 1).
+            installed[hwndLong] = chrome
+            User32.INSTANCE.SetWindowLongPtr(hwnd, GWLP_WNDPROC, frameProcPtr)
+            chromeTrace("install", hwndLong, "frameProc=$frameProcPtr")
+
+            // WIN-03: apply the maintainer's chosen corner/shadow look explicitly (22-06).
+            applyCornerPolicy(hwnd, maximized = aeroUser32.IsZoomed(hwnd))
+
+            window.addComponentListener(churnGuard)
+            window.addWindowStateListener(churnGuard)
+        }
+        chrome.ownerCount += 1
+        syncChildren(hwndLong, hwnd, chrome, regions)
+
+        return ChromeHandle { release(hwndLong) }
+    }
+
+    /**
+     * WIN-05 / PITFALLS 4 / T-22-09: re-subclasses the frame ON TOP of the CURRENT proc —
+     * never blindly restoring the originally-saved one, which may be stale. Returns true when
+     * a reinstall actually happened (current proc already ours → false, no-op).
+     */
+    private fun reinstallFrameProc(
+        hwndLong: Long,
+        hwnd: HWND,
+        chrome: InstalledChrome,
+        window: Window,
+    ): Boolean {
+        val current = currentWndProcPointer(hwnd)
+        if (current == chrome.frameProcPtr) return false
+        val frameProc = AeroFrameWndProc(
+            hwndLong,
+            current,
+            WindowRegionsDirectory.forWindow(window),
+            MaxButtonDirectory.forWindow(window),
         )
-        // Strong refs recorded BEFORE the frame's WNDPROC is swapped, so a message dispatched
-        // the instant after SetWindowLongPtr always finds a live registry entry (Pitfall 1).
-        installed[hwndLong] = chrome
+        val frameProcPtr = CallbackReference.getFunctionPointer(frameProc)
+        // The replaced proc/pointer retire into the entry — still strongly referenced until
+        // WM_NCDESTROY / release, because they may live on in whoever evicted us (PITFALLS 1+4).
+        chrome.retiredProcs.add(chrome.frameProc)
+        chrome.retiredProcs.add(chrome.frameProcPtr)
+        chrome.frameProc = frameProc
+        chrome.frameProcPtr = frameProcPtr
+        chrome.previousFrameProc = current
         User32.INSTANCE.SetWindowLongPtr(hwnd, GWLP_WNDPROC, frameProcPtr)
-        chromeTrace("install", hwndLong, "frameProc=$frameProcPtr")
+        chromeTrace("reinstall", hwndLong, "frameProc=$frameProcPtr")
+        return true
+    }
 
-        // WIN-03: apply the maintainer's chosen corner/shadow look explicitly (22-06).
-        applyCornerPolicy(hwnd, maximized = aeroUser32.IsZoomed(hwnd))
-
+    /**
+     * PITFALLS 4+16: subclasses every live child that is not currently ours (a newly created
+     * canvas, or one whose subclass was evicted / whose HWND value was recycled) and drops
+     * entries of children that no longer exist. Returns true when anything changed.
+     */
+    private fun syncChildren(
+        hwndLong: Long,
+        hwnd: HWND,
+        chrome: InstalledChrome,
+        regions: HitTestRegionRegistry,
+    ): Boolean {
+        var changed = false
+        val liveChildren = ArrayList<Long>()
         val enumProc = WinUser.WNDENUMPROC { childHwnd, _ ->
-            subclassChild(hwndLong, childHwnd, chrome, regions)
+            val childHwndLong = Pointer.nativeValue(childHwnd.pointer)
+            liveChildren.add(childHwndLong)
+            val ours = chrome.children.any {
+                it.childHwnd == childHwndLong && currentWndProcPointer(childHwnd) == it.procPtr
+            }
+            if (!ours) {
+                subclassChild(hwndLong, childHwnd, chrome, regions)
+                changed = true
+            }
             true
         }
         User32.INSTANCE.EnumChildWindows(hwnd, enumProc, Pointer.NULL)
 
-        return ChromeHandle { release(hwndLong) }
+        val stale = chrome.children.filter { it.childHwnd !in liveChildren }
+        if (stale.isNotEmpty()) {
+            // Those HWNDs no longer exist, so their procs can never be called again — safe to
+            // drop the strong references (PITFALLS 1).
+            chrome.children.removeAll(stale)
+            changed = true
+        }
+        return changed
+    }
+
+    /**
+     * WIN-05 / PITFALLS 4+16 / T-22-09 (EDT only): re-checks a live install against the OS —
+     * the frame proc must still be ours and every live child subclassed. Traces
+     * `event=reinstall` / `event=child-subclass` when it repairs something, or
+     * `event=verify frame=ok` when the install is intact; that trace is the in-process
+     * signal a probe reads, because a cross-process `GWLP_WNDPROC` read is meaningless
+     * (finding F8).
+     */
+    internal fun verify(window: Window) {
+        if (!isWindowsOs || !window.isDisplayable) return
+        try {
+            verifyInstalled(window)
+        } catch (t: Throwable) {
+            chromeTrace("verify-failed", 0L, "${t::class.java.name}: ${t.message}")
+        }
+    }
+
+    /** The WM_PARENTNOTIFY(WM_CREATE) hop target — verifies through the entry's own window. */
+    internal fun verifyByHwnd(hwndLong: Long) {
+        val chrome = installed[hwndLong] ?: return
+        verify(chrome.window)
+    }
+
+    private fun verifyInstalled(window: Window) {
+        val hwndPointer = Native.getWindowPointer(window)
+        val hwndLong = Pointer.nativeValue(hwndPointer)
+        val chrome = installed[hwndLong] ?: return
+        val hwnd = HWND(hwndPointer)
+
+        val frameChanged = reinstallFrameProc(hwndLong, hwnd, chrome, window)
+        val childrenChanged = syncChildren(hwndLong, hwnd, chrome, WindowRegionsDirectory.forWindow(window))
+        if (!frameChanged && !childrenChanged) {
+            chromeTrace("verify", hwndLong, "frame=ok children=${chrome.children.size}")
+        }
     }
 
     private fun subclassChild(
@@ -152,6 +301,11 @@ internal object NativeWindowChromeRegistry {
         val chrome = installed[hwndLong] ?: return
         chrome.ownerCount -= 1
         if (chrome.ownerCount > 0) return
+
+        // The churn guard stops watching before the procs come off (PITFALLS 4: listeners
+        // registered at install are removed at uninstall).
+        chrome.window.removeComponentListener(chrome.churnGuard)
+        chrome.window.removeWindowStateListener(chrome.churnGuard)
 
         for (child in chrome.children) {
             val childHwnd = HWND(Pointer(child.childHwnd))
