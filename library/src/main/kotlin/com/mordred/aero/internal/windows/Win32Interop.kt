@@ -24,6 +24,16 @@ internal const val HTCLIENT = 1
 internal const val HTCAPTION = 2
 internal const val HTMAXBUTTON = 9
 
+// WM_NCHITTEST resize-band codes, declared for Plan 11's edge/corner bands (unused until then).
+internal const val HTLEFT = 10
+internal const val HTRIGHT = 11
+internal const val HTTOP = 12
+internal const val HTTOPLEFT = 13
+internal const val HTTOPRIGHT = 14
+internal const val HTBOTTOM = 15
+internal const val HTBOTTOMLEFT = 16
+internal const val HTBOTTOMRIGHT = 17
+
 // GWL_STYLE / GWLP_WNDPROC indices — SetWindowLongPtr/GetWindowLongPtr only (T-22-04): the
 // legacy 32-bit SetWindowLong/GetWindowLong truncate a 64-bit WNDPROC pointer on x64 Windows.
 internal const val GWL_STYLE = -16

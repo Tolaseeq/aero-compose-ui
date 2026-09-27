@@ -18,6 +18,7 @@ import com.sun.jna.platform.win32.WinUser
 internal class AeroFrameWndProc(
     val hwnd: Long,
     val previous: Pointer,
+    val regions: HitTestRegionRegistry,
 ) : WinUser.WindowProc {
 
     override fun callback(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): LRESULT =
@@ -85,16 +86,28 @@ internal class AeroFrameWndProc(
         return callPrevious(hwnd, uMsg, wParam, lParam).toLong()
     }
 
+    /**
+     * SNAP-01 / BTN-02 / PITFALLS 6: converts the screen point to client coordinates INSIDE
+     * the handler (window position never enters the math), then classifies it against the
+     * live region snapshot `AeroTitleBar` publishes — a plain volatile read of an immutable
+     * [HitTestSnapshot], never Compose state from this native thread.
+     */
     private fun handleNcHitTest(hwnd: HWND, wParam: WPARAM, lParam: LPARAM): Long {
         val (screenX, screenY) = decodeScreenPoint(lParam.toLong())
         val point = POINT(screenX, screenY)
         aeroUser32.ScreenToClient(hwnd, point)
         val clientRect = RECT()
         User32.INSTANCE.GetClientRect(hwnd, clientRect)
-        val clientWidthPx = clientRect.right - clientRect.left
-        val scale = aeroUser32.GetDpiForWindow(hwnd) / 96f
-        val code = classifySpikeTitleRow(point.x, point.y, clientWidthPx, scale)
-        // HTCLIENT: let AWT's own answer stand (keeps its default outside the title row).
+        val code = classifyHitTest(
+            snapshot = regions.snapshot(),
+            x = point.x,
+            y = point.y,
+            clientWidth = clientRect.right - clientRect.left,
+            clientHeight = clientRect.bottom - clientRect.top,
+            maximized = aeroUser32.IsZoomed(hwnd),
+            resizeBandPx = 0,
+        )
+        // HTCLIENT: let AWT's own answer stand (keeps its default outside published regions).
         return if (code == HTCLIENT) callPrevious(hwnd, WM_NCHITTEST, wParam, lParam).toLong() else code.toLong()
     }
 
@@ -146,6 +159,7 @@ internal class AeroChildWndProc(
     val frameHwnd: Long,
     val childHwnd: Long,
     val previous: Pointer,
+    val regions: HitTestRegionRegistry,
 ) : WinUser.WindowProc {
 
     override fun callback(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): LRESULT =
@@ -168,9 +182,15 @@ internal class AeroChildWndProc(
         aeroUser32.ScreenToClient(frame, point)
         val clientRect = RECT()
         User32.INSTANCE.GetClientRect(frame, clientRect)
-        val clientWidthPx = clientRect.right - clientRect.left
-        val scale = aeroUser32.GetDpiForWindow(frame) / 96f
-        val code = classifySpikeTitleRow(point.x, point.y, clientWidthPx, scale)
+        val code = classifyHitTest(
+            snapshot = regions.snapshot(),
+            x = point.x,
+            y = point.y,
+            clientWidth = clientRect.right - clientRect.left,
+            clientHeight = clientRect.bottom - clientRect.top,
+            maximized = aeroUser32.IsZoomed(frame),
+            resizeBandPx = 0,
+        )
         return if (code == HTCLIENT) {
             callPrevious(hwnd, WM_NCHITTEST, wParam, lParam).toLong()
         } else {

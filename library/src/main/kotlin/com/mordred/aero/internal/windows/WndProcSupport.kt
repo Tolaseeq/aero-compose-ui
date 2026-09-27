@@ -33,33 +33,3 @@ internal fun decodeScreenPoint(lParam: Long): Pair<Int, Int> {
     val y = ((lParam shr 16) and 0xFFFF).toShort().toInt()
     return x to y
 }
-
-/**
- * SNAP-01 hardcoded title-row classifier (a later, live region-registry read replaces this
- * once real layout rects are published from Compose): the whole 32dp title row answers
- * HTCAPTION except the three 46dp-wide, right-aligned button rects (8dp right padding, order
- * Minimize/Maximize/Close, matching `AeroTitleBar`'s own layout) — the maximize rect answers
- * HTMAXBUTTON, minimize/close answer HTCLIENT so Compose keeps handling their clicks
- * directly; everything outside the row answers HTCLIENT.
- */
-internal fun classifySpikeTitleRow(clientX: Int, clientY: Int, clientWidthPx: Int, scale: Float): Int {
-    val titleRowBottomPx = (32f * scale).toInt()
-    if (clientY < 0 || clientY >= titleRowBottomPx) return HTCLIENT
-
-    val buttonWidthPx = (46f * scale).toInt()
-    val rightPaddingPx = (8f * scale).toInt()
-
-    val closeLeft = clientWidthPx - rightPaddingPx - buttonWidthPx
-    val closeRight = clientWidthPx - rightPaddingPx
-    val maxLeft = closeLeft - buttonWidthPx
-    val maxRight = closeLeft
-    val minLeft = maxLeft - buttonWidthPx
-    val minRight = maxLeft
-
-    return when (clientX) {
-        in maxLeft until maxRight -> HTMAXBUTTON
-        in minLeft until minRight -> HTCLIENT
-        in closeLeft until closeRight -> HTCLIENT
-        else -> HTCAPTION
-    }
-}

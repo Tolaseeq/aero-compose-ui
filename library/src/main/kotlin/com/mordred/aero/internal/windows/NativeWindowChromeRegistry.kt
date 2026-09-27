@@ -88,9 +88,13 @@ internal object NativeWindowChromeRegistry {
             return ChromeHandle { release(hwndLong) }
         }
 
+        // SNAP-01: the per-window region registry `AeroTitleBar` publishes into; both procs
+        // read its snapshot on every WM_NCHITTEST.
+        val regions = WindowRegionsDirectory.forWindow(window)
+
         Win32Chrome.ensureNativeFrameStyles(hwnd)
         val previousFrameProc = currentWndProcPointer(hwnd)
-        val frameProc = AeroFrameWndProc(hwndLong, previousFrameProc)
+        val frameProc = AeroFrameWndProc(hwndLong, previousFrameProc, regions)
         val frameProcPtr = CallbackReference.getFunctionPointer(frameProc)
         val chrome = InstalledChrome(
             frameProc = frameProc,
@@ -109,7 +113,7 @@ internal object NativeWindowChromeRegistry {
         applyCornerPolicy(hwnd, maximized = aeroUser32.IsZoomed(hwnd))
 
         val enumProc = WinUser.WNDENUMPROC { childHwnd, _ ->
-            subclassChild(hwndLong, childHwnd, chrome)
+            subclassChild(hwndLong, childHwnd, chrome, regions)
             true
         }
         User32.INSTANCE.EnumChildWindows(hwnd, enumProc, Pointer.NULL)
@@ -117,10 +121,15 @@ internal object NativeWindowChromeRegistry {
         return ChromeHandle { release(hwndLong) }
     }
 
-    private fun subclassChild(frameHwndLong: Long, childHwnd: HWND, chrome: InstalledChrome) {
+    private fun subclassChild(
+        frameHwndLong: Long,
+        childHwnd: HWND,
+        chrome: InstalledChrome,
+        regions: HitTestRegionRegistry,
+    ) {
         val childHwndLong = Pointer.nativeValue(childHwnd.pointer)
         val previous = currentWndProcPointer(childHwnd)
-        val childProc = AeroChildWndProc(frameHwndLong, childHwndLong, previous)
+        val childProc = AeroChildWndProc(frameHwndLong, childHwndLong, previous, regions)
         val childProcPtr = CallbackReference.getFunctionPointer(childProc)
         // Strong ref recorded before the child's WNDPROC is swapped — same ordering rule as
         // the frame above.
