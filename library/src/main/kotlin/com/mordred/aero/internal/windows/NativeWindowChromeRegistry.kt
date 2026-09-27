@@ -97,12 +97,14 @@ internal object NativeWindowChromeRegistry {
         }
 
         // SNAP-01: the per-window region registry `AeroTitleBar` publishes into; both procs
-        // read its snapshot on every WM_NCHITTEST.
+        // read its snapshot on every WM_NCHITTEST. BTN-01: the per-window maximize-button
+        // interaction bridge the frame proc feeds through EDT hops.
         val regions = WindowRegionsDirectory.forWindow(window)
+        val maxButton = MaxButtonDirectory.forWindow(window)
 
         Win32Chrome.ensureNativeFrameStyles(hwnd)
         val previousFrameProc = currentWndProcPointer(hwnd)
-        val frameProc = AeroFrameWndProc(hwndLong, previousFrameProc, regions)
+        val frameProc = AeroFrameWndProc(hwndLong, previousFrameProc, regions, maxButton)
         val frameProcPtr = CallbackReference.getFunctionPointer(frameProc)
         val chrome = InstalledChrome(
             frameProc = frameProc,

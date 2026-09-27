@@ -9,17 +9,26 @@ import com.sun.jna.platform.win32.WinDef.POINT
 import com.sun.jna.platform.win32.WinDef.RECT
 import com.sun.jna.platform.win32.WinDef.WPARAM
 import com.sun.jna.platform.win32.WinUser
+import javax.swing.SwingUtilities
 
 /**
- * SNAP-01 / SNAP-02: the frame's `WindowProc`. Owns exactly WM_NCCALCSIZE, WM_NCHITTEST and
- * WM_NCDESTROY; every other message is `CallWindowProc(previous, ...)` verbatim — AWT's own
- * WndProc still needs to run for focus, IME, painting and `WindowState` sync.
+ * SNAP-01 / SNAP-02 / BTN-01: the frame's `WindowProc`. Owns exactly WM_NCCALCSIZE,
+ * WM_NCHITTEST, WM_NCDESTROY and the non-client mouse messages at HTMAXBUTTON; every other
+ * message is `CallWindowProc(previous, ...)` verbatim — AWT's own WndProc still needs to run
+ * for focus, IME, painting and `WindowState` sync.
  */
 internal class AeroFrameWndProc(
     val hwnd: Long,
     val previous: Pointer,
     val regions: HitTestRegionRegistry,
+    val maxButton: AeroMaxButtonInteraction,
 ) : WinUser.WindowProc {
+
+    // BTN-01 / T-22-19: the native-side hover/pressed mirror, touched only on the toolkit
+    // thread. Compose-visible state changes cross threads exclusively through
+    // SwingUtilities.invokeLater (PITFALLS 6) — never from inside the callback.
+    private var ncHovered = false
+    private var ncPressed = false
 
     override fun callback(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): LRESULT =
         LRESULT(
@@ -34,6 +43,14 @@ internal class AeroFrameWndProc(
 
         WM_NCHITTEST -> handleNcHitTest(hwnd, wParam, lParam)
 
+        WM_NCMOUSEMOVE -> handleNcMouseMove(hwnd, uMsg, wParam, lParam)
+
+        WM_NCMOUSELEAVE -> handleNcMouseLeave(hwnd, uMsg, wParam, lParam)
+
+        WM_NCLBUTTONDOWN, WM_NCLBUTTONDBLCLK -> handleNcButtonDown(hwnd, uMsg, wParam, lParam)
+
+        WM_NCLBUTTONUP -> handleNcButtonUp(hwnd, uMsg, wParam, lParam)
+
         WM_STYLECHANGING -> handleStyleChanging(hwnd, uMsg, wParam, lParam)
 
         WM_SIZE -> handleSize(hwnd, uMsg, wParam, lParam)
@@ -45,6 +62,76 @@ internal class AeroFrameWndProc(
         }
 
         else -> callPrevious(hwnd, uMsg, wParam, lParam).toLong()
+    }
+
+    /**
+     * BTN-01 / PITFALLS 12 / T-22-21: over HTMAXBUTTON the hover is bridged to Compose, and
+     * non-client leave tracking (one-shot by design) is re-armed on EVERY such message or the
+     * hover highlight sticks after the cursor leaves. The message itself is always forwarded
+     * afterwards so `DefWindowProc` keeps driving the Snap Layouts flyout (22-04 early gate).
+     */
+    private fun handleNcMouseMove(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): Long {
+        if (wParam.toInt() == HTMAXBUTTON) {
+            aeroUser32.TrackMouseEvent(TRACKMOUSEEVENT(hwnd, TME_LEAVE or TME_NONCLIENT))
+            if (!ncHovered) {
+                ncHovered = true
+                hop { maxButton.hoverEnter() }
+            }
+        } else if (ncHovered || ncPressed) {
+            ncHovered = false
+            ncPressed = false
+            hop {
+                maxButton.hoverExit()
+                maxButton.cancelPress()
+            }
+        }
+        return callPrevious(hwnd, uMsg, wParam, lParam).toLong()
+    }
+
+    /** BTN-01 / PITFALLS 12: leaving the non-client area clears hover and cancels any press. */
+    private fun handleNcMouseLeave(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): Long {
+        if (ncHovered || ncPressed) {
+            ncHovered = false
+            ncPressed = false
+            hop {
+                maxButton.hoverExit()
+                maxButton.cancelPress()
+            }
+        }
+        return callPrevious(hwnd, uMsg, wParam, lParam).toLong()
+    }
+
+    /**
+     * BTN-01 / WIN-05 / ARCHITECTURE Anti-Pattern 4: button-down at HTMAXBUTTON is swallowed
+     * (return 0, never forwarded) so `DefWindowProc` neither paints a classic caption button
+     * over the Compose one nor double-fires the toggle. Every other hit code forwards
+     * unchanged — caption drag, double-click maximize and the system menu keep working natively.
+     */
+    private fun handleNcButtonDown(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): Long {
+        if (wParam.toInt() != HTMAXBUTTON) return callPrevious(hwnd, uMsg, wParam, lParam).toLong()
+        ncPressed = true
+        chromeTrace("max-button", this.hwnd, "down")
+        hop { maxButton.press() }
+        return 0L
+    }
+
+    /**
+     * BTN-01 / WIN-05: button-up at HTMAXBUTTON is swallowed the same way; the click toggles
+     * `windowState.placement` on the EDT through [AeroMaxButtonInteraction.release] — the
+     * same code path as today's Compose `onClick`, never a `WM_SYSCOMMAND`.
+     */
+    private fun handleNcButtonUp(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): Long {
+        if (wParam.toInt() != HTMAXBUTTON) return callPrevious(hwnd, uMsg, wParam, lParam).toLong()
+        val wasPressed = ncPressed
+        ncPressed = false
+        chromeTrace("max-button", this.hwnd, "up click=$wasPressed")
+        hop { maxButton.release(click = wasPressed) }
+        return 0L
+    }
+
+    /** BTN-01 / PITFALLS 6 / T-22-19: the ONLY crossing into Compose-land — always the EDT. */
+    private fun hop(action: () -> Unit) {
+        SwingUtilities.invokeLater { action() }
     }
 
     /**
