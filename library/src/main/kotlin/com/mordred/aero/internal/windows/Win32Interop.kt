@@ -10,6 +10,10 @@ import com.sun.jna.win32.W32APIOptions
 // SNAP-01 / SNAP-02 / WIN-03: WM_* message identifiers this WindowProc implementations own.
 internal const val WM_SIZE = 0x0005
 
+// D-01 / WIN-02: the frame proc raises ptMinTrackSize (the resize floor) in this message's
+// MINMAXINFO when the app set no AWT minimum of its own.
+internal const val WM_GETMINMAXINFO = 0x0024
+
 // WIN-05 / PITFALLS 4: the LOWORD(wParam) value of WM_PARENTNOTIFY that reports a child
 // window creation — the frame proc forwards the message and hops to the EDT so the registry
 // can subclass the new child HWND.
@@ -52,6 +56,11 @@ internal const val HTBOTTOMRIGHT = 17
 // legacy 32-bit SetWindowLong/GetWindowLong truncate a 64-bit WNDPROC pointer on x64 Windows.
 internal const val GWL_STYLE = -16
 internal const val GWLP_WNDPROC = -4
+
+// GetSystemMetricsForDpi indices (WIN-02): the sizing frame and the padded border, whose
+// DPI-scaled sum is the native resize band's system-side lower bound.
+internal const val SM_CXSIZEFRAME = 32
+internal const val SM_CXPADDEDBORDER = 92
 
 // Window style bits Win32Chrome.ensureNativeFrameStyles adds back: undecorated=true alone
 // yields WS_POPUP with neither bit set, so DWM/Shell never see the window as

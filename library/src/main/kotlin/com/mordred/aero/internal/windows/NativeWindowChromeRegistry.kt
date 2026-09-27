@@ -13,6 +13,8 @@ import java.awt.event.HierarchyEvent
 import java.awt.event.HierarchyListener
 import java.awt.event.WindowEvent
 import java.awt.event.WindowStateListener
+import java.beans.PropertyChangeEvent
+import java.beans.PropertyChangeListener
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -32,6 +34,21 @@ internal object NativeWindowChromeRegistry {
         val procPtr: Pointer,
     )
 
+    /**
+     * D-01: whether the app set its own AWT minimum on the window. Shared between the
+     * registry entry (written by the property listener on the EDT) and the frame proc's
+     * `WM_GETMINMAXINFO` handler (read on the toolkit thread) — `@Volatile` so the read is
+     * always current.
+     */
+    private class AppMinimumFlag(@Volatile var set: Boolean)
+
+    /** D-01: keeps the entry's flag in sync with the app's own minimum-size writes (EDT). */
+    private class MinimumSizeListener(private val flag: AppMinimumFlag) : PropertyChangeListener {
+        override fun propertyChange(event: PropertyChangeEvent) {
+            flag.set = event.newValue != null
+        }
+    }
+
     private class InstalledChrome(
         val window: Window,
         var frameProc: AeroFrameWndProc,
@@ -39,6 +56,8 @@ internal object NativeWindowChromeRegistry {
         var previousFrameProc: Pointer,
         val children: MutableList<InstalledChild>,
         val churnGuard: ChurnGuard,
+        val appMinimum: AppMinimumFlag,
+        val minimumSizeListener: PropertyChangeListener,
         var ownerCount: Int,
     ) {
         /**
@@ -148,6 +167,11 @@ internal object NativeWindowChromeRegistry {
             val frameProc = AeroFrameWndProc(hwndLong, previousFrameProc, regions, maxButton)
             val frameProcPtr = CallbackReference.getFunctionPointer(frameProc)
             val churnGuard = ChurnGuard(window)
+            // D-01 / T-22-24: seed from the app's own current setting and keep following its
+            // later writes — the WM_GETMINMAXINFO floor may only raise ptMinTrackSize when
+            // the app set no minimum. The library itself never writes a window minimum size.
+            val appMinimum = AppMinimumFlag(window.isMinimumSizeSet)
+            val minimumSizeListener = MinimumSizeListener(appMinimum)
             chrome = InstalledChrome(
                 window = window,
                 frameProc = frameProc,
@@ -155,6 +179,8 @@ internal object NativeWindowChromeRegistry {
                 previousFrameProc = previousFrameProc,
                 children = mutableListOf(),
                 churnGuard = churnGuard,
+                appMinimum = appMinimum,
+                minimumSizeListener = minimumSizeListener,
                 ownerCount = 0,
             )
             // Strong refs recorded BEFORE the frame's WNDPROC is swapped, so a message dispatched
@@ -168,6 +194,7 @@ internal object NativeWindowChromeRegistry {
 
             window.addComponentListener(churnGuard)
             window.addWindowStateListener(churnGuard)
+            window.addPropertyChangeListener("minimumSize", minimumSizeListener)
         }
         chrome.ownerCount += 1
         syncChildren(hwndLong, hwnd, chrome, regions)
@@ -267,6 +294,15 @@ internal object NativeWindowChromeRegistry {
         verify(chrome.window)
     }
 
+    /**
+     * D-01 input for the frame proc's WM_GETMINMAXINFO floor: did the app set its own AWT
+     * minimum on this window? A missing entry (HWND already gone) reads as "no minimum",
+     * which only ever applies the default floor to a dying window — never clobbers an app
+     * value.
+     */
+    internal fun appMinimumSetFor(hwndLong: Long): Boolean =
+        installed[hwndLong]?.appMinimum?.set ?: false
+
     private fun verifyInstalled(window: Window) {
         val hwndPointer = Native.getWindowPointer(window)
         val hwndLong = Pointer.nativeValue(hwndPointer)
@@ -306,6 +342,7 @@ internal object NativeWindowChromeRegistry {
         // registered at install are removed at uninstall).
         chrome.window.removeComponentListener(chrome.churnGuard)
         chrome.window.removeWindowStateListener(chrome.churnGuard)
+        chrome.window.removePropertyChangeListener("minimumSize", chrome.minimumSizeListener)
 
         for (child in chrome.children) {
             val childHwnd = HWND(Pointer(child.childHwnd))

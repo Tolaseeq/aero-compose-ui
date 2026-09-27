@@ -34,6 +34,9 @@ import javax.swing.SwingUtilities
  *                      in place before forwarding, WIN-03 / PITFALLS 4).
  *  - WM_SIZE         — observed-then-forwarded (corner policy re-applied AFTER
  *                      `CallWindowProc`; WIN-03 / PITFALLS 24).
+ *  - WM_GETMINMAXINFO — forwarded first, then ptMinTrackSize raised to the D-01 floor when
+ *                      the app set no AWT minimum (the forwarded result is returned verbatim;
+ *                      WIN-02 / D-01 / T-22-24: the library never writes window.minimumSize).
  *  - WM_PARENTNOTIFY — observed-then-forwarded (a child-create notification hops to the EDT
  *                      so the registry subclasses the new child; PITFALLS 4/16).
  *  - WM_NCDESTROY    — observed-then-forwarded (registry entry dropped after forwarding,
@@ -49,6 +52,7 @@ internal val OWNED_FRAME_MESSAGES: Set<Int> = setOf(
     WM_NCLBUTTONDBLCLK,
     WM_STYLECHANGING,
     WM_SIZE,
+    WM_GETMINMAXINFO,
     WM_PARENTNOTIFY,
     WM_NCDESTROY,
 )
@@ -58,6 +62,22 @@ internal val OWNED_FRAME_MESSAGES: Set<Int> = setOf(
  * is forwarded verbatim through `CallWindowProc(previous, ...)`.
  */
 internal val OWNED_CHILD_MESSAGES: Set<Int> = setOf(WM_NCHITTEST)
+
+/**
+ * WIN-02 / PITFALLS 13: the edge/corner resize band for [hwnd] — recomputed on EVERY
+ * `WM_NCHITTEST` because a window may have just crossed monitors: the system sizing frame
+ * via `GetSystemMetricsForDpi` at the window's current `GetDpiForWindow` DPI, never thinner
+ * than CMP's own 8 dp undecorated resizer at the same scale (so no Compose-side resize zone
+ * can receive a press the native band is supposed to own).
+ */
+private fun resizeBandForHwnd(hwnd: HWND): Int {
+    val dpi = aeroUser32.GetDpiForWindow(hwnd)
+    return resizeBandPx(
+        aeroUser32.GetSystemMetricsForDpi(SM_CXSIZEFRAME, dpi),
+        aeroUser32.GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi),
+        dpi / 96f,
+    )
+}
 
 /**
  * SNAP-01 / SNAP-02 / BTN-01: the frame's `WindowProc`. Owns exactly
@@ -109,6 +129,8 @@ internal class AeroFrameWndProc(
                 WM_STYLECHANGING -> handleStyleChanging(hwnd, uMsg, wParam, lParam)
 
                 WM_SIZE -> handleSize(hwnd, uMsg, wParam, lParam)
+
+                WM_GETMINMAXINFO -> handleGetMinMaxInfo(hwnd, uMsg, wParam, lParam)
 
                 WM_PARENTNOTIFY -> handleParentNotify(hwnd, uMsg, wParam, lParam)
 
@@ -228,6 +250,35 @@ internal class AeroFrameWndProc(
     }
 
     /**
+     * D-01 / WIN-02 / T-22-03: the resize floor. The message is forwarded FIRST — AWT owns
+     * the structure's content, and when the app set its own AWT minimum that value is
+     * already in ptMinTrackSize and must stand. Only when the app set no minimum
+     * (`isMinimumSizeSet` false, tracked by the registry) is ptMinTrackSize raised to the
+     * 320×240 dp default in physical px at the window's current DPI. Every other field
+     * (ptReserved, ptMaxSize, ptMaxPosition, ptMaxTrackSize) keeps exactly what the
+     * previous proc filled, and the forwarded result is returned verbatim. The library
+     * itself never writes a window minimum size (T-22-24).
+     *
+     * MINMAXINFO native layout — five POINTs; ptMinTrackSize.x at byte offset 24, .y at 28
+     * (not shipped by jna-platform 5.19.1, so the offsets are used directly).
+     */
+    private fun handleGetMinMaxInfo(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): Long {
+        val result = callPrevious(hwnd, uMsg, wParam, lParam).toLong()
+        val info = Pointer(lParam.toLong())
+        val awtWidth = info.getInt(24)
+        val awtHeight = info.getInt(28)
+        val appMinimumSet = NativeWindowChromeRegistry.appMinimumSetFor(this.hwnd)
+        val dpi = aeroUser32.GetDpiForWindow(hwnd)
+        val (width, height) = resolveMinimumTrackSizePx(appMinimumSet, awtWidth, awtHeight, dpi / 96f)
+        if (width != awtWidth || height != awtHeight) {
+            info.setInt(24, width)
+            info.setInt(28, height)
+            chromeTrace("mintrack", this.hwnd, "appMinimumSet=$appMinimumSet dpi=$dpi floor=${width}x$height")
+        }
+        return result
+    }
+
+    /**
      * WIN-03: keeps [REQUIRED_FRAME_STYLES] set even if AWT rewrites `GWL_STYLE` later
      * (activation changes, DnD registration, always-on-top toggles — Pitfall 4). `STYLESTRUCT`
      * is `{ DWORD styleOld; DWORD styleNew }`; writing `styleNew` in place before forwarding
@@ -270,7 +321,7 @@ internal class AeroFrameWndProc(
             clientWidth = clientRect.right - clientRect.left,
             clientHeight = clientRect.bottom - clientRect.top,
             maximized = aeroUser32.IsZoomed(hwnd),
-            resizeBandPx = 0,
+            resizeBandPx = resizeBandForHwnd(hwnd),
         )
         // HTCLIENT: let AWT's own answer stand (keeps its default outside published regions).
         return if (code == HTCLIENT) callPrevious(hwnd, WM_NCHITTEST, wParam, lParam).toLong() else code.toLong()
@@ -361,7 +412,7 @@ internal class AeroChildWndProc(
             clientWidth = clientRect.right - clientRect.left,
             clientHeight = clientRect.bottom - clientRect.top,
             maximized = aeroUser32.IsZoomed(frame),
-            resizeBandPx = 0,
+            resizeBandPx = resizeBandForHwnd(frame),
         )
         return if (code == HTCLIENT) {
             callPrevious(hwnd, WM_NCHITTEST, wParam, lParam).toLong()

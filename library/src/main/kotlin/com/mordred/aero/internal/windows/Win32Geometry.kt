@@ -1,5 +1,7 @@
 package com.mordred.aero.internal.windows
 
+import kotlin.math.roundToInt
+
 /**
  * WIN-01: pure maximized-client-rect math and frame-thickness helpers. No JNA/Compose
  * imports — every value here is a plain Int, so this is unit-testable headlessly, the same
@@ -46,3 +48,20 @@ internal fun maximizedClientRect(
  * `SM_CYSIZEFRAME)` + `SM_CXPADDEDBORDER`), both already DPI-scaled by the caller.
  */
 internal fun resizeFramePx(sizeFramePx: Int, paddedBorderPx: Int): Int = sizeFramePx + paddedBorderPx
+
+/**
+ * WIN-02: Compose Multiplatform's own undecorated resizer thickness
+ * (`WindowDecorationDefaults.ResizerThickness`), mirrored here so the native band fully
+ * shadows CMP's resizer — no Compose-side resize zone can sit outside the native band and
+ * receive the press (no double resize path, T-22-25).
+ */
+internal const val CMP_UNDECORATED_RESIZER_DP: Int = 8
+
+/**
+ * WIN-02 / PITFALLS 13: the edge/corner resize-band thickness in physical px — the larger of
+ * the DPI-scaled system sizing frame ([resizeFramePx] of the SM_CXSIZEFRAME /
+ * SM_CXPADDEDBORDER metrics at the window's current DPI) and CMP's own 8 dp undecorated
+ * resizer at the same scale.
+ */
+internal fun resizeBandPx(sizeFramePx: Int, paddedBorderPx: Int, scale: Float): Int =
+    maxOf(resizeFramePx(sizeFramePx, paddedBorderPx), (CMP_UNDECORATED_RESIZER_DP * scale).roundToInt())
