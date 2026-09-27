@@ -86,12 +86,25 @@ private fun secondWindowOpenDelayMs(): Long? = when (val value = System.getPrope
  */
 private fun nativeChromeEnabled(): Boolean = System.getProperty("aero.nativeChrome") != "false"
 
+/**
+ * Delay before the narrow queue window reopens after being closed, from
+ * `-Daero.secondWindowReopenMs=<milliseconds>`.
+ *
+ * Exists so a real-input session can exercise both close paths on the same narrow window
+ * (SNAP-05): the system menu's Close item and Alt+F4 each run the window's own
+ * `onCloseRequest`, and the fixture brings the window back after this delay so the next
+ * gesture starts from the same state. Absent or unrecognised values never reopen it.
+ */
+private fun secondWindowReopenMs(): Long? =
+    System.getProperty("aero.secondWindowReopenMs")?.toLongOrNull()?.takeIf { it > 0L }
+
 fun main() {
     val section = initialSection()
     val page = initialPage()
     val capture = captureMode()
     val nativeChrome = nativeChromeEnabled()
     val secondWindowDelayMs = secondWindowOpenDelayMs()
+    val reopenDelayMs = secondWindowReopenMs()
 
     application {
         val windowState = rememberWindowState(
@@ -101,8 +114,15 @@ fun main() {
             // launch keeps the platform's own placement.
             position = if (capture) WindowPosition(Alignment.Center) else WindowPosition.PlatformDefault
         )
+        // One close handler for every path that ends this window -- the window's own
+        // `onCloseRequest` (system menu Close, Alt+F4) and the title-bar close button -- so
+        // each path is observable as the same `AERO_EVENT name=close-request label=main` line.
+        val requestClose: () -> Unit = {
+            reportShowcaseEvent("close-request", "label=main")
+            exitApplication()
+        }
         Window(
-            onCloseRequest = ::exitApplication,
+            onCloseRequest = requestClose,
             title = if (capture) "aero-compose-ui Showcase [capture]" else "aero-compose-ui Showcase",
             state = windowState,
             // Win11 rule (CMP-3757 / GH#3171): undecorated = true ONLY; transparent MUST stay false
@@ -126,7 +146,7 @@ fun main() {
                         AeroTitleBar(
                             title = "aero-compose-ui Showcase",
                             windowState = windowState,
-                            onCloseRequest = ::exitApplication,
+                            onCloseRequest = requestClose,
                             nativeWindowManagement = nativeChrome
                         )
                         ShowcaseApp(
@@ -142,14 +162,28 @@ fun main() {
         }
 
         var narrowOpen by remember { mutableStateOf(secondWindowDelayMs == 0L) }
+        var reopenPending by remember { mutableStateOf(false) }
         if (secondWindowDelayMs != null && secondWindowDelayMs > 0L) {
             LaunchedEffect(Unit) {
                 delay(secondWindowDelayMs)
                 narrowOpen = true
             }
         }
+        if (reopenPending && reopenDelayMs != null) {
+            LaunchedEffect(reopenDelayMs) {
+                delay(reopenDelayMs)
+                reopenPending = false
+                narrowOpen = true
+            }
+        }
         if (narrowOpen) {
-            NarrowQueueWindow(initialScheme(), capture, nativeChrome, onClose = { narrowOpen = false })
+            NarrowQueueWindow(
+                initialScheme(), capture, nativeChrome,
+                onClose = {
+                    narrowOpen = false
+                    if (reopenDelayMs != null) reopenPending = true
+                }
+            )
         }
     }
 }
