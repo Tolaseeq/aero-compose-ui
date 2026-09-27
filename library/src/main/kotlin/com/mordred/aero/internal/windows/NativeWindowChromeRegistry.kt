@@ -383,7 +383,12 @@ internal object NativeWindowChromeRegistry {
 
     /** WM_NCDESTROY has already torn the HWND down; just drop the map entry. */
     internal fun onDestroyed(hwndLong: Long) {
-        installed.remove(hwndLong)
+        if (installed.remove(hwndLong) != null) {
+            // WIN-06: window teardown observability — on a posted WM_CLOSE the HWND is gone
+            // before the composable's onDispose can run release(), so without this line the
+            // close path leaves no trace at all.
+            chromeTrace("ncdestroy", hwndLong, "entry dropped")
+        }
     }
 
     private fun currentWndProcPointer(hwnd: HWND): Pointer =
