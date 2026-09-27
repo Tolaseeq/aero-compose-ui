@@ -1453,3 +1453,84 @@ independent installs, each with its own child-subclass (`install hwnd=0x700a6` +
 another is already subclassed gets its own install.
 
 Post-run sweep: zero `com.mordred.showcase.MainKt` JVMs remain.
+
+## Custom title-bar API (22-19)
+
+Recorded by Plan 19 (Task 3), 2026-09-27, against the capture-mode showcase with the public
+`rememberAeroWindowChrome` / `AeroWindowChromeState` (Task 1, commit `d34c4a6`) and AeroTitleBar
+rebuilt on top of it (Task 2, commit `d151d75`). Same machine as every prior plan (Windows 11
+24H2 build 26100, one 1920x1080 monitor at 100% DPI, taskbar auto-hide ON), standard JDK 21
+throughout, capture mode (non-focusable, behind). Evidence: `.captures/22-apicustom/` —
+`green.json` + `green-console.log`, `red-control.json` + `red-control-console.log`,
+`click-toggle.json` + `click-toggle-console.log` + `AeroBlue-rest.png`, scripts
+`Invoke-GreenCheck.ps1`, `Invoke-RedControl.ps1`, `Invoke-ClickToggleCheck.ps1` (git-ignored);
+launch logs under `.captures/22-baseline/logs/` and `.captures/22-apicustom/logs/`.
+
+**D-05 proof choice (as recorded in the plan):** AeroTitleBar itself is built on
+`rememberAeroWindowChrome` — not a separate showcase window with a non-AeroTitleBar header.
+The API therefore carries the full verification weight of the phase: every VER-11 check on the
+main and narrow windows, the `-Paero.nativeChrome=false` RED control and the click-toggle check
+below run through it. Generality beyond AeroTitleBar's layout (a custom header with two caption
+areas and a left-hand maximize button) is locked headlessly by Plan 13.
+
+### GREEN: VER-11 through the API (identical codes to the Plan 12 GREEN run)
+
+`Invoke-GreenCheck.ps1` (one launch, both windows, `-AssertV11`, maximize cycle included per F9):
+
+```
+V11 SUMMARY main pass=18 fail=0 skip=0
+V11 SUMMARY narrow pass=8 fail=0 skip=0
+```
+
+Every check PASS with byte-identical observed values to the 22-12 GREEN run — e.g.
+`V11-HT-CAPTION observed=2 chain=SunAwtCanvas:-1 -> SunAwtFrame:2`,
+`V11-HT-MAX observed=9 chain=SunAwtCanvas:-1 -> SunAwtFrame:9`, edge/corner codes 10-17,
+`V11-MINSIZE observed=320x240` (main) / `260x200` (narrow),
+`V11-N-HT-MARKED-BOUNDARY observed=marked=1,captionLeftOfMarked=2` — now produced entirely
+through the public chrome API's `captionArea()` / `captionExclude()` / `maximizeButtonArea()`
+publishing (the id-keyed `captions` map replaced the Caption/Minimize/Close roles; precedence
+unchanged: bands → Maximize → interactive → caption → client).
+
+### RED control: the API's own opt-out
+
+`Invoke-RedControl.ps1` (`-Paero.nativeChrome=false` → AeroTitleBar passes
+`nativeWindowManagement = false` into `rememberAeroWindowChrome`):
+
+```
+STYLE main 0x960B0000 ... names=WS_POPUP,WS_SYSMENU,WS_MINIMIZEBOX,WS_MAXIMIZEBOX,WS_CLIPCHILDREN
+V11 SUMMARY main pass=0 fail=18 skip=0
+STYLE narrow 0x960B0000 (same names)
+V11 SUMMARY narrow pass=0 fail=8 skip=0
+RED OK
+```
+
+GWL_STYLE equals the pre-phase C1 value exactly; the launch log contains ZERO `AERO_CHROME`
+lines — no restyle, no install, no child-subclass. `isNative == false` makes every modifier
+inert and composes the legacy branch (API-03 semantics applied to API-04).
+
+### Single install, native click toggle, title band (D-02)
+
+`Invoke-ClickToggleCheck.ps1` (one single-window launch, AeroBlue):
+
+```
+INSTALL-COUNT PASS installs=[0x402c6=1] reuse=0
+AERO_CHROME event=install hwnd=0x402c6 frameProc=native@0x6dc00010
+V11-HT-MAX PASS expected=9 observed=9 (HTMAXBUTTON) chain=SunAwtCanvas:-1 -> SunAwtFrame:9
+CLICK-TOGGLE-1 PASS placement=Maximized awtExtendedState=6
+CLICK-TOGGLE-2 PASS placement=Floating awtExtendedState=0
+INTERFERENCE foregroundTaken=False (before=14116 afterMax=14116 afterRestore=14116 showcase=15388)
+COMPARE title-band baseline-vs-rest top=0 bottom=31 diffPixels=0 maxDelta=0 comparable=True
+COMPARE white-strip baseline-vs-rest top=0 bottom=2  diffPixels=0 maxDelta=0 comparable=True
+```
+
+- The refactor introduced no duplicate acquire: exactly one `event=install` per HWND and zero
+  `event=reuse` lines (the green two-window run's trace shows the same — one install + one
+  child-subclass per HWND, `0x604de` and `0x704ca`, T-22-34).
+- A posted NC down/up pair at HTMAXBUTTON still toggles `windowState.placement`
+  Maximized ↔ Floating — through the toggle that now lives only in `rememberAeroWindowChrome`
+  (BTN-01 / WIN-05 wiring preserved by the move).
+- The floating title band is pixel-identical to the pre-phase baseline (0 differing pixels,
+  maxDelta 0) — the rebuild changed the wiring, not the pixels (D-02).
+
+Post-run sweep: zero showcase JVMs remain (none with `com.mordred.showcase.MainKt` /
+`aero.capture` / `aero.chromeTrace` in the command line).
