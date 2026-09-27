@@ -193,9 +193,10 @@ private enum class ChromeRegionKind { Caption, Maximize, Exclude }
 /**
  * Takes its collaborators as constructor parameters (registry and interaction bridge both
  * nullable, and `isNative` a plain value) so tests can compose it headlessly against a
- * free-standing registry without a window or a native install.
+ * free-standing registry without a window or a native install — the constructor is the seam
+ * the headless API-04 tests build on.
  */
-private class AeroWindowChromeStateImpl(
+internal class AeroWindowChromeStateImpl(
     private val regions: HitTestRegionRegistry?,
     private val maxInteraction: AeroMaxButtonInteraction?,
     override val isNative: Boolean,
