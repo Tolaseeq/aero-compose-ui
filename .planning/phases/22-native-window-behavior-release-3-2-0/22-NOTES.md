@@ -1062,3 +1062,92 @@ file, inside that branch.
 showcase process never owned the foreground at any point in the run; the maintainer's
 session was untouched. Every process this run started was stopped by the script itself
 (post-run sweep: zero `com.mordred.showcase.MainKt` JVMs remain).
+
+## Max-button interaction bridge (22-09)
+
+Recorded by Plan 09 (Task 3), 2026-09-27, against the capture-mode showcase with the
+`AeroMaxButtonInteraction` bridge installed (Tasks 1-2: the frame WndProc owns the
+non-client mouse messages at HTMAXBUTTON and feeds Hover/Press interactions into the
+maximize button's shared MutableInteractionSource through EDT hops). Same machine as every
+prior plan. Probed via `.captures/22-maxbutton/Invoke-MaxButtonCheck.ps1` — one
+`:showcase:run` launch (`-Paero.scheme=AeroBlue -Paero.capture=true
+-Paero.chromeTrace=true`, pid 2560, standard JDK 21). JSON
+`.captures/22-maxbutton/live.json`, launch log `.captures/22-maxbutton/logs/`.
+
+### V11-HT-MAX (unchanged)
+
+```
+V11-HT-MAX PASS expected=9 observed=9 (HTMAXBUTTON) chain=SunAwtCanvas:-1 -> SunAwtFrame:9
+```
+
+### Click path (BTN-01 / WIN-05)
+
+Posted `WM_NCLBUTTONDOWN` then `WM_NCLBUTTONUP` (wParam = 9 = HTMAXBUTTON, lParam = the
+screen point of the `max` named point) to the frame, twice:
+
+```
+CLICK-TOGGLE-1 PASS placement=Maximized awtExtendedState=6
+CLICK-TOGGLE-2 PASS placement=Floating awtExtendedState=0
+```
+
+The click toggles `windowState.placement` through exactly today's `onClick` code path (the
+bridge's `onClick` is the same placement-toggle lambda the Compose `clickable` carries) —
+no `WM_SYSCOMMAND` involved. The window was pushed to `HWND_BOTTOM` with `SWP_NOACTIVATE`
+after each toggle. `INTERFERENCE foregroundTaken=False (before=7060 afterMax=7060
+afterRestore=7060 showcase=2560)` — the placement toggle, like the probe-driven
+`SC_MAXIMIZE` F9 measured, never took the foreground on this machine.
+
+### Swallow check (no classic-button paint, no double-fire)
+
+The chrome trace shows the frame proc handling both pairs and nothing else:
+
+```
+AERO_CHROME event=max-button hwnd=0xe0540 down
+AERO_CHROME event=max-button hwnd=0xe0540 up click=true
+AERO_CHROME event=max-button hwnd=0xe0540 down
+AERO_CHROME event=max-button hwnd=0xe0540 up click=true
+```
+
+After the restore, the floating-state title band was PrintWindow-captured and compared
+against the pre-phase baseline:
+
+```
+COMPARE title-band baseline-vs-rest top=0 bottom=31 diffPixels=0 maxDelta=0 comparable=True
+COMPARE white-strip baseline-vs-rest top=0 bottom=2 diffPixels=0 maxDelta=0 comparable=True
+```
+
+Zero differing pixels — `DefWindowProc` never painted a classic caption button over the
+Compose one, and exactly one toggle happened per posted pair (no double-fire).
+
+### Hover/press visuals
+
+Cannot be proven headlessly: `TrackMouseEvent` immediately reports leave while the real
+cursor is elsewhere, so a posted `WM_NCMOUSEMOVE` cannot hold a hover. Hover/press parity
+proof stays with the Plan 13 pixel test and the Plan 15 real-hover frames.
+
+### C5 — SETTLED
+
+**Approach used:** the interaction-source state bridge via EDT hop (ARCHITECTURE Pattern 3,
+refined per this plan): instead of two `State<Boolean>`s, the native side emits real
+`HoverInteraction` / `PressInteraction` objects into the `MutableInteractionSource` shared
+with the unchanged `hoverable` + `clickable` chain, so background colour AND
+`LocalIndication` overlays come from the existing rendering code — D-02 parity is
+structural, not a matching exercise. Native → Compose crosses threads only through
+`SwingUtilities.invokeLater`; the native side keeps two plain booleans (hovered/pressed) on
+the toolkit thread (PITFALLS 6, T-22-19). Non-client leave tracking is re-armed on every
+`WM_NCMOUSEMOVE` over the button (PITFALLS 12, T-22-21). The button keeps its `clickable`
+(role, click action, focus and Enter activation unchanged — T-22-22).
+
+**Evidence:** the click path above (posted NC down/up at HTMAXBUTTON toggles placement
+Maximized ↔ Floating through today's `onClick` code path), the swallow check (trace +
+0 differing pixels vs baseline), and the forwarding discipline (`WM_NCMOUSEMOVE` still
+reaches `CallWindowProc`, the path the 22-04 early gate's Snap Layouts flyout needs).
+
+**Fallback condition:** the FlatLaf-style non-client message re-injection approach is
+recorded as **not needed**, unless Plan 15's real-hover frames show a visual mismatch
+against the minimize button's hover frames.
+
+**Settled by:** 22-09 T3 — C5 SETTLED (approach chosen, evidenced live, fallback named).
+
+**Cleanup:** every process this run started was stopped by the script itself (post-run
+sweep: zero `com.mordred.showcase.MainKt` JVMs remain).
