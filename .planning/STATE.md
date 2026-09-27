@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: Native Window Behavior
 status: executing
-stopped_at: Phase 22 Plan 07 complete -- live hit-test regions drive Windows hit-testing; single native drag path (SNAP-01, BTN-02)
-last_updated: "2026-09-27T14:23:29.633Z"
+stopped_at: Phase 22 Plan 09 complete -- maximize-button interaction bridge; NC click toggles placement; conflict #5 settled (BTN-01, D-02)
+last_updated: "2026-09-27T14:53:29.241Z"
 last_activity: 2026-09-25 -- Phase 22 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 19
-  completed_plans: 8
+  completed_plans: 9
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-25 — v3.2 roadmap created)
 ## Current Position
 
 Phase: 22 (Native Window Behavior + Release 3.2.0) — EXECUTING
-Plan: 9 of 19
+Plan: 10 of 19
 Status: Executing Phase 22
 Last activity: 2026-09-25 -- Phase 22 execution started
 
@@ -58,7 +58,7 @@ Beyond the audit list, one requirement shipped with a recorded gap rather than a
 **v2.0.4:** 3 plans, single-day push incl. corrective release (2026-06-25→26), real RCMP root-cause fix.
 **v3.0:** 41 plans / 85 tasks across 6 phases, 2026-07-22 → 2026-07-29 (8 days), 252 commits, 248 files changed (+43,770 / −2,638) of which 71 code files (+11,104 / −409). Tests 232 → 467. Per-plan durations ranged 3 min – 2h10m; the long tail was human visual sign-off rounds, not code. Per-plan metrics are archived with the phase artifacts in `.planning/milestones/v3.0-phases/`.
 **v3.1:** 14 plans / 35 tasks in 1 phase (21), 2026-09-21 → 2026-09-24 (execution 09-23 → 09-24), 65 commits, 91 files changed (+17,896 / −1,385) of which 31 non-planning files (+4,155 / −122). Tests 467 → 541. The long tail was the capture sweeps and the drift review, not code: the only source edit the upgrade forced was four `Clock` imports. Per-plan metrics are archived with the phase artifacts in `.planning/milestones/v3.1-phases/`.
-**v3.2:** in progress — 1 phase (22), 19 plans roadmapped. Plan 01 (live-window probe harness + RED baseline), 2026-09-25, 19 min, 3 tasks + 1 fix commit, 6 files (4 created, 2 modified). Plan 02 (JNA dependency + native WndProc subclass spike), 2026-09-25, 35 min, 3 tasks, 9 files (5 created, 4 modified). Plan 03 (VER-12 real-input tooling + session environment vetting), 2026-09-25, 9 min, 3 tasks, 4 files created. Plan 08 (SHW-17 narrow second window fixture + probe narrow checks, run ahead of 06/07 per wave 4 parallelization), 2026-09-26, 13 min, 2 tasks, 5 files (1 created, 4 modified). Plan 07 (live hit-test region registry + classifier, AeroTitleBar live-region publishing, single native drag path; 4/4 title V11 checks PASS at two window sizes), 2026-09-27, ~45 min, 3 tasks, 8 files (3 created incl. git-ignored probe script, 5 modified).
+**v3.2:** in progress — 1 phase (22), 19 plans roadmapped. Plan 01 (live-window probe harness + RED baseline), 2026-09-25, 19 min, 3 tasks + 1 fix commit, 6 files (4 created, 2 modified). Plan 02 (JNA dependency + native WndProc subclass spike), 2026-09-25, 35 min, 3 tasks, 9 files (5 created, 4 modified). Plan 03 (VER-12 real-input tooling + session environment vetting), 2026-09-25, 9 min, 3 tasks, 4 files created. Plan 08 (SHW-17 narrow second window fixture + probe narrow checks, run ahead of 06/07 per wave 4 parallelization), 2026-09-26, 13 min, 2 tasks, 5 files (1 created, 4 modified). Plan 07 (live hit-test region registry + classifier, AeroTitleBar live-region publishing, single native drag path; 4/4 title V11 checks PASS at two window sizes), 2026-09-27, ~45 min, 3 tasks, 8 files (3 created incl. git-ignored probe script, 5 modified). Plan 09 (maximize-button interaction bridge: native NC mouse messages fed as real Hover/Press interactions into the shared MutableInteractionSource; posted NC click toggles placement Maximized/Floating live; title band 0 px diff vs baseline; conflict #5 settled), 2026-09-27, ~25 min, 3 tasks, 6 files (1 created incl. git-ignored probe script, 5 modified).
 
 ## Accumulated Context
 
@@ -103,6 +103,9 @@ Full decision log lives in PROJECT.md "Key Decisions". Rules that constrain any 
 - **[v3.2, 22-07]** Hit-testing answers from `AeroTitleBar`'s live layout: copy-on-write `HitTestSnapshot` swapped through `AtomicReference` (the WndProc does one volatile read per `WM_NCHITTEST`, never locks, never touches Compose state); 4/4 title-bar V11 checks PASS at 1200x800 AND after a `SetWindowPos` resize to 900x600; the spike's hardcoded `classifySpikeTitleRow` is deleted; `WindowDraggableArea` remains only on the non-Windows / install-failed path
 - **[v3.2, 22-07]** BTN-02's ordinary-click proof stays with Plan 15 real input: posted `WM_LBUTTONDOWN`/`UP` at the `min` point did not reach Compose within 5s (recorded, not faked); the HTCLIENT classification that admits real clicks is proven by `V11-HT-MIN-BOUNDARY`/`V11-HT-CLOSE-BOUNDARY` PASS
 - **[v3.2, 22-07]** CMP 1.12.0 turned `LayoutCoordinates.boundsInWindow()` into a deprecated extension forwarding to `boundsInWindow(clipBounds = true)` — region publishing calls the explicit-parameter form (`clipBounds = true` IS the pre-1.12 no-arg semantics)
+- **[v3.2, 22-09]** C5 SETTLED: the max-button bridge emits real `HoverInteraction`/`PressInteraction` objects into the `MutableInteractionSource` shared with the unchanged `hoverable` + `clickable` chain (D-02 parity structural, not a matching exercise); native → Compose crosses threads only through `SwingUtilities.invokeLater`, the native side keeps two plain booleans; `TrackMouseEvent(TME_LEAVE|TME_NONCLIENT)` is re-armed on every `WM_NCMOUSEMOVE` over the button; NC down/up/dblclk at HTMAXBUTTON return 0 without `CallWindowProc`; `WM_NCMOUSEMOVE` still forwards (the 22-04 flyout path is unregressed). FlatLaf-style re-injection recorded as not needed unless Plan 15's real-hover frames mismatch
+- **[v3.2, 22-09]** Posted `WM_NCLBUTTONDOWN`/`UP` (wParam HTMAXBUTTON, lParam = the `max` point in SCREEN coordinates) toggles the reporter placement Maximized ↔ Floating live through today's `onClick` code path, and like F9's SC_MAXIMIZE never takes the foreground on this machine — BTN-01's hover clause stays unproven until Plan 13's pixel test and Plan 15's real-hover frames (TRACKMOUSEEVENT reports leave instantly while the real cursor is elsewhere, so hover cannot be proven headlessly)
+- **[v3.2, 22-09]** jna-platform 5.19.1 genuinely ships no `TRACKMOUSEEVENT` class (verified against the resolved jar) — the hand-declared Structure + `TrackMouseEvent` in `Win32Interop.kt` is required, not precautionary
 
 ### Open technical debt
 
@@ -140,8 +143,8 @@ Resolved at v3.1 close: the five research conflicts from `.planning/research/SUM
 
 ## Session Continuity
 
-Last session: 2026-09-27T14:23:29.624Z
-Stopped at: Phase 22 Plan 07 complete -- live hit-test regions drive Windows hit-testing; single native drag path (SNAP-01, BTN-02)
+Last session: 2026-09-27T14:53:29.232Z
+Stopped at: Phase 22 Plan 09 complete -- maximize-button interaction bridge; NC click toggles placement; conflict #5 settled (BTN-01, D-02)
 Resume file: None
 Next action: `/bm:discuss-phase 22` or `/bm:plan-phase 22`
 
