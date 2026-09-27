@@ -5,7 +5,8 @@ import java.util.concurrent.atomic.AtomicLong
 // guard in tasks.test below fails the build on any other number; change only with a commit that
 // states why.
 // 577 = 541 pre-phase + 36 native-window logic tests (VER-14, Phase 22)
-val lockedTestTotal = 577
+// 587 = 577 + 10 max-button parity / API shape tests
+val lockedTestTotal = 587
 val lockedTestSkipped = 0
 
 plugins {
