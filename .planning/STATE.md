@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: Native Window Behavior
 status: executing
-stopped_at: Phase 22 Plan 10 complete -- don't-break-what-works checkpoint: owned-message sets enforced at dispatch, churn verify/reinstall hardening, no C4 push (syncs automatically re-proven 6/6), GC/UIA/Hot-Reload/V11 intact (WIN-05, VER-11)
-last_updated: "2026-09-27T15:58:12.155Z"
+stopped_at: Phase 22 Plan 11 complete -- native edge/corner resize + D-01 min-size floor (main V11 18/18 PASS incl. MINSIZE 320x240; narrow 260x200 app minimum honored; AeroResizeHandles gated)
+last_updated: "2026-09-27T16:20:23.369Z"
 last_activity: 2026-09-25 -- Phase 22 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 19
-  completed_plans: 10
+  completed_plans: 11
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-25 — v3.2 roadmap created)
 ## Current Position
 
 Phase: 22 (Native Window Behavior + Release 3.2.0) — EXECUTING
-Plan: 11 of 19
+Plan: 12 of 19
 Status: Executing Phase 22
 Last activity: 2026-09-25 -- Phase 22 execution started
 
@@ -58,7 +58,7 @@ Beyond the audit list, one requirement shipped with a recorded gap rather than a
 **v2.0.4:** 3 plans, single-day push incl. corrective release (2026-06-25→26), real RCMP root-cause fix.
 **v3.0:** 41 plans / 85 tasks across 6 phases, 2026-07-22 → 2026-07-29 (8 days), 252 commits, 248 files changed (+43,770 / −2,638) of which 71 code files (+11,104 / −409). Tests 232 → 467. Per-plan durations ranged 3 min – 2h10m; the long tail was human visual sign-off rounds, not code. Per-plan metrics are archived with the phase artifacts in `.planning/milestones/v3.0-phases/`.
 **v3.1:** 14 plans / 35 tasks in 1 phase (21), 2026-09-21 → 2026-09-24 (execution 09-23 → 09-24), 65 commits, 91 files changed (+17,896 / −1,385) of which 31 non-planning files (+4,155 / −122). Tests 467 → 541. The long tail was the capture sweeps and the drift review, not code: the only source edit the upgrade forced was four `Clock` imports. Per-plan metrics are archived with the phase artifacts in `.planning/milestones/v3.1-phases/`.
-**v3.2:** in progress — 1 phase (22), 19 plans roadmapped. Plan 01 (live-window probe harness + RED baseline), 2026-09-25, 19 min, 3 tasks + 1 fix commit, 6 files (4 created, 2 modified). Plan 02 (JNA dependency + native WndProc subclass spike), 2026-09-25, 35 min, 3 tasks, 9 files (5 created, 4 modified). Plan 03 (VER-12 real-input tooling + session environment vetting), 2026-09-25, 9 min, 3 tasks, 4 files created. Plan 08 (SHW-17 narrow second window fixture + probe narrow checks, run ahead of 06/07 per wave 4 parallelization), 2026-09-26, 13 min, 2 tasks, 5 files (1 created, 4 modified). Plan 07 (live hit-test region registry + classifier, AeroTitleBar live-region publishing, single native drag path; 4/4 title V11 checks PASS at two window sizes), 2026-09-27, ~45 min, 3 tasks, 8 files (3 created incl. git-ignored probe script, 5 modified). Plan 09 (maximize-button interaction bridge: native NC mouse messages fed as real Hover/Press interactions into the shared MutableInteractionSource; posted NC click toggles placement Maximized/Floating live; title band 0 px diff vs baseline; conflict #5 settled), 2026-09-27, ~25 min, 3 tasks, 6 files (1 created incl. git-ignored probe script, 5 modified). Plan 10 (don't-break-what-works checkpoint: OWNED_FRAME/CHILD_MESSAGES enforced at dispatch; registry verify re-installs a lost frame proc on top of the current proc and subclasses new children; no C4 push -- syncs automatically re-proven 6/6 incl. move/resize; GC stress 500 hit-tests stable; UIA = baseline; 3 Hot Reload cycles one install; V11 pass=8 unchanged), 2026-09-27, ~1h25m, 2 tasks, 5 files (3 library, 1 tool, 1 NOTES) + 2 git-ignored probe scripts.
+**v3.2:** in progress — 1 phase (22), 19 plans roadmapped. Plan 01 (live-window probe harness + RED baseline), 2026-09-25, 19 min, 3 tasks + 1 fix commit, 6 files (4 created, 2 modified). Plan 02 (JNA dependency + native WndProc subclass spike), 2026-09-25, 35 min, 3 tasks, 9 files (5 created, 4 modified). Plan 03 (VER-12 real-input tooling + session environment vetting), 2026-09-25, 9 min, 3 tasks, 4 files created. Plan 08 (SHW-17 narrow second window fixture + probe narrow checks, run ahead of 06/07 per wave 4 parallelization), 2026-09-26, 13 min, 2 tasks, 5 files (1 created, 4 modified). Plan 07 (live hit-test region registry + classifier, AeroTitleBar live-region publishing, single native drag path; 4/4 title V11 checks PASS at two window sizes), 2026-09-27, ~45 min, 3 tasks, 8 files (3 created incl. git-ignored probe script, 5 modified). Plan 09 (maximize-button interaction bridge: native NC mouse messages fed as real Hover/Press interactions into the shared MutableInteractionSource; posted NC click toggles placement Maximized/Floating live; title band 0 px diff vs baseline; conflict #5 settled), 2026-09-27, ~25 min, 3 tasks, 6 files (1 created incl. git-ignored probe script, 5 modified). Plan 10 (don't-break-what-works checkpoint: OWNED_FRAME/CHILD_MESSAGES enforced at dispatch; registry verify re-installs a lost frame proc on top of the current proc and subclasses new children; no C4 push -- syncs automatically re-proven 6/6 incl. move/resize; GC stress 500 hit-tests stable; UIA = baseline; 3 Hot Reload cycles one install; V11 pass=8 unchanged), 2026-09-27, ~1h25m, 2 tasks, 5 files (3 library, 1 tool, 1 NOTES) + 2 git-ignored probe scripts. Plan 11 (native edge/corner resize + D-01 min-size floor: band = max(DPI-scaled sizing frame, CMP 8dp) = 8px at 100%, WM_GETMINMAXINFO raises ptMinTrackSize only when the app set no minimum, AeroResizeHandles gated by NativeChromeStatus; main V11 18/18 PASS incl. MINSIZE exactly 320x240, narrow 7/8 with only the Plan 12 marked RED left), 2026-09-27, ~15min, 3 tasks, 9 files (2 created library, 6 modified library/NOTES, 1 SUMMARY) + 4 git-ignored capture artifacts.
 
 ## Accumulated Context
 
@@ -110,6 +110,7 @@ Full decision log lives in PROJECT.md "Key Decisions". Rules that constrain any 
 - **[v3.2, 22-10]** C4 re-proven on the hardened subclass: OS-originated SC_MINIMIZE / SW_SHOWNOACTIVATE restore / SC_MAXIMIZE / SC_RESTORE / SetWindowPos move(+100,+50) / resize(1000x700) all followed by WindowState 6/6 with ZERO push code; the WM_SIZE branch KDoc records why no push exists (T-22-23 feedback-loop risk) — WIN-05's snapping clause stays Plan 15's
 - **[v3.2, 22-10]** Churn repair contract: `verify` re-subclasses a lost frame proc ON TOP of the current proc (never the stale saved pointer, PITFALLS 4) and retires replaced procs into the registry entry until WM_NCDESTROY (PITFALLS 1); the intact outcome traces `event=verify frame=ok` — the in-process eviction signal, because cross-process WNDPROC reads return 0 (F8)
 - **[v3.2, 22-10]** GC stress (20 x jcmd GC.run around 500 real-chain hit-tests) leaves answers byte-identical with no hs_err — the strong-reference lifetime design holds; PS 5.1 ConvertTo-Json on nested pscustomobjects can spin (probe scripts must flatten stored reporter lines)
+- **[v3.2, 22-11]** One resize path per window: the native band (max(DPI-scaled SM_CXSIZEFRAME+SM_CXPADDEDBORDER, CMP's 8dp resizer), recomputed per WM_NCHITTEST at GetDpiForWindow DPI) fully shadows CMP's resizer while `AeroResizeHandles` composes nothing (NativeChromeStatus gate); the D-01 floor (app minimum if `isMinimumSizeSet`, else 320x240dp) lives in pure MinimumSize.kt shared by the WM_GETMINMAXINFO px path and the Compose dp clamps — proven live: main clamps a 50x50 SetWindowPos to exactly 320x240, the narrow window keeps its own 260x200 (the library never writes window.minimumSize)
 
 ### Open technical debt
 
@@ -147,10 +148,10 @@ Resolved at v3.1 close: the five research conflicts from `.planning/research/SUM
 
 ## Session Continuity
 
-Last session: 2026-09-27T16:05:00Z
-Stopped at: Phase 22 Plan 10 complete -- don't-break-what-works checkpoint (owned-message audit, churn hardening, C4 = no push re-proven, GC/UIA/Hot-Reload/V11 intact)
+Last session: 2026-09-27T16:20:23.360Z
+Stopped at: Phase 22 Plan 11 complete -- native edge/corner resize + D-01 min-size floor (main V11 18/18 PASS incl. MINSIZE 320x240; narrow 260x200 app minimum honored; AeroResizeHandles gated)
 Resume file: None
-Next action: `/bm:execute-phase 22` (Plan 11: resize bands + min-size floor, wave 9)
+Next action: `/bm:execute-phase 22` (Plan 12: marked interactive elements / API-02, wave 9)
 
 ### Rules that outlive Phase 21
 
