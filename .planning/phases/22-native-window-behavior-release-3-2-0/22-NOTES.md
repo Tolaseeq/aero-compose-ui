@@ -1151,3 +1151,99 @@ against the minimize button's hover frames.
 
 **Cleanup:** every process this run started was stopped by the script itself (post-run
 sweep: zero `com.mordred.showcase.MainKt` JVMs remain).
+
+## Don't break what works (22-10)
+
+Recorded by Plan 10 (Task 2), 2026-09-27, against the capture-mode showcase with the Task 1
+hardening installed (owned-message sets enforced at dispatch, `NativeWindowChromeRegistry.verify`
++ churn guard, WM_PARENTNOTIFY hop). Same machine as every prior plan (Windows 11 24H2 build
+26100, one 1920x1080 monitor at 100% DPI, taskbar auto-hide ON). Evidence:
+`.captures/22-dontbreak/run3-console.log` + `live.json` (state sync / GC / UIA, one
+`:showcase:run` launch, pid 3992, standard JDK 21, `-Paero.chromeTrace=true`), and
+`hotreload-console.log` (JBR reload check, one `:showcase:hotRun` launch, pid 15980).
+
+**WNDPROC-equality mechanism (F8):** a cross-process `GWLP_WNDPROC` read is meaningless
+(reads back 0, finding F8), so "frame and child WNDPROC equal the registry's current pointers"
+is proven by the registry's OWN in-process comparison: `verify` reads the live
+`GWLP_WNDPROC` of the frame and of every child on the EDT and traces the outcome. After each
+state step below a fresh `AERO_CHROME event=verify hwnd=... frame=ok children=1` line appeared
+(both procs still ours, exactly one child, no `reinstall`/second `child-subclass` repair line at
+any point; `event=install` count stayed 1 for the whole run).
+
+### 1. OS-originated state sync (WIN-05 / C4) — 6/6 PASS
+
+| Step | Reporter after step | Verify intact |
+|---|---|---|
+| SC_MINIMIZE | `placement=Floating minimized=true` | yes (`frame=ok children=1`) |
+| ShowWindow(SW_SHOWNOACTIVATE) | `minimized=false` | yes |
+| SC_MAXIMIZE | `placement=Maximized` (`awtBounds=-8,-8,1936,1096`, `posDp=-8,-8` — the known sizing-border overhang, Plan 11's `WM_GETMINMAXINFO` territory) | yes |
+| SC_RESTORE | `placement=Floating` | yes |
+| SetWindowPos move +100,+50 (SWP_NOACTIVATE) | `posDp=460.0,190.0` = px/scale exactly (delta 0) | yes |
+| SetWindowPos resize 1000x700 (SWP_NOACTIVATE) | `sizeDp=1000.0x700.0`, `awtBounds=460,190,1000,700` (delta 0) | yes |
+
+`windowState.placement` / `isMinimized` / `size` / `position` all follow OS-originated changes
+through AWT's own pipeline with zero push code — C4's "syncs automatically" re-confirmed on the
+hardened subclass. `foregroundTaken=False` at every step.
+
+### 2. GC stress (PITFALLS 1 / T-22-01) — PASS
+
+20 rounds × (jcmd `<pid>` GC.run, then 25 `WM_NCHITTEST` through the real child→frame chain at
+alternating caption / max / client points) = 500 hit-tests. jcmd ≈ 150–195 ms per round
+(`C:\Users\1\.jdks\ms-21.0.9\bin\jcmd.exe`, the JVM that owns the window). Every round's 25
+answers byte-identical to round 1 (`caption=2 [SunAwtCanvas:-1 -> SunAwtFrame:2]`,
+`max=9 [SunAwtCanvas:-1 -> SunAwtFrame:9]`, `client=1 [SunAwtCanvas:1]` — the chain itself proves
+both procs stayed installed). Process alive, window alive, zero new `hs_err_pid*.log`
+(repo root and `showcase/` snapshots compared before/after). 20/20 rounds matching.
+
+### 3. Accessibility (T-22-02) — PASS, equal to the 22-01 baseline
+
+`Get-WinProbeUiaSummary`: `DescendantCount=1`, histogram `{ControlType.Pane: 1}` — byte-equal
+to the pre-phase RED baseline. The owned-message discipline (everything not owned forwarded)
+leaves the UIA subtree exactly as before the phase.
+
+### 4. Hot Reload churn (PITFALLS 16 / T-22-09) — PASS
+
+`:showcase:hotRun` on JBR 21 (`C:\Users\1\.jdks\jbr-21.0.9\bin\java.exe`). Three
+bytecode-changing edits in `AeroTitleBar.kt` (`Spacer(Modifier.width(8.dp))` ↔ `8.01.dp`, the
+same edit shape 22-02 used), each followed by the top-level `reload` Gradle task (the task name
+is `reload`, not `:showcase:reload` — 22-02's own finding; 31–44 s per reload incl. recompile):
+
+| Reload | Source state | Answers vs baseline | install | reinstall | child-subclass |
+|---|---|---|---|---|---|
+| 1 | `8.01.dp` | identical | 1 | 0 | 1 (initial only) |
+| 2 | `8.dp` | identical | 1 | 0 | 1 |
+| 3 | `8.01.dp` | identical | 1 | 0 | 1 |
+
+No stacked installs, no reinstall, hit-test answers unchanged throughout. `git diff --quiet --
+library/` holds after the final revert; zero `com.mordred.showcase.MainKt` JVMs remain.
+
+### 5. V11 regression sweep (checkpoint insurance) — unchanged vs 22-07
+
+Full `Invoke-WinProbe -Launch run -Report v11` (`.captures/22-dontbreak/v11.json`,
+`v11-console.log`): `pass=8 fail=10 skip=0` — the eight passing checks (V11-STYLE, HT-CAPTION,
+HT-MAX, HT-MIN-BOUNDARY, HT-CLOSE-BOUNDARY, HT-MAXIMIZED-TOP, MAX-WORKAREA, AUTOHIDE-EDGE) all
+still PASS with identical observed values; the ten FAILs are the same Plan 11/12 targets
+(edge/corner bands, client boundary, 320x240 min-size) with unchanged observed values. The
+hardening regressed nothing.
+
+### 6. Conflict #2 headless half — recorded
+
+- WS_SYSMENU is present on the live native-chrome window (style read-back
+  `WS_POPUP,WS_CAPTION,WS_SYSMENU,WS_THICKFRAME,WS_MINIMIZEBOX,WS_MAXIMIZEBOX,WS_CLIPCHILDREN`,
+  C1 after-state re-confirmed) — the style prerequisite for Alt+Space is in place.
+- `GetSystemMenu` / `TrackPopupMenu` are absent from jna-platform 5.19.1: `unzip -l` over the
+  resolved jar (sha1 dir `d1e54d9231da5ca3fa730d52960deaa555475468`, matching D-03's recorded
+  checksum) returns zero matching entries — matching the planner's javap. Hand-declaring them is
+  needed ONLY if Plan 15's real Alt+Space check fails (SNAP-05's decision stays Plan 15's).
+
+### Tool notes (probe-side, no product change)
+
+- `WinProbe.ps1` gained a `ShowWindow` DllImport + `SW_SHOWNOACTIVATE` (the plan's
+  restore-from-minimize step names it; the probe had no wrapper).
+- The first check run exposed that a pure move (no resize) emits NO verify trace — the churn
+  guard now also listens to `componentMoved` (the plan's own "after EACH step" check requires a
+  post-move signal; the Task 1 commit covers it).
+- PS 5.1 quirk, recorded for future probe scripts: `ConvertTo-Json` on an ordered dictionary
+  holding nested pscustomobjects (a stored reporter line) spun at 100% CPU for minutes in run 1;
+  flattening those entries to strings fixed it. Run 1's own measurements (before the dump) all
+  matched run 3's.
