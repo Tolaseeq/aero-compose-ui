@@ -4,7 +4,8 @@ import java.util.concurrent.atomic.AtomicLong
 // an actual `./gradlew :library:test --rerun` run immediately before the first version bump. The
 // guard in tasks.test below fails the build on any other number; change only with a commit that
 // states why.
-val lockedTestTotal = 541
+// 577 = 541 pre-phase + 36 native-window logic tests (VER-14, Phase 22)
+val lockedTestTotal = 577
 val lockedTestSkipped = 0
 
 plugins {
