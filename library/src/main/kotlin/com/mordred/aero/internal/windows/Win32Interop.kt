@@ -7,11 +7,16 @@ import com.sun.jna.win32.StdCallLibrary
 import com.sun.jna.win32.W32APIOptions
 
 // SNAP-01 / SNAP-02 / WIN-03: WM_* message identifiers this WindowProc implementations own.
+internal const val WM_SIZE = 0x0005
 internal const val WM_STYLECHANGING = 0x007C
 internal const val WM_NCDESTROY = 0x0082
 internal const val WM_NCCALCSIZE = 0x0083
 internal const val WM_NCHITTEST = 0x0084
 internal const val WM_PARENTNOTIFY = 0x0210
+
+// WM_SIZE wParam codes (WIN-03: corner policy follows maximize/restore, PITFALLS 24).
+internal const val SIZE_RESTORED = 0
+internal const val SIZE_MAXIMIZED = 2
 
 // WM_NCHITTEST return codes.
 internal const val HTTRANSPARENT = -1

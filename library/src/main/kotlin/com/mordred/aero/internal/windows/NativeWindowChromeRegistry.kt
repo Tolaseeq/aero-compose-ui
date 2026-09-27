@@ -105,6 +105,9 @@ internal object NativeWindowChromeRegistry {
         User32.INSTANCE.SetWindowLongPtr(hwnd, GWLP_WNDPROC, frameProcPtr)
         chromeTrace("install", hwndLong, "frameProc=$frameProcPtr")
 
+        // WIN-03: apply the maintainer's chosen corner/shadow look explicitly (22-06).
+        applyCornerPolicy(hwnd, maximized = aeroUser32.IsZoomed(hwnd))
+
         val enumProc = WinUser.WNDENUMPROC { childHwnd, _ ->
             subclassChild(hwndLong, childHwnd, chrome)
             true

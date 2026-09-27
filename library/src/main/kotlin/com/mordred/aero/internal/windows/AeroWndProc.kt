@@ -35,6 +35,8 @@ internal class AeroFrameWndProc(
 
         WM_STYLECHANGING -> handleStyleChanging(hwnd, uMsg, wParam, lParam)
 
+        WM_SIZE -> handleSize(hwnd, uMsg, wParam, lParam)
+
         WM_NCDESTROY -> {
             val result = callPrevious(hwnd, uMsg, wParam, lParam).toLong()
             NativeWindowChromeRegistry.onDestroyed(this.hwnd)
@@ -42,6 +44,21 @@ internal class AeroFrameWndProc(
         }
 
         else -> callPrevious(hwnd, uMsg, wParam, lParam).toLong()
+    }
+
+    /**
+     * WIN-03 / PITFALLS 24: corner rounding follows maximize/restore. The message is
+     * forwarded to `CallWindowProc(previous)` FIRST — AWT owns the `WindowState` sync
+     * pipeline (C4) and nothing here may replace it — then the corner policy is re-applied
+     * for the new state (square while maximized, the maintainer's chosen look when floating).
+     */
+    private fun handleSize(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): Long {
+        val result = callPrevious(hwnd, uMsg, wParam, lParam).toLong()
+        when (wParam.toInt()) {
+            SIZE_MAXIMIZED -> applyCornerPolicy(hwnd, maximized = true)
+            SIZE_RESTORED -> applyCornerPolicy(hwnd, maximized = false)
+        }
+        return result
     }
 
     /**
