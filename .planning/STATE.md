@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: Native Window Behavior
 status: executing
-stopped_at: Gap-closure wave 4/5 done (22-25 re-verification complete: press parity PROVEN JDK, JBR menu/double-click/chords proven, JBR S01 drag drift narrowed, VS Code foreground race blocked several rows — env restored); next: wave 5 = 22-26 docs+flips from verdict table
+stopped_at: Gap-closure round COMPLETE (22-20..22-26 all done; 7 requirement rows flipped, 6 kept Pending with named blockers, ledgers updated); next = plan 22-18 (REL-08 release) — the sole remaining plan of the phase
 last_updated: "2026-09-28T13:14:30.245Z"
 last_activity: 2026-09-25 -- Phase 22 execution started
 progress:
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-25 — v3.2 roadmap created)
 ## Current Position
 
 Phase: 22 (Native Window Behavior + Release 3.2.0) — EXECUTING
-Plan: 18 of 19 (next by ROADMAP wave order; Plans 01-17 + 19 done — 18 of 19 executed, Plan 18 remains)
+Plan: 18 of 26 by plan number (Plans 01-17, 19-26 done — 25 of 26 executed; Plan 18 REL-08 remains)
 Status: Executing Phase 22
 Last activity: 2026-09-25 -- Phase 22 execution started
 
@@ -74,6 +74,10 @@ Full decision log lives in PROJECT.md "Key Decisions". Rules that constrain any 
 - Builder/DSL lambdas that side-effect into a collection must NOT be `@Composable` (v2.0.4 RCMP root cause)
 - A regression guard must provably FAIL on unfixed code before it counts as a guard (v2.0.3 lesson; encoded as TOOL-04/VER-06 in v3.0, and again as TOOL-16 in v3.1)
 - **[v3.0]** One `drawAeroSurfaceCore` implementation, many exposure paths — derived primitives are `style.copy()` field swaps, never bespoke gradient code
+- **[v3.2, 22-20]** SC_KEYMENU ownership: the subclass hand-declares `GetSystemMenu`/`TrackPopupMenu` (WinDef.HMENU; absent from jna-platform 5.19.1) and re-dispatches the chosen command through the proven FORWARD path; `WM_NCLBUTTONDBLCLK` at HTCAPTION routes to `DefWindowProc` — all other syscommands forward verbatim
+- **[v3.2, 22-23]** BTN-01 press parity needs no re-injection: the bridge's press emission was always correct; C5's fallback condition was never met (the 22-15 FAIL was the check maximizing its own window)
+- **[v3.2, 22-24]** No NCCALCSIZE discriminator for snapped windows: snaps land placement=Floating with zero nccalc-max traces; border hit codes byte-match the OS seam convention — a fix without a defect would risk WIN-01
+- **[v3.2, 22-25]** The JBR chord/W05 drift was foreground-shaped (chords PASS foreground-ours); the JBR caption-drag (S01) drift is real and narrowed to the drag modal loop — open product question, recorded in `22-UNCONFIRMED.md` § 17
 - **[v3.0]** `aeroGlowRing` must be chained OUTSIDE any clip, before `aeroSurface` — the ordering rule for every component composing both
 - **[v3.0]** Base-then-transform state resolution (selected resolves base first, hover composes second) — structurally prevents "selection suppresses hover"
 - **[v3.0]** Label colour is a scheme-level property picked by surface polarity (`labelOnFilledSurface` / `labelOnOutlinedSurface`), never computed per call site from an animating fill
