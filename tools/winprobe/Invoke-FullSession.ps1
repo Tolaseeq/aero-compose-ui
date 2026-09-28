@@ -2068,20 +2068,33 @@ function Invoke-FullPassChecks {
 
         Invoke-SessionCheck -Id 'B01-PRESS-FRAME' -Context $ctx -Body {
             param($ctx, $evidence, $frames)
+            # The press on MAX is a full click sequence: its UP toggles placement and MAXIMIZES
+            # the window (B01-CLICK proves the toggle). The min step therefore runs against a
+            # window whose buttons moved — the floating-geometry min point would land on the
+            # maximized CONTENT, and the parity strip would compare a button against content
+            # (the 22-15 FAIL, diffPixels=144 maxDelta=176 both JVMs, frames 1936x1048).
+            # Each toggle-causing up is followed by a floating reset, the min point is computed
+            # from FRESH geometry, and both press frames are size-guarded against the rest
+            # frame so a state drift can never masquerade as a parity number again.
             $g = Get-SessionGeometry -Hwnd $ctx.MainHwnd
             $max = Get-SessionScreenPoint -Geometry $g -PointName 'max'
-            $min = Get-SessionScreenPoint -Geometry $g -PointName 'min'
             $maxX = [int]$g.Points.max.x
-            $minX = [int]$g.Points.min.x
             $rest = Invoke-SessionFrame -Context $ctx -Hwnd $ctx.MainHwnd -Name 'rest'
             [void]$frames.Add($rest)
             $restMaxStrip = New-SessionButtonStrip -Context $ctx -FramePath $rest -Name 'rest-max' -CenterX $maxX
             [void]$frames.Add($restMaxStrip)
+            Add-Type -AssemblyName System.Drawing
+            $restImg = [System.Drawing.Bitmap]::FromFile($rest)
+            $floatingW = $restImg.Width
+            $floatingH = $restImg.Height
+            $restImg.Dispose()
             Move-AeroCursor -Session $ctx.Session -X $max.X -Y $max.Y
             if ($ctx.Session.IsDryRun) {
                 Invoke-AeroMouseButton -Session $ctx.Session -Down
                 Invoke-AeroMouseButton -Session $ctx.Session -Up
-                Move-AeroCursor -Session $ctx.Session -X $min.X -Y $min.Y
+                $gDry = Get-SessionGeometry -Hwnd $ctx.MainHwnd
+                $minDry = Get-SessionScreenPoint -Geometry $gDry -PointName 'min'
+                Move-AeroCursor -Session $ctx.Session -X $minDry.X -Y $minDry.Y
                 Invoke-AeroMouseButton -Session $ctx.Session -Down
                 Invoke-AeroMouseButton -Session $ctx.Session -Up
                 Move-AeroCursor -Session $ctx.Session -X 960 -Y 500
@@ -2094,6 +2107,11 @@ function Invoke-FullPassChecks {
             [void]$frames.Add($pMax)
             Invoke-AeroMouseButton -Session $ctx.Session -Up
             Start-Sleep -Milliseconds 300
+            # The up-click toggled placement: undo it before the min step.
+            Reset-SessionWindow -Hwnd $ctx.MainHwnd -X 360 -Y 140 -W 1200 -H 800
+            $g2 = Get-SessionGeometry -Hwnd $ctx.MainHwnd
+            $min = Get-SessionScreenPoint -Geometry $g2 -PointName 'min'
+            $minX = [int]$g2.Points.min.x
             Move-AeroCursor -Session $ctx.Session -X $min.X -Y $min.Y
             Start-Sleep -Milliseconds 400
             Invoke-AeroMouseButton -Session $ctx.Session -Down
@@ -2101,7 +2119,20 @@ function Invoke-FullPassChecks {
             $pMin = Invoke-SessionFrame -Context $ctx -Hwnd $ctx.MainHwnd -Name 'press-min'
             [void]$frames.Add($pMin)
             Invoke-AeroMouseButton -Session $ctx.Session -Up
+            Start-Sleep -Milliseconds 300
+            # The min up-click minimizes: restore the suite's floating state.
+            Reset-SessionWindow -Hwnd $ctx.MainHwnd -X 360 -Y 140 -W 1200 -H 800
             Move-AeroCursor -Session $ctx.Session -X 960 -Y 500
+            foreach ($pair in @(@('press-max', $pMax), @('press-min', $pMin))) {
+                $img = [System.Drawing.Bitmap]::FromFile($pair[1])
+                $w = $img.Width
+                $h = $img.Height
+                $img.Dispose()
+                if ($w -ne $floatingW -or $h -ne $floatingH) {
+                    [void]$evidence.Add("$($pair[0]) frame ${w}x${h} but rest frame ${floatingW}x${floatingH} -- window state drifted during the check")
+                    return New-SessionOutcome 'FAIL' "$($pair[0]) frame size ${w}x${h} != floating ${floatingW}x${floatingH} (state drift, not a parity verdict)"
+                }
+            }
             $pMaxStrip = New-SessionButtonStrip -Context $ctx -FramePath $pMax -Name 'press-max' -CenterX $maxX
             $pMinStrip = New-SessionButtonStrip -Context $ctx -FramePath $pMin -Name 'press-min' -CenterX $minX
             [void]$frames.Add($pMaxStrip)
