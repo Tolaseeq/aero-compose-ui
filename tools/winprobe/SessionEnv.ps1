@@ -142,8 +142,12 @@ $AeroVddSha256 = @{
 }
 $AeroVddInstallerSha256 = 'CC6FF00C23E0E62A45EFB7ED59FC83AB0E7F8B0FEAB3E4C76203F360E5DE2F0F'
 $AeroPowerToysInstallerSha256 = 'D56FA7130FA68AFE553068C15A59A6B24C8DBCC9A0989A43EF0FC5A373230DE3'
-$AeroPowerToysExe = Join-Path $env:LOCALAPPDATA 'Microsoft\PowerToys\PowerToys.exe'
-$AeroFancyZonesSettings = Join-Path $env:LOCALAPPDATA 'Microsoft\PowerToys\FancyZones\zones-settings.json'
+# Per-user PowerToys layout (verified live 2026-09-28 on the 0.101.2362.0 per-user install):
+# binaries live at %LOCALAPPDATA%\PowerToys\, while FancyZones state lives under
+# %LOCALAPPDATA%\Microsoft\PowerToys\FancyZones\ (applied-layouts.json in this version --
+# zones-settings.json does not exist).
+$AeroPowerToysExe = Join-Path $env:LOCALAPPDATA 'PowerToys\PowerToys.exe'
+$AeroFancyZonesSettings = Join-Path $env:LOCALAPPDATA 'Microsoft\PowerToys\FancyZones\applied-layouts.json'
 
 function Assert-AeroEnvSession {
     <#
@@ -277,7 +281,7 @@ function Get-AeroFancyZonesZones {
     if (-not (Test-Path -LiteralPath $AeroFancyZonesSettings)) {
         return [pscustomobject]@{
             Found = $false
-            Reason = "zones-settings.json not found at $AeroFancyZonesSettings (FancyZones has not run on this profile)"
+            Reason = "applied-layouts.json not found at $AeroFancyZonesSettings (FancyZones has not run on this profile)"
             Monitors = @()
         }
     }
@@ -289,7 +293,7 @@ function Get-AeroFancyZonesZones {
     catch {
         return [pscustomobject]@{
             Found = $false
-            Reason = "zones-settings.json could not be parsed: $($_.Exception.Message)"
+            Reason = "applied-layouts.json could not be parsed: $($_.Exception.Message)"
             Monitors = @()
         }
     }
@@ -306,11 +310,17 @@ function Get-AeroFancyZonesZones {
     elseif ($config.PSObject.Properties['defaults'] -and $config.defaults) {
         $entries = @($config.defaults)
     }
+    elseif ($config.PSObject.Properties['applied-layouts'] -and $config.'applied-layouts') {
+        # PowerToys 0.101 per-user layout: applied-layouts.json carries one entry per monitor
+        # device, each with its own 'applied-layout' object (type / zone-count / spacing).
+        $entries = @($config.'applied-layouts' | ForEach-Object { $_.'applied-layout' })
+    }
 
     $resultMonitors = New-Object System.Collections.Generic.List[object]
     foreach ($entry in $entries) {
         $layout = $null
         if ($entry.PSObject.Properties['layout'] -and $entry.layout) { $layout = $entry.layout }
+        if (-not $layout -and $entry.PSObject.Properties['type']) { $layout = $entry }
         if (-not $layout) { continue }
 
         $work = $primary.WorkRect
@@ -362,14 +372,14 @@ function Get-AeroFancyZonesZones {
             Derivation = $derivation
             WorkRect   = $work
             ZoneCount  = $zones.Count
-            Zones      = @($zones)
+            Zones      = $zones.ToArray()
         })
     }
 
     return [pscustomobject]@{
         Found = ($resultMonitors.Count -gt 0)
-        Reason = $(if ($resultMonitors.Count -gt 0) { '' } else { 'no monitor layout entries in zones-settings.json' })
-        Monitors = @($resultMonitors)
+        Reason = $(if ($resultMonitors.Count -gt 0) { '' } else { 'no monitor layout entries in applied-layouts.json' })
+        Monitors = $resultMonitors.ToArray()
     }
 }
 
@@ -645,6 +655,21 @@ function Set-AeroDisplayScale {
         return [pscustomobject]@{ Before = "$($before.Count) monitor(s)"; After = 'dry run -- scale unchanged'; Verified = $null; DryRun = $true }
     }
 
+    if ($before.Count -lt 2) {
+        # Guard: the DisplayConfig module's Set-DisplayScale must never run while the target
+        # display is INACTIVE -- its display-id mapping is only stable for active paths, and a
+        # live run on 2026-09-28 applied the 150% to the PRIMARY panel instead (96 -> 144 DPI,
+        # caught by the safety check below and manually restored). Scale is skipped when the
+        # virtual display has not attached; WIN-04 records UNCONFIRMED instead.
+        Add-AeroInputLog -Session $Session -Action "DisplayScale skipped: virtual display not attached (active monitors=$($before.Count)); never scale an inactive display"
+        return [pscustomobject]@{
+            Before = "$($before.Count) monitor(s)"
+            After = 'skipped -- virtual display not attached'
+            Verified = $false
+            DryRun = $false
+        }
+    }
+
     if (-not (Get-Module -ListAvailable -Name DisplayConfig -ErrorAction SilentlyContinue)) {
         Add-AeroInputLog -Session $Session -Action 'DisplayScale: Install-Module DisplayConfig -RequiredVersion 1.1.1 -Scope CurrentUser'
         [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
@@ -711,6 +736,17 @@ function Install-AeroPowerToys {
 
     if ($Session.IsDryRun) {
         return [pscustomobject]@{ Before = "installed=$before"; After = 'dry run -- nothing installed'; Verified = $null; DryRun = $true }
+    }
+
+    if ($before) {
+        # Idempotence guard: a real run on 2026-09-28 showed the installer auto-starts
+        # PowerToys after installing; re-running it over an existing install is pure waste.
+        return [pscustomobject]@{
+            Before = "installed=$before"
+            After = "installed=$(Test-Path -LiteralPath $AeroPowerToysExe) (skipped -- already installed)"
+            Verified = $true
+            DryRun = $false
+        }
     }
 
     $proc = Start-Process -FilePath $InstallerPath -ArgumentList @('/install', '/quiet', '/norestart') -Wait -PassThru
