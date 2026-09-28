@@ -1558,3 +1558,101 @@ COMPARE white-strip baseline-vs-rest top=0 bottom=2  diffPixels=0 maxDelta=0 com
 
 Post-run sweep: zero showcase JVMs remain (none with `com.mordred.showcase.MainKt` /
 `aero.capture` / `aero.chromeTrace` in the command line).
+
+## Final hand-off (22-16)
+
+Recorded by Plan 16 (Task 3), 2026-09-28, after the teardown (Task 2, same plan). Scripts:
+`.captures/22-final/Invoke-FinalFrames.ps1`, `Invoke-RedControl.ps1`, `Invoke-FrameReview.ps1`
+(git-ignored). Same machine as every prior plan (Windows 11 24H2 build 26100, one 1920x1080
+monitor at 100% DPI, taskbar auto-hide ON — restored and verified by the teardown minutes
+earlier), standard JDK 21, capture mode (non-focusable, behind) throughout; zero
+`com.mordred.showcase.MainKt` JVMs before and after every run.
+
+### Inspection method (honest limitation)
+
+This executor environment cannot render images visually — a `Read` of a PNG returns a CDN
+upload reference, not pixels the agent can see. The 22-16 frame review is therefore
+MEASUREMENT-BASED, using the phase's own LockBits tooling (`Compare-WinProbeRegion`) with
+full-frame comparisons and sliding band sweeps — the method 22-05 already sanctioned for
+separating real defects from expected-but-invisible artifacts ("pixel-sampled, not just
+visually inspected"). The visual dimension of the same windows was agent-inspected with eyes
+earlier in the phase where the environment allowed it (22-06 corner sweep self-review, 22-09
+max-button frames, 22-19 API rebuild frames — all recorded above, all "no ghost caption, no
+white strip, single Compose-drawn gradient title band"). Nothing below is presented as a
+visual verdict by this plan; every claim is a pixel count.
+
+### Final frames (.captures/22-final/)
+
+9 frames: main + narrow, AeroBlue/AeroDark/Classic, floating; main maximized per scheme
+(probe-driven `SC_MAXIMIZE`, F9 = safe). Console: `finalframes-console.log`.
+
+```
+COMPARE <scheme> title-band baseline-vs-rest top=0 bottom=31 diffPixels=0 maxDelta=0 comparable=True   (x3 schemes)
+COMPARE <scheme> white-strip baseline-vs-rest top=0 bottom=2 diffPixels=0 maxDelta=0 comparable=True    (x3 schemes)
+REVIEW <scheme>-main-rest-vs-baseline FULL-FRAME 1200x800 diffPixels=0 maxDelta=0 comparable=True       (x3 schemes)
+```
+
+The main floating window is byte-identical to the pre-phase baseline across the ENTIRE frame
+— not just the title band — in all three schemes, after everything the phase changed
+(restyle, `WM_NCCALCSIZE`, DWM corner policy, the `rememberAeroWindowChrome` rebuild, the
+max-button bridge). Even the two known showcase noise components (progress shimmer, layout
+counter) landed identical in these frames. Style read-back per run: `GWL_STYLE=0x96CF0000`
+both windows; main rect 360,140-1560,940 (1200x800), narrow 1620,300-1920,780 (300x480).
+Maximized frames are 1936x1096 (auto-hide ON work area; the session's maximized frames were
+1936x1048 under the visible taskbar — the environment difference is consistent).
+
+Cross-run stability: the session's `W03-FRAMES-*-floating` frames (jdk AND jbr passes) vs
+the final AeroBlue frames: **0 px diff** for both the main (1200x800) and the narrow
+(300x480) window — the real-input session passes and today's post-teardown run rendered
+identically.
+
+### Final VER-11 (GREEN + RED, same day, post-teardown)
+
+- GREEN `v11-green.json` / `v11-green-console.log`: main **18/18 PASS**, narrow **8/8 PASS**,
+  `-AssertV11` exit 0 — observed values byte-identical to the 22-12/22-19 GREEN runs (e.g.
+  `V11-MINSIZE observed=320x240` main / `260x200` narrow, all edge/corner codes 10-17 through
+  the real child→frame chain, `client=0,0,1920,1078 Bottom=2(autoHide,need 1-4)=ok`).
+- RED `v11-red-control.json` / `v11-red-console.log` (`-Paero.nativeChrome=false` +
+  `chromeTrace`, wrapper-bound array): `STYLE 0x960B0000` (= the pre-phase C1 value), main
+  **0/18**, narrow **0/8**, `RED OK`, launch log contains **zero** `AERO_CHROME` lines.
+- RED provenance: the Plan 01 pre-phase baseline (`.captures/22-baseline/red-main.json`,
+  `V11 SUMMARY pass=0 fail=18` — every main check FAIL on the unmodified window) is the
+  original RED; the opt-out control additionally covers the 8 narrow checks whose fixture did
+  not exist pre-phase. Every VER-11 GREEN therefore has a RED counterpart.
+
+### Session frame re-review (measurements by Invoke-FrameReview.ps1)
+
+- **Hover (BTN-01)**: `strip-hover-max` vs `strip-hover-min` = **0 px** on both passes —
+  the native-driven hover render of the maximize button is pixel-identical to the minimize
+  button's Compose-driven hover (D-02 parity where it was proven). Hover vs rest = 108 px
+  (hover paints).
+- **Press (BTN-01)**: `strip-press-max` vs `strip-press-min` = **108 px, maxDelta 176** on
+  both passes — the press fill differs between max and min (the C5 named fallback
+  condition; the standing B01-PRESS gap, unchanged).
+- **W05 glyph crops (28x22)**: jdk float1-vs-float2 = **0 px** (stable); jbr float1-vs-float2
+  = **588 px, maxDelta 54** (unstable — the JBR anomaly; the session record's own counter
+  said 616 px with the same maxDelta 54, a counting difference between the two tools, same
+  conclusion). float-vs-max = 588 px on both (the maximize/restore glyph switch — expected).
+- **Snapped frames**: jbr `W03-FRAMES-main-snapped` is 960x1032 (a genuinely snapped frame —
+  landing on the half-work-area rect S01 defines). jdk `W03-FRAMES-main-snapped` is 1200x800
+  and byte-identical to the floating frame — the capture moment on the JDK pass caught the
+  restored window, so THAT PNG carries no snapped evidence; the JDK snap proof is the S01
+  rect records (`0,0,960,1032` etc.), not this frame. Both passes' `narrow-snapped` frames
+  are 300x480 identical-to-floating (same situation for the narrow window).
+- **F18 resize sets**: native 0-4 = 1200/1225/1250/1275/1300 x800 (five distinct widths);
+  the opt-out comparison sets are five frames all at 1200x800 on both passes (the opt-out
+  control window did not change size across its captures).
+- **Frame-context oddities (recorded, strips unaffected)**: on both passes
+  `B01-PRESS-FRAME-press-min.png` is a 1936x1048 (maximized) frame while `press-max.png` is
+  1200x800 — the press captures ran in different placement states; the strip comparisons
+  are button-local and unaffected, but the full frames are not state-matched pairs.
+- Sizes not directly comparable (SKIP by the review script, geometry carried by the session
+  records instead): maximized vs floating (1936x1048 vs 1200x800), jbr main snapped vs
+  floating (960x1032 vs 1200x800).
+
+### Verdict of the review
+
+Nothing new found: every measured difference maps to an already-recorded session finding
+(B01-PRESS gap, JBR W05 crop instability, frame-context oddities) or is the expected glyph
+switch. The final windows are pixel-identical to the pre-phase product in all three themes,
+and the final VER-11 run is GREEN 26/26 with both RED controls alive.
