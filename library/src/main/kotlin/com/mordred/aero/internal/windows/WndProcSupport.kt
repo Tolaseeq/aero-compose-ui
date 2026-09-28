@@ -48,3 +48,20 @@ internal enum class SysCommandDisposition { MENU, FORWARD }
  */
 internal fun systemMenuDisposition(cmd: Int): SysCommandDisposition =
     if ((cmd and 0xFFF0) == SC_KEYMENU) SysCommandDisposition.MENU else SysCommandDisposition.FORWARD
+
+/**
+ * SNAP-04: what the frame proc does with a WM_NCLBUTTONDBLCLK. DEF_WINDOW_PROC — at HTCAPTION:
+ * hand the double-click to `DefWindowProc`, whose OS default performs SC_MAXIMIZE when floating
+ * and SC_RESTORE when zoomed (driven by the WS_CAPTION/WS_MAXIMIZEBOX style bits the frame
+ * keeps set). SWALLOW — at HTMAXBUTTON: the button-down swallow (return 0, no classic-button
+ * paint, no double-fire). FORWARD_AWT — every other hit code: forwarded to AWT's proc as
+ * before, where the caption double-click used to die.
+ */
+internal enum class NcDoubleClickDisposition { DEF_WINDOW_PROC, SWALLOW, FORWARD_AWT }
+
+/** SNAP-04: three-way routing for a non-client double-click, by the message's hit-test code. */
+internal fun ncDoubleClickDisposition(hitCode: Int): NcDoubleClickDisposition = when (hitCode) {
+    HTCAPTION -> NcDoubleClickDisposition.DEF_WINDOW_PROC
+    HTMAXBUTTON -> NcDoubleClickDisposition.SWALLOW
+    else -> NcDoubleClickDisposition.FORWARD_AWT
+}

@@ -27,9 +27,13 @@ import javax.swing.SwingUtilities
  *                      own answer stands (SNAP-01).
  *  - WM_NCMOUSEMOVE / WM_NCMOUSELEAVE — observed-then-forwarded (max-button hover bridge,
  *                      BTN-01; forwarding keeps `DefWindowProc`'s Snap Layouts flyout path).
- *  - WM_NCLBUTTONDOWN / WM_NCLBUTTONUP / WM_NCLBUTTONDBLCLK — swallowed ONLY at
- *                      HTMAXBUTTON (return 0, no classic-button paint, no double-fire);
- *                      every other hit code forwards unchanged (BTN-01).
+ *  - WM_NCLBUTTONDOWN / WM_NCLBUTTONUP — swallowed ONLY at HTMAXBUTTON (return 0, no
+ *                      classic-button paint, no double-fire); every other hit code forwards
+ *                      unchanged (BTN-01).
+ *  - WM_NCLBUTTONDBLCLK — three-way disposition (SNAP-04): HTCAPTION answers from
+ *                      `DefWindowProc` (the OS default performs SC_MAXIMIZE/SC_RESTORE from
+ *                      the style bits), HTMAXBUTTON keeps the button-down swallow, every
+ *                      other hit code forwards unchanged.
  *  - WM_SYSCOMMAND   — SC_KEYMENU only is owned (the system menu is displayed through
  *                      hand-declared GetSystemMenu/TrackPopupMenu, then the chosen command
  *                      is re-dispatched as a forwarded WM_SYSCOMMAND, SNAP-05); every other
@@ -127,7 +131,9 @@ internal class AeroFrameWndProc(
 
                 WM_NCMOUSELEAVE -> handleNcMouseLeave(hwnd, uMsg, wParam, lParam)
 
-                WM_NCLBUTTONDOWN, WM_NCLBUTTONDBLCLK -> handleNcButtonDown(hwnd, uMsg, wParam, lParam)
+                WM_NCLBUTTONDOWN -> handleNcButtonDown(hwnd, uMsg, wParam, lParam)
+
+                WM_NCLBUTTONDBLCLK -> handleNcDoubleClick(hwnd, uMsg, wParam, lParam)
 
                 WM_NCLBUTTONUP -> handleNcButtonUp(hwnd, uMsg, wParam, lParam)
 
@@ -207,10 +213,39 @@ internal class AeroFrameWndProc(
      * BTN-01 / WIN-05 / ARCHITECTURE Anti-Pattern 4: button-down at HTMAXBUTTON is swallowed
      * (return 0, never forwarded) so `DefWindowProc` neither paints a classic caption button
      * over the Compose one nor double-fires the toggle. Every other hit code forwards
-     * unchanged — caption drag, double-click maximize and the system menu keep working natively.
+     * unchanged — caption drag keeps working natively.
      */
     private fun handleNcButtonDown(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): Long {
         if (wParam.toInt() != HTMAXBUTTON) return callPrevious(hwnd, uMsg, wParam, lParam).toLong()
+        return swallowMaxButtonPress()
+    }
+
+    /**
+     * SNAP-04: the caption double-click is routed by [ncDoubleClickDisposition]. At HTCAPTION the
+     * message is handed to `User32.INSTANCE.DefWindowProc` and its result returned verbatim —
+     * the OS default performs SC_MAXIMIZE when the window is floating and SC_RESTORE when zoomed,
+     * driven by the WS_CAPTION/WS_MAXIMIZEBOX style bits the frame keeps set. Forwarding into
+     * AWT's proc instead is where the double-click died (22-SESSION S04-DBLCLICK-MAX FAIL both
+     * JVMs). At HTMAXBUTTON the swallow matches the single button-down (no classic-button paint,
+     * no double-fire); every other hit code keeps forwarding unchanged.
+     *
+     * Fallback decision (recorded, NOT implemented): if the re-verification session's real
+     * double-click still fails AND the chrome trace shows zero WM_NCLBUTTONDBLCLK arrivals at
+     * this proc (a CS_DBLCLKS class-style question), the named fix is synthesizing the
+     * double-click from two downs within `GetDoubleClickTime` on the toolkit thread — decided
+     * by trace evidence in that session, not here.
+     */
+    private fun handleNcDoubleClick(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): Long =
+        when (ncDoubleClickDisposition(wParam.toInt())) {
+            NcDoubleClickDisposition.DEF_WINDOW_PROC ->
+                User32.INSTANCE.DefWindowProc(hwnd, uMsg, wParam, lParam).toLong()
+            NcDoubleClickDisposition.SWALLOW -> swallowMaxButtonPress()
+            NcDoubleClickDisposition.FORWARD_AWT ->
+                callPrevious(hwnd, uMsg, wParam, lParam).toLong()
+        }
+
+    /** BTN-01: the HTMAXBUTTON swallow shared by button-down and double-click. */
+    private fun swallowMaxButtonPress(): Long {
         ncPressed = true
         chromeTrace("max-button", this.hwnd, "down")
         hop { maxButton.press() }
