@@ -126,7 +126,7 @@ Details: `.planning/milestones/v3.1-ROADMAP.md` · Requirements: `.planning/mile
 
 **Real-input rule (carried from v3.1):** anything needing real mouse/keyboard goes through two maintainer-supervised sessions, each preceded by a warning and an explicit "ok" and closed with "you can come back": an early 1–2 minute session right after the first draft (does Windows even show the Snap Layouts flyout and snap a Compose window at all — if not, stop and ask before building anything further), and a full session at the end of the phase covering everything that has no message-based, headless-provable trigger.
 
-- [ ] **Phase 22: Native Window Behavior + Release 3.2.0** - A JNA `WndProc` subclass answers Windows' hit-testing/frame/non-client questions for `AeroTitleBar` windows so Snap, Snap Layouts, Snap Groups, taskbar-aware maximize and FancyZones all work natively; verified live on Windows 11 on both a standard JDK 21 and JBR 21; `v3.2.0` released on JitPack
+- [x] **Phase 22: Native Window Behavior + Release 3.2.0** - A JNA `WndProc` subclass answers Windows' hit-testing/frame/non-client questions for `AeroTitleBar` windows so Snap, Snap Layouts, Snap Groups, taskbar-aware maximize and FancyZones all work natively; verified live on Windows 11 on both a standard JDK 21 and JBR 21; `v3.2.0` released on JitPack (completed 2026-09-28)
 
 ## Phase Details
 
@@ -168,7 +168,7 @@ Details: `.planning/milestones/v3.1-ROADMAP.md` · Requirements: `.planning/mile
   5. Список «не подтверждено» явно называет всё, что не проверено, включая поведение на Windows 10 — не выдаётся за пройденное
   6. `v3.2.0` опубликован и резолвится на JitPack (`com.github.Tolaseeq:aero-compose-ui:v3.2.0`); README и KDoc обновлены, оговорка «Aero Snap limitation» снята; все существующие тесты зелёные под залоченным (и при необходимости поднятым именованным коммитом) числом
 
-**Plans:** 25/26 plans executed
+**Plans:** 26/26 plans complete
 
 Plans:
 **Wave 1**
@@ -236,7 +236,7 @@ Plans:
 
 **Wave 16** *(blocked on Wave 15 completion)*
 
-- [ ] 22-18-PLAN.md — Release 3.2.0: version bump, verify tag on JitPack (D-06), DEP-01 on the published POM, maintainer's choice, real tag (REL-08). *Executes AFTER the gap-closure round (22-20..22-26) per the maintainer's 2026-09-28 decision, despite its original wave number*
+- [x] 22-18-PLAN.md — Release 3.2.0: version bump, verify tag on JitPack (D-06), DEP-01 on the published POM, maintainer's choice, real tag (REL-08). *Executes AFTER the gap-closure round (22-20..22-26) per the maintainer's 2026-09-28 decision, despite its original wave number. Executed 2026-09-28: verify tag `v3.2.0-verify01` green on `ff19cb7`, DEP-01 confirmed on the published POM — release **held** by the maintainer (manual verification first); REL-08 stays Pending, cut later from the same verified commit*
 
 **Gap-closure waves 17–21** *(added 2026-09-28 from 22-VERIFICATION.md: 5 blocking gaps + 5 check-formula artifacts; `gap_closure: true` on every plan)*
 
@@ -290,7 +290,7 @@ Plans:
 | 19. Selectors + Lists | v3.0 | 12/12 | Complete | 2026-07-28 |
 | 20. Verification | v3.0 | 9/9 | Complete | 2026-07-29 |
 | 21. Migration + Release 3.1.0 | v3.1 | 14/14 | Complete | 2026-09-24 |
-| 22. Native Window Behavior + Release 3.2.0 | v3.2 | 25/26 | In Progress|  |
+| 22. Native Window Behavior + Release 3.2.0 | v3.2 | 26/26 | Complete   | 2026-09-28 |
 
 ## Next Milestone
 
@@ -298,4 +298,4 @@ Not yet scoped. Candidate goals are tracked in `.planning/PROJECT.md` § "Next M
 
 ---
 
-*Roadmap last updated: 2026-09-28 — Phase 22 gap-closure round planned (plans 22-20..22-26, waves 17-21, from 22-VERIFICATION.md; the 22-18 release executes after gap closure per the maintainer's decision). Previous: 2026-09-25 — v3.2 Native Window Behavior roadmapped (one phase, 22 — one goal = one phase per the maintainer's rule; 27/27 requirements mapped, plans TBD).*
+*Roadmap last updated: 2026-09-28 — Phase 22 fully executed (26/26 plans); REL-08 release held by the maintainer pending manual verification of unpassed/unconfirmed items (22-18: verify tag green on `ff19cb7`, no `v3.2.0` tag). Previous: 2026-09-28 — Phase 22 gap-closure round planned (plans 22-20..22-26, waves 17-21, from 22-VERIFICATION.md; the 22-18 release executes after gap closure per the maintainer's decision).*
