@@ -39,7 +39,7 @@ key-decisions:
 
 requirements-completed: []  # diagnosis only; SNAP-01/SNAP-03/WIN-05 clauses stay Pending until 22-25 confirms
 
-duration: ~35 min
+duration: ~29 min
 completed: 2026-09-28
 ---
 
