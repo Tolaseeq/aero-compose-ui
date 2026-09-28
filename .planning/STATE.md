@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: Native Window Behavior
 status: executing
-stopped_at: Phase 22 Plan 14 complete -- session environment helpers + full VER-12 session suite (55 checks x two JVM passes) scripted and dry-run proven; teardown PID-tracked after hotRun sidecar root-cause; VER-12 stays Pending until the real sessions
-last_updated: "2026-09-27T23:41:12.793Z"
+stopped_at: Phase 22 Plan 14 complete -- session environment helpers + full VER-12 session suite scripted and dry-run proven (55 checks x two passes, zero interference); teardown PID-tracked
+last_updated: "2026-09-28T10:11:54.856Z"
 last_activity: 2026-09-25 -- Phase 22 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 19
-  completed_plans: 15
+  completed_plans: 16
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-25 — v3.2 roadmap created)
 ## Current Position
 
 Phase: 22 (Native Window Behavior + Release 3.2.0) — EXECUTING
-Plan: 15 of 19 (next by ROADMAP wave order; Plan 19 already executed early per wave 11 — 15 of 19 done)
+Plan: 16 of 19 (next by ROADMAP wave order; Plan 19 already executed early per wave 11 — 15 of 19 done)
 Status: Executing Phase 22
 Last activity: 2026-09-25 -- Phase 22 execution started
 
