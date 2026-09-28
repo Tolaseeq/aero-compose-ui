@@ -1,7 +1,9 @@
 package com.mordred.aero.internal.windows
 
 import com.sun.jna.Native
+import com.sun.jna.Pointer
 import com.sun.jna.Structure
+import com.sun.jna.platform.win32.WinDef.HMENU
 import com.sun.jna.platform.win32.WinDef.HWND
 import com.sun.jna.platform.win32.WinDef.POINT
 import com.sun.jna.win32.StdCallLibrary
@@ -31,6 +33,26 @@ internal const val WM_NCLBUTTONDOWN = 0x00A1
 internal const val WM_NCLBUTTONUP = 0x00A2
 internal const val WM_NCLBUTTONDBLCLK = 0x00A3
 internal const val WM_NCMOUSELEAVE = 0x02A2
+
+// SNAP-05 / C2: the system-menu syscommand. DefWindowProc shows the system menu when it receives
+// WM_SYSCOMMAND with SC_KEYMENU; on the subclassed frame the syscommand must be owned because
+// AWT's own WndProc (where non-owned messages forward) swallows the trigger instead. The low
+// four bits of wParam are internal flags, masked off with 0xFFF0 before discrimination.
+internal const val WM_SYSCOMMAND = 0x0112
+internal const val SC_KEYMENU = 0xF100
+internal const val SC_CLOSE = 0xF060
+internal const val SC_MAXIMIZE = 0xF030
+internal const val SC_MINIMIZE = 0xF020
+internal const val SC_RESTORE = 0xF120
+
+// SNAP-05: TrackPopupMenu display flags. TPM_RETURNCMD makes the call return the chosen command
+// instead of posting it, so the menu's selection re-enters this proc as a plain WM_SYSCOMMAND
+// and flows to DefWindowProc exactly like the proven Alt+F4 path. TPM_LEFTALIGN/TPM_TOPALIGN are
+// zero — declared anyway so the call site reads as the documented Win32 idiom.
+internal const val TPM_RIGHTBUTTON = 0x0002
+internal const val TPM_RETURNCMD = 0x0100
+internal const val TPM_LEFTALIGN = 0x0000
+internal const val TPM_TOPALIGN = 0x0000
 
 // WM_SIZE wParam codes (WIN-03: corner policy follows maximize/restore, PITFALLS 24).
 internal const val SIZE_RESTORED = 0
@@ -134,6 +156,27 @@ internal interface AeroUser32 : StdCallLibrary {
     public fun GetDpiForWindow(hWnd: HWND): Int
     public fun GetSystemMetricsForDpi(nIndex: Int, dpi: Int): Int
     public fun TrackMouseEvent(lpEventTrack: TRACKMOUSEEVENT): Boolean
+
+    /**
+     * SNAP-05 / C2: returns the window's current system menu (`bRevert = false`); jna-platform
+     * 5.19.1 ships neither this nor [TrackPopupMenu] (verified against the jar), so both are
+     * hand-declared per DEP-01. HMENU lives in WinDef on this jna version.
+     */
+    public fun GetSystemMenu(hWnd: HWND, bRevert: Boolean): HMENU?
+
+    /**
+     * SNAP-05: with TPM_RETURNCMD the return value is the identifier of the chosen menu command
+     * (0 when dismissed without a choice) instead of a success BOOL.
+     */
+    public fun TrackPopupMenu(
+        hMenu: HMENU,
+        uFlags: Int,
+        x: Int,
+        y: Int,
+        nReserved: Int,
+        hWnd: HWND,
+        prcRect: Pointer?,
+    ): Int
 }
 
 /**

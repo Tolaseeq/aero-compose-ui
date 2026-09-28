@@ -30,6 +30,10 @@ import javax.swing.SwingUtilities
  *  - WM_NCLBUTTONDOWN / WM_NCLBUTTONUP / WM_NCLBUTTONDBLCLK — swallowed ONLY at
  *                      HTMAXBUTTON (return 0, no classic-button paint, no double-fire);
  *                      every other hit code forwards unchanged (BTN-01).
+ *  - WM_SYSCOMMAND   — SC_KEYMENU only is owned (the system menu is displayed through
+ *                      hand-declared GetSystemMenu/TrackPopupMenu, then the chosen command
+ *                      is re-dispatched as a forwarded WM_SYSCOMMAND, SNAP-05); every other
+ *                      command forwards verbatim (the proven Alt+F4 / snap paths, C2).
  *  - WM_STYLECHANGING — modified-then-forwarded (required styles written into `styleNew`
  *                      in place before forwarding, WIN-03 / PITFALLS 4).
  *  - WM_SIZE         — observed-then-forwarded (corner policy re-applied AFTER
@@ -50,6 +54,7 @@ internal val OWNED_FRAME_MESSAGES: Set<Int> = setOf(
     WM_NCLBUTTONDOWN,
     WM_NCLBUTTONUP,
     WM_NCLBUTTONDBLCLK,
+    WM_SYSCOMMAND,
     WM_STYLECHANGING,
     WM_SIZE,
     WM_GETMINMAXINFO,
@@ -125,6 +130,8 @@ internal class AeroFrameWndProc(
                 WM_NCLBUTTONDOWN, WM_NCLBUTTONDBLCLK -> handleNcButtonDown(hwnd, uMsg, wParam, lParam)
 
                 WM_NCLBUTTONUP -> handleNcButtonUp(hwnd, uMsg, wParam, lParam)
+
+                WM_SYSCOMMAND -> handleSysCommand(hwnd, uMsg, wParam, lParam)
 
                 WM_STYLECHANGING -> handleStyleChanging(hwnd, uMsg, wParam, lParam)
 
@@ -221,6 +228,49 @@ internal class AeroFrameWndProc(
         ncPressed = false
         chromeTrace("max-button", this.hwnd, "up click=$wasPressed")
         hop { maxButton.release(click = wasPressed) }
+        return 0L
+    }
+
+    /**
+     * SNAP-05 / C2: WM_SYSCOMMAND(SC_KEYMENU) is the Alt+Space system-menu trigger. DefWindowProc
+     * answers it by showing the window's system menu; forwarding it into AWT's proc instead
+     * swallows the trigger (C2's settled finding), so this branch owns it: fetch the menu with
+     * the hand-declared `GetSystemMenu(hwnd, false)` and display it at the client origin (under
+     * the title bar's left edge, DefWindowProc's own placement) via `TrackPopupMenu` with
+     * TPM_RETURNCMD. The nested menu loop is DefWindowProc's own behavior for this syscommand;
+     * the whole branch runs inside [dispatchSafely], whose fallback is the passthrough call.
+     *
+     * The chosen command (non-zero return) is re-dispatched with `SendMessage(hwnd,
+     * WM_SYSCOMMAND, ...)` — it re-enters this proc, discriminates to FORWARD, and flows
+     * through AWT to `DefWindowProc` exactly like the proven Alt+F4 / SC_CLOSE path. Every
+     * non-SC_KEYMENU syscommand forwards verbatim, so Alt+F4, the flyout's commands and all
+     * snap syscommands keep byte-identical behavior. Fallback decision (recorded, NOT
+     * implemented): if the real Alt+Space chord in the re-verification session shows SC_KEYMENU
+     * never arrives at this proc, owning WM_SYSKEYDOWN is the named next fix — decided by
+     * chrome-trace evidence there, not here.
+     */
+    private fun handleSysCommand(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): Long {
+        if (systemMenuDisposition(wParam.toInt()) != SysCommandDisposition.MENU) {
+            return callPrevious(hwnd, uMsg, wParam, lParam).toLong()
+        }
+        chromeTrace("sysmenu", this.hwnd, "open")
+        val menu = aeroUser32.GetSystemMenu(hwnd, false)
+        if (menu != null) {
+            val origin = POINT(0, 0)
+            aeroUser32.ClientToScreen(hwnd, origin)
+            val selected = aeroUser32.TrackPopupMenu(
+                menu,
+                TPM_RETURNCMD or TPM_RIGHTBUTTON or TPM_LEFTALIGN or TPM_TOPALIGN,
+                origin.x,
+                origin.y,
+                0,
+                hwnd,
+                null,
+            )
+            if (selected != 0) {
+                User32.INSTANCE.SendMessage(hwnd, WM_SYSCOMMAND, WPARAM(selected.toLong()), LPARAM(0))
+            }
+        }
         return 0L
     }
 

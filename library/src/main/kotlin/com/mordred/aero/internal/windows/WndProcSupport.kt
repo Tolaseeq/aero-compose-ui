@@ -33,3 +33,18 @@ internal fun decodeScreenPoint(lParam: Long): Pair<Int, Int> {
     val y = ((lParam shr 16) and 0xFFFF).toShort().toInt()
     return x to y
 }
+
+/**
+ * SNAP-05: what the frame proc does with a WM_SYSCOMMAND it receives. MENU — the SC_KEYMENU
+ * trigger, owned: display the system menu and swallow (return 0). FORWARD — every other
+ * syscommand (SC_CLOSE, SC_MAXIMIZE, SC_MINIMIZE, SC_RESTORE, snap commands, ...): forwarded
+ * verbatim to AWT's proc, byte-identical to the pre-ownership behavior.
+ */
+internal enum class SysCommandDisposition { MENU, FORWARD }
+
+/**
+ * SNAP-05: discrimination for WM_SYSCOMMAND. The low four bits of wParam are internal flags,
+ * so the command is masked with 0xFFF0 first — `wParam = 0xF102` is still SC_KEYMENU.
+ */
+internal fun systemMenuDisposition(cmd: Int): SysCommandDisposition =
+    if ((cmd and 0xFFF0) == SC_KEYMENU) SysCommandDisposition.MENU else SysCommandDisposition.FORWARD
