@@ -1656,3 +1656,94 @@ Nothing new found: every measured difference maps to an already-recorded session
 (B01-PRESS gap, JBR W05 crop instability, frame-context oddities) or is the expected glyph
 switch. The final windows are pixel-identical to the pre-phase product in all three themes,
 and the final VER-11 run is GREEN 26/26 with both RED controls alive.
+
+## Gap closure (22-20..22-24)
+
+Consolidated ledger of the gap-closure round (the five 22-16 release blockers), recorded by
+22-26. Each entry cites its plan SUMMARY (the full evidence record) and capture directory;
+the round's live re-verification verdicts are in `22-SESSION.md` § "Gap-closure
+re-verification (22-25)" and `.captures/22-reverify/`.
+
+### System menu and caption double-click routing (22-20)
+
+The frame WndProc owns `WM_SYSCOMMAND(SC_KEYMENU)` — displaying the window's system menu
+through hand-declared `GetSystemMenu`/`TrackPopupMenu` (`TPM_RETURNCMD` at the
+`ClientToScreen(0,0)` origin, the chosen command re-dispatched through the proc's own
+FORWARD path) — and routes `WM_NCLBUTTONDBLCLK` at HTCAPTION to `DefWindowProc` (the OS
+default performs SC_MAXIMIZE/SC_RESTORE from the present `WS_CAPTION|WS_MAXIMIZEBOX` bits);
+HTMAXBUTTON double-clicks reuse the exact button-down swallow. `WinDef.HMENU`, not the
+plan-named `WinUser.HMENU` (jna-platform 5.19.1 ships HMENU in WinDef only). Every
+non-SC_KEYMENU command forwards verbatim, so the Alt+F4 / flyout / snap paths are unchanged.
+Headless proof: menu owned by the showcase pid within 55 ms, dismissed by WM_CANCELMODE, and
+a posted double-click pair maximize→restore observed live on the same launch that still
+passed V11 main 18/18. Record: `22-20-SUMMARY.md`; evidence `.captures/22-gapmenu/`.
+
+### JBR drift verdict (22-21)
+
+Blocker #5 bounded headlessly: the full probe battery (styles, hit-test chain, placement
+sync, NC-click toggle, MINMAXINFO floor, install/verify traces) is value-identical on
+standard JDK 21 vs JBR 21 — 42/42 normalized lines, zero differing — so the drift lives in
+the real-input pipeline (foreground/activation/gesture delivery), not at any interface the
+library owns. No library-fix candidate filed. The 22-15 undecidability was itself a recording
+bug: `Invoke-FullSession.ps1:304` guards with `if ($Evidence)`, and a PS 5.1 empty
+`List[string]` is falsy, silently dropping `foregroundOurs` lines. The folded JBR-only
+confirmation spec (nine checks, per-gesture foreground pids, one-re-focus retry rule) went
+to 22-25, which confirmed the foreground explanation for the chords (RIGHT/UP/DOWN PASS
+foreground-ours) and isolated the caption drag as a real, narrowed drift. Record:
+`22-21-SUMMARY.md`; evidence `.captures/22-jbrdiag/`.
+
+### Session check formulas and the -Checks subset (22-22)
+
+The five 22-15 check-formula artifacts were corrected to model the proven behavior: W02
+corners judged per-axis against their own dragged deltas; floors clamp width-only with the
+before-height carried; S03-WIN-DOWN requires its own SC_MAXIMIZE precondition; W06 seeds a
+mark and polls the ncdestroy trace from the WM_CLOSE post (10 s budget); S07 models the real
+PowerToys predefined priority-grid geometry (25/50/25 columns at zone-count 3, outer-full /
+inner-half spacing — the recorded 16,16,1432,1016 rect is the union of zones 0+1, derived
+exactly, not the plan's literal all-edges inset). `-Checks` subsets the suite per JVM and
+aborts on unknown IDs before any launch. Dry-run proven at exit 0 (full 54-ID and 4-ID
+subset); real verdicts landed in 22-25. Record: `22-22-SUMMARY.md`; evidence
+`.captures/22-gapformula-dry/`.
+
+### Max-button press parity: diagnosis and route (22-23)
+
+The B01-PRESS-FRAME FAIL was a check-formula artifact, not a bridge defect: the check's own
+max-press up-click maximized the window before the min step, so the "parity" strip compared
+a floating-window button against maximized-window content (press-min frames 1936x1048 on
+both JVMs while every other B01 frame was 1200x800). The bridge's press emission is the
+settled, correct press visual; Route A had nothing to fix and Route B's re-injection would
+chase a reference artifact while risking the proven flyout/click paths — both declined,
+no library change. The formula now resets to floating after each toggle-causing up,
+recomputes geometry and size-guards both press frames against the rest frame. Re-run green
+in 22-25 on JDK (parity diff=0, press paints 144 px). Record: `22-23-SUMMARY.md`; evidence
+`.captures/22-gappress/`.
+
+### Shared-border mechanism verdict (22-24)
+
+Blocker #3's zero-deltas are explained without any library defect: the S06 check's own
+pre-snap chords snapped nothing on either JVM, so the "border drag" pressed plain client
+area ~600 px from the nearest edge. The library's border answers are proven correct in every
+headless-reachable state — placed halves answer main=HTRIGHT / narrow=HTLEFT at all five
+seam offsets, floating layout the same, and two standard-proc WinForms windows at the same
+halves answer byte-equivalently (positive-control parity). The IsZoomed-while-snapped prime
+suspect is refuted by the trace record: every half/quarter snap lands placement=Floating
+awtExtendedState=0 with zero nccalc-max lines; nccalc-max fires only at true maximizes. No
+NCCALCSIZE discriminator was added — a fix without a defect would only risk WIN-01's proven
+geometry. The hardened check verifies both pre-snap rects before dragging and FAILs honestly
+with per-window evidence; the 22-25 re-run never reached the drag (pre-snap
+foreground-blocked on both JVMs), so the border clause stays unproven. Record:
+`22-24-SUMMARY.md`; evidence `.captures/22-gapborder/`.
+
+### Re-verification outcome (22-25) and the 22-26 booking
+
+The consented 23-check JDK + 32-check JBR re-verification split the round three ways: landed
+green where the gesture could be judged (JBR menu-open, JBR double-click pair, JBR chords
+foreground-ours, JDK press parity, W02 formulas on both JVMs, JBR W06 ncdestroy); the JBR
+S01 drag drift reproduced with drag-modal-loop discrimination; and an external foreground
+race (elevated VS Code, pid 12752) blocked the rows it touched — recorded as
+environment-blocked, never as product verdicts. 22-26 booked the outcomes: README/KDoc
+reworded row-by-row, seven requirement rows flipped clause-complete (SNAP-03, WIN-01..03,
+WIN-05, BTN-01..02), the blockers resolved to honest outcomes in `22-HANDOFF.md`, and the
+residual open items carried in `22-UNCONFIRMED.md` § 17. Evidence:
+`.captures/22-reverify/{jdk,jbr}/` (`results.json` one pass subdirectory deeper:
+`jdk/jdk/`, `jbr/jbr/`).

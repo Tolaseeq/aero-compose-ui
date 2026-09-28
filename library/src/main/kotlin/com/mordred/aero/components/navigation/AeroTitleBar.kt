@@ -54,7 +54,11 @@ import com.mordred.aero.theme.AeroTheme
  * maximize button answers HTMAXBUTTON (hovering it shows the Windows 11 Snap Layouts
  * flyout; a click toggles `WindowPlacement.Maximized <-> Floating`), and maximize is
  * taskbar-aware: a maximized window fills its monitor's work area without covering a
- * visible taskbar and leaves the edge an auto-hidden taskbar needs. Minimize, close and
+ * visible taskbar and leaves the edge an auto-hidden taskbar needs. A double-click on the
+ * caption maximizes the window and a second double-click restores it, and Alt+Space opens
+ * the window's system menu (both verified on the JetBrains Runtime 21; the standard-JDK
+ * double-click verdict is still open, and the menu's commands do not yet act on the
+ * window). Minimize, close and
  * [leading] content stay HTCLIENT and keep their ordinary Compose clicks (BTN-02). If the
  * native install fails, the bar falls back to the legacy composition so the window stays
  * draggable.

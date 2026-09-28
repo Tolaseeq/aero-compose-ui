@@ -104,7 +104,11 @@ With the default `AeroTitleBar(...)` composition on Windows:
   corner (quarter) or to the top (maximize); dragging a snapped or maximized window away
   restores its former size.
 - **Snap Layouts flyout** — hover the maximize button and Windows 11 shows its layout menu.
-- **Win+arrow keys** — Win+← / Win+→ snap the window to a half, Win+↑ maximizes it.
+- **Maximize-button press parity** — pressed, the maximize button shows the same fill as the
+  minimize button (pixel-exact on the standard JDK 21; its hover and click parity hold on
+  both runtimes).
+- **Win+arrow keys** — Win+← / Win+→ snap the window to a half, Win+↑ maximizes it, Win+↓
+  restores and minimizes it.
 - **Native resize** — the window resizes from every edge and corner with the system cursors,
   including narrow (~300 px) windows; `AeroResizeHandles` composes nothing on this path.
 - **Taskbar-aware maximize** — a maximized window fills its monitor's work area exactly: it
@@ -117,14 +121,21 @@ With the default `AeroTitleBar(...)` composition on Windows:
 - **FancyZones** — Shift-drag places the window into PowerToys FancyZones zones.
 - **Alt+F4** — closes the window through the same `onCloseRequest` path as the close button.
 
-This is the verified behavior on Windows 11 24H2; drag snapping and the Win+arrow keys were
-verified with the standard JDK 21 (the supported runtime). Known gaps in this release:
-double-clicking the caption does not yet maximize the window, Alt+Space does not yet open the
-system menu, two snapped windows do not yet share their common border while resizing, and the
-maximize button's pressed fill differs slightly from the minimize button's (its hover and click
-are unaffected); in one run under the JetBrains Runtime, caption dragging and the Win+arrow
-keys did not respond. Windows 10 and display scaling other than 100 % are not verified (next
-section).
+This is the verified behavior on Windows 11 24H2. The Win+arrow keys, edge and corner
+resizing, and the minimum-size floors were verified on both the standard JDK 21 (the
+supported runtime) and the JetBrains Runtime 21; drag snapping and maximize-button press
+parity were verified on the standard JDK 21, and the caption double-click on the JetBrains
+Runtime 21. Known gaps in this release: the caption double-click did not fire on the standard
+JDK in the re-verification run (an unexplained difference between the runtimes), the Alt+Space
+system menu opens (JetBrains Runtime 21) but its commands do not yet act on the window, two
+snapped windows sharing their common border while resizing remains unverified (the
+verification run's own pre-snap step was blocked by an environment issue), the top-left
+corner resize read inert in the re-verification run (the other three corners are verified on
+both runtimes), choosing a layout in the Snap Layouts flyout and the taskbar's Snap Groups
+thumbnail have not been verified, and under the JetBrains Runtime dragging the window by its
+caption still does not move it in verification runs (a runtime-specific drift — the same
+window's double-click, Win+arrow keys and edge drags do work). Windows 10 and display scaling
+other than 100 % are not verified (next section).
 
 ### Windows 10 and 11
 
