@@ -10,7 +10,8 @@
     -AuthorizedBy is mandatory unless -DryRun. A -DryRun session launches the showcase in capture
     mode (non-focusable, behind), prints every planned action and check, confirms all helper
     functions resolve, and proves the cursor never moved and nothing was installed -- it never
-    reaches SendInput. Each check runs in its own try/catch producing {Id, Result, Evidence,
+    reaches SendInput. -Checks takes a comma-separated list of check registration Ids to run a
+    subset (empty = all; unknown Ids abort before anything is launched, installed or sent). Each check runs in its own try/catch producing {Id, Result, Evidence,
     Frames} with Result PASS|FAIL|UNCONFIRMED, so a failing check never aborts the rest.
     Driver and PowerToys removal are NOT part of this script's session run (the teardown plan
     owns them); at the very end of a real -Phase All run the taskbar auto-hide state is restored
@@ -29,6 +30,7 @@ param(
     [switch]$DryRun,
     [ValidateSet('Jdk', 'Jbr', 'Both')][string]$Pass = 'Both',
     [ValidateSet('EnvSetup', 'Checks', 'All')][string]$Phase = 'All',
+    [string[]]$Checks = @(),
     [string]$OutDir = 'C:\1A_WORK\ui_lib\.captures\22-session',
     [string]$RepoRoot = 'C:\1A_WORK\ui_lib',
     [string]$DriverDir = '',
@@ -41,6 +43,33 @@ Set-StrictMode -Version 2
 if (-not $DryRun -and [string]::IsNullOrWhiteSpace($AuthorizedBy)) {
     Write-Host 'SESSION ABORT: -AuthorizedBy is required unless -DryRun is set; sending no input and changing nothing.'
     exit 1
+}
+
+# -Checks subset: empty = every registered check (today's behavior). Non-empty = run exactly the
+# checks whose registration Id is in the list, in the suite's own registration order. Entries may
+# be comma-separated (powershell -File delivers "A,B,C" as one string) and are split here. The
+# valid Ids are read from this script's own registration calls, so the list can never drift from
+# the suite. Any unknown Id aborts here -- before any launch, install or input -- because a typo
+# must fail loudly, never silently run nothing.
+$script:CheckSubset = $null
+if (@($Checks).Count -gt 0) {
+    # Assembled by concatenation so this extraction pattern never matches its own source line.
+    $idPattern = ('Invoke-SessionCheck' + ' -Id ') + "'([^']+)'"
+    $validIds = @([regex]::Matches((Get-Content -LiteralPath $PSCommandPath -Raw), $idPattern) |
+        ForEach-Object { $_.Groups[1].Value } |
+        Where-Object { $_ -cmatch '^[A-Z0-9-]+$' })
+    $wanted = @()
+    foreach ($entry in @($Checks)) {
+        foreach ($part in ([string]$entry).Split(',')) { $wanted += $part.Trim() }
+    }
+    $unknown = @($wanted | Where-Object { $validIds -notcontains $_ })
+    if ($unknown.Count -gt 0) {
+        Write-Host "SESSION ABORT: -Checks contains unknown id(s): $($unknown -join ', ')"
+        Write-Host "SESSION ABORT: valid id(s) ($($validIds.Count)): $($validIds -join ', ')"
+        exit 2
+    }
+    $script:CheckSubset = New-Object 'System.Collections.Generic.HashSet[string]'
+    foreach ($id in $wanted) { [void]$script:CheckSubset.Add($id) }
 }
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -421,6 +450,7 @@ function Invoke-SessionCheck {
         [Parameter(Mandatory = $true)][scriptblock]$Body,
         [switch]$NoReset
     )
+    if ($null -ne $script:CheckSubset -and -not $script:CheckSubset.Contains($Id)) { return }
     $Context.CurrentCheckId = $Id
     if (-not $NoReset) { Reset-SessionWindows -Context $Context }
 
