@@ -352,7 +352,7 @@ function Invoke-SessionFocus {
     [uint32]$fgPid = 0
     [AeroWinProbe.Native]::GetWindowThreadProcessId($fg, [ref]$fgPid) | Out-Null
     $ours = ($fgPid -eq [uint32]$Context.AppPid)
-    if ($Evidence) { [void]$Evidence.Add("foregroundOurs=$ours") }
+    if ($null -ne $Evidence) { [void]$Evidence.Add("foregroundOurs=$ours") }
     return $ours
 }
 
