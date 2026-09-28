@@ -210,13 +210,17 @@ function Get-AeroScreenCount {
 function Test-AeroVddDevicePresent {
     <#
     .SYNOPSIS
-        True when the root-enumerated MttVDD device exists with Status OK (the -InstanceId form
-        22-SESSION-ENV.md verified live; the upstream community script's -HardwareID parameter
-        does not exist on this machine's PowerShell 5.1 PnpDevice module).
+        True when the MttVDD virtual display device exists with Status OK. The root-enumerated
+        device lands at ROOT\DISPLAY\nnnn (class Display, the INF's "Virtual Display Driver"
+        friendly name) -- the instance path never carries the Root\MttVDD hardware ID, so the
+        device is matched by Display class + INF device name. A 'ROOT\MttVDD\*' instance
+        pattern can never match (the first live install on 2026-09-28 enumerated as
+        ROOT\DISPLAY\0000 and the old check saw nothing while devcon reported success).
     #>
     [CmdletBinding()]
     param()
-    $devices = @(Get-PnpDevice -InstanceId 'ROOT\MttVDD\*' -ErrorAction SilentlyContinue)
+    $devices = @(Get-PnpDevice -Class Display -ErrorAction SilentlyContinue |
+        Where-Object { $_.FriendlyName -eq 'Virtual Display Driver' })
     $ok = @($devices | Where-Object { $_.Status -eq 'OK' })
     return ($ok.Count -gt 0)
 }
@@ -533,6 +537,27 @@ function Install-AeroVirtualDisplay {
 
     if ($Session.IsDryRun) {
         return [pscustomobject]@{ Before = "screens=$beforeCount present=$beforePresent"; After = 'dry run -- nothing installed'; ExitCode = $null; Verified = $null; DryRun = $true }
+    }
+
+    if ($beforePresent) {
+        # Idempotence guard: a second `devcon install` creates a SECOND root-enumerated
+        # instance (ROOT\DISPLAY\nnnn increments -- observed live 2026-09-28 when a retry
+        # produced ROOT\DISPLAY\0000 and \0001 side by side) instead of reusing the first.
+        # When the device is already installed, skip the elevated install and report the
+        # attach state as-is.
+        $attachDeadline = (Get-Date).AddSeconds(10)
+        $attached = ((Get-AeroScreenCount) -gt $beforeCount)
+        while (-not $attached -and (Get-Date) -lt $attachDeadline) {
+            Start-Sleep -Milliseconds 1000
+            $attached = ((Get-AeroScreenCount) -gt $beforeCount)
+        }
+        return [pscustomobject]@{
+            Before = "screens=$beforeCount present=$beforePresent"
+            After = "screens=$(Get-AeroScreenCount) present=$(Test-AeroVddDevicePresent)"
+            ExitCode = 'skipped (device already present)'
+            Verified = $attached
+            DryRun = $false
+        }
     }
 
     $exitCode = Invoke-AeroDevcon -DriverDir $DriverDir -DevconArgs @('install', '.\MttVDD.inf', 'Root\MttVDD')

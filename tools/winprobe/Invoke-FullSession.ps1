@@ -674,8 +674,17 @@ function Invoke-SessionEnvSetup {
         [void]$script:EnvSteps.Add("VirtualDisplay install: before=$($result.Before) after=$($result.After) verified=$($result.Verified)")
     }
 
-    $scaleResult = Set-AeroDisplayScale -Session $Session -Percent 150
-    [void]$script:EnvSteps.Add("DisplayScale 150 on virtual display: before=$($scaleResult.Before) after=$($scaleResult.After) verified=$($scaleResult.Verified)")
+    try {
+        $scaleResult = Set-AeroDisplayScale -Session $Session -Percent 150
+        [void]$script:EnvSteps.Add("DisplayScale 150 on virtual display: before=$($scaleResult.Before) after=$($scaleResult.After) verified=$($scaleResult.Verified)")
+    }
+    catch {
+        # The plan's Task 3 contingency: when the virtual display is installed but never
+        # attaches (no active non-primary monitor), the WIN-04 checks self-record UNCONFIRMED
+        # and every other check continues; a scale failure must not abort the whole session.
+        [void]$script:EnvSteps.Add("DisplayScale 150 FAILED: $($_.Exception.Message) -- virtual display unavailable, WIN-04 checks will be UNCONFIRMED")
+        Write-Host "SESSION ENV-SETUP DISPLAY-SCALE ERROR (continuing): $($_.Exception.Message)"
+    }
 
     if ([string]::IsNullOrWhiteSpace($Installer)) {
         if ($Session.IsDryRun) {
