@@ -302,3 +302,67 @@ check-formula artifacts (corners, floors — see below) and the C2 system-menu f
   (2 UAC confirmations by the maintainer, devcon/registry/module work only). Total
   maintainer hands-off window: ~2 h; hands-off time actually spent moving the mouse/keyboard:
   ~8.8 min.
+
+## Teardown
+
+Plan 22-16 Task 2, 2026-09-28. Maintainer's replies (checkpoint Task 1, recorded verbatim by
+the orchestrator): «1 оставь» — PowerToys KEPT; «2 ок» — the UAC prompt for virtual-display
+driver removal approved. Script: `.captures/22-final/Invoke-Teardown.ps1` (git-ignored).
+No real mouse/keyboard input was sent — the session object authorized environment changes
+only.
+
+### Virtual display driver (removed, verified from machine state)
+
+- **Before:** screens=1 (the virtual display never attached on this machine); the device
+  existed as `ROOT\DISPLAY\0000` (class Display, friendly name "Virtual Display Driver",
+  Status OK) — `vddDeviceCount=1 instances=[ROOT\DISPLAY\0000|OK]`; the `ROOT\MttVDD\*`
+  instance pattern was empty (the instance path never carries the hardware id, 22-15's own
+  presence-check finding); the driver store still held the package as `oem73.inf`
+  (`mttvdd.inf`, Provider MikeTheTech, class Display).
+- **Action:** `Remove-AeroVirtualDisplay` → `devcon.exe remove "Root\MttVDD"` elevated (UAC
+  confirmed by the maintainer, exit code 0), then `pnputil /delete-driver oem73.inf`
+  elevated (exit 0) to remove the store package a device removal leaves behind.
+- **After (verification output):**
+  ```
+  TEARDOWN DRIVER before=screens=1 after=screens=1 present=False exitCode=0 verified=True
+  TEARDOWN AFTER screens=1 vddAnyStatusCount=0 rootMttVddCount=0 autoHideOn=True stuckByte8=0x03 virtualDisplayPresent=False
+  ```
+  Store re-check after pnputil: `mttvdd` occurrences in `pnputil /enum-drivers` = 0;
+  `Get-PnpDevice -InstanceId 'ROOT\MttVDD\*'` returns nothing (the verification command
+  from 22-SESSION-ENV.md); class-Display "Virtual Display Driver" devices of ANY status = 0;
+  `[System.Windows.Forms.Screen]::AllScreens.Count` = 1 (the pre-session value).
+
+### Taskbar auto-hide (verified, no restore needed)
+
+- **Before:** `TaskbarAutoHideOn=True`, `StuckRects3` `Settings` byte 8 = `0x03` — the
+  recorded original from `## Readiness`.
+- **Action:** none needed — 22-15's end-of-run restore held.
+- **After:** `TEARDOWN AUTOHIDE final autoHideOn=True stuckByte8=0x03
+  equalsRecordedOriginal=True restoreWasNeeded=False`.
+
+### PowerToys (KEPT per the maintainer's word)
+
+- **Before:** installed (`%LOCALAPPDATA%\PowerToys\PowerToys.exe` present), running,
+  FancyZones running.
+- **Action:** none — the maintainer answered «1 оставь» (keep); removal was never attempted.
+- **After:** `TEARDOWN POWERTOYS decision=KEPT per maintainer «1 оставь» installed=True
+  running=True exe=True`.
+
+### Session residue beyond the plan's checklist (named, not silently left)
+
+- **DisplayConfig PowerShell module 1.1.1 (CurrentUser)** — installed during the 22-15
+  driver repair; the pre-session state is recorded as absent in `## Minutes estimate`
+  ("confirmed absent today"). **Removed** this teardown (`Uninstall-Module DisplayConfig`,
+  re-checked absent). The pre-state is known, so restoring it is not a guess.
+- **PSGallery `InstallationPolicy=Trusted`** — also set during the 22-15 repair. The
+  pre-session value was never recorded, so reverting it to Untrusted would be a guess;
+  recorded here instead of silently changed. Effect: future `Install-Module` from PSGallery
+  does not prompt. Harmless per-user profile setting; the maintainer can revert with
+  `Set-PSRepository PSGallery -InstallationPolicy Untrusted` if they want the prompt back.
+- **Scratchpad** `C:\Users\1\AppData\Local\Temp\aero-22-session\` (installers, zips,
+  `driver-flat`, diag logs) — deleted after the removal succeeded, existence re-checked
+  (gone). `git status --porcelain` carries no scratch or capture path.
+
+Machine state = pre-session state except PowerToys (kept on the maintainer's word) and the
+PSGallery trust flag (named above). VER-12's end-of-session clauses are satisfied: driver
+removed (verified), auto-hide on (verified), PowerToys per the maintainer's word (kept).
