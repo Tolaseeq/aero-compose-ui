@@ -1417,12 +1417,39 @@ function Invoke-FullPassChecks {
             if ($ctx.Session.IsDryRun) {
                 Invoke-AeroDrag -Session $ctx.Session -FromX $midX -FromY $midY -ToX ($midX + 100) -ToY $midY -Steps 10 -DurationMs 400 -HoldMs 200
                 [void]$evidence.Add('planned: drag shared border at (' + $midX + ',' + $midY + ') by +100px; expect main.Right and narrow.Left both +100±8')
+                [void]$evidence.Add('planned: verify BOTH pre-snap rects equal the rcWork halves before dragging (22-24: the recorded FAIL dragged plain client area because the chords had snapped nothing)')
                 return New-SessionOutcome 'UNCONFIRMED' 'dry run -- no real keys/drag performed'
             }
             Start-Sleep -Milliseconds 800
             $mainBefore = Get-SessionRect -Hwnd $ctx.MainHwnd
             $narrowBefore = Get-SessionRect -Hwnd $ctx.NarrowHwnd
             [void]$evidence.Add("mainBefore=$(ConvertTo-SessionRectString -Rect $mainBefore) narrowBefore=$(ConvertTo-SessionRectString -Rect $narrowBefore)")
+
+            # 22-24 (SNAP-06): the S06 FAIL recorded on both JVMs was this check dragging a
+            # point that was plain client area -- its own chords had snapped nothing, so
+            # mainBefore/narrowBefore were the floating rects and the drag sat ~600px inside
+            # main. A shared border only exists when BOTH windows sit on the rcWork halves;
+            # verify that state before dragging and fail honestly (with per-window
+            # rect/IsZoomed/placement evidence) when a chord did not land. The per-window
+            # snap-state sample also instruments the re-verification session: the mined
+            # record shows an OS half-snap lands with IsZoomed=false and reporter placement
+            # Floating on this machine, so "snap landed but border inert" stays
+            # distinguishable from "chord never landed".
+            $repMainPre = Get-WinProbeReporterState -LogPath $ctx.LogPath -Label 'main'
+            $repNarrowPre = Get-WinProbeReporterState -LogPath $ctx.LogPath -Label 'narrow'
+            $zoomedMainPre = [bool][AeroWinProbe.Native]::IsZoomed($ctx.MainHwnd)
+            $zoomedNarrowPre = [bool][AeroWinProbe.Native]::IsZoomed($ctx.NarrowHwnd)
+            [void]$evidence.Add("preDragState main=$(ConvertTo-SessionRectString -Rect $mainBefore) zoomed=$zoomedMainPre placement=$(Get-ReporterField $repMainPre 'placement') narrow=$(ConvertTo-SessionRectString -Rect $narrowBefore) zoomed=$zoomedNarrowPre placement=$(Get-ReporterField $repNarrowPre 'placement')")
+            $expectedLeftHalf = New-SessionWRect -Left $work.Left -Top $work.Top -Right $midX -Bottom $work.Bottom
+            $expectedRightHalf = New-SessionWRect -Left $midX -Top $work.Top -Right $work.Right -Bottom $work.Bottom
+            $mainSnapped = Test-SessionRectMatch -Actual $mainBefore -Expected $expectedLeftHalf -Tolerance 8
+            $narrowSnapped = Test-SessionRectMatch -Actual $narrowBefore -Expected $expectedRightHalf -Tolerance 8
+            [void]$evidence.Add("preSnap mainSnapped=$mainSnapped narrowSnapped=$narrowSnapped (expected halves $(ConvertTo-SessionRectString -Rect $expectedLeftHalf) and $(ConvertTo-SessionRectString -Rect $expectedRightHalf))")
+            if (-not $mainSnapped -or -not $narrowSnapped) {
+                Add-SessionPlacementSample -Context $ctx -Hwnd $ctx.MainHwnd -Label 'S06-SHARED-BORDER'
+                Add-SessionPlacementSample -Context $ctx -Hwnd $ctx.NarrowHwnd -Label 'S06-SHARED-BORDER'
+                return New-SessionOutcome 'FAIL' "pre-snap did not land (mainSnapped=$mainSnapped narrowSnapped=$narrowSnapped); border drag skipped -- no shared border existed"
+            }
             Invoke-AeroDrag -Session $ctx.Session -FromX $midX -FromY $midY -ToX ($midX + 100) -ToY $midY -Steps 10 -DurationMs 400 -HoldMs 200
             Start-Sleep -Milliseconds 600
             $mainAfter = Get-SessionRect -Hwnd $ctx.MainHwnd
