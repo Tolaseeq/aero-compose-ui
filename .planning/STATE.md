@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: Native Window Behavior
 status: executing
-stopped_at: Gap-closure wave 3/5 done (22-24 complete: S06 pre-snap guard, border answers proven OS-identical, no library change); next: wave 4 = 22-25 supervised re-verification session (real input)
+stopped_at: Gap-closure wave 4/5 done (22-25 re-verification complete: press parity PROVEN JDK, JBR menu/double-click/chords proven, JBR S01 drag drift narrowed, VS Code foreground race blocked several rows — env restored); next: wave 5 = 22-26 docs+flips from verdict table
 last_updated: "2026-09-28T13:14:30.245Z"
 last_activity: 2026-09-25 -- Phase 22 execution started
 progress:
