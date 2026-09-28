@@ -168,7 +168,7 @@ Details: `.planning/milestones/v3.1-ROADMAP.md` · Requirements: `.planning/mile
   5. Список «не подтверждено» явно называет всё, что не проверено, включая поведение на Windows 10 — не выдаётся за пройденное
   6. `v3.2.0` опубликован и резолвится на JitPack (`com.github.Tolaseeq:aero-compose-ui:v3.2.0`); README и KDoc обновлены, оговорка «Aero Snap limitation» снята; все существующие тесты зелёные под залоченным (и при необходимости поднятым именованным коммитом) числом
 
-**Plans:** 18/19 plans executed
+**Plans:** 18/26 plans executed — 19 original plans (18 executed) + 7 gap-closure plans 22-20..22-26 added 2026-09-28 after verification found 5 blocking gaps + 5 check-formula artifacts (maintainer decision: close gaps BEFORE the release)
 
 Plans:
 **Wave 1**
@@ -236,7 +236,31 @@ Plans:
 
 **Wave 16** *(blocked on Wave 15 completion)*
 
-- [ ] 22-18-PLAN.md — Release 3.2.0: version bump, verify tag on JitPack (D-06), DEP-01 on the published POM, maintainer's choice, real tag (REL-08)
+- [ ] 22-18-PLAN.md — Release 3.2.0: version bump, verify tag on JitPack (D-06), DEP-01 on the published POM, maintainer's choice, real tag (REL-08). *Executes AFTER the gap-closure round (22-20..22-26) per the maintainer's 2026-09-28 decision, despite its original wave number*
+
+**Gap-closure waves 17–21** *(added 2026-09-28 from 22-VERIFICATION.md: 5 blocking gaps + 5 check-formula artifacts; `gap_closure: true` on every plan)*
+
+**Wave 17**
+
+- [ ] 22-20-PLAN.md — SNAP-05 + SNAP-04 (blockers #2, #1): hand-declared GetSystemMenu/TrackPopupMenu + WM_SYSCOMMAND(SC_KEYMENU) menu handling; WM_NCLBUTTONDBLCLK at HTCAPTION → DefWindowProc; headless posted-message proofs + routing guards (VER-14)
+- [ ] 22-21-PLAN.md — JBR drift (blocker #5): headless JDK-vs-JBR probe battery on the current build, mined 22-15 traces, mechanism verdict, and the folded JBR-only real-input confirmation spec for 22-25
+- [ ] 22-22-PLAN.md — Check-formula fixes (W02 corner second axis, W02 floor height, S07 priority-grid geometry from applied-layouts.json, W06 ncdestroy trace window, S03-WIN-DOWN deterministic precondition) + a -Checks subset parameter for the short re-verification session
+
+**Wave 18** *(blocked on Wave 17 completion)*
+
+- [ ] 22-23-PLAN.md — BTN-01 press-fill parity (blocker #4): headless diagnosis (press origin / emission timing vs C5's FlatLaf re-injection fallback), fix on the evidence-selected route, proof pack, guards
+
+**Wave 19** *(blocked on Wave 18 completion)*
+
+- [ ] 22-24-PLAN.md — SNAP-06 shared-border resize (blocker #3): mine the session NCCALCSIZE traces, headless border-geometry diagnosis (ownership, band coverage, the snapped-IsZoomed clamp suspect), fix per verdict, V11 regression battery
+
+**Wave 20** *(blocked on Waves 17–19 completion)*
+
+- [ ] 22-25-PLAN.md — Short re-verification session on both JVMs (affected checks only + the JBR drift rows + formula-fixed rows; headless V11 sweep first; NO virtual display — W04 stays UNCONFIRMED; PowerToys kept; honest measured-time estimate) — checkpoint:human-action, VER-12 protocol
+
+**Wave 21** *(blocked on Wave 20 completion)*
+
+- [ ] 22-26-PLAN.md — Post-fix README/KDoc from the new PASS rows (REL-06/07 update), requirement checkbox flips proven by the re-verification, 22-HANDOFF/22-UNCONFIRMED/22-NOTES consolidation; REL-08 stays with 22-18
 
 **UI hint**: yes
 
@@ -249,7 +273,7 @@ Plans:
 | 3. Composite + Navigation | v1.0 | 8/8 | Complete | 2026-04-28 |
 | 4. AeroIcons Foundation | v1.1 | 2/2 | Complete | 2026-04-29 |
 | 5. Component Migrations + Dep Removal | v1.1 | 5/5 | Complete | 2026-04-29 |
-| 6. Showcase IconsSection | v1.1 | 3/3 | Complete | 2026-04-29 |
+| 6. Showcase IconsSection | v1.1 | 3/3 | Complete | 2026-04-30 |
 | 7. Shared Internal Primitives | v2.0 | 3/3 | Complete | 2026-06-17 |
 | 8. Pickers | v2.0 | 6/6 | Complete | 2026-06-18 |
 | 9. Data | v2.0 | 3/3 | Complete | 2026-06-18 |
@@ -266,7 +290,7 @@ Plans:
 | 19. Selectors + Lists | v3.0 | 12/12 | Complete | 2026-07-28 |
 | 20. Verification | v3.0 | 9/9 | Complete | 2026-07-29 |
 | 21. Migration + Release 3.1.0 | v3.1 | 14/14 | Complete | 2026-09-24 |
-| 22. Native Window Behavior + Release 3.2.0 | v3.2 | 18/19 | In Progress|  |
+| 22. Native Window Behavior + Release 3.2.0 | v3.2 | 18/26 | In Progress|  |
 
 ## Next Milestone
 
@@ -274,4 +298,4 @@ Not yet scoped. Candidate goals are tracked in `.planning/PROJECT.md` § "Next M
 
 ---
 
-*Roadmap last updated: 2026-09-25 — v3.2 Native Window Behavior roadmapped (one phase, 22 — one goal = one phase per the maintainer's rule; 27/27 requirements mapped, plans TBD). Previous: 2026-09-24 — v3.1 Dependency Refresh + Hot Reload MCP shipped and archived (Phase 21, 14 plans, 24/24 requirements, `v3.1.0` on JitPack).*
+*Roadmap last updated: 2026-09-28 — Phase 22 gap-closure round planned (plans 22-20..22-26, waves 17-21, from 22-VERIFICATION.md; the 22-18 release executes after gap closure per the maintainer's decision). Previous: 2026-09-25 — v3.2 Native Window Behavior roadmapped (one phase, 22 — one goal = one phase per the maintainer's rule; 27/27 requirements mapped, plans TBD).*
