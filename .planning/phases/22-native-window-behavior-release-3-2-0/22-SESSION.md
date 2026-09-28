@@ -439,3 +439,152 @@ locked 596, V11 18/18 + 8/8 with a clean RED control on the gap-closure build, b
 dry-run invocations of the 22-22 contract at exit 0 with exactly the selected Ids, the
 environment recorded read-only, and a measured 7-minute estimate. The session can start the
 moment consent arrives.
+
+## Gap-closure re-verification (22-25)
+
+Consent: maintainer's «ок» @ 2026-09-28 (chat, in response to the presented warning);
+`-AuthorizedBy "maintainer ok via chat 2026-09-28"` on both passes. JDK pass started
+17:33:21Z, JBR pass 17:48:31Z–17:50:37Z. Evidence: `.captures/22-reverify/jdk/` (23 Ids,
+session mechanics 124.1 s) and `.captures/22-reverify/jbr/` (32 Ids, 124.9 s) with console
+logs `jdk-console.log` / `jbr-console.log` alongside; per-pass `results.json`,
+`summary.json`, `frames/`, `logs/`. The JDK-side wall-clock was dominated by a cold Gradle
+launch (~9 min before the pass window) — the readiness estimate's mechanics term was measured
+on a warm daemon; the real-input core itself matched the estimate.
+
+**Totals: JDK pass=10 fail=12 unconfirmed=1 (23). JBR pass=13 fail=18 unconfirmed=1 (32).**
+
+### Pass tables (observed rows)
+
+| Id | JDK 21 | JBR 21 |
+|----|--------|--------|
+| S01-LEFT-HALF | not in JDK subset | FAIL — drag caption (891,156)->(1,540); rect unchanged 360,140,1560,940 |
+| S01-RIGHT-HALF | — | FAIL — rect unchanged |
+| S01-QUARTER-TL | — | FAIL — rect unchanged |
+| S01-TOP-MAXIMIZE | — | FAIL — isZoomed=False placement=Floating |
+| S01-DRAG-AWAY-RESTORE | — | PASS — restored=1200x800 (vacuous: TOP-MAXIMIZE had failed, window never left floating) |
+| S02-FLYOUT | UNCONFIRMED — reference control FOUND (signal=Event 708 ms) but check threw: `The property 'EventName' cannot be found` | UNCONFIRMED — same error (reference found, 652 ms) |
+| S03-WIN-LEFT | not in JDK subset | FAIL — foregroundOurs=False (no retry wired); chord inert |
+| S03-WIN-RIGHT | — | PASS — foregroundOurs=True; rect=960,0,1920,1080 |
+| S03-WIN-UP | — | PASS — foregroundOurs=True; isZoomed=True placement=Maximized |
+| S03-WIN-DOWN | FAIL — foregroundOurs=False; zoomedPrecondition=True, no restore, no minimize | PASS — foregroundOurs=True; restore + minimize both landed |
+| S04-DBLCLICK-MAX | FAIL — isZoomed=False (floating start, reset verified) | PASS — isZoomed=True |
+| S04-DBLCLICK-RESTORE | PASS — 1200x800 (vacuous: MAX had failed) | PASS — restored 1200x800 (real: MAX had passed) |
+| S05-ALTSPACE-MENU | FAIL — foregroundOurs=False; no #32768 of our process | PASS — foregroundOurs=True; #32768-of-our-process=True |
+| S05-MOVE | FAIL — foregroundOurs=False; dx=0 | FAIL — foregroundOurs=True, menu open; moved dx=0 dy=0 |
+| S05-SIZE | FAIL — foregroundOurs=False; 0x0 | FAIL — menu open; resized 0x0 (window left 160x28 at the S05-RESTORE sample — state drift during the attempt) |
+| S05-MINIMIZE | FAIL — foregroundOurs=False | FAIL — menu open; isIconic=False |
+| S05-MAXIMIZE | FAIL — foregroundOurs=False | FAIL — menu open; isZoomed=False |
+| S05-RESTORE | PASS — vacuous (window already floating) | FAIL — precondition broken (MAX failed); sample size=160x28 |
+| S05-CLOSE-VS-ALTF4 | FAIL — both halves blocked (menuClose=False, altF4Event=False) | FAIL — menu-close inert; Alt+F4 half PROVEN: altF4Event=True, narrow destroyed |
+| S06-SHARED-BORDER | FAIL — preSnap mainSnapped=True narrowSnapped=False (narrow focus foregroundOurs=False) | FAIL — same: narrow pre-snap chord foreground-blocked |
+| S07-FANCYZONES | FAIL — foreground False, reverify ours=False after one retry; drag did not snap; zonesFound=True (priority-grid, 3 zones, spacing 16) | FAIL — same shape after the one retry |
+| W02-CORNER-TL | FAIL — shape=Other, deltas 0x0 | FAIL — shape=Arrow, deltas 0x0 |
+| W02-CORNER-TR | PASS — SizeNESW, 60x60 | PASS — SizeNESW, 60x60 |
+| W02-CORNER-BL | PASS — SizeNESW, 60x60 | PASS — SizeNESW, 60x60 |
+| W02-CORNER-BR | PASS — SizeNWSE, 60x60 | PASS — SizeNWSE, 60x60 |
+| W02-MAIN-FLOOR | PASS — width=320 exact, height 800 unchanged | PASS — same |
+| W02-NARROW-FLOOR | PASS — width=260 exact (D-01), height 480 unchanged | PASS — same |
+| W05-PLACEMENT | not in JDK subset | FAIL — placementSamples=16 mismatches=0; float1-vs-float2 diff=0 (22-15 instability NOT reproduced); float-vs-maximized diff=0 (glyph-switch capture flat this run) |
+| W06-CLOSE-DURING-DRAG | FAIL — closeEvent=True, mainAlive, v11=0, hs_err=0; ncdestroy=False within the 10 s budget | PASS — closeEvent=True ncdestroy=True; mainAlive; v11=0; hs_err=0 |
+| B01-HOVER-FRAME | PASS — hover parity 0; hover-vs-rest 144 | FAIL — all diffs 0 (hover visual not observed in frames) |
+| B01-PRESS-FRAME | PASS — press parity 0; press-vs-rest 144 | FAIL — all diffs 0 (press visual not observed) |
+| B01-CLICK | PASS — foregroundOurs=True; toggled Maximized/Floating | FAIL — foregroundOurs=False; both clicks zoomed=False |
+
+### The environment anomaly (dominant, both JVMs, intermittent)
+
+A foreign window — VS Code, pid 12752, an elevated `[Administrator]` window, the same pid
+the 22-21 battery recorded as the external foreground holder — held or reclaimed the
+foreground while `Invoke-SessionFocus`'s real caption click + 350 ms check ran
+(`foregroundOurs=False`). The JDK pass was affected through its whole middle (S03-DOWN
+through S07); JBR intermittently (S03-LEFT, S06 narrow focus, S07, B01-CLICK). Every
+foreground-gated gesture inside those windows failed as a direct consequence: the chords,
+Alt+Space, menu navigation and Alt+F4 were delivered to the foreground holder, not to the
+showcase window. Two consequences recorded honestly:
+
+- The blocked rows are NOT product verdicts for the fixed behaviors; they are
+  environment-blocked outcomes with the foreground line attached.
+- Stray input reached the foreground holder (Alt+Space/arrows/Alt+F4, caption clicks and
+  drags at y=156 — editor-area drags, not VS Code's title bar). VS Code remained running and
+  foreground after both passes (probed); the maintainer should check their editor/chat for
+  stray characters all the same.
+
+### Differences against the 22-15 rows
+
+- **S03-WIN-DOWN JBR: FAIL -> PASS** (with foreground=True; restore + minimize both
+  landing) — the 22-15 JBR chord inertness was foreground-shaped, as 22-21's leading
+  explanation predicted. S03-RIGHT/UP JBR PASS with foreground=True; LEFT failed on a
+  foreground fluke the script did not retry (see harness gaps).
+- **S04-DBLCLICK-MAX: FAIL/FAIL -> FAIL/PASS** — the 22-20 fix fires on JBR (real
+  MAX+RESTORE pair) but did NOT fire on JDK this run from a verified floating reset. A
+  JVM-differential the record cannot explain.
+- **S05-ALTSPACE-MENU JBR: FAIL -> PASS** — the 22-23 hand-declared system menu opens
+  (#32768 of our pid, foreground=True). The S05 failure MODE changed on JBR: was
+  "menu never opens", now "menu opens, command navigation inert" (Move/Size/Minimize/
+  Maximize/Close all produce no state change with the menu open and the window foreground).
+  The S05-SIZE attempt left the window at 160x28 (partial engagement evidence).
+- **W02 corners/floors: FAIL (formula artifacts) -> PASS** on TR/BL/BR and both floors on
+  BOTH JVMs — the 22-22 formula fixes work. W02-CORNER-TL is a NEW anomaly (both JVMs,
+  zero deltas, shape Arrow/Other — the first corner runs immediately after S07).
+- **W06: FAIL/FAIL -> FAIL/PASS** — ncdestroy IS emitted on JBR (the 22-22 open question
+  decided for JBR: not pipe-lag); JDK did not emit within the 10 s budget despite the close
+  path itself being green (closeEvent, alive, v11=0, hs_err=0).
+- **B01-PRESS-FRAME: FAIL/FAIL -> PASS/FAIL** — the press-parity fix (C5) is PROVEN on JDK
+  (parity 0, press paints 144 px). The JBR FAIL is the zero-diff cluster (see below), not a
+  parity difference.
+- **S07 JBR: FAIL(proven snap, formula) -> FAIL(no snap, foreground)** — 22-15's JBR row
+  had proven the snap itself; today's drag never started foreground-ours even after the one
+  retry, so no snap occurred. Weaker evidence day for S07, same verdict letter.
+- **W05 JBR: FAIL(crop instability 616 px) -> FAIL(glyph-switch flat)** — the 22-15
+  floating-crop instability did NOT reproduce (float1-vs-float2 = 0; placement 16/16);
+  instead the float-vs-maximized glyph-switch capture showed no difference this run.
+- **S01 JBR: FAIL -> FAIL** — the caption-drag inertness reproduced, now with stronger
+  discrimination: on the same run, a double-click at the same caption point (891,156)
+  maximized the window (S04 PASS), chords worked with foreground (S03 RIGHT/UP/DOWN PASS),
+  and edge drags worked (W02) — so the drift is not hit-test, not foreground-per-se, and
+  not click delivery; the drag modal loop specifically does not move the JBR window.
+
+### The JBR tail cluster (B01 triple, zero diffs)
+
+B01-HOVER, B01-PRESS and B01-CLICK ran consecutively at the very end of the JBR pass and
+all three show the same shape: nothing changed in the captured frames (hover/press diffs 0)
+and the maximize-button clicks did not toggle (with the focus click reporting
+foregroundOurs=False). On JDK the same three rows PASS/PASS/PASS with
+foregroundOurs=True. The cluster is consistent with the maximize-button region not being
+interactive/visible at that moment on JBR (foreign-window occlusion or activation state);
+it is NOT a press-parity difference (parity is proven on JDK, and a parity FAIL would show
+nonzero press frames differing between max and min, not zero-everything).
+
+### Harness gaps found (recorded, not fixed in-session)
+
+1. `S02-FLYOUT` throws while formatting evidence — `$obs2Evidence.Events.EventName` fails
+   when the event collection has an unexpected shape ("The property 'EventName' cannot be
+   found"), so the check lands UNCONFIRMED despite the reference control matching
+   (signal=Event, 708/652 ms). The flyout-gate blast-radius guard is therefore unproven
+   today, on both JVMs, by harness error rather than by observation.
+2. The 22-21 retry rule (one re-focus + one chord repeat before any FAIL on the S01/S03
+   rows) is NOT wired into `Invoke-SessionHotkeyCheck` — it single-focuses and judges. Only
+   S07 carries a retry ("foregroundReverify ours=False after one retry"). The JBR
+   S03-WIN-LEFT FAIL was judged without the mandated retry; S03-WIN-RIGHT passing with
+   foreground=True a second later shows the fluke shape.
+3. The JDK pass's exit code was not recorded (the wrapper's follow-up echo was lost when
+   the 600 s foreground timeout moved the command to background); completion itself is
+   fully evidenced (totals, env-after, summary.json).
+
+### Maintainer observations
+
+None beyond the consent: the maintainer's only input in the window was «ок» (the plan's
+optional observations — hover, flyout, zone click, taskbar group — were not offered as
+separate prompts inside the hands-off window; recorded as declined-by-protocol, not as
+negative observations).
+
+### Teardown (verified)
+
+- `StuckRects3` byte 8 = **0x03** after both passes — auto-hide unchanged ON, never
+  toggled (read-only checks before/after; `EnvUnchanged=True` in both summaries).
+- Cursor restored (JDK 373,777 -> 373,777; JBR 269,728 -> 269,728; independent probe after
+  the session: 269,728).
+- Zero leftover `com.mordred.showcase.MainKt` JVMs (independent probe after the session:
+  0; both passes PID-tracked).
+- screens=1, primary 1920x1080 @ 96 DPI; PowerToys installed+running, FancyZones running
+  (`Get-AeroEnvState`); VirtualDisplayPresent=False; no driver step of any kind ran; no
+  UAC occurred.
