@@ -120,4 +120,7 @@ None. Both mechanisms are fully wired (declarations → proc branches → pure s
 
 None. The new surface matches the plan's threat model: T-22-20-01 (only SC_KEYMENU gains handling; disposition is a masked pure function under test), T-22-20-02 (TrackPopupMenu nested loop inside dispatchSafely with passthrough fallback), T-22-20-03 (PID-tracked teardown, transcript-verified `remainingMainKt=0`). No security-relevant surface beyond the registered threats.
 
-## Self-Check: PENDING
+## Self-Check: PASSED
+
+- All 10 created/modified files present (5 tracked source/test/build files, SUMMARY.md, 4 worktree-local .captures/22-gapmenu evidence files).
+- All 4 commits present in order on the branch: 9fc02d7 → bf0d7b4 → 2336728 → 6deae61 (git log verified).
