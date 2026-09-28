@@ -266,7 +266,7 @@ Plans:
 | 19. Selectors + Lists | v3.0 | 12/12 | Complete | 2026-07-28 |
 | 20. Verification | v3.0 | 9/9 | Complete | 2026-07-29 |
 | 21. Migration + Release 3.1.0 | v3.1 | 14/14 | Complete | 2026-09-24 |
-| 22. Native Window Behavior + Release 3.2.0 | v3.2 | 16/19 | In Progress|  |
+| 22. Native Window Behavior + Release 3.2.0 | v3.2 | 17/19 | In Progress|  |
 
 ## Next Milestone
 
