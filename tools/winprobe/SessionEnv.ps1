@@ -260,6 +260,123 @@ function Get-AeroEnvState {
     }
 }
 
+function Get-AeroPriorityGridZones {
+    <#
+    .SYNOPSIS
+        PowerToys PriorityGrid zone rectangles (X/Y/Width/Height, screen px) for a work rect --
+        the geometry SNAP-07 compares against.
+    .DESCRIPTION
+        Mirrors LayoutConfigurator.cpp of PowerToys v0.101.2362.0 (byte-identical on main at the
+        time of writing): zone counts 1..11 use predefined percent grids, larger counts fall back
+        to the plain grid derivation. Percent boundaries are integer-scaled (C_MULTIPLIER 10000,
+        truncated like C++ integer division) and every zone gets the full spacing inset on outer
+        edges, half the spacing on inner edges. For the applied layout here (zone-count 3 on a
+        1920x1032 work area, spacing 16) this yields 16,16,472,1016 / 488,16,1432,1016 /
+        1448,16,1904,1016 -- and the 22-15 recorded snap rect 16,16,1432,1016 is exactly the
+        union of the first two zones, what FancyZones snaps to when the drop point sits within
+        the sensitivity radius of both.
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)]$Work, [int]$ZoneCount = 0, [int]$Spacing = 0)
+
+    $multiplier = 10000
+    $rows = 0
+    $cols = 0
+    $rowsPercents = @()
+    $colsPercents = @()
+    $cellMap = @()
+
+    if ($ZoneCount -ge 1 -and $ZoneCount -le 11) {
+        switch ($ZoneCount) {
+            1  { $rows = 1; $cols = 1; $rowsPercents = @(10000); $colsPercents = @(10000); $cellMap = , @(0) }
+            2  { $rows = 1; $cols = 2; $rowsPercents = @(10000); $colsPercents = @(6667, 3333); $cellMap = , @(0, 1) }
+            3  { $rows = 1; $cols = 3; $rowsPercents = @(10000); $colsPercents = @(2500, 5000, 2500); $cellMap = , @(0, 1, 2) }
+            4  { $rows = 2; $cols = 3; $rowsPercents = @(5000, 5000); $colsPercents = @(2500, 5000, 2500); $cellMap = @(@(0, 1, 2), @(0, 1, 3)) }
+            5  { $rows = 2; $cols = 3; $rowsPercents = @(5000, 5000); $colsPercents = @(2500, 5000, 2500); $cellMap = @(@(0, 1, 2), @(3, 1, 4)) }
+            6  { $rows = 3; $cols = 3; $rowsPercents = @(3333, 3334, 3333); $colsPercents = @(2500, 5000, 2500); $cellMap = @(@(0, 1, 2), @(0, 1, 3), @(4, 1, 5)) }
+            7  { $rows = 3; $cols = 3; $rowsPercents = @(3333, 3334, 3333); $colsPercents = @(2500, 5000, 2500); $cellMap = @(@(0, 1, 2), @(3, 1, 4), @(5, 1, 6)) }
+            8  { $rows = 3; $cols = 4; $rowsPercents = @(3333, 3334, 3333); $colsPercents = @(2500, 2500, 2500, 2500); $cellMap = @(@(0, 1, 2, 3), @(4, 1, 2, 5), @(6, 1, 2, 7)) }
+            9  { $rows = 3; $cols = 4; $rowsPercents = @(3333, 3334, 3333); $colsPercents = @(2500, 2500, 2500, 2500); $cellMap = @(@(0, 1, 2, 3), @(4, 1, 2, 5), @(6, 1, 7, 8)) }
+            10 { $rows = 3; $cols = 4; $rowsPercents = @(3333, 3334, 3333); $colsPercents = @(2500, 2500, 2500, 2500); $cellMap = @(@(0, 1, 2, 3), @(4, 1, 5, 6), @(7, 1, 8, 9)) }
+            11 { $rows = 3; $cols = 4; $rowsPercents = @(3333, 3334, 3333); $colsPercents = @(2500, 2500, 2500, 2500); $cellMap = @(@(0, 1, 2, 3), @(4, 1, 5, 6), @(7, 8, 9, 10)) }
+        }
+    }
+    else {
+        # LayoutConfigurator::Grid for counts past the predefined table: rows = the largest r
+        # with zoneCount / r >= r, columns = ceil(zoneCount / rows), equal percents, and the last
+        # zone index repeating so it spans every remaining cell.
+        $rows = 1
+        while ([int]($ZoneCount / $rows) -ge $rows) { $rows++ }
+        $rows--
+        $cols = [int]($ZoneCount / $rows)
+        if (($ZoneCount % $rows) -ne 0) { $cols++ }
+        for ($r = 0; $r -lt $rows; $r++) {
+            $rowsPercents += [int]($multiplier * ($r + 1) / $rows) - [int]($multiplier * $r / $rows)
+        }
+        for ($c = 0; $c -lt $cols; $c++) {
+            $colsPercents += [int]($multiplier * ($c + 1) / $cols) - [int]($multiplier * $c / $cols)
+        }
+        $index = 0
+        for ($r = 0; $r -lt $rows; $r++) {
+            $rowCells = @()
+            for ($c = 0; $c -lt $cols; $c++) {
+                $rowCells += $index
+                $index++
+                if ($index -eq $ZoneCount) { $index-- }
+            }
+            $cellMap += , $rowCells
+        }
+    }
+
+    $totalW = $Work.Right - $Work.Left
+    $totalH = $Work.Bottom - $Work.Top
+    $rowInfo = @()
+    $totalPct = 0
+    for ($r = 0; $r -lt $rows; $r++) {
+        $start = [int]($totalPct * $totalH / $multiplier)
+        $totalPct += $rowsPercents[$r]
+        $end = [int]($totalPct * $totalH / $multiplier)
+        $rowInfo += , @($start, $end)
+    }
+    $colInfo = @()
+    $totalPct = 0
+    for ($c = 0; $c -lt $cols; $c++) {
+        $start = [int]($totalPct * $totalW / $multiplier)
+        $totalPct += $colsPercents[$c]
+        $end = [int]($totalPct * $totalW / $multiplier)
+        $colInfo += , @($start, $end)
+    }
+
+    $halfSpacing = [int]($Spacing / 2)
+    $zones = New-Object System.Collections.Generic.List[object]
+    for ($r = 0; $r -lt $rows; $r++) {
+        for ($c = 0; $c -lt $cols; $c++) {
+            $i = $cellMap[$r][$c]
+            $topLeftOfSpan = (($r -eq 0) -or ($cellMap[$r - 1][$c] -ne $i)) -and (($c -eq 0) -or ($cellMap[$r][$c - 1] -ne $i))
+            if (-not $topLeftOfSpan) { continue }
+            $maxRow = $r
+            while ((($maxRow + 1) -lt $rows) -and ($cellMap[$maxRow + 1][$c] -eq $i)) { $maxRow++ }
+            $maxCol = $c
+            while ((($maxCol + 1) -lt $cols) -and ($cellMap[$r][$maxCol + 1] -eq $i)) { $maxCol++ }
+            $left = $colInfo[$c][0]
+            $top = $rowInfo[$r][0]
+            $right = $colInfo[$maxCol][1]
+            $bottom = $rowInfo[$maxRow][1]
+            if ($r -eq 0) { $top += $Spacing } else { $top += $halfSpacing }
+            if ($maxRow -eq $rows - 1) { $bottom -= $Spacing } else { $bottom -= $halfSpacing }
+            if ($c -eq 0) { $left += $Spacing } else { $left += $halfSpacing }
+            if ($maxCol -eq $cols - 1) { $right -= $Spacing } else { $right -= $halfSpacing }
+            [void]$zones.Add([pscustomobject]@{
+                X      = [int]($Work.Left + $left)
+                Y      = [int]($Work.Top + $top)
+                Width  = [int]($right - $left)
+                Height = [int]($bottom - $top)
+            })
+        }
+    }
+    return $zones
+}
+
 function Get-AeroFancyZonesZones {
     <#
     .SYNOPSIS
@@ -336,6 +453,21 @@ function Get-AeroFancyZonesZones {
                     Width = [int]$z.Width
                     Height = [int]$z.Height
                 })
+            }
+        }
+        elseif ($layoutType -eq 'priority-grid') {
+            # The applied per-user layout type: PowerToys computes these zones from the work rect,
+            # the zone count and the spacing (predefined percent grids) -- not the 2x2 heuristic
+            # that produced the wrong 22-15 expectation.
+            $zoneCount = 0
+            if ($layout.PSObject.Properties['zone-count'] -and $layout.'zone-count') { $zoneCount = [int]$layout.'zone-count' }
+            $showSpacing = $true
+            if ($layout.PSObject.Properties['show-spacing']) { $showSpacing = [bool]$layout.'show-spacing' }
+            $spacing = 0
+            if ($showSpacing -and $layout.PSObject.Properties['spacing'] -and $layout.spacing) { $spacing = [int]$layout.spacing }
+            $derivation = "priority-grid zone-count=$zoneCount spacing=$spacing (PowerToys predefined percent model)"
+            foreach ($z in (Get-AeroPriorityGridZones -Work $work -ZoneCount $zoneCount -Spacing $spacing)) {
+                [void]$zones.Add($z)
             }
         }
         else {
