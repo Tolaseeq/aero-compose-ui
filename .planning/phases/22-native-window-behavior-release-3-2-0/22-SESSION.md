@@ -366,3 +366,76 @@ only.
 Machine state = pre-session state except PowerToys (kept on the maintainer's word) and the
 PSGallery trust flag (named above). VER-12's end-of-session clauses are satisfied: driver
 removed (verified), auto-hide on (verified), PowerToys per the maintainer's word (kept).
+
+## Gap-closure re-verification readiness (22-25 Task 1)
+
+Recorded 2026-09-28, before any consent was asked. Everything below ran headless: no real
+mouse/keyboard input, no installs, no settings changes. Evidence: `.captures/22-reverify/`
+(readiness.log + per-run transcripts; mirrored to the main checkout at
+`C:\1A_WORK\ui_lib\.captures\22-reverify\`). Worktree base 0a9f74c — all five gap-closure
+plans (22-20..22-24) included.
+
+### Builds
+
+- `./gradlew :showcase:classes --console=plain` → BUILD SUCCESSFUL.
+- Full unfiltered `./gradlew :library:test --rerun --console=plain` → BUILD SUCCESSFUL,
+  `AERO_TEST_COUNT total=596 skipped=0 expected=596 expectedSkipped=0 filtered=false` — the
+  locked count raised by 22-20 holds on the gap-closure build.
+
+### V11 regression sweep (capture-mode launch, both windows, no -SkipMaximize)
+
+- GREEN (native path): `V11 SUMMARY main pass=18 fail=0` including V11-MAX-WORKAREA PASS
+  (client bottom inset 2 px for the auto-hide taskbar) and V11-AUTOHIDE-EDGE PASS (Bottom=2);
+  `V11 SUMMARY narrow pass=8 fail=0` including V11-N-MINSIZE exactly 260x200 (D-01);
+  chromeTraceLines=46 on the launch; teardown remainingMainKt=0.
+- RED control (`-Paero.nativeChrome=false`, style 0x960B0000): main pass=0 fail=18, narrow
+  pass=0 fail=8 (nothing passes — the suite's own A04 rule; 22-15 had recorded fail=17 with
+  one SKIP, today all 18 fail), chromeTraceLines=0, teardown remainingMainKt=0.
+
+### Subset dry runs (`-DryRun -Phase Checks`, no input, no installs)
+
+JDK list (23 Ids): S03-WIN-DOWN, S04-DBLCLICK-MAX, S04-DBLCLICK-RESTORE, S05-ALTSPACE-MENU,
+S05-MOVE, S05-SIZE, S05-MINIMIZE, S05-MAXIMIZE, S05-RESTORE, S05-CLOSE-VS-ALTF4,
+S06-SHARED-BORDER, S07-FANCYZONES, W02-CORNER-TL, W02-CORNER-TR, W02-CORNER-BL,
+W02-CORNER-BR, W02-MAIN-FLOOR, W02-NARROW-FLOOR, W06-CLOSE-DURING-DRAG, B01-PRESS-FRAME,
+B01-HOVER-FRAME, B01-CLICK, S02-FLYOUT.
+JBR list (32 Ids) = the JDK list PLUS S01-LEFT-HALF, S01-RIGHT-HALF, S01-QUARTER-TL,
+S01-TOP-MAXIMIZE, S01-DRAG-AWAY-RESTORE, S03-WIN-LEFT, S03-WIN-RIGHT, S03-WIN-UP,
+W05-PLACEMENT (the nine 22-21 confirmation-spec drift Ids, byte-identical to 22-21 T2).
+B01-HOVER-FRAME, B01-CLICK and S02-FLYOUT are blast-radius guards for the 22-23/22-20
+AeroWndProc changes, not FAIL re-runs. The -NoReset dependent pairs
+(S04-DBLCLICK-RESTORE after S04-DBLCLICK-MAX, S05-RESTORE after S05-MAXIMIZE,
+S01-DRAG-AWAY-RESTORE after S01-TOP-MAXIMIZE) are complete in both lists.
+
+- jdk pass: **exit=0**, idsSeen=23/23 (each exactly once, no others), 0 check errors,
+  totals unconfirmed=23 (dry), cursor 1341,926 → 1341,926, env identical, remainingMainKt=0,
+  wall-clock **36 s**; jvm=standard (ms-21.0.9).
+- jbr pass: **exit=0**, idsSeen=32/32, 0 check errors, cursor unchanged, remainingMainKt=0,
+  wall-clock **41 s**; jvm=JBR (jbr-21.0.9).
+
+### Environment pre-check (read-only; recorded, never toggled)
+
+- screens=1; monitor 0,0,1920,1080 work 0,0,1920,1080, 96 DPI (scale 1.0).
+- TaskbarAutoHideOn=True, StuckRects3 byte 8 = **0x03** — recorded; the session NEVER toggles
+  it (none of the 23/32 subset checks requires a visible taskbar).
+- PowerToysInstalled=True, PowerToysRunning=True, FancyZonesRunning=True (no per-user start
+  needed — the conditional start path stayed untaken). VirtualDisplayPresent=False and NO
+  driver step of any kind exists in this session (W04 stays UNCONFIRMED by design).
+- Both JVM paths exist: `C:\Users\1\.jdks\ms-21.0.9\bin\java.exe`,
+  `C:\Users\1\.jdks\jbr-21.0.9\bin\java.exe`.
+
+### Minutes estimate for the maintainer (measured terms only)
+
+| Component | Basis | Time |
+|-----------|-------|------|
+| Mechanics of both passes (launches incl. hotRun, waits, resets, probe cycles, frame captures) | measured dry-run wall-clocks above | 36 s + 41 s = 77 s ≈ 1.3 min |
+| Real-only input time (per-check Start-Sleep + drag durations + hover minimums + reopen waits summed from the selected bodies) | computed from Invoke-FullSession.ps1 (per-term table in readiness.log) | jdk 63.1 s + jbr 78.9 s = 142 s ≈ 2.4 min |
+| Environment steps | measured (PowerToys already running; auto-hide contributes zero — never toggled) | 0 min |
+| **Subtotal** | 77 + 142 | **≈ 3.6 min** |
+| Round up, add 3 (plan's formula) | ceil + 3 | **N = 7 min** |
+
+**Readiness verdict:** everything provable without real input is proven — builds green at the
+locked 596, V11 18/18 + 8/8 with a clean RED control on the gap-closure build, both subset
+dry-run invocations of the 22-22 contract at exit 0 with exactly the selected Ids, the
+environment recorded read-only, and a measured 7-minute estimate. The session can start the
+moment consent arrives.
