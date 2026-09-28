@@ -61,8 +61,8 @@
 
 ### Release (REL)
 
-- [ ] **REL-06**: В README раздел о поведении окна на Windows: что работает, чем отличаются Windows 10 и 11, как пометить интерактивный элемент шапки и как отключить нативное поведение; новая зависимость JNA 5.19.1 названа
-- [ ] **REL-07**: KDoc `AeroTitleBar` и `AeroResizeHandles` описывает новое поведение; оговорка «Aero Snap limitation» убрана
+- [x] **REL-06**: В README раздел о поведении окна на Windows: что работает, чем отличаются Windows 10 и 11, как пометить интерактивный элемент шапки и как отключить нативное поведение; новая зависимость JNA 5.19.1 названа
+- [x] **REL-07**: KDoc `AeroTitleBar` и `AeroResizeHandles` описывает новое поведение; оговорка «Aero Snap limitation» убрана
 - [ ] **REL-08**: Версия `3.2.0` стоит в `build.gradle.kts` до тега; одноразовый проверочный тег собирается на JitPack до настоящего; тег `v3.2.0` отправлен, сборка JitPack `ok`, `com.github.Tolaseeq:aero-compose-ui:v3.2.0` резолвится
 
 ## Future Requirements
@@ -116,8 +116,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VER-12 | Phase 22 | Complete |
 | VER-13 | Phase 22 | Complete |
 | VER-14 | Phase 22 | Complete |
-| REL-06 | Phase 22 | Pending |
-| REL-07 | Phase 22 | Pending |
+| REL-06 | Phase 22 | Complete |
+| REL-07 | Phase 22 | Complete |
 | REL-08 | Phase 22 | Pending |
 
 **Coverage:**
