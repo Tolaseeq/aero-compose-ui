@@ -10,7 +10,8 @@
     -AuthorizedBy is mandatory unless -DryRun. A -DryRun session launches the showcase in capture
     mode (non-focusable, behind), prints every planned action and check, confirms all helper
     functions resolve, and proves the cursor never moved and nothing was installed -- it never
-    reaches SendInput. Each check runs in its own try/catch producing {Id, Result, Evidence,
+    reaches SendInput. -Checks takes a comma-separated list of check registration Ids to run a
+    subset (empty = all; unknown Ids abort before anything is launched, installed or sent). Each check runs in its own try/catch producing {Id, Result, Evidence,
     Frames} with Result PASS|FAIL|UNCONFIRMED, so a failing check never aborts the rest.
     Driver and PowerToys removal are NOT part of this script's session run (the teardown plan
     owns them); at the very end of a real -Phase All run the taskbar auto-hide state is restored
@@ -29,6 +30,7 @@ param(
     [switch]$DryRun,
     [ValidateSet('Jdk', 'Jbr', 'Both')][string]$Pass = 'Both',
     [ValidateSet('EnvSetup', 'Checks', 'All')][string]$Phase = 'All',
+    [string[]]$Checks = @(),
     [string]$OutDir = 'C:\1A_WORK\ui_lib\.captures\22-session',
     [string]$RepoRoot = 'C:\1A_WORK\ui_lib',
     [string]$DriverDir = '',
@@ -41,6 +43,33 @@ Set-StrictMode -Version 2
 if (-not $DryRun -and [string]::IsNullOrWhiteSpace($AuthorizedBy)) {
     Write-Host 'SESSION ABORT: -AuthorizedBy is required unless -DryRun is set; sending no input and changing nothing.'
     exit 1
+}
+
+# -Checks subset: empty = every registered check (today's behavior). Non-empty = run exactly the
+# checks whose registration Id is in the list, in the suite's own registration order. Entries may
+# be comma-separated (powershell -File delivers "A,B,C" as one string) and are split here. The
+# valid Ids are read from this script's own registration calls, so the list can never drift from
+# the suite. Any unknown Id aborts here -- before any launch, install or input -- because a typo
+# must fail loudly, never silently run nothing.
+$script:CheckSubset = $null
+if (@($Checks).Count -gt 0) {
+    # Assembled by concatenation so this extraction pattern never matches its own source line.
+    $idPattern = ('Invoke-SessionCheck' + ' -Id ') + "'([^']+)'"
+    $validIds = @([regex]::Matches((Get-Content -LiteralPath $PSCommandPath -Raw), $idPattern) |
+        ForEach-Object { $_.Groups[1].Value } |
+        Where-Object { $_ -cmatch '^[A-Z0-9-]+$' })
+    $wanted = @()
+    foreach ($entry in @($Checks)) {
+        foreach ($part in ([string]$entry).Split(',')) { $wanted += $part.Trim() }
+    }
+    $unknown = @($wanted | Where-Object { $validIds -notcontains $_ })
+    if ($unknown.Count -gt 0) {
+        Write-Host "SESSION ABORT: -Checks contains unknown id(s): $($unknown -join ', ')"
+        Write-Host "SESSION ABORT: valid id(s) ($($validIds.Count)): $($validIds -join ', ')"
+        exit 2
+    }
+    $script:CheckSubset = New-Object 'System.Collections.Generic.HashSet[string]'
+    foreach ($id in $wanted) { [void]$script:CheckSubset.Add($id) }
 }
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -195,6 +224,28 @@ function Get-SessionLogLines {
 function Wait-SessionEventAfter {
     param([string]$LogPath, [Parameter(Mandatory = $true)][string]$Name, [string]$Detail = '', [int]$AfterLineCount = 0, [int]$TimeoutSec = 5)
     $prefix = "AERO_EVENT name=$Name"
+    $deadline = (Get-Date).AddSeconds($TimeoutSec)
+    while ((Get-Date) -lt $deadline) {
+        $lines = @(Get-SessionLogLines -LogPath $LogPath)
+        for ($i = $AfterLineCount; $i -lt $lines.Count; $i++) {
+            $line = [string]$lines[$i]
+            if ($line.StartsWith($prefix) -and ($Detail -eq '' -or $line.Contains($Detail))) { return $line }
+        }
+        Start-Sleep -Milliseconds 150
+    }
+    return $null
+}
+
+function Wait-SessionChromeEventAfter {
+    <#
+    .SYNOPSIS
+        Wait-SessionEventAfter's shape for AERO_CHROME trace lines (NativeWindowChromeRegistry's
+        chromeTrace, gated by -Daero.chromeTrace=true): polls for a line starting
+        "AERO_CHROME event=<Name>" that appeared after line -AfterLineCount, every 150 ms, up to
+        -TimeoutSec.
+    #>
+    param([string]$LogPath, [Parameter(Mandatory = $true)][string]$Name, [string]$Detail = '', [int]$AfterLineCount = 0, [int]$TimeoutSec = 10)
+    $prefix = "AERO_CHROME event=$Name"
     $deadline = (Get-Date).AddSeconds($TimeoutSec)
     while ((Get-Date) -lt $deadline) {
         $lines = @(Get-SessionLogLines -LogPath $LogPath)
@@ -399,6 +450,7 @@ function Invoke-SessionCheck {
         [Parameter(Mandatory = $true)][scriptblock]$Body,
         [switch]$NoReset
     )
+    if ($null -ne $script:CheckSubset -and -not $script:CheckSubset.Contains($Id)) { return }
     $Context.CurrentCheckId = $Id
     if (-not $NoReset) { Reset-SessionWindows -Context $Context }
 
@@ -595,8 +647,17 @@ function Invoke-SessionEdgeResizeCheck {
     $dh = ($after.Bottom - $after.Top) - ($before.Bottom - $before.Top)
     [void]$Evidence.Add("shape=$shape dWidth=$dw dHeight=$dh")
     $shapeOk = ($shape -eq $ExpectedShape)
-    $widthOk = if ($Dx -ne 0) { ([Math]::Abs([Math]::Abs($dw) - 60) -le 2) -and ([Math]::Abs($dh) -le 2) } else { [Math]::Abs($dw) -le 2 }
-    $heightOk = if ($Dy -ne 0) { ([Math]::Abs([Math]::Abs($dh) - 60) -le 2) -and ([Math]::Abs($dw) -le 2) } else { [Math]::Abs($dh) -le 2 }
+    # A corner drag (Dx and Dy both non-zero) grows both axes at once: each axis is judged
+    # against its own dragged delta. A single-axis drag keeps the edge rule: the dragged axis
+    # grows 60 +/- 2 while the untouched axis stays within 2 px.
+    if (($Dx -ne 0) -and ($Dy -ne 0)) {
+        $widthOk = [Math]::Abs([Math]::Abs($dw) - [Math]::Abs($Dx)) -le 2
+        $heightOk = [Math]::Abs([Math]::Abs($dh) - [Math]::Abs($Dy)) -le 2
+    }
+    else {
+        $widthOk = if ($Dx -ne 0) { ([Math]::Abs([Math]::Abs($dw) - 60) -le 2) -and ([Math]::Abs($dh) -le 2) } else { [Math]::Abs($dw) -le 2 }
+        $heightOk = if ($Dy -ne 0) { ([Math]::Abs([Math]::Abs($dh) - 60) -le 2) -and ([Math]::Abs($dw) -le 2) } else { [Math]::Abs($dh) -le 2 }
+    }
     if ($shapeOk -and $widthOk -and $heightOk) {
         return New-SessionOutcome 'PASS' "shape=$shape dWidth=$dw dHeight=$dh"
     }
@@ -1026,28 +1087,35 @@ function Invoke-FullPassChecks {
             $g = Get-SessionGeometry -Hwnd $ctx.MainHwnd
             $caption = Get-SessionScreenPoint -Geometry $g -PointName 'caption'
             [void](Invoke-SessionFocus -Context $ctx -Hwnd $ctx.MainHwnd -ScreenX $caption.X -ScreenY $caption.Y -Evidence $evidence)
-            Send-AeroKeyChord -Session $ctx.Session -Keys @('LWin', 'Up')
+            # The zoomed precondition is established with a probe SC_MAXIMIZE (the W01/F9
+            # precedent: SendMessageTimeoutW posts no input and never steals foreground) instead
+            # of this check sending its own Win+Up, whose effect raced an earlier restore when
+            # the standalone S03-WIN-UP had passed seconds before.
+            [void][AeroWinProbe.Native]::SendMessageTimeoutW($ctx.MainHwnd, [AeroWinProbe.Native]::WM_SYSCOMMAND, [IntPtr][AeroWinProbe.Native]::SC_MAXIMIZE, [IntPtr]::Zero, [AeroWinProbe.Native]::SMTO_ABORTIFHUNG, 2000, [ref]([IntPtr]::Zero))
             if ($ctx.Session.IsDryRun) {
                 Send-AeroKeyChord -Session $ctx.Session -Keys @('LWin', 'Down')
                 Send-AeroKeyChord -Session $ctx.Session -Keys @('LWin', 'Down')
                 return New-SessionOutcome 'UNCONFIRMED' 'dry run -- no real keys sent'
             }
             Start-Sleep -Milliseconds 700
-            $zoomedAfterUp = [bool][AeroWinProbe.Native]::IsZoomed($ctx.MainHwnd)
+            $zoomedPrecondition = [bool][AeroWinProbe.Native]::IsZoomed($ctx.MainHwnd)
+            if (-not $zoomedPrecondition) {
+                return New-SessionOutcome 'UNCONFIRMED' 'precondition failed: the SC_MAXIMIZE probe did not zoom the window'
+            }
             Send-AeroKeyChord -Session $ctx.Session -Keys @('LWin', 'Down')
             Start-Sleep -Milliseconds 700
             $restored = -not [bool][AeroWinProbe.Native]::IsZoomed($ctx.MainHwnd)
             Send-AeroKeyChord -Session $ctx.Session -Keys @('LWin', 'Down')
             Start-Sleep -Milliseconds 700
             $minimized = [bool][AeroWinProbe.Native]::IsIconic($ctx.MainHwnd)
-            [void]$evidence.Add("zoomedAfterUp=$zoomedAfterUp restoredAfterFirstDown=$restored minimizedAfterSecondDown=$minimized")
+            [void]$evidence.Add("zoomedPrecondition=$zoomedPrecondition restoredAfterFirstDown=$restored minimizedAfterSecondDown=$minimized")
             Add-SessionPlacementSample -Context $ctx -Hwnd $ctx.MainHwnd -Label 'S03-WIN-DOWN'
             if ($minimized) {
                 [void][AeroWinProbe.Native]::ShowWindow($ctx.MainHwnd, [AeroWinProbe.Native]::SW_SHOWNOACTIVATE)
                 Start-Sleep -Milliseconds 300
             }
-            if ($zoomedAfterUp -and $restored -and $minimized) { return New-SessionOutcome 'PASS' 'Win+Down restored then minimized' }
-            return New-SessionOutcome 'FAIL' "zoomedAfterUp=$zoomedAfterUp restored=$restored minimized=$minimized"
+            if ($restored -and $minimized) { return New-SessionOutcome 'PASS' 'Win+Down restored then minimized (precondition set by the SC_MAXIMIZE probe)' }
+            return New-SessionOutcome 'FAIL' "restored=$restored minimized=$minimized"
         }
 
         # ---------------- SNAP-04: double-click caption ----------------
@@ -1445,6 +1513,19 @@ function Invoke-FullPassChecks {
             $g = Get-SessionGeometry -Hwnd $ctx.MainHwnd
             $caption = Get-SessionScreenPoint -Geometry $g -PointName 'caption'
             [void](Invoke-SessionFocus -Context $ctx -Hwnd $ctx.MainHwnd -ScreenX $caption.X -ScreenY $caption.Y -Evidence $evidence)
+            # Re-verify foreground right before the drag (the 22-15 JDK attempt lost it between
+            # the focus click and the Shift-drag) and retry the click exactly once when it moved.
+            $fgHwnd = [AeroWinProbe.Native]::GetForegroundWindow()
+            [uint32]$fgPidNow = 0
+            [AeroWinProbe.Native]::GetWindowThreadProcessId($fgHwnd, [ref]$fgPidNow) | Out-Null
+            $foregroundOursNow = ($fgPidNow -eq [uint32]$ctx.AppPid)
+            if (-not $foregroundOursNow) {
+                $foregroundOursNow = Invoke-SessionFocus -Context $ctx -Hwnd $ctx.MainHwnd -ScreenX $caption.X -ScreenY $caption.Y -Evidence $evidence
+                [void]$evidence.Add("foregroundReverify ours=$foregroundOursNow after one retry")
+            }
+            else {
+                [void]$evidence.Add("foregroundReverify ours=$foregroundOursNow before drag")
+            }
             [void]$evidence.Add("shift-drag caption -> zone center ($zx,$zy), zone=$(ConvertTo-SessionRectString -Rect $expected)")
             Invoke-AeroDrag -Session $ctx.Session -FromX $caption.X -FromY $caption.Y -ToX $zx -ToY $zy -Steps 25 -DurationMs 900 -HoldMs 600 -WithKey Shift
             if ($ctx.Session.IsDryRun) { return New-SessionOutcome 'UNCONFIRMED' 'dry run -- no real drag performed' }
@@ -1582,18 +1663,19 @@ function Invoke-FullPassChecks {
             $pt = Get-SessionScreenPoint -Geometry $g -PointName 'edgeLeft'
             $info = Get-WinProbeWindowInfo -Hwnd $ctx.MainHwnd
             $expectedW = [int][Math]::Round(320 * $info.Scale)
-            $expectedH = [int][Math]::Round(240 * $info.Scale)
+            $before = Get-SessionRect -Hwnd $ctx.MainHwnd
+            $beforeH = $before.Bottom - $before.Top
             $targetX = ($g.Origin.X + $g.Info.ClientRect.Right - $g.Info.ClientRect.Left) - 100
-            [void]$evidence.Add("inward drag left edge to width~100; expect floor ${expectedW}x${expectedH}")
+            [void]$evidence.Add("inward drag left edge to width~100; expect width floor $expectedW with height $beforeH unchanged")
             Invoke-AeroDrag -Session $ctx.Session -FromX $pt.X -FromY $pt.Y -ToX $targetX -ToY $pt.Y -Steps 15 -DurationMs 600 -HoldMs 300
             if ($ctx.Session.IsDryRun) { return New-SessionOutcome 'UNCONFIRMED' 'dry run -- no real drag performed' }
             Start-Sleep -Milliseconds 400
             $after = Get-SessionRect -Hwnd $ctx.MainHwnd
             $w = $after.Right - $after.Left
             $h = $after.Bottom - $after.Top
-            [void]$evidence.Add("obtained=${w}x${h} expected=${expectedW}x${expectedH}±2")
-            if (([Math]::Abs($w - $expectedW) -le 2) -and ([Math]::Abs($h - $expectedH) -le 2)) { return New-SessionOutcome 'PASS' "floored at ${w}x${h}" }
-            return New-SessionOutcome 'FAIL' "obtained ${w}x${h}, expected ${expectedW}x${expectedH}±2"
+            [void]$evidence.Add("obtainedWidth=$w expectedWidth=$expectedW heightBefore=$beforeH heightAfter=$h")
+            if (([Math]::Abs($w - $expectedW) -le 2) -and ([Math]::Abs($h - $beforeH) -le 2)) { return New-SessionOutcome 'PASS' "floored at width $w, height ${h} unchanged" }
+            return New-SessionOutcome 'FAIL' "obtainedWidth=$w expectedWidth=$expectedW heightAfter=$h heightBefore=$beforeH"
         }
 
         Invoke-SessionCheck -Id 'W02-NARROW-FLOOR' -Context $ctx -Body {
@@ -1601,18 +1683,19 @@ function Invoke-FullPassChecks {
             $g = Get-SessionGeometry -Hwnd $ctx.NarrowHwnd -Layout 'narrow'
             $pt = Get-SessionScreenPoint -Geometry $g -PointName 'edgeLeft'
             $expectedW = [int][Math]::Round(260 * $g.Info.Scale)
-            $expectedH = [int][Math]::Round(200 * $g.Info.Scale)
+            $before = Get-SessionRect -Hwnd $ctx.NarrowHwnd
+            $beforeH = $before.Bottom - $before.Top
             $targetX = ($g.Origin.X + $g.Info.ClientRect.Right - $g.Info.ClientRect.Left) - 80
-            [void]$evidence.Add("inward drag narrow left edge; expect app floor ${expectedW}x${expectedH} (D-01)")
+            [void]$evidence.Add("inward drag narrow left edge; expect app width floor $expectedW with height $beforeH unchanged (D-01)")
             Invoke-AeroDrag -Session $ctx.Session -FromX $pt.X -FromY $pt.Y -ToX $targetX -ToY $pt.Y -Steps 15 -DurationMs 600 -HoldMs 300
             if ($ctx.Session.IsDryRun) { return New-SessionOutcome 'UNCONFIRMED' 'dry run -- no real drag performed' }
             Start-Sleep -Milliseconds 400
             $after = Get-SessionRect -Hwnd $ctx.NarrowHwnd
             $w = $after.Right - $after.Left
             $h = $after.Bottom - $after.Top
-            [void]$evidence.Add("obtained=${w}x${h} expected=${expectedW}x${expectedH}±2")
-            if (([Math]::Abs($w - $expectedW) -le 2) -and ([Math]::Abs($h - $expectedH) -le 2)) { return New-SessionOutcome 'PASS' "floored at ${w}x${h}" }
-            return New-SessionOutcome 'FAIL' "obtained ${w}x${h}, expected ${expectedW}x${expectedH}±2"
+            [void]$evidence.Add("obtainedWidth=$w expectedWidth=$expectedW heightBefore=$beforeH heightAfter=$h")
+            if (([Math]::Abs($w - $expectedW) -le 2) -and ([Math]::Abs($h - $beforeH) -le 2)) { return New-SessionOutcome 'PASS' "floored at width $w, height ${h} unchanged" }
+            return New-SessionOutcome 'FAIL' "obtainedWidth=$w expectedWidth=$expectedW heightAfter=$h heightBefore=$beforeH"
         }
 
         # ---------------- WIN-03: frames + corners ----------------
@@ -1898,7 +1981,8 @@ function Invoke-FullPassChecks {
                 Invoke-AeroMouseButton -Session $ctx.Session -Up
                 Start-Sleep -Milliseconds 500
                 $event = Wait-SessionEventAfter -LogPath $ctx.LogPath -Name 'close-request' -Detail 'label=narrow' -AfterLineCount $mark -TimeoutSec 5
-                [void]$evidence.Add("dryRun closeEvent=$([bool]$event) (WM_CLOSE is a probe message, not real input)")
+                $ncdestroyDry = Wait-SessionChromeEventAfter -LogPath $ctx.LogPath -Name 'ncdestroy' -AfterLineCount $mark -TimeoutSec 10
+                [void]$evidence.Add("dryRun closeEvent=$([bool]$event) ncdestroy=$([bool]$ncdestroyDry) (WM_CLOSE is a probe message, not real input)")
                 if (-not (Test-SessionWindowAlive -Hwnd $ctx.NarrowHwnd)) {
                     $ctx.NarrowHwnd = Wait-SessionWindowByTitle -Title $ctx.NarrowTitle -TimeoutSec 15
                 }
@@ -1911,19 +1995,16 @@ function Invoke-FullPassChecks {
                 Start-Sleep -Milliseconds 200
             }
             [void][AeroWinProbe.Native]::PostMessageW($ctx.NarrowHwnd, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero)
+            # The ncdestroy trace can land mid-drag, while the window tears down inside the drag's
+            # modal loop: poll seeded at the pre-drag $mark starting the moment WM_CLOSE is posted
+            # (the old after-mouse-up 5 s all-lines window missed it), budget 10 s.
+            $ncdestroy = Wait-SessionChromeEventAfter -LogPath $ctx.LogPath -Name 'ncdestroy' -AfterLineCount $mark -TimeoutSec 10
             for ($i = 4; $i -le 6; $i++) {
                 Move-AeroCursor -Session $ctx.Session -X ($caption.X + 15 * $i) -Y ($caption.Y + 8 * $i) -Steps 3 -DurationMs 400
                 Start-Sleep -Milliseconds 200
             }
             Invoke-AeroMouseButton -Session $ctx.Session -Up
             $event = Wait-SessionEventAfter -LogPath $ctx.LogPath -Name 'close-request' -Detail 'label=narrow' -AfterLineCount $mark -TimeoutSec 5
-            $ncdestroy = $null
-            $deadline = (Get-Date).AddSeconds(5)
-            while ((Get-Date) -lt $deadline) {
-                $hit = @(Get-SessionLogLines -LogPath $ctx.LogPath | Where-Object { $_ -like '*event=ncdestroy*' })
-                if ($hit.Count -gt 0) { $ncdestroy = $hit[$hit.Count - 1]; break }
-                Start-Sleep -Milliseconds 150
-            }
             [void]$evidence.Add("closeEvent=$([bool]$event) ncdestroy=$([bool]$ncdestroy)")
             $mainAlive = Test-SessionWindowAlive -Hwnd $ctx.MainHwnd
             $v11Main = Invoke-SessionV11 -Hwnd $ctx.MainHwnd -LogPath $ctx.LogPath -Label 'main' -SkipMaximize
