@@ -38,13 +38,30 @@ mode.
 **Question:** Is Alt+Space automatic once `WS_SYSMENU`/`WS_CAPTION` are present, or does it need
 explicit `WM_SYSCOMMAND`/`GetSystemMenu`/`TrackPopupMenu` handling?
 
-**Check performed:** Not checked live here — `WS_SYSMENU` is already confirmed present on the
-pre-phase window (see C1), which is the headless half of this conflict. The actual flyout/menu
-behavior needs real keyboard input.
+**Check performed (22-15 real-input session, both JVMs):** Real Alt+Space on the native-chrome
+showcase window (`S05-ALTSPACE-MENU`: #32768-menu-of-our-process check) versus the same chord on
+the opt-out window (`C02-OPTOUT-ALTSPACE`, `-Paero.nativeChrome=false` legacy path, own launch),
+then the menu commands Move/Size/Minimize/Maximize/Close via Home/End + arrows + Enter on both
+window kinds.
 
-**Decision:** Deferred — needs the real-input session.
+**Observed (identical on JDK 21 and JBR 21):** On the NATIVE window Alt+Space opens NO system
+menu (`#32768-of-our-process=False`), and consequently Move/Size/Minimize move/resize nothing
+(`dx=0`, `dWidth=0`, `isIconic=False`); the menu-Close half of `S05-CLOSE-VS-ALTF4` fails the
+same way while its Alt+F4 half is PROVEN (`AERO_EVENT name=close-request label=narrow`, window
+destroyed, reopened). On the OPT-OUT window the same chord DOES open the menu
+(`menuVisible=True`), and menu-Move really moves the window (`moveDx=220`). One fluke: JBR's
+`S05-MAXIMIZE` landed (a menu opened that once) — recorded as noise, not a working path.
 
-**Settled by:** 22-15 T3.
+**Decision:** C2 SETTLED — Alt+Space is NOT automatic on the native path: the style bits alone
+are not enough because the subclass forwards what it does not own into AWT's WndProc (which
+swallows the system-menu trigger) instead of `DefWindowProc`. This is exactly the
+hand-declare-`GetSystemMenu`/`TrackPopupMenu` case named in the plan (they are absent from
+jna-platform 5.19.1, 22-10's grep proof): a FAIL finding for gap closure — SNAP-05's menu
+commands (and S04's double-click maximize, which failed the same session) need explicit
+non-client handling.
+
+**Settled by:** 22-15 T3 (`.captures/22-session/{jdk,jbr}/results.json`, checks `S05-*`,
+`C02-OPTOUT-ALTSPACE`; console `.captures/22-session/console-3.log`).
 
 ### C3
 
@@ -62,7 +79,14 @@ auto-hide monitor — a detail worth carrying into Step 3's math: the 2px-inset 
 `rcWork` alone to know an edge needs insetting, since `rcWork` here already equals the full
 monitor). The inset-size implementation and hover-reveal confirmation remain open.
 
-**Settled by:** 22-05 T3 + 22-15 T3.
+**Settled by:** 22-05 T3 + 22-15 T3 (reveal half below).
+
+**Reveal half (22-15 real-input session):** with the window maximized and the taskbar
+auto-hidden, a real mouse hover on the bottom screen row over the 2 px inset reveals the
+taskbar — `W01-AUTOHIDE-REVEAL` PASS on both JVMs (revealed after 232 ms on JDK 21 and
+231 ms on JBR 21; probe details recorded in each pass's `results.json`). C3 fully SETTLED:
+detection (ABM_GETSTATE + ABM_GETAUTOHIDEBAREX per edge), inset (2 px,
+`AUTO_HIDE_INSET_PX`), and reveal-on-hover are all proven with real input.
 
 ### C4
 
