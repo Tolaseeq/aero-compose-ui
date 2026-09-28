@@ -168,7 +168,7 @@ Details: `.planning/milestones/v3.1-ROADMAP.md` · Requirements: `.planning/mile
   5. Список «не подтверждено» явно называет всё, что не проверено, включая поведение на Windows 10 — не выдаётся за пройденное
   6. `v3.2.0` опубликован и резолвится на JitPack (`com.github.Tolaseeq:aero-compose-ui:v3.2.0`); README и KDoc обновлены, оговорка «Aero Snap limitation» снята; все существующие тесты зелёные под залоченным (и при необходимости поднятым именованным коммитом) числом
 
-**Plans:** 18/26 plans executed — 19 original plans (18 executed) + 7 gap-closure plans 22-20..22-26 added 2026-09-28 after verification found 5 blocking gaps + 5 check-formula artifacts (maintainer decision: close gaps BEFORE the release)
+**Plans:** 21/26 plans executed
 
 Plans:
 **Wave 1**
@@ -242,9 +242,9 @@ Plans:
 
 **Wave 17**
 
-- [ ] 22-20-PLAN.md — SNAP-05 + SNAP-04 (blockers #2, #1): hand-declared GetSystemMenu/TrackPopupMenu + WM_SYSCOMMAND(SC_KEYMENU) menu handling; WM_NCLBUTTONDBLCLK at HTCAPTION → DefWindowProc; headless posted-message proofs + routing guards (VER-14)
-- [ ] 22-21-PLAN.md — JBR drift (blocker #5): headless JDK-vs-JBR probe battery on the current build, mined 22-15 traces, mechanism verdict, and the folded JBR-only real-input confirmation spec for 22-25
-- [ ] 22-22-PLAN.md — Check-formula fixes (W02 corner second axis, W02 floor height, S07 priority-grid geometry from applied-layouts.json, W06 ncdestroy trace window, S03-WIN-DOWN deterministic precondition) + a -Checks subset parameter for the short re-verification session
+- [x] 22-20-PLAN.md — SNAP-05 + SNAP-04 (blockers #2, #1): hand-declared GetSystemMenu/TrackPopupMenu + WM_SYSCOMMAND(SC_KEYMENU) menu handling; WM_NCLBUTTONDBLCLK at HTCAPTION → DefWindowProc; headless posted-message proofs + routing guards (VER-14)
+- [x] 22-21-PLAN.md — JBR drift (blocker #5): headless JDK-vs-JBR probe battery on the current build, mined 22-15 traces, mechanism verdict, and the folded JBR-only real-input confirmation spec for 22-25
+- [x] 22-22-PLAN.md — Check-formula fixes (W02 corner second axis, W02 floor height, S07 priority-grid geometry from applied-layouts.json, W06 ncdestroy trace window, S03-WIN-DOWN deterministic precondition) + a -Checks subset parameter for the short re-verification session
 
 **Wave 18** *(blocked on Wave 17 completion)*
 
@@ -290,7 +290,7 @@ Plans:
 | 19. Selectors + Lists | v3.0 | 12/12 | Complete | 2026-07-28 |
 | 20. Verification | v3.0 | 9/9 | Complete | 2026-07-29 |
 | 21. Migration + Release 3.1.0 | v3.1 | 14/14 | Complete | 2026-09-24 |
-| 22. Native Window Behavior + Release 3.2.0 | v3.2 | 18/26 | In Progress|  |
+| 22. Native Window Behavior + Release 3.2.0 | v3.2 | 21/26 | In Progress|  |
 
 ## Next Milestone
 

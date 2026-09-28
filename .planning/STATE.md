@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: Native Window Behavior
 status: executing
-stopped_at: Gap-closure round planned — 7 plans (22-20..22-26) in waves 17-21; checker passed after one revision; next: execute waves 17-21, then the held 22-18 release
-last_updated: "2026-09-28T10:51:33.121Z"
+stopped_at: Gap-closure wave 1/5 done (22-20, 22-21, 22-22 complete, merged, tests green at locked 596); foregroundOurs evidence fix applied (851ea07); next: wave 2 = 22-23 press parity
+last_updated: "2026-09-28T13:14:30.245Z"
 last_activity: 2026-09-25 -- Phase 22 execution started
 progress:
   total_phases: 1
