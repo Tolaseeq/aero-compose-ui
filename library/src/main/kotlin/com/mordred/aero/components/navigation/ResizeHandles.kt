@@ -42,10 +42,15 @@ internal fun shouldComposeResizeHandles(placement: WindowPlacement, nativeChrome
  *  - on drag, mutates `windowState.size` (and `windowState.position` for
  *    top/left/top-corner zones, so the anchored opposite edge stays fixed)
  *
- * Disabled when `windowState.placement != WindowPlacement.Floating` (resizing a
- * Maximized window doesn't make sense) AND on Windows while native chrome is
- * active for this window — there Windows itself resizes from every edge and
- * corner, so composing a second drag path would only double-handle presses.
+ * On Windows, while native window management is active for this window (an
+ * `AeroTitleBar(..., nativeWindowManagement = true)` composition with a successful
+ * native install), this composable composes nothing: Windows itself resizes the
+ * window from every edge and corner with the system cursors, and a second,
+ * Compose-side drag path must not exist. On Linux/macOS — and on Windows for a
+ * window opted out via `nativeWindowManagement = false` or after a failed install —
+ * the eight zones work exactly as before. The zones are also skipped while
+ * `windowState.placement != WindowPlacement.Floating` (resizing a Maximized window
+ * doesn't make sense).
  *
  * Zone dimensions:
  *  - Edge bands: 4.dp thick, run the length of their side (corners overlay on top

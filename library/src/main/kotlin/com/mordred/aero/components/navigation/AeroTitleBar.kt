@@ -47,16 +47,22 @@ import com.mordred.aero.theme.AeroTheme
  *  - [title] text
  *  - Minimize / Maximize-or-Restore / Close buttons (46.dp × 32.dp each)
  *
- * On Windows the row's live layout regions are published through the public
- * [rememberAeroWindowChrome] API (SNAP-01): the caption area answers HTCAPTION to the OS,
- * which owns window dragging natively, and the maximize button answers HTMAXBUTTON (Snap
- * Layouts). Minimize, close and [leading] content stay HTCLIENT and keep their ordinary
- * Compose clicks (BTN-02). If the native install fails, the bar falls back to the legacy
- * path below so the window stays draggable.
+ * On Windows the bar is built on the public [rememberAeroWindowChrome] API (SNAP-01): it
+ * tells Windows where the caption, the three buttons and interactive content are, and
+ * Windows owns the window behavior natively. The caption area answers HTCAPTION (native
+ * dragging and Aero Snap — edge, corner and top snapping, with restore on drag-away), the
+ * maximize button answers HTMAXBUTTON (hovering it shows the Windows 11 Snap Layouts
+ * flyout; a click toggles `WindowPlacement.Maximized <-> Floating`), and maximize is
+ * taskbar-aware: a maximized window fills its monitor's work area without covering a
+ * visible taskbar and leaves the edge an auto-hidden taskbar needs. Minimize, close and
+ * [leading] content stay HTCLIENT and keep their ordinary Compose clicks (BTN-02). If the
+ * native install fails, the bar falls back to the legacy composition so the window stays
+ * draggable.
  *
- * Off Windows (and on the fallback path) the whole row is wrapped in
- * `WindowDraggableArea`, so users can drag the window from any non-button area.
- * Each control button has its own `clickable` so click wins over drag.
+ * The [leading] slot is clickable as-is; any other element drawn over the bar must be
+ * marked with [markAeroTitleBarInteractive] to receive clicks instead of dragging the
+ * window. See the project README ("Windows window behavior") for the verified behavior
+ * matrix and known gaps.
  *
  * Pair with `AeroResizeHandles(windowState)` (in `ResizeHandles.kt`) to provide
  * 8-zone window resize on undecorated windows. AeroTitleBar provides the chrome;
@@ -68,19 +74,16 @@ import com.mordred.aero.theme.AeroTheme
  * (CMP-3757 / GH#3171). The Aero glass effect is provided by `Modifier.glassEffect`
  * elsewhere — never by window transparency.
  *
- * **Aero Snap limitation (legacy path):** `WindowDraggableArea` does NOT pass
- * HTCAPTION to the OS, so dragging to a screen edge does NOT trigger Windows
- * native Aero Snap (snap-to-half, snap-to-quadrant). Native hit-testing on
- * Windows removes this limitation; the limitation text applies to the
- * non-Windows / fallback composition only.
+ * On Linux and macOS the behavior is unchanged.
  *
  * @param title window title shown in the bar.
  * @param windowState the parent window's [WindowState]; used to toggle Minimized/Maximized.
  * @param onCloseRequest invoked when the user clicks the close button.
  * @param leading optional composable rendered before the title (e.g., an app icon).
  * @param modifier optional layout modifier.
- * @param nativeWindowManagement `false` opts this window out of the native Windows chrome
- * and keeps exactly the legacy behavior (`WindowDraggableArea` drag, Compose resize handles).
+ * @param nativeWindowManagement `false` restores the legacy behavior for this window —
+ * Compose drag via `WindowDraggableArea`, Compose resize zones, no native snapping; no
+ * effect on other OSes.
  */
 @Composable
 public fun FrameWindowScope.AeroTitleBar(
@@ -223,8 +226,7 @@ private fun TitleBarRow(
  * one verbatim (own remembered source; `clickable(onClick)`). With a source given (the
  * native-fed maximize bridge, BTN-01) `hoverable` and `clickable` share it, so the same
  * background expression and the same `LocalIndication` produce hover/press visuals from
- * whichever side fed the interactions (D-02 parity by construction; role/focus/keyboard
- * activation unchanged, T-22-22).
+ * whichever side fed the interactions (role/focus/keyboard activation unchanged, T-22-22).
  */
 @Composable
 internal fun TitleBarButton(

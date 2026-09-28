@@ -71,8 +71,8 @@ public fun Modifier.markAeroTitleBarInteractive(): Modifier {
  * own header instead of using [AeroTitleBar]. Call [rememberAeroWindowChrome] inside the
  * window's composition, then mark the layout with the modifier members:
  *
- *  - the draggable caption band(s) get [captionArea] — Windows then owns dragging, Aero Snap
- *    and double-click-maximize over those pixels (`HTCAPTION`);
+ *  - the draggable caption band(s) get [captionArea] — Windows then owns dragging and
+ *    Aero Snap over those pixels (`HTCAPTION`);
  *  - the maximize button gets [maximizeButtonArea] — it answers `HTMAXBUTTON`, so hovering
  *    it shows the Windows 11 Snap Layouts flyout, and a native click toggles
  *    [WindowState.placement] `Maximized <-> Floating` (the same toggle `AeroTitleBar` has
@@ -151,9 +151,9 @@ public interface AeroWindowChromeState {
 
     /**
      * Marks the element as a draggable caption area: Windows answers `HTCAPTION` over its
-     * bounds and owns dragging, Aero Snap and double-click maximize natively. Interactive
-     * content inside the area must be marked with [captionExclude]. Several caption areas
-     * may be published for one window.
+     * bounds and owns dragging and Aero Snap natively. Interactive content inside the area
+     * must be marked with [captionExclude]. Several caption areas may be published for one
+     * window.
      */
     public fun Modifier.captionArea(): Modifier
 
