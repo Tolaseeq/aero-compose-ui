@@ -168,7 +168,7 @@ Details: `.planning/milestones/v3.1-ROADMAP.md` · Requirements: `.planning/mile
   5. Список «не подтверждено» явно называет всё, что не проверено, включая поведение на Windows 10 — не выдаётся за пройденное
   6. `v3.2.0` опубликован и резолвится на JitPack (`com.github.Tolaseeq:aero-compose-ui:v3.2.0`); README и KDoc обновлены, оговорка «Aero Snap limitation» снята; все существующие тесты зелёные под залоченным (и при необходимости поднятым именованным коммитом) числом
 
-**Plans:** 21/26 plans executed
+**Plans:** 22/26 plans executed
 
 Plans:
 **Wave 1**
@@ -248,7 +248,7 @@ Plans:
 
 **Wave 18** *(blocked on Wave 17 completion)*
 
-- [ ] 22-23-PLAN.md — BTN-01 press-fill parity (blocker #4): headless diagnosis (press origin / emission timing vs C5's FlatLaf re-injection fallback), fix on the evidence-selected route, proof pack, guards
+- [x] 22-23-PLAN.md — BTN-01 press-fill parity (blocker #4): headless diagnosis (press origin / emission timing vs C5's FlatLaf re-injection fallback), fix on the evidence-selected route, proof pack, guards
 
 **Wave 19** *(blocked on Wave 18 completion)*
 
@@ -290,7 +290,7 @@ Plans:
 | 19. Selectors + Lists | v3.0 | 12/12 | Complete | 2026-07-28 |
 | 20. Verification | v3.0 | 9/9 | Complete | 2026-07-29 |
 | 21. Migration + Release 3.1.0 | v3.1 | 14/14 | Complete | 2026-09-24 |
-| 22. Native Window Behavior + Release 3.2.0 | v3.2 | 21/26 | In Progress|  |
+| 22. Native Window Behavior + Release 3.2.0 | v3.2 | 22/26 | In Progress|  |
 
 ## Next Milestone
 

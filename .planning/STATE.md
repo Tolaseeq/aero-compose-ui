@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: Native Window Behavior
 status: executing
-stopped_at: Gap-closure wave 1/5 done (22-20, 22-21, 22-22 complete, merged, tests green at locked 596); foregroundOurs evidence fix applied (851ea07); next: wave 2 = 22-23 press parity
+stopped_at: Gap-closure wave 2/5 done (22-23 complete: B01-PRESS-FRAME artifact diagnosed+fixed, bridge exonerated, no library change; executor quota-fail recovered inline); next: wave 3 = 22-24 shared border
 last_updated: "2026-09-28T13:14:30.245Z"
 last_activity: 2026-09-25 -- Phase 22 execution started
 progress:
