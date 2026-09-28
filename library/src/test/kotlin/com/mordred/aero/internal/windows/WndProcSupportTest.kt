@@ -59,4 +59,44 @@ class WndProcSupportTest {
 
     private fun encodeScreenPoint(x: Int, y: Int): Long =
         ((y.toLong() and 0xFFFF) shl 16) or (x.toLong() and 0xFFFF)
+
+    /**
+     * SNAP-05: MENU only for the SC_KEYMENU trigger; the commands that must keep forwarding
+     * verbatim (Alt+F4's SC_CLOSE, the state commands, anything unrelated) all discriminate to
+     * FORWARD.
+     */
+    @Test
+    fun systemMenuDispositionAnswersMenuOnlyForKeymenu() {
+        assertEquals(SysCommandDisposition.MENU, systemMenuDisposition(SC_KEYMENU))
+        assertEquals(SysCommandDisposition.FORWARD, systemMenuDisposition(SC_CLOSE))
+        assertEquals(SysCommandDisposition.FORWARD, systemMenuDisposition(SC_MAXIMIZE))
+        assertEquals(SysCommandDisposition.FORWARD, systemMenuDisposition(SC_MINIMIZE))
+        assertEquals(SysCommandDisposition.FORWARD, systemMenuDisposition(SC_RESTORE))
+        assertEquals(SysCommandDisposition.FORWARD, systemMenuDisposition(0x1234))
+    }
+
+    /** SNAP-05: wParam's low four bits are internal flags — 0xF102 is still SC_KEYMENU. */
+    @Test
+    fun systemMenuDispositionMasksLowFlagBitsBeforeDiscriminating() {
+        assertEquals(SysCommandDisposition.MENU, systemMenuDisposition(0xF102))
+        assertEquals(SysCommandDisposition.FORWARD, systemMenuDisposition(0xF061))
+    }
+
+    /** SNAP-05: zero is not a menu trigger — it forwards like every unrelated value. */
+    @Test
+    fun systemMenuDispositionForwardsZero() {
+        assertEquals(SysCommandDisposition.FORWARD, systemMenuDisposition(0))
+    }
+
+    /**
+     * SNAP-04: the caption double-click routes to DefWindowProc, the maximize button keeps its
+     * swallow, everything else forwards to AWT's proc as before.
+     */
+    @Test
+    fun ncDoubleClickDispositionRoutesByHitCode() {
+        assertEquals(NcDoubleClickDisposition.DEF_WINDOW_PROC, ncDoubleClickDisposition(HTCAPTION))
+        assertEquals(NcDoubleClickDisposition.SWALLOW, ncDoubleClickDisposition(HTMAXBUTTON))
+        assertEquals(NcDoubleClickDisposition.FORWARD_AWT, ncDoubleClickDisposition(HTCLIENT))
+        assertEquals(NcDoubleClickDisposition.FORWARD_AWT, ncDoubleClickDisposition(HTLEFT))
+    }
 }

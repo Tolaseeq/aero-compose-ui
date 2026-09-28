@@ -33,3 +33,35 @@ internal fun decodeScreenPoint(lParam: Long): Pair<Int, Int> {
     val y = ((lParam shr 16) and 0xFFFF).toShort().toInt()
     return x to y
 }
+
+/**
+ * SNAP-05: what the frame proc does with a WM_SYSCOMMAND it receives. MENU — the SC_KEYMENU
+ * trigger, owned: display the system menu and swallow (return 0). FORWARD — every other
+ * syscommand (SC_CLOSE, SC_MAXIMIZE, SC_MINIMIZE, SC_RESTORE, snap commands, ...): forwarded
+ * verbatim to AWT's proc, byte-identical to the pre-ownership behavior.
+ */
+internal enum class SysCommandDisposition { MENU, FORWARD }
+
+/**
+ * SNAP-05: discrimination for WM_SYSCOMMAND. The low four bits of wParam are internal flags,
+ * so the command is masked with 0xFFF0 first — `wParam = 0xF102` is still SC_KEYMENU.
+ */
+internal fun systemMenuDisposition(cmd: Int): SysCommandDisposition =
+    if ((cmd and 0xFFF0) == SC_KEYMENU) SysCommandDisposition.MENU else SysCommandDisposition.FORWARD
+
+/**
+ * SNAP-04: what the frame proc does with a WM_NCLBUTTONDBLCLK. DEF_WINDOW_PROC — at HTCAPTION:
+ * hand the double-click to `DefWindowProc`, whose OS default performs SC_MAXIMIZE when floating
+ * and SC_RESTORE when zoomed (driven by the WS_CAPTION/WS_MAXIMIZEBOX style bits the frame
+ * keeps set). SWALLOW — at HTMAXBUTTON: the button-down swallow (return 0, no classic-button
+ * paint, no double-fire). FORWARD_AWT — every other hit code: forwarded to AWT's proc as
+ * before, where the caption double-click used to die.
+ */
+internal enum class NcDoubleClickDisposition { DEF_WINDOW_PROC, SWALLOW, FORWARD_AWT }
+
+/** SNAP-04: three-way routing for a non-client double-click, by the message's hit-test code. */
+internal fun ncDoubleClickDisposition(hitCode: Int): NcDoubleClickDisposition = when (hitCode) {
+    HTCAPTION -> NcDoubleClickDisposition.DEF_WINDOW_PROC
+    HTMAXBUTTON -> NcDoubleClickDisposition.SWALLOW
+    else -> NcDoubleClickDisposition.FORWARD_AWT
+}

@@ -27,9 +27,17 @@ import javax.swing.SwingUtilities
  *                      own answer stands (SNAP-01).
  *  - WM_NCMOUSEMOVE / WM_NCMOUSELEAVE — observed-then-forwarded (max-button hover bridge,
  *                      BTN-01; forwarding keeps `DefWindowProc`'s Snap Layouts flyout path).
- *  - WM_NCLBUTTONDOWN / WM_NCLBUTTONUP / WM_NCLBUTTONDBLCLK — swallowed ONLY at
- *                      HTMAXBUTTON (return 0, no classic-button paint, no double-fire);
- *                      every other hit code forwards unchanged (BTN-01).
+ *  - WM_NCLBUTTONDOWN / WM_NCLBUTTONUP — swallowed ONLY at HTMAXBUTTON (return 0, no
+ *                      classic-button paint, no double-fire); every other hit code forwards
+ *                      unchanged (BTN-01).
+ *  - WM_NCLBUTTONDBLCLK — three-way disposition (SNAP-04): HTCAPTION answers from
+ *                      `DefWindowProc` (the OS default performs SC_MAXIMIZE/SC_RESTORE from
+ *                      the style bits), HTMAXBUTTON keeps the button-down swallow, every
+ *                      other hit code forwards unchanged.
+ *  - WM_SYSCOMMAND   — SC_KEYMENU only is owned (the system menu is displayed through
+ *                      hand-declared GetSystemMenu/TrackPopupMenu, then the chosen command
+ *                      is re-dispatched as a forwarded WM_SYSCOMMAND, SNAP-05); every other
+ *                      command forwards verbatim (the proven Alt+F4 / snap paths, C2).
  *  - WM_STYLECHANGING — modified-then-forwarded (required styles written into `styleNew`
  *                      in place before forwarding, WIN-03 / PITFALLS 4).
  *  - WM_SIZE         — observed-then-forwarded (corner policy re-applied AFTER
@@ -50,6 +58,7 @@ internal val OWNED_FRAME_MESSAGES: Set<Int> = setOf(
     WM_NCLBUTTONDOWN,
     WM_NCLBUTTONUP,
     WM_NCLBUTTONDBLCLK,
+    WM_SYSCOMMAND,
     WM_STYLECHANGING,
     WM_SIZE,
     WM_GETMINMAXINFO,
@@ -122,9 +131,13 @@ internal class AeroFrameWndProc(
 
                 WM_NCMOUSELEAVE -> handleNcMouseLeave(hwnd, uMsg, wParam, lParam)
 
-                WM_NCLBUTTONDOWN, WM_NCLBUTTONDBLCLK -> handleNcButtonDown(hwnd, uMsg, wParam, lParam)
+                WM_NCLBUTTONDOWN -> handleNcButtonDown(hwnd, uMsg, wParam, lParam)
+
+                WM_NCLBUTTONDBLCLK -> handleNcDoubleClick(hwnd, uMsg, wParam, lParam)
 
                 WM_NCLBUTTONUP -> handleNcButtonUp(hwnd, uMsg, wParam, lParam)
+
+                WM_SYSCOMMAND -> handleSysCommand(hwnd, uMsg, wParam, lParam)
 
                 WM_STYLECHANGING -> handleStyleChanging(hwnd, uMsg, wParam, lParam)
 
@@ -200,10 +213,39 @@ internal class AeroFrameWndProc(
      * BTN-01 / WIN-05 / ARCHITECTURE Anti-Pattern 4: button-down at HTMAXBUTTON is swallowed
      * (return 0, never forwarded) so `DefWindowProc` neither paints a classic caption button
      * over the Compose one nor double-fires the toggle. Every other hit code forwards
-     * unchanged — caption drag, double-click maximize and the system menu keep working natively.
+     * unchanged — caption drag keeps working natively.
      */
     private fun handleNcButtonDown(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): Long {
         if (wParam.toInt() != HTMAXBUTTON) return callPrevious(hwnd, uMsg, wParam, lParam).toLong()
+        return swallowMaxButtonPress()
+    }
+
+    /**
+     * SNAP-04: the caption double-click is routed by [ncDoubleClickDisposition]. At HTCAPTION the
+     * message is handed to `User32.INSTANCE.DefWindowProc` and its result returned verbatim —
+     * the OS default performs SC_MAXIMIZE when the window is floating and SC_RESTORE when zoomed,
+     * driven by the WS_CAPTION/WS_MAXIMIZEBOX style bits the frame keeps set. Forwarding into
+     * AWT's proc instead is where the double-click died (22-SESSION S04-DBLCLICK-MAX FAIL both
+     * JVMs). At HTMAXBUTTON the swallow matches the single button-down (no classic-button paint,
+     * no double-fire); every other hit code keeps forwarding unchanged.
+     *
+     * Fallback decision (recorded, NOT implemented): if the re-verification session's real
+     * double-click still fails AND the chrome trace shows zero WM_NCLBUTTONDBLCLK arrivals at
+     * this proc (a CS_DBLCLKS class-style question), the named fix is synthesizing the
+     * double-click from two downs within `GetDoubleClickTime` on the toolkit thread — decided
+     * by trace evidence in that session, not here.
+     */
+    private fun handleNcDoubleClick(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): Long =
+        when (ncDoubleClickDisposition(wParam.toInt())) {
+            NcDoubleClickDisposition.DEF_WINDOW_PROC ->
+                User32.INSTANCE.DefWindowProc(hwnd, uMsg, wParam, lParam).toLong()
+            NcDoubleClickDisposition.SWALLOW -> swallowMaxButtonPress()
+            NcDoubleClickDisposition.FORWARD_AWT ->
+                callPrevious(hwnd, uMsg, wParam, lParam).toLong()
+        }
+
+    /** BTN-01: the HTMAXBUTTON swallow shared by button-down and double-click. */
+    private fun swallowMaxButtonPress(): Long {
         ncPressed = true
         chromeTrace("max-button", this.hwnd, "down")
         hop { maxButton.press() }
@@ -221,6 +263,49 @@ internal class AeroFrameWndProc(
         ncPressed = false
         chromeTrace("max-button", this.hwnd, "up click=$wasPressed")
         hop { maxButton.release(click = wasPressed) }
+        return 0L
+    }
+
+    /**
+     * SNAP-05 / C2: WM_SYSCOMMAND(SC_KEYMENU) is the Alt+Space system-menu trigger. DefWindowProc
+     * answers it by showing the window's system menu; forwarding it into AWT's proc instead
+     * swallows the trigger (C2's settled finding), so this branch owns it: fetch the menu with
+     * the hand-declared `GetSystemMenu(hwnd, false)` and display it at the client origin (under
+     * the title bar's left edge, DefWindowProc's own placement) via `TrackPopupMenu` with
+     * TPM_RETURNCMD. The nested menu loop is DefWindowProc's own behavior for this syscommand;
+     * the whole branch runs inside [dispatchSafely], whose fallback is the passthrough call.
+     *
+     * The chosen command (non-zero return) is re-dispatched with `SendMessage(hwnd,
+     * WM_SYSCOMMAND, ...)` — it re-enters this proc, discriminates to FORWARD, and flows
+     * through AWT to `DefWindowProc` exactly like the proven Alt+F4 / SC_CLOSE path. Every
+     * non-SC_KEYMENU syscommand forwards verbatim, so Alt+F4, the flyout's commands and all
+     * snap syscommands keep byte-identical behavior. Fallback decision (recorded, NOT
+     * implemented): if the real Alt+Space chord in the re-verification session shows SC_KEYMENU
+     * never arrives at this proc, owning WM_SYSKEYDOWN is the named next fix — decided by
+     * chrome-trace evidence there, not here.
+     */
+    private fun handleSysCommand(hwnd: HWND, uMsg: Int, wParam: WPARAM, lParam: LPARAM): Long {
+        if (systemMenuDisposition(wParam.toInt()) != SysCommandDisposition.MENU) {
+            return callPrevious(hwnd, uMsg, wParam, lParam).toLong()
+        }
+        chromeTrace("sysmenu", this.hwnd, "open")
+        val menu = aeroUser32.GetSystemMenu(hwnd, false)
+        if (menu != null) {
+            val origin = POINT(0, 0)
+            aeroUser32.ClientToScreen(hwnd, origin)
+            val selected = aeroUser32.TrackPopupMenu(
+                menu,
+                TPM_RETURNCMD or TPM_RIGHTBUTTON or TPM_LEFTALIGN or TPM_TOPALIGN,
+                origin.x,
+                origin.y,
+                0,
+                hwnd,
+                null,
+            )
+            if (selected != 0) {
+                User32.INSTANCE.SendMessage(hwnd, WM_SYSCOMMAND, WPARAM(selected.toLong()), LPARAM(0))
+            }
+        }
         return 0L
     }
 
