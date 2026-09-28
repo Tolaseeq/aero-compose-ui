@@ -7,7 +7,8 @@ import java.util.concurrent.atomic.AtomicLong
 // 577 = 541 pre-phase + 36 native-window logic tests (VER-14, Phase 22)
 // 587 = 577 + 10 max-button parity / API shape tests
 // 592 = 587 + 5 custom-title-bar API tests (API-04)
-val lockedTestTotal = 592
+// 596 = 592 + 4 system-menu / double-click routing guard tests (VER-14, 22-20)
+val lockedTestTotal = 596
 val lockedTestSkipped = 0
 
 plugins {
