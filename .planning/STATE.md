@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: Native Window Behavior
 status: executing
-stopped_at: Phase 22 Plan 17 complete -- REL-06 README window-behavior section + v3.2.0 snippet and REL-07 KDoc done (verified-only wording from 22-HANDOFF; suite green at locked 592); Plan 18 (REL-08 release) remains
+stopped_at: Gap-closure round planned — 7 plans (22-20..22-26) in waves 17-21; checker passed after one revision; next: execute waves 17-21, then the held 22-18 release
 last_updated: "2026-09-28T10:51:33.121Z"
 last_activity: 2026-09-25 -- Phase 22 execution started
 progress:
   total_phases: 1
   completed_phases: 0
-  total_plans: 19
+  total_plans: 26
   completed_plans: 18
   percent: 0
 ---
